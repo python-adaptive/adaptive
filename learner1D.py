@@ -70,8 +70,7 @@ class Learner1D(object):
             assert ydata.keys() == self._ydata.keys()
         else:
             ydata = self._ydata
-
-        assert x_left < x_right and self._neighbors[x_left][1] == x_right
+            assert x_left < x_right and self._neighbors[x_left][1] == x_right
 
         try:
             y_right, y_left = ydata[x_right], ydata[x_left]
@@ -197,7 +196,6 @@ class Learner1D(object):
                 self.unfinished[x] = y
         except TypeError:
             self.unfinished[xs] = ys
-
 
     def interpolate(self):
         """Estimates the approximate positions of unknown y-values by
