@@ -171,10 +171,11 @@ class Learner1D(object):
 
     def get_results(self):
         """Work with distributed.client.Future objects."""
-        for x, y in self.unfinished.items():
-            if y.done():
-                y = self.unfinished.pop(x).result()
-                self.add_point(x, y)
+        done = [(x, y.result()) for x, y in self.unfinished.items() if y.done()]
+        for x, y in done:
+            self.unfinished.pop(x)
+        if done:
+            self.add_data(*np.array(done).T)
 
     def add_futures(self, xs, ys):
         """Add concurrent.futures to the self.unfinished dict."""
