@@ -174,8 +174,7 @@ class Learner1D(object):
         done = [(x, y.result()) for x, y in self.unfinished.items() if y.done()]
         for x, y in done:
             self.unfinished.pop(x)
-        if done:
-            self.add_data(*np.array(done).T)
+            self.add_point(x, y)
 
     def add_futures(self, xs, ys):
         """Add concurrent.futures to the self.unfinished dict."""
