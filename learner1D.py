@@ -3,10 +3,10 @@
 # Description:  Contains 'Learner1D' object, a learner for 1D data.
 #               TODO:
 #-------------------------------------------------------------------------------
-from __future__ import division
+
 import numpy as np
 from math import sqrt
-from itertools import izip
+
 import heapq
 
 class Learner1D(object):
@@ -80,7 +80,7 @@ class Learner1D(object):
             Values of the y coordinate. `None` means that the value will be
             provided later.
         """
-        for x, y in izip(xvalues, yvalues):
+        for x, y in zip(xvalues, yvalues):
             self.add_point(x, y)
 
     def add_point(self, x, y):
@@ -89,7 +89,7 @@ class Learner1D(object):
 
         # Update the neighbors.
         if x not in self._neighbors:  # The point is new
-            xvals = np.sort(self._neighbors.keys())
+            xvals = np.sort(list(self._neighbors.keys()))
             pos = np.searchsorted(xvals, x)
             self._neighbors[None] = [None, None]  # To reduce the number of
                                                   # condititons.
@@ -140,9 +140,9 @@ class Learner1D(object):
 
         # Calculate how many points belong to each interval.
         quals = [(-loss, x_i, 1) for (x_i, loss) in
-                 self._losses.iteritems()]
+                 self._losses.items()]
         heapq.heapify(quals)
-        for point_number in xrange(n):
+        for point_number in range(n):
             quality, x, n = quals[0]
             heapq.heapreplace(quals, (quality * n / (n+1), x, n + 1))
 
