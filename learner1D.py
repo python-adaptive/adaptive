@@ -50,6 +50,7 @@ class Learner1D(object):
         self._scale = [0, 0]
         self._oldscale = [0, 0]
 
+        # A dict with {x_n: concurrent.futures}
         self.unfinished = {}
 
         # Add initial data if provided
@@ -176,6 +177,7 @@ class Learner1D(object):
                 self.add_point(x, y)
 
     def add_futures(self, xs, ys):
+        """Add concurrent.futures to the self.unfinished dict."""
         try:
             for x, y in zip(xs, ys):
                 self.unfinished[x] = y
