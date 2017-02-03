@@ -59,6 +59,10 @@ class Learner1D(object):
 
         self.client = client
 
+        self.smallest_interval = np.inf
+
+        self.num_done = 0
+
     def loss(self, x_left, x_right):
         """Calculate loss in the interval x_left, x_right.
 
@@ -94,6 +98,7 @@ class Learner1D(object):
         # Update the scale.
         self._bbox[0][0] = min(self._bbox[0][0], x)
         self._bbox[0][1] = max(self._bbox[0][1], x)
+        self.x_range = self._bbox[0][1] - self._bbox[0][0]
         if y is not None:
             self._bbox[1][0] = min(self._bbox[1][0], y)
             self._bbox[1][1] = max(self._bbox[1][1], y)
@@ -198,3 +203,16 @@ class Learner1D(object):
     def initialize(self, func, xmin, xmax):
         self.map(func, [xmin, xmax])
         self.add_data([xmin, xmax], [None, None])
+
+    def get_largest_interval(self):
+        xs = sorted(x for x, y in self.data.items() if y is not None)
+
+        if len(xs) == 0:
+            return np.inf
+        else:
+            self.largest_interval = np.diff(xs).max()
+            return self.largest_interval
+
+    def get_num_done(self):
+        self.num_done = sum(1 for x, y in self.data.items() if y is not None)
+        return self.num_done
