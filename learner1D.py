@@ -1,13 +1,21 @@
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Filename:     learner1D.py
 # Description:  Contains 'Learner1D' object, a learner for 1D data.
-#               TODO:
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 import heapq
 from math import sqrt
 import itertools
 import numpy as np
+from wrapt import synchronized
+
+
+def add_arg(func):
+    """Make func return (arg, func(arg))."""
+    def wrapper(*args):
+        return (args[0], func(*args))
+    return wrapper
+
 
 class Learner1D(object):
     """ Learns and predicts a 1D function.
@@ -49,9 +57,6 @@ class Learner1D(object):
         # Data scale (maxx - minx), (maxy - miny)
         self._scale = [0, 0]
         self._oldscale = [0, 0]
-
-        # A dict with {x_n: concurrent.futures}
-        self.unfinished = {}
 
         # Add initial data if provided
         if xdata is not None:
@@ -114,7 +119,7 @@ class Learner1D(object):
 
         # Return equally spaced points within each interval to which points
         # will be added.
-        self.get_results()  # Insert finished results into self.data
+        # self.get_results()  # Insert finished results into self.data
         self.interpolate()  # Apply new interpolation step if new results
 
         def points(x, n):
@@ -127,7 +132,7 @@ class Learner1D(object):
 
         for point_number in range(n):
             quality, x, n = quals[0]
-            heapq.heapreplace(quals, (quality * n / (n+1), x, n + 1))
+            heapq.heapreplace(quals, (quality * n / (n + 1), x, n + 1))
 
         xs = sum((points(x, n) for quality, x, n in quals), [])
 
@@ -138,20 +143,18 @@ class Learner1D(object):
 
         return xs
 
-    def get_results(self):
-        """Work with distributed.client.Future objects."""
-        done = [(x, y.result()) for x, y in self.unfinished.items() if y.done()]
-        for x, y in done:
-            self.unfinished.pop(x)
-            self.add_point(x, y)
+    def get_largest_interval(self):
+        xs = sorted(x for x, y in self.data.items() if y is not None)
 
-    def add_futures(self, xs, ys):
-        """Add concurrent.futures to the self.unfinished dict."""
-        try:
-            for x, y in zip(xs, ys):
-                self.unfinished[x] = y
-        except TypeError:
-            self.unfinished[xs] = ys
+        if len(xs) < 2:
+            return np.inf
+        else:
+            self.largest_interval = np.diff(xs).max()
+            return self.largest_interval
+
+    def get_done(self):
+        done = {x: y for x, y in self.data.items() if y is not None}
+        return done
 
     def interpolate(self):
         xdata = []
@@ -196,23 +199,18 @@ class Learner1D(object):
             except KeyError:
                 pass
 
-    def map(self, func, xs):
-        ys = self.client.map(func, xs)
-        self.add_futures(xs, ys)
+    def done_callback(self, n, tol):
+        @synchronized
+        def wrapped(future):
+            x, y = future.result()
+            return self.add_data(x, y)
+        return wrapped
+
+    def map(self, func, xs, n=1, tol=0.01):
+        ys = self.client.map(add_arg(func), xs)
+        for y in ys:
+            y.add_done_callback(self.done_callback(tol, n))
 
     def initialize(self, func, xmin, xmax):
         self.map(func, [xmin, xmax])
         self.add_data([xmin, xmax], [None, None])
-
-    def get_largest_interval(self):
-        xs = sorted(x for x, y in self.data.items() if y is not None)
-
-        if len(xs) == 0:
-            return np.inf
-        else:
-            self.largest_interval = np.diff(xs).max()
-            return self.largest_interval
-
-    def get_num_done(self):
-        self.num_done = sum(1 for x, y in self.data.items() if y is not None)
-        return self.num_done
