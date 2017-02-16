@@ -68,6 +68,8 @@ class Learner1D(object):
 
         self.num_done = 0
 
+        self.futures = {}
+
     def loss(self, x_left, x_right):
         """Calculate loss in the interval x_left, x_right.
 
@@ -152,10 +154,6 @@ class Learner1D(object):
             self.largest_interval = np.diff(xs).max()
             return self.largest_interval
 
-    def get_done(self):
-        done = {x: y for x, y in self.data.items() if y is not None}
-        return done
-
     def interpolate(self):
         xdata = []
         ydata = []
@@ -199,10 +197,23 @@ class Learner1D(object):
             except KeyError:
                 pass
 
+    def get_done(self):
+        done = {x: y for x, y in self.data.items() if y is not None}
+        return done
+
+    def add_futures(self, xs, ys):
+        """Add concurrent.futures to the self.futures dict."""
+        try:
+            for x, y in zip(xs, ys):
+                self.futures[x] = y
+        except TypeError:
+            self.futures[xs] = ys
+
     def done_callback(self, n, tol):
         @synchronized
         def wrapped(future):
             x, y = future.result()
+            self.futures.pop(x)
             return self.add_data(x, y)
         return wrapped
 
@@ -210,6 +221,7 @@ class Learner1D(object):
         ys = self.client.map(add_arg(func), xs)
         for y in ys:
             y.add_done_callback(self.done_callback(tol, n))
+        self.add_futures(xs, ys)
 
     def initialize(self, func, xmin, xmax):
         self.map(func, [xmin, xmax])
