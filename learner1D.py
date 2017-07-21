@@ -6,8 +6,10 @@
 import heapq
 from math import sqrt
 import itertools
+import multiprocessing
+
 import numpy as np
-from wrapt import synchronized
+import tornado
 
 
 def add_arg(func):
@@ -30,7 +32,7 @@ class Learner1D(object):
 
     """
 
-    def __init__(self, xdata=None, ydata=None, client=None):
+    def __init__(self, xdata=None, ydata=None):
         """Initialize the learner.
 
         Parameters
@@ -62,15 +64,7 @@ class Learner1D(object):
         if xdata is not None:
             self.add_data(xdata, ydata)
 
-        self.client = client
-
-        self.smallest_interval = np.inf
-
-        self.num_done = 0
-
-        self.futures = {}
-
-    def loss(self, x_left, x_right):
+    def interval_loss(self, x_left, x_right):
         """Calculate loss in the interval x_left, x_right.
 
         Currently returns the rescaled length of the interval. If one of the
@@ -80,6 +74,12 @@ class Learner1D(object):
         y_right, y_left = self.interp_data[x_right], self.interp_data[x_left]
         return sqrt(((x_right - x_left) / self._scale[0])**2 +
                     ((y_right - y_left) / self._scale[1])**2)
+
+    def loss(self):
+        if len(self.losses) == 0:
+            return float('inf')
+        else:
+            return max(self.losses.values())
 
     def add_data(self, xvalues, yvalues):
         """Add data to the intervals.
@@ -112,7 +112,7 @@ class Learner1D(object):
         self._scale = [self._bbox[0][1] - self._bbox[0][0],
                        self._bbox[1][1] - self._bbox[1][0]]
 
-    def choose_points(self, n=10, add_to_data=True):
+    def choose_points(self, n=10):
         """Return n points that are expected to maximally reduce the loss."""
         # Find out how to divide the n points over the intervals
         # by finding  positive integer n_i that minimize max(L_i / n_i) subject
@@ -121,7 +121,6 @@ class Learner1D(object):
 
         # Return equally spaced points within each interval to which points
         # will be added.
-        # self.get_results()  # Insert finished results into self.data
         self.interpolate()  # Apply new interpolation step if new results
 
         def points(x, n):
@@ -140,19 +139,16 @@ class Learner1D(object):
 
         # Add `None`s to data because then the same point will not be returned
         # upon a next request. This can be used for parallelization.
-        if add_to_data:
-            self.add_data(xs, itertools.repeat(None))
+        self.add_data(xs, itertools.repeat(None))
 
         return xs
 
     def get_largest_interval(self):
         xs = sorted(x for x, y in self.data.items() if y is not None)
-
         if len(xs) < 2:
             return np.inf
         else:
-            self.largest_interval = np.diff(xs).max()
-            return self.largest_interval
+            return np.diff(xs).max()
 
     def interpolate(self):
         xdata = []
@@ -189,40 +185,51 @@ class Learner1D(object):
         self.losses = {}
         for x, (x_left, x_right) in self.neighbors.items():
             if x_left is not None:
-                self.losses[(x_left, x)] = self.loss(x_left, x)
+                self.losses[(x_left, x)] = self.interval_loss(x_left, x)
             if x_right is not None:
-                self.losses[x, x_right] = self.loss(x, x_right)
+                self.losses[x, x_right] = self.interval_loss(x, x_right)
             try:
                 del self.losses[x_left, x_right]
             except KeyError:
                 pass
 
-    def get_done(self):
-        done = {x: y for x, y in self.data.items() if y is not None}
-        return done
 
-    def add_futures(self, xs, ys):
-        """Add concurrent.futures to the self.futures dict."""
-        try:
-            for x, y in zip(xs, ys):
-                self.futures[x] = y
-        except TypeError:
-            self.futures[xs] = ys
+# We can't use API that is specific to any particular asynchronous
+# framework, so we have to roll our own utility functions.
 
-    def done_callback(self, n, tol):
-        @synchronized
-        def wrapped(future):
-            x, y = future.result()
-            self.futures.pop(x)
-            return self.add_data(x, y)
-        return wrapped
+async def any_complete(futures):
+    total = tornado.concurrent.Future()
+    for f in futures:
+        f.add_done_callback(total.set_result)
+    await total
+    return [f for f in futures if f.done()]
 
-    def map(self, func, xs, n=1, tol=0.01):
-        ys = self.client.map(add_arg(func), xs)
-        for y in ys:
-            y.add_done_callback(self.done_callback(tol, n))
-        self.add_futures(xs, ys)
 
-    def initialize(self, func, xmin, xmax):
-        self.map(func, [xmin, xmax])
-        self.add_data([xmin, xmax], [None, None])
+async def run(f, executor, learner, goal, ncores=multiprocessing.cpu_count()):
+    xs = dict()
+    done = [None] * ncores
+
+    while not goal(learner):
+        # Launch tasks to replace the ones that completed
+        # on the last iteration.
+        for x in learner.choose_points(len(done)):
+            xs[executor.submit(f, x)] = x
+
+        # Collect and results and add them to the learner
+        futures = list(xs.keys())
+        await any_complete(futures)
+        done = [fut for fut in futures if fut.done()]
+        for fut in done:
+            x = xs.pop(fut)
+            # Need to explicitly await the future (even though we know the
+            # result is there) to be compatible with Dask, who's futures'
+            # 'result' method return a future themselves.
+            y = await fut
+            learner.add_point(x, y)
+
+    # cancel any outstanding tasks
+    for fut in xs.keys():
+        fut.cancel()
+    # XXX: we should introduce an API for removing data points, and remove all
+    #      the data points with a 'None' value from the learner, or add a
+    #      method to simply remove all "unfinished" points from the learner.
