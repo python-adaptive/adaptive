@@ -105,7 +105,6 @@ class Learner1D(object):
         # Update the scale.
         self._bbox[0][0] = min(self._bbox[0][0], x)
         self._bbox[0][1] = max(self._bbox[0][1], x)
-        self.x_range = self._bbox[0][1] - self._bbox[0][0]
         if y is not None:
             self._bbox[1][0] = min(self._bbox[1][0], y)
             self._bbox[1][1] = max(self._bbox[1][1], y)
