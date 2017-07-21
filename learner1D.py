@@ -199,7 +199,8 @@ class Learner1D(object):
 async def any_complete(futures):
     total = tornado.concurrent.Future()
     for f in futures:
-        f.add_done_callback(total.set_result)
+        f.add_done_callback(lambda f: total.set_result(None)
+                            if not total.done() else None)
     await total
     return [f for f in futures if f.done()]
 
