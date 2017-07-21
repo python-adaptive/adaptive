@@ -142,6 +142,18 @@ class Learner1D(object):
 
         return xs
 
+    def remove_unfinished(self):
+        self.data = {k: v for k, v in self.data.items() if v is not None}
+        # Update the scale.
+        self._bbox[0][0] = min(self.data.keys())
+        self._bbox[0][1] = max(self.data.keys())
+        self._bbox[1][0] = min(self.data.values())
+        self._bbox[1][1] = max(self.data.values())
+        self._scale = [self._bbox[0][1] - self._bbox[0][0],
+                       self._bbox[1][1] - self._bbox[1][0]]
+
+        self.interpolate()
+
     def get_largest_interval(self):
         xs = sorted(x for x, y in self.data.items() if y is not None)
         if len(xs) < 2:
@@ -230,6 +242,4 @@ async def run(f, executor, learner, goal, ncores=multiprocessing.cpu_count()):
     # cancel any outstanding tasks
     for fut in xs.keys():
         fut.cancel()
-    # XXX: we should introduce an API for removing data points, and remove all
-    #      the data points with a 'None' value from the learner, or add a
-    #      method to simply remove all "unfinished" points from the learner.
+    learner.remove_unfinished()
