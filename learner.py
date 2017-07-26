@@ -1,8 +1,3 @@
-# ------------------------------------------------------------------------------
-# Filename:     learner1D.py
-# Description:  Contains 'Learner1D' object, a learner for 1D data.
-# ------------------------------------------------------------------------------
-
 import heapq
 from math import sqrt
 import itertools
