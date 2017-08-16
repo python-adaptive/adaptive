@@ -1,20 +1,74 @@
+
+import abc
+import asyncio
 import heapq
-from math import sqrt
 import itertools
-import multiprocessing
+import os
+from math import sqrt
 
+import concurrent
+import distributed
+import holoviews as hv
+import ipyparallel
 import numpy as np
-import tornado
 
 
-def add_arg(func):
-    """Make func return (arg, func(arg))."""
-    def wrapper(*args):
-        return (args[0], func(*args))
-    return wrapper
+class BaseLearner(metaclass=abc.ABCMeta):
+    def __init__(self, xdata=None, ydata=None):
+        """Initialize the learner.
+
+        Parameters
+        ----------
+        data :
+           Possibly empty list of float-like tuples, describing the initial
+           data.
+        """
+        # A dict {x_n: y_n} for quick checking of local
+        # properties.
+        self.data = {}
+
+        # Add initial data if provided
+        if xdata is not None:
+            self.add_data(xdata, ydata)
+
+    def add_data(self, xvalues, yvalues):
+        """Add data to the intervals.
+
+        Parameters
+        ----------
+        xvalues : iterable of numbers
+            Values of the x coordinate.
+        yvalues : iterable of numbers and None
+            Values of the y coordinate. `None` means that the value will be
+            provided later.
+        """
+        try:
+            for x, y in zip(xvalues, yvalues):
+                self.add_point(x, y)
+        except TypeError:
+            self.add_point(xvalues, yvalues)
+
+    def add_point(self, x, y):
+        """Update the data."""
+        self.data[x] = y
+
+    def remove_unfinished(self):
+        self.data = {k: v for k, v in self.data.items() if v is not None}
+
+    @abc.abstractmethod
+    def loss(self):
+        pass
+
+    @abc.abstractmethod
+    def choose_points(self, n=10):
+        pass
+
+    @abc.abstractmethod
+    def interpolate(self):
+        pass
 
 
-class Learner1D(object):
+class _Learner1D(BaseLearner):
     """ Learns and predicts a 1D function.
 
     Description
@@ -38,6 +92,7 @@ class Learner1D(object):
         """
 
         # Set internal variables
+        super().__init__(xdata, ydata)
 
         # A dict storing the loss function for each interval x_n.
         self.losses = {}
@@ -45,19 +100,12 @@ class Learner1D(object):
         # A dict {x_n: [x_{n-1}, x_{n+1}]} for quick checking of local
         # properties.
         self.neighbors = {}
-        # A dict {x_n: y_n} for quick checking of local
-        # properties.
-        self.data = {}
 
         # Bounding box [[minx, maxx], [miny, maxy]].
         self._bbox = [[np.inf, -np.inf], [np.inf, -np.inf]]
         # Data scale (maxx - minx), (maxy - miny)
         self._scale = [0, 0]
         self._oldscale = [0, 0]
-
-        # Add initial data if provided
-        if xdata is not None:
-            self.add_data(xdata, ydata)
 
     def interval_loss(self, x_left, x_right):
         """Calculate loss in the interval x_left, x_right.
@@ -76,26 +124,10 @@ class Learner1D(object):
         else:
             return max(self.losses.values())
 
-    def add_data(self, xvalues, yvalues):
-        """Add data to the intervals.
-
-        Parameters
-        ----------
-        xvalues : iterable of numbers
-            Values of the x coordinate.
-        yvalues : iterable of numbers and None
-            Values of the y coordinate. `None` means that the value will be
-            provided later.
-        """
-        try:
-            for x, y in zip(xvalues, yvalues):
-                self.add_point(x, y)
-        except TypeError:
-            self.add_point(xvalues, yvalues)
 
     def add_point(self, x, y):
         """Update the data."""
-        self.data[x] = y
+        super().add_point(x, y)
 
         # Update the scale.
         self._bbox[0][0] = min(self._bbox[0][0], x)
@@ -138,7 +170,7 @@ class Learner1D(object):
         return xs
 
     def remove_unfinished(self):
-        self.data = {k: v for k, v in self.data.items() if v is not None}
+        super().remove_unfinished()
         # Update the scale.
         self._bbox[0][0] = min(self.data.keys())
         self._bbox[0][1] = max(self.data.keys())
@@ -148,13 +180,6 @@ class Learner1D(object):
                        self._bbox[1][1] - self._bbox[1][0]]
 
         self.interpolate()
-
-    def get_largest_interval(self):
-        xs = sorted(x for x, y in self.data.items() if y is not None)
-        if len(xs) < 2:
-            return np.inf
-        else:
-            return np.diff(xs).max()
 
     def interpolate(self):
         xdata = []
@@ -200,19 +225,79 @@ class Learner1D(object):
                 pass
 
 
-# We can't use API that is specific to any particular asynchronous
-# framework, so we have to roll our own utility functions.
+class AsyncExecutor:
 
-async def any_complete(futures):
-    total = tornado.concurrent.Future()
-    for f in futures:
-        f.add_done_callback(lambda f: total.set_result(None)
-                            if not total.done() else None)
-    await total
-    return [f for f in futures if f.done()]
+    def __init__(self, executor, ioloop):
+        self.executor = executor
+        self.ioloop = ioloop
+
+    def submit(self, f, *args, **kwargs):
+        return self.ioloop.run_in_executor(self.executor, f, *args, **kwargs)
 
 
-async def run(f, executor, learner, goal, ncores=multiprocessing.cpu_count()):
+def ensure_async_executor(client, ioloop):
+    if isinstance(client, ipyparallel.Client):
+        async_executor = AsyncExecutor(client.executor(), ioloop)
+    elif isinstance(client, distributed.Client):
+        async_executor = async_executor
+    elif client is None:
+        client = concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count())
+        async_executor = AsyncExecutor(client, ioloop)
+    else:
+        raise NotImplementedError('Blabla')
+
+    return async_executor
+
+
+def runner(learner):
+    if isinstance(learner.client, ipyparallel.Client):
+        ncores = len(learner.client)
+    elif isinstance(learner.client, distributed.Client):
+        ncores = sum(learner.client.ncores().values())
+    elif learner.client is None:
+        ncores = os.cpu_count()
+    else:
+        raise NotImplementedError('Blabla')
+
+    return run_asyncio(learner.func, learner.executor, learner, ncores=ncores,
+                       goal=lambda learner: learner.loss() < 0.1)
+
+
+class LearnerMixin:
+
+    def __init__(self, func, *, client=None, goal=None, ioloop=None, **learner_kwargs):
+        self.ioloop = ioloop if ioloop else asyncio.get_event_loop()
+        self.executor = ensure_async_executor(client, self.ioloop)  # wraps in `run_in_executor` if concurrent.futures.Executor compatible
+        self.client = client
+        self.func = func
+        self.task = None
+        super().__init__(**learner_kwargs)
+
+    def start(self):
+        self.task = self.ioloop.create_task(runner(self))
+
+    def cancel(self):
+        if self.task:
+            return self.task.cancel()
+        else:
+            return False
+
+
+class Learner1D(LearnerMixin, _Learner1D):
+
+    def plot(self, data=None):
+        "Plot another learner"
+        if data is None:
+            data = self.data
+        xy = [(k, v) for k, v in sorted(data.items()) if v is not None]
+        if not xy:
+            return hv.Scatter([])[-1.1:1.1, -1.1:1.1]
+        x, y  = np.array(xy, dtype=float).T
+        return hv.Scatter((x, y))[-1.1:1.1, -1.1:1.1]
+
+
+async def run_asyncio(f, executor, learner, goal,
+                      ncores=os.cpu_count()):
     xs = dict()
     done = [None] * ncores
 
@@ -224,8 +309,7 @@ async def run(f, executor, learner, goal, ncores=multiprocessing.cpu_count()):
 
         # Collect and results and add them to the learner
         futures = list(xs.keys())
-        await any_complete(futures)
-        done = [fut for fut in futures if fut.done()]
+        done, _ = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
         for fut in done:
             x = xs.pop(fut)
             # Need to explicitly await the future (even though we know the
@@ -234,7 +318,8 @@ async def run(f, executor, learner, goal, ncores=multiprocessing.cpu_count()):
             y = await fut
             learner.add_point(x, y)
 
-    # cancel any outstanding tasks
-    for fut in xs.keys():
-        fut.cancel()
     learner.remove_unfinished()
+    # cancel any outstanding tasks
+    cancelled = all(fut.cancel() for fut in xs.keys())
+    if not cancelled:
+        raise RuntimeError('Some futures remain uncancelled')
