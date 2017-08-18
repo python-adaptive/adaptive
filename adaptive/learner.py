@@ -1,11 +1,75 @@
+# -*- coding: utf-8 -*-
+import abc
 import heapq
 import itertools
 from math import sqrt
 
-import holoviews as hv
 import numpy as np
+import holoviews as hv
 
-from learner import BaseLearner
+
+class BaseLearner(metaclass=abc.ABCMeta):
+    """Base class for algorithms for learning a function 'f: X → Y'
+
+    Attributes
+    ----------
+    function : callable: X → Y
+        The function to learn.
+    data : dict: X → Y
+        'function' evaluated at certain points.
+        The values can be 'None', which indicates that the point
+        will be evaluated, but that we do not have the result yet.
+
+    Subclasses may define a 'plot' method that takes no parameters
+    and returns a holoviews plot.
+    """
+    def __init__(self, function):
+        self.data = {}
+        self.function = function
+
+    def add_data(self, xvalues, yvalues):
+        """Add data to the learner.
+
+        Parameters
+        ----------
+        xvalues : value from the function domain, or iterable of such
+            Values from the domain of the learned function.
+        yvalues : value from the function image, or iterable of such
+            Values from the range of the learned function, or None.
+            If 'None', then it indicates that the value has not yet
+            been computed.
+        """
+        try:
+            for x, y in zip(xvalues, yvalues):
+                self.add_point(x, y)
+        except TypeError:
+            self.add_point(xvalues, yvalues)
+
+    def add_point(self, x, y):
+        """Add a single datapoint to the learner."""
+        self.data[x] = y
+
+    def remove_unfinished(self):
+        """Remove uncomputed data from the learner."""
+        self.data = {k: v for k, v in self.data.items() if v is not None}
+
+    @abc.abstractmethod
+    def loss(self):
+        pass
+
+    def choose_points(self, n, add_data=True):
+        points = self._choose_points(n)
+        if add_data:
+            self.add_data(points, itertools.repeat(None))
+        return points
+
+    @abc.abstractmethod
+    def _choose_points(self, n):
+        pass
+
+    @abc.abstractmethod
+    def interpolate(self):
+        pass
 
 
 class Learner1D(BaseLearner):
@@ -66,7 +130,7 @@ class Learner1D(BaseLearner):
         self._scale = [self._bbox[0][1] - self._bbox[0][0],
                        self._bbox[1][1] - self._bbox[1][0]]
 
-    def choose_points(self, n=10):
+    def _choose_points(self, n=10):
         """Return n points that are expected to maximally reduce the loss."""
         # Find out how to divide the n points over the intervals
         # by finding  positive integer n_i that minimize max(L_i / n_i) subject
@@ -90,10 +154,6 @@ class Learner1D(BaseLearner):
             heapq.heapreplace(quals, (quality * n / (n + 1), x, n + 1))
 
         xs = sum((points(x, n) for quality, x, n in quals), [])
-
-        # Add `None`s to data because then the same point will not be returned
-        # upon a next request. This can be used for parallelization.
-        self.add_data(xs, itertools.repeat(None))
 
         return xs
 
@@ -152,11 +212,10 @@ class Learner1D(BaseLearner):
             except KeyError:
                 pass
 
-
-def plot_data(learner):
-    """Plot 1D learner data."""
-    xy = [(k, v) for k, v in sorted(learner.data.items()) if v is not None]
-    if not xy:
-        return hv.Scatter([])
-    x, y = np.array(xy, dtype=float).transpose()
-    return hv.Scatter((x, y))
+    def plot(self):
+            xy = [(k, v)
+                  for k, v in sorted(self.data.items()) if v is not None]
+            if not xy:
+                return hv.Scatter([])
+            x, y = np.array(xy, dtype=float).transpose()
+            return hv.Scatter((x, y))

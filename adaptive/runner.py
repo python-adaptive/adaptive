@@ -1,63 +1,8 @@
-import abc
+# -*- coding: utf-8 -*-
 import asyncio
 import concurrent.futures as concurrent
 
 import ipyparallel
-
-
-class BaseLearner(metaclass=abc.ABCMeta):
-    """Base class for algorithms for learning a function 'f: X → Y'
-
-    Attributes
-    ----------
-    function : callable: X → Y
-        The function to learn.
-    data : dict: X → Y
-        'function' evaluated at certain points.
-        The values can be 'None', which indicates that the point
-        will be evaluated, but that we do not have the result yet.
-    """
-    def __init__(self, function):
-        self.data = {}
-        self.function = function
-
-    def add_data(self, xvalues, yvalues):
-        """Add data to the learner.
-
-        Parameters
-        ----------
-        xvalues : value from the function domain, or iterable of such
-            Values from the domain of the learned function.
-        yvalues : value from the function image, or iterable of such
-            Values from the range of the learned function, or None.
-            If 'None', then it indicates that the value has not yet
-            been computed.
-        """
-        try:
-            for x, y in zip(xvalues, yvalues):
-                self.add_point(x, y)
-        except TypeError:
-            self.add_point(xvalues, yvalues)
-
-    def add_point(self, x, y):
-        """Add a single datapoint to the learner."""
-        self.data[x] = y
-
-    def remove_unfinished(self):
-        """Remove uncomputed data from the learner."""
-        self.data = {k: v for k, v in self.data.items() if v is not None}
-
-    @abc.abstractmethod
-    def loss(self):
-        pass
-
-    @abc.abstractmethod
-    def choose_points(self, n):
-        pass
-
-    @abc.abstractmethod
-    def interpolate(self):
-        pass
 
 
 class Runner:
