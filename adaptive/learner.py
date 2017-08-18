@@ -156,12 +156,7 @@ class Learner1D(BaseLearner):
         else:
             return max(losses.values())
 
-    def add_point(self, x, y):
-        super().add_point(x, y)
-        real = y is not None
-        if real:
-            self.real_data[x] = y
-
+    def update_neighbors_and_losses(self, x, y, real=False):
         # Update the neighbors.
         neighbors = self.real_neighbors if real else self.neighbors
         if x not in neighbors:  # The point is new
@@ -205,6 +200,14 @@ class Learner1D(BaseLearner):
         if self._scale > self._oldscale * 2:
             losses = {key: self.interval_loss(*key) for key in losses}
             self._oldscale = self._scale
+
+    def add_point(self, x, y):
+        super().add_point(x, y)
+        self.update_neighbors_and_losses(x, y, real=False)
+        real = y is not None
+        if real:
+            self.real_data[x] = y
+            self.update_neighbors_and_losses(x, y, real=True)
 
 
     def _choose_points(self, n=10):
