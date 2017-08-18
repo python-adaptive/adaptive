@@ -54,10 +54,30 @@ class BaseLearner(metaclass=abc.ABCMeta):
         self.data = {k: v for k, v in self.data.items() if v is not None}
 
     @abc.abstractmethod
-    def loss(self):
-        pass
+    def loss(self, expected=False):
+        """Return the loss for the current state of the learner.
+
+        Parameters
+        ----------
+        expected : bool, default: False
+            If True, return the "expected" loss, i.e. the
+            loss including the as-yet unevaluated points
+            (possibly by interpolation).
+        """
 
     def choose_points(self, n, add_data=True):
+        """Choose the next 'n' points to evaluate.
+
+        Parameters
+        ----------
+        n : int
+            The number of points to choose.
+        add_data : bool, default: True
+            If True, add the chosen points to this
+            learner's 'data' with 'None' for the 'y'
+            values. Set this to False if you do not
+            want to modify the state of the learner.
+        """
         points = self._choose_points(n)
         if add_data:
             self.add_data(points, itertools.repeat(None))
@@ -65,11 +85,15 @@ class BaseLearner(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _choose_points(self, n):
-        pass
+        """Choose the next 'n' points to evaluate.
 
-    @abc.abstractmethod
-    def interpolate(self):
-        pass
+        Should be overridden by subclasses.
+
+        Parameters
+        ----------
+        n : int
+            The number of points to choose.
+        """
 
 
 class Learner1D(BaseLearner):
