@@ -84,10 +84,11 @@ class _AsyncExecutor:
 
 
 def _ensure_async_executor(executor, ioloop):
-    if isinstance(executor, concurrent.Executor):
-        pass
-    elif isinstance(executor, ipyparallel.Client):
+    if isinstance(executor, ipyparallel.Client):
         executor = executor.executor()
+    elif isinstance(executor, (concurrent.ProcessPoolExecutor,
+                               concurrent.ThreadPoolExecutor)):
+        pass
     elif executor is None:
         executor = concurrent.ProcessPoolExecutor()
     else:
@@ -102,10 +103,11 @@ def _get_executor_ncores(executor):
     if isinstance(executor, _AsyncExecutor):
         executor = executor.executor
 
-    if isinstance(executor, concurrent.Executor):
+    if isinstance(executor, ipyparallel.client.view.ViewExecutor):
+        return len(executor.view)
+    elif isinstance(executor, (concurrent.ProcessPoolExecutor,
+                               concurrent.ThreadPoolExecutor)):
         return executor._max_workers  # not public API!
-    elif isinstance(executor, ipyparallel.Client):
-        return len(executor)
     else:
         raise TypeError('Only concurrent.futures.Executors or ipyparallel '
                         'clients can be used.')
