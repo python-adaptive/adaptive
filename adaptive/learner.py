@@ -219,14 +219,12 @@ class Learner1D(BaseLearner):
 
         # Return equally spaced points within each interval to which points
         # will be added.
-        if len(self.data) == 0:
-            if n == 1:
-                return [self.bounds[0]]
-            else:
-                return self.bounds
-        elif len(self.data) == 1:
-            return [self.bounds[1]]
-
+        for bound in self.bounds:
+            if bound not in self.data:
+                if n == 1:
+                    return [bound]
+                else:
+                    return self.bounds
 
         def points(x, n):
             return list(np.linspace(x[0], x[1], n, endpoint=False)[1:])
