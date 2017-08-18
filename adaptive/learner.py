@@ -145,8 +145,7 @@ class Learner1D(BaseLearner):
         if self._scale[1] == 0:
             return np.inf
         else:
-            return sqrt(((x_right - x_left) / self._scale[0])**2 +
-                        ((y_right - y_left) / self._scale[1])**2)
+            return sqrt(((x_right - x_left))**2 + ((y_right - y_left))**2)
 
     def loss(self, real=True):
         losses = self.real_losses if real else self.losses
@@ -200,10 +199,10 @@ class Learner1D(BaseLearner):
         # Can only happen when `real`.
         if real:
             if self._scale > self._oldscale * 2:
-                    self.real_losses = {key: self.interval_loss(*key, real)
+                    self.real_losses = {key: self.interval_loss(*key, real=True)
                                         for key in self.real_losses}
-                    self.losses = {key: self.interval_loss(*key, real)
-                                        for key in self.losses}
+                    self.losses = {key: self.interval_loss(*key, real=False)
+                                   for key in self.losses}
                     self._oldscale = self._scale
 
     def add_point(self, x, y):
@@ -249,8 +248,8 @@ class Learner1D(BaseLearner):
 
     def remove_unfinished(self):
         super().remove_unfinished()
-        self.losses = self.real_losses
-        self.neighbors = self.real_neighbors
+        # self.losses = self.real_losses
+        # self.neighbors = self.real_neighbors
 
         # Update the scale.
         self._bbox[0][0] = min(self.data.keys())
