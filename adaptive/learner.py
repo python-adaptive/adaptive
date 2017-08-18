@@ -204,13 +204,13 @@ class Learner1D(BaseLearner):
                                         for key in self.real_losses}
                     self.losses = {key: self.interval_loss(*key, real)
                                         for key in self.losses}
-                self._oldscale = self._scale
+                    self._oldscale = self._scale
 
     def add_point(self, x, y):
         super().add_point(x, y)
         self.update_neighbors_and_losses(x, y, real=False)
-        real = y is not None
-        if real:
+
+        if y is not None:
             self.real_data[x] = y
             self.update_neighbors_and_losses(x, y, real=True)
 
