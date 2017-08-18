@@ -197,9 +197,14 @@ class Learner1D(BaseLearner):
             pass
 
         # If the scale has doubled, recompute all losses.
-        if self._scale > self._oldscale * 2:
-            losses = {key: self.interval_loss(*key) for key in losses}
-            self._oldscale = self._scale
+        # Can only happen when `real`.
+        if real:
+            if self._scale > self._oldscale * 2:
+                    self.real_losses = {key: self.interval_loss(*key)
+                                        for key in self.real_losses}
+                    self.losses = {key: self.interval_loss(*key)
+                                        for key in self.losses}
+                self._oldscale = self._scale
 
     def add_point(self, x, y):
         super().add_point(x, y)
