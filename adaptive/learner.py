@@ -188,9 +188,9 @@ class Learner1D(BaseLearner):
         losses = self.real_losses if real else self.losses
         x_lower, x_upper = neighbors[x]
         if x_lower is not None:
-            losses[x_lower, x] = self.interval_loss(x_lower, x)
+            losses[x_lower, x] = self.interval_loss(x_lower, x, real)
         if x_upper is not None:
-            losses[x, x_upper] = self.interval_loss(x, x_upper)
+            losses[x, x_upper] = self.interval_loss(x, x_upper, real)
         try:
             del losses[x_lower, x_upper]
         except KeyError:
@@ -200,9 +200,9 @@ class Learner1D(BaseLearner):
         # Can only happen when `real`.
         if real:
             if self._scale > self._oldscale * 2:
-                    self.real_losses = {key: self.interval_loss(*key)
+                    self.real_losses = {key: self.interval_loss(*key, real)
                                         for key in self.real_losses}
-                    self.losses = {key: self.interval_loss(*key)
+                    self.losses = {key: self.interval_loss(*key, real)
                                         for key in self.losses}
                 self._oldscale = self._scale
 
