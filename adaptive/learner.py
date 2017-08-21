@@ -49,9 +49,10 @@ class BaseLearner(metaclass=abc.ABCMeta):
         """Add a single datapoint to the learner."""
         self.data[x] = y
 
+    @abc.abstractmethod
     def remove_unfinished(self):
         """Remove uncomputed data from the learner."""
-        self.data = {k: v for k, v in self.data.items() if v is not None}
+        pass
 
     @abc.abstractmethod
     def loss(self, real=True):
@@ -59,8 +60,8 @@ class BaseLearner(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        expected : bool, default: False
-            If True, return the "expected" loss, i.e. the
+        real : bool, default: True
+            If False, return the "expected" loss, i.e. the
             loss including the as-yet unevaluated points
             (possibly by interpolation).
         """
@@ -95,6 +96,72 @@ class BaseLearner(metaclass=abc.ABCMeta):
             The number of points to choose.
         """
 
+class AverageLearner(BaseLearner):
+    def __init__(self, function, atol=None, rtol=None):
+        """A naive implementation of adaptive computing of averages.
+
+        The learned function must depend on an integer input variable that
+        represents the source of randomness.
+
+        Parameters:
+        -----------
+        atol : float
+            Desired absolute tolerance
+        rtol : float
+            Desired relative tolerance
+        """
+        super().__init__(function)
+
+        if atol is None and rtol is None:
+            raise Exception('At least one of `atol` and `rtol` should be set.')
+        if atol is None:
+            atol = np.inf
+        if rtol is None:
+            rtol = np.inf
+
+        self.function = function
+        self.atol = atol
+        self.rtol = rtol
+        self.n = 0
+        self.n_requested = 0
+        self.sum_f = 0
+        self.sum_f_sq = 0
+
+    def _choose_points(self, n=10):
+        return list(range(self.n_requested, self.n_requested + n))
+
+    def add_point(self, n, value):
+        super().add_point(n, value)
+        if value is None:
+            self.n_requested += 1
+            return
+        else:
+            self.n += 1
+            self.sum_f += value
+            self.sum_f_sq += value**2
+
+    @property
+    def mean(self):
+        return self.sum_f / self.n
+
+    @property
+    def std(self):
+        n = self.n
+        if n < 2:
+            return np.inf
+        return sqrt((self.sum_f_sq - n * self.mean**2) / (n - 1))
+
+    def loss(self, real=True):
+        n = self.n
+        if n < 2:
+            return np.inf
+        standard_error = self.std / sqrt(n if real else self.n_requested)
+        return max(standard_error / self.atol,
+                   standard_error / abs(self.mean) / self.rtol)
+
+    def remove_unfinished(self):
+        """Remove uncomputed data from the learner."""
+        pass
 
 class Learner1D(BaseLearner):
     """Learns and predicts a function 'f:ℝ → ℝ'.
@@ -247,7 +314,7 @@ class Learner1D(BaseLearner):
         return xs
 
     def remove_unfinished(self):
-        super().remove_unfinished()
+        self.data = {k: v for k, v in self.data.items() if v is not None}
         # self.losses = self.real_losses
         # self.neighbors = self.real_neighbors
 
