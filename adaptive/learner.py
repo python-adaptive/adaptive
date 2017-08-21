@@ -209,6 +209,13 @@ class Learner1D(BaseLearner):
 
         self.bounds = list(bounds)
 
+    def _interval_loss(self, x_left, x_right, y_right, y_left):
+        if self._scale[1] == 0:
+            return np.inf
+        else:
+            return sqrt(((x_right - x_left) / self._scale[0])**2 +
+                        ((y_right - y_left) / self._scale[1])**2)
+
     def interval_loss(self, x_left, x_right, real=False):
         """Calculate loss in the interval x_left, x_right.
 
@@ -218,10 +225,7 @@ class Learner1D(BaseLearner):
         """
         data = self.real_data if real else self.interp_data
         y_right, y_left = data[x_right], data[x_left]
-        if self._scale[1] == 0:
-            return np.inf
-        else:
-            return sqrt(((x_right - x_left))**2 + ((y_right - y_left))**2)
+        return self._interval_loss(x_left, x_right, y_right, y_left)
 
     def loss(self, real=True):
         losses = self.real_losses if real else self.losses
@@ -231,17 +235,24 @@ class Learner1D(BaseLearner):
         else:
             return max(losses.values())
 
-    def update_neighbors_and_losses(self, x, y, real=False):
+    def loss_improvement(self, points):
+        pass
+
+    def find_neighbors(self, x, real):
+        neighbors = self.real_neighbors if real else self.neighbors
+        xvals = sorted(neighbors)
+        pos = np.searchsorted(xvals, x)
+        x_lower = xvals[pos-1] if pos != 0 else None
+        x_upper = xvals[pos] if pos != len(xvals) else None
+        return x_lower, x_upper
+
+    def update_neighbors_and_losses(self, x, y, real):
         # Update the neighbors.
         neighbors = self.real_neighbors if real else self.neighbors
         if x not in neighbors:  # The point is new
-            xvals = sorted(neighbors)
-            pos = np.searchsorted(xvals, x)
-            neighbors[None] = [None, None]  # To reduce the number of condititons.
-            x_lower = xvals[pos-1] if pos != 0 else None
-            x_upper = xvals[pos] if pos != len(xvals) else None
-
+            x_lower, x_upper = self.find_neighbors(x, real)
             neighbors[x] = [x_lower, x_upper]
+            neighbors[None] = [None, None]  # To reduce the number of condititons.
             neighbors[x_lower][1] = x
             neighbors[x_upper][0] = x
             del neighbors[None]
@@ -257,7 +268,7 @@ class Learner1D(BaseLearner):
                        self._bbox[1][1] - self._bbox[1][0]]
 
         if not real:
-            self.interpolate()
+            self.interp_data = self.interpolate()
 
         # Update the losses.
         losses = self.real_losses if real else self.losses
@@ -336,28 +347,30 @@ class Learner1D(BaseLearner):
             self._scale = [self._bbox[0][1] - self._bbox[0][0],
                            self._bbox[1][1] - self._bbox[1][0]]
 
-    def interpolate(self):
-        xdata = []
-        ydata = []
-        xdata_unfinished = []
-        self.interp_data = {}
+    def interpolate(self, extra_points=None):
+        xs = []
+        ys = []
+        xs_unfinished = [] if extra_points is None else extra_points
+        interp_data = {}
 
         for x in sorted(self.data):
             y = self.data[x]
             if y is None:
-                xdata_unfinished.append(x)
+                xs_unfinished.append(x)
             else:
-                xdata.append(x)
-                ydata.append(y)
-                self.interp_data[x] = y
+                xs.append(x)
+                ys.append(y)
+                interp_data[x] = y
 
-        if len(ydata) == 0:
-            ydata_unfinished = (0, ) * len(xdata_unfinished)
+        if len(ys) == 0:
+            interp_ys = (0,) * len(xs_unfinished)
         else:
-            ydata_unfinished = np.interp(xdata_unfinished, xdata, ydata)
+            interp_ys = np.interp(xs_unfinished, xs, ys)
 
-        for x, y in zip(xdata_unfinished, ydata_unfinished):
-            self.interp_data[x] = y
+        for x, y in zip(xs_unfinished, interp_ys):
+            interp_data[x] = y
+
+        return interp_data
 
     def plot(self):
             xy = [(k, v)
