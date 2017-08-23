@@ -319,12 +319,13 @@ class Learner1D(BaseLearner):
         # self.neighbors = self.real_neighbors
 
         # Update the scale.
-        self._bbox[0][0] = min(self.data.keys())
-        self._bbox[0][1] = max(self.data.keys())
-        self._bbox[1][0] = min(self.data.values())
-        self._bbox[1][1] = max(self.data.values())
-        self._scale = [self._bbox[0][1] - self._bbox[0][0],
-                       self._bbox[1][1] - self._bbox[1][0]]
+        if self.data:
+            self._bbox[0][0] = min(self.data.keys())
+            self._bbox[0][1] = max(self.data.keys())
+            self._bbox[1][0] = min(self.data.values())
+            self._bbox[1][1] = max(self.data.values())
+            self._scale = [self._bbox[0][1] - self._bbox[0][0],
+                           self._bbox[1][1] - self._bbox[1][0]]
 
     def interpolate(self):
         xdata = []
