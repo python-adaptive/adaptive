@@ -36,7 +36,7 @@ class Runner:
 
         if goal is None:
             def goal(_):
-                return True
+                return False
 
         coro = self._run(self.learner, self.executor, goal, ioloop)
         self.task = ioloop.create_task(coro)
