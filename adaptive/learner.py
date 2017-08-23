@@ -163,6 +163,15 @@ class AverageLearner(BaseLearner):
         """Remove uncomputed data from the learner."""
         pass
 
+    def plot(self):
+        vals = [v for v in self.data.values() if v is not None]
+        if not vals:
+            return hv.Histogram([[], []])
+        num_bins = int(max(5, sqrt(self.n)))
+        vals = hv.Points(vals)
+        return hv.operation.histogram(vals, num_bins=num_bins, dimension=1)
+
+
 class Learner1D(BaseLearner):
     """Learns and predicts a function 'f:ℝ → ℝ'.
 
