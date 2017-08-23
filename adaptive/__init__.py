@@ -4,5 +4,5 @@ from .notebook_integration import notebook_extension, live_plot
 from . import learner
 from . import runner
 
-from .learner import Learner1D
+from .learner import Learner1D, AverageLearner
 from .runner import Runner
