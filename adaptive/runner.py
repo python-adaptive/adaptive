@@ -30,16 +30,20 @@ class Runner:
     """
 
     def __init__(self, learner, executor=None, goal=None, *, ioloop=None):
-        ioloop = ioloop if ioloop else asyncio.get_event_loop()
-        self.executor = _ensure_async_executor(executor, ioloop)
+        self.ioloop = ioloop if ioloop else asyncio.get_event_loop()
+        self.executor = _ensure_async_executor(executor, self.ioloop)
         self.learner = learner
 
         if goal is None:
             def goal(_):
                 return False
 
-        coro = self._run(self.learner, self.executor, goal, ioloop)
-        self.task = ioloop.create_task(coro)
+        coro = self._run(self.learner, self.executor, goal, self.ioloop)
+        self.task = self.ioloop.create_task(coro)
+
+    def run_sync(self):
+        return self.ioloop.run_until_complete(self.task)
+
 
     @staticmethod
     async def _run(learner, executor, goal, ioloop):
