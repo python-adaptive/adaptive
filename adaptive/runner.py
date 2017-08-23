@@ -47,6 +47,9 @@ class Runner:
         xs = dict()
         done = [None] * _get_executor_ncores(executor)
 
+        if len(done) == 0:
+            raise RuntimeError('Executor has no workers')
+
         try:
             while not goal(learner):
                 # Launch tasks to replace the ones that completed
