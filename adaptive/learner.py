@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import abc
+from copy import copy
 import heapq
 import itertools
 from math import sqrt
@@ -25,7 +26,7 @@ class BaseLearner(metaclass=abc.ABCMeta):
     and returns a holoviews plot.
     """
     def __init__(self, function):
-        self.data = sortedcontainers.SortedDict()
+        self.data = {}
         self.function = function
 
     def add_data(self, xvalues, yvalues):
@@ -190,8 +191,8 @@ class Learner1D(BaseLearner):
 
         # A dict {x_n: [x_{n-1}, x_{n+1}]} for quick checking of local
         # properties.
-        self.neighbors = {}
-        self.neighbors_interp = {}
+        self.neighbors = sortedcontainers.SortedDict()
+        self.neighbors_interp = sortedcontainers.SortedDict()
 
         # Bounding box [[minx, maxx], [miny, maxy]].
         self._bbox = [list(bounds), [np.inf, -np.inf]]
@@ -247,10 +248,9 @@ class Learner1D(BaseLearner):
         pass
 
     def find_neighbors(self, x, neighbors):
-        xvals = sorted(neighbors)
-        pos = np.searchsorted(xvals, x)
-        x_lower = xvals[pos-1] if pos != 0 else None
-        x_upper = xvals[pos] if pos != len(xvals) else None
+        pos = neighbors.bisect_left(x)
+        x_lower = neighbors.iloc[pos-1] if pos != 0 else None
+        x_upper = neighbors.iloc[pos] if pos != len(neighbors) else None
         return x_lower, x_upper
 
     def update_neighbors(self, x, real):
@@ -258,10 +258,8 @@ class Learner1D(BaseLearner):
         if x not in neighbors:  # The point is new
             x_lower, x_upper = self.find_neighbors(x, neighbors)
             neighbors[x] = [x_lower, x_upper]
-            neighbors[None] = [None, None]  # To reduce the number of condititons.
-            neighbors[x_lower][1] = x
-            neighbors[x_upper][0] = x
-            del neighbors[None]
+            neighbors.get(x_lower, [None, None])[1] = x
+            neighbors.get(x_upper, [None, None])[0] = x
 
     def update_scale(self, x, y):
         self._bbox[0][0] = min(self._bbox[0][0], x)
