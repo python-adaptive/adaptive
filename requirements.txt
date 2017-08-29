@@ -2,3 +2,4 @@ numpy
 holoviews
 ipython
 ipyparallel
+sortedcontainers
