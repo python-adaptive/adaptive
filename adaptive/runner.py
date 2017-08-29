@@ -71,7 +71,6 @@ class Runner:
                     y = await fut
                     learner.add_point(x, y)
         finally:
-            learner.remove_unfinished()
             # cancel any outstanding tasks
             cancelled = all(fut.cancel() for fut in xs.keys())
             if not cancelled:
