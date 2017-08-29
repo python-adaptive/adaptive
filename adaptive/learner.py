@@ -4,6 +4,7 @@ import heapq
 import itertools
 from math import sqrt
 
+import sortedcontainers
 import numpy as np
 import holoviews as hv
 
@@ -24,7 +25,7 @@ class BaseLearner(metaclass=abc.ABCMeta):
     and returns a holoviews plot.
     """
     def __init__(self, function):
-        self.data = {}
+        self.data = sortedcontainers.SortedDict()
         self.function = function
 
     def add_data(self, xvalues, yvalues):
@@ -48,11 +49,6 @@ class BaseLearner(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def add_point(self, x, y):
         """Add a single datapoint to the learner."""
-        pass
-
-    @abc.abstractmethod
-    def remove_unfinished(self):
-        """Remove uncomputed data from the learner."""
         pass
 
     @abc.abstractmethod
@@ -160,10 +156,6 @@ class AverageLearner(BaseLearner):
         return max(standard_error / self.atol,
                    standard_error / abs(self.mean) / self.rtol)
 
-    def remove_unfinished(self):
-        """Remove uncomputed data from the learner."""
-        pass
-
     def plot(self):
         vals = [v for v in self.data.values() if v is not None]
         if not vals:
@@ -191,14 +183,15 @@ class Learner1D(BaseLearner):
 
         # A dict storing the loss function for each interval x_n.
         self.losses = {}
-        self.real_losses = {}
+        self.losses_interp = {}
 
-        self.real_data = {}
+        self.data = sortedcontainers.SortedDict()
+        self.data_interp = {}
 
         # A dict {x_n: [x_{n-1}, x_{n+1}]} for quick checking of local
         # properties.
         self.neighbors = {}
-        self.real_neighbors = {}
+        self.neighbors_interp = {}
 
         # Bounding box [[minx, maxx], [miny, maxy]].
         self._bbox = [list(bounds), [np.inf, -np.inf]]
@@ -209,99 +202,117 @@ class Learner1D(BaseLearner):
 
         self.bounds = list(bounds)
 
-    def _interval_loss(self, x_left, x_right, y_right, y_left):
-        if self._scale[1] == 0:
-            return np.inf
-        else:
-            return sqrt(((x_right - x_left) / self._scale[0])**2 +
-                        ((y_right - y_left) / self._scale[1])**2)
+    @property
+    def data_combined(self):
+        return {**self.data, **self.data_interp}
 
-    def interval_loss(self, x_left, x_right, real=False):
+    def interval_loss(self, x_left, x_right, data):
         """Calculate loss in the interval x_left, x_right.
 
         Currently returns the rescaled length of the interval. If one of the
         y-values is missing, returns 0 (so the intervals with missing data are
         never touched. This behavior should be improved later.
         """
-        data = self.real_data if real else self.interp_data
         y_right, y_left = data[x_right], data[x_left]
-        return self._interval_loss(x_left, x_right, y_right, y_left)
+        if self._scale[1] == 0:
+            return np.inf
+        else:
+            return sqrt(((x_right - x_left) / self._scale[0])**2 +
+                        ((y_right - y_left) / self._scale[1])**2)
 
     def loss(self, real=True):
-        losses = self.real_losses if real else self.losses
+        losses = self.losses if real else self.losses_interp
 
         if len(losses) == 0:
             return float('inf')
         else:
             return max(losses.values())
 
+    def update_losses(self, x, real):
+        losses = self.losses if real else self.losses_interp
+        neighbors = self.neighbors if real else self.neighbors_interp
+        data = self.data if real else self.data_combined
+
+        x_lower, x_upper = neighbors[x]
+        if x_lower is not None:
+            losses[x_lower, x] = self.interval_loss(x_lower, x, data)
+        if x_upper is not None:
+            losses[x, x_upper] = self.interval_loss(x, x_upper, data)
+        try:
+            del losses[x_lower, x_upper]
+        except KeyError:
+            pass
+
     def loss_improvement(self, points):
         pass
 
-    def find_neighbors(self, x, real):
-        neighbors = self.real_neighbors if real else self.neighbors
+    def find_neighbors(self, x, neighbors):
         xvals = sorted(neighbors)
         pos = np.searchsorted(xvals, x)
         x_lower = xvals[pos-1] if pos != 0 else None
         x_upper = xvals[pos] if pos != len(xvals) else None
         return x_lower, x_upper
 
-    def update_neighbors_and_losses(self, x, y, real):
-        # Update the neighbors.
-        neighbors = self.real_neighbors if real else self.neighbors
+    def update_neighbors(self, x, real):
+        neighbors = self.neighbors if real else self.neighbors_interp
         if x not in neighbors:  # The point is new
-            x_lower, x_upper = self.find_neighbors(x, real)
+            x_lower, x_upper = self.find_neighbors(x, neighbors)
             neighbors[x] = [x_lower, x_upper]
             neighbors[None] = [None, None]  # To reduce the number of condititons.
             neighbors[x_lower][1] = x
             neighbors[x_upper][0] = x
             del neighbors[None]
 
-        # Update the scale.
+    def update_scale(self, x, y):
         self._bbox[0][0] = min(self._bbox[0][0], x)
         self._bbox[0][1] = max(self._bbox[0][1], x)
-        if real:
+        if y is not None:
             self._bbox[1][0] = min(self._bbox[1][0], y)
             self._bbox[1][1] = max(self._bbox[1][1], y)
 
         self._scale = [self._bbox[0][1] - self._bbox[0][0],
                        self._bbox[1][1] - self._bbox[1][0]]
 
-        if not real:
-            self.interp_data = {**self.real_data, **self.interpolate()}
-
-        # Update the losses.
-        losses = self.real_losses if real else self.losses
-        x_lower, x_upper = neighbors[x]
-        if x_lower is not None:
-            losses[x_lower, x] = self.interval_loss(x_lower, x, real)
-        if x_upper is not None:
-            losses[x, x_upper] = self.interval_loss(x, x_upper, real)
-        try:
-            del losses[x_lower, x_upper]
-        except KeyError:
-            pass
-
-        # If the scale has doubled, recompute all losses.
-        # Can only happen when `real`.
-        if real:
-            if self._scale > self._oldscale * 2:
-                    self.real_losses = {key: self.interval_loss(*key, real=True)
-                                        for key in self.real_losses}
-                    self.losses = {key: self.interval_loss(*key, real=False)
-                                   for key in self.losses}
-                    self._oldscale = self._scale
-
     def add_point(self, x, y):
-        self.data[x] = y
         real = y is not None
-        if real:
-            self.real_data[x] = y
-
-        self.update_neighbors_and_losses(x, y, real=False)
 
         if real:
-            self.update_neighbors_and_losses(x, y, real=True)
+            # Add point to the real data dict and pop from the unfinished
+            # data_interp dict.
+            self.data[x] = y
+            try:
+                del self.data_interp[x]
+            except KeyError:
+                pass
+        else:
+            # The keys of data_interp are the unknown points
+            self.data_interp[x] = None
+
+        # Update the neighbors
+        self.update_neighbors(x, False)
+        if real:
+            self.update_neighbors(x, True)
+
+        # Update the scale
+        self.update_scale(x, y)
+
+        # Interpolate
+        if not real:
+            self.data_interp = self.interpolate()
+
+        # Update the losses
+        self.update_losses(x, False)
+        if real:
+            self.update_losses(x, True)
+
+        if real:
+            # If the scale has doubled, recompute all losses.
+            if self._scale > self._oldscale * 2:
+                    self.losses = {key: self.interval_loss(*key, self.data)
+                                   for key in self.losses}
+                    self.losses_interp = {key: self.interval_loss(*key,
+                        self.data_combined) for key in self.losses_interp}
+                    self._oldscale = self._scale
 
 
     def _choose_points(self, n=10):
@@ -314,7 +325,7 @@ class Learner1D(BaseLearner):
         # Return equally spaced points within each interval to which points
         # will be added.
         for bound in self.bounds:
-            if bound not in self.data:
+            if bound not in self.data_combined:
                 if n == 1:
                     return [bound]
                 else:
@@ -325,7 +336,7 @@ class Learner1D(BaseLearner):
 
         # Calculate how many points belong to each interval.
         quals = [(-loss, x_range, 1) for (x_range, loss) in
-                 self.losses.items()]
+                 self.losses_interp.items()]
 
         heapq.heapify(quals)
 
@@ -336,43 +347,19 @@ class Learner1D(BaseLearner):
         xs = sum((points(x, n) for quality, x, n in quals), [])
         return xs
 
-    def remove_unfinished(self):
-        self.data = {k: v for k, v in self.data.items() if v is not None}
-        # self.losses = self.real_losses
-        # self.neighbors = self.real_neighbors
-
-        # Update the scale.
-        if self.data:
-            self._bbox[0][0] = min(self.data.keys())
-            self._bbox[0][1] = max(self.data.keys())
-            self._bbox[1][0] = min(self.data.values())
-            self._bbox[1][1] = max(self.data.values())
-            self._scale = [self._bbox[0][1] - self._bbox[0][0],
-                           self._bbox[1][1] - self._bbox[1][0]]
-
-    def interpolate(self, extra_points=None):
-        xs = []
-        ys = []
-        xs_unfinished = [] if extra_points is None else extra_points
-        interp_data = {}
-
-        for x in sorted(self.data):
-            y = self.data[x]
-            if y is None:
-                xs_unfinished.append(x)
-            else:
-                xs.append(x)
-                ys.append(y)
+    def interpolate(self, points=None):
+        xs = list(self.data.keys())
+        ys = list(self.data.values())
+        xs_unfinished = list(self.data_interp.keys()) if points is None else points
 
         if len(ys) == 0:
             interp_ys = (0,) * len(xs_unfinished)
         else:
             interp_ys = np.interp(xs_unfinished, xs, ys)
 
-        for x, y in zip(xs_unfinished, interp_ys):
-            interp_data[x] = y
+        data_interp = {x: y for x, y in zip(xs_unfinished, interp_ys)}
 
-        return interp_data
+        return data_interp
 
     def plot(self):
             xy = [(k, v)
