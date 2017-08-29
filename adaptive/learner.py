@@ -45,9 +45,10 @@ class BaseLearner(metaclass=abc.ABCMeta):
         except TypeError:
             self.add_point(xvalues, yvalues)
 
+    @abc.abstractmethod
     def add_point(self, x, y):
         """Add a single datapoint to the learner."""
-        self.data[x] = y
+        pass
 
     @abc.abstractmethod
     def remove_unfinished(self):
@@ -131,7 +132,7 @@ class AverageLearner(BaseLearner):
         return list(range(self.n_requested, self.n_requested + n))
 
     def add_point(self, n, value):
-        super().add_point(n, value)
+        self.data[n] = value
         if value is None:
             self.n_requested += 1
             return
@@ -193,7 +194,6 @@ class Learner1D(BaseLearner):
         self.real_losses = {}
 
         self.real_data = {}
-        self.interp_data = {}
 
         # A dict {x_n: [x_{n-1}, x_{n+1}]} for quick checking of local
         # properties.
@@ -268,7 +268,7 @@ class Learner1D(BaseLearner):
                        self._bbox[1][1] - self._bbox[1][0]]
 
         if not real:
-            self.interp_data = self.interpolate()
+            self.interp_data = {**self.real_data, **self.interpolate()}
 
         # Update the losses.
         losses = self.real_losses if real else self.losses
@@ -293,11 +293,14 @@ class Learner1D(BaseLearner):
                     self._oldscale = self._scale
 
     def add_point(self, x, y):
-        super().add_point(x, y)
+        self.data[x] = y
+        real = y is not None
+        if real:
+            self.real_data[x] = y
+
         self.update_neighbors_and_losses(x, y, real=False)
 
-        if y is not None:
-            self.real_data[x] = y
+        if real:
             self.update_neighbors_and_losses(x, y, real=True)
 
 
@@ -360,7 +363,6 @@ class Learner1D(BaseLearner):
             else:
                 xs.append(x)
                 ys.append(y)
-                interp_data[x] = y
 
         if len(ys) == 0:
             interp_ys = (0,) * len(xs_unfinished)
