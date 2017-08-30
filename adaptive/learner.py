@@ -245,7 +245,33 @@ class Learner1D(BaseLearner):
             pass
 
     def loss_improvement(self, points):
-        pass
+        current_loss = self.loss(real=False)
+        data_interp = self.interpolate(points)
+        data = {**self.data, **data_interp}
+
+        # Create a new neighbors and losses dict
+        neighbors = copy(self.neighbors_interp)
+        losses = copy(self.losses_interp)
+        for x in points:
+            x_lower, x_upper = self.find_neighbors(x, neighbors)
+            neighbors[x] = [x_lower, x_upper]
+            neighbors.get(x_lower, [None, None])[1] = x
+            neighbors.get(x_upper, [None, None])[0] = x
+
+            if x_lower is not None:
+                losses[x_lower, x] = self.interval_loss(x_lower, x, data)
+            if x_upper is not None:
+                losses[x, x_upper] = self.interval_loss(x, x_upper, data)
+            try:
+                del losses[x_lower, x_upper]
+            except KeyError:
+                pass
+
+        # Calculate the loss improvement
+        if len(losses) == 0:
+            return 0
+        else:
+            return current_loss - max(losses.values())
 
     def find_neighbors(self, x, neighbors):
         pos = neighbors.bisect_left(x)
