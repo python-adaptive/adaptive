@@ -1,0 +1,4 @@
+image: adaptive-testing
+test:
+  script:
+     - py.test adaptive
