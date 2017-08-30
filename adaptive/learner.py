@@ -199,7 +199,7 @@ class Learner1D(BaseLearner):
 
         # Data scale (maxx - minx), (maxy - miny)
         self._scale = [bounds[1] - bounds[0], 0]
-        self._oldscale = [bounds[1] - bounds[0], 0]
+        self._oldscale = copy(self._scale)
 
         self.bounds = list(bounds)
 
@@ -360,9 +360,7 @@ class Learner1D(BaseLearner):
         return data_interp
 
     def plot(self):
-            xy = [(k, v)
-                  for k, v in sorted(self.data.items()) if v is not None]
-            if not xy:
+            if self.data:
+                return hv.Scatter(self.data)
+            else:
                 return hv.Scatter([])
-            x, y = np.array(xy, dtype=float).transpose()
-            return hv.Scatter((x, y))
