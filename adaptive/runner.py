@@ -38,38 +38,38 @@ class Runner:
             def goal(_):
                 return False
 
-        coro = self._run(self.learner, self.executor, goal, self.ioloop)
+        self.goal = goal
+
+        coro = self._run()
         self.task = self.ioloop.create_task(coro)
 
     def run_sync(self):
         return self.ioloop.run_until_complete(self.task)
 
-
-    @staticmethod
-    async def _run(learner, executor, goal, ioloop):
+    async def _run(self):
         first_completed = asyncio.FIRST_COMPLETED
         xs = dict()
-        done = [None] * _get_executor_ncores(executor)
+        done = [None] * _get_executor_ncores(self.executor)
 
         if len(done) == 0:
             raise RuntimeError('Executor has no workers')
 
         try:
-            while not goal(learner):
+            while not self.goal(self.learner):
                 # Launch tasks to replace the ones that completed
                 # on the last iteration.
-                for x in learner.choose_points(len(done)):
-                    xs[executor.submit(learner.function, x)] = x
+                for x in self.learner.choose_points(len(done)):
+                    xs[self.executor.submit(self.learner.function, x)] = x
 
                 # Collect and results and add them to the learner
                 futures = list(xs.keys())
                 done, _ = await asyncio.wait(futures,
                                              return_when=first_completed,
-                                             loop=ioloop)
+                                             loop=self.ioloop)
                 for fut in done:
                     x = xs.pop(fut)
                     y = await fut
-                    learner.add_point(x, y)
+                    self.learner.add_point(x, y)
         finally:
             # cancel any outstanding tasks
             cancelled = all(fut.cancel() for fut in xs.keys())
