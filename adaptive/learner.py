@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import abc
 from copy import deepcopy as copy
+import functools
 import heapq
 import itertools
 from math import sqrt, isinf
@@ -405,17 +406,24 @@ class Learner1D(BaseLearner):
                 return hv.Scatter([])
 
 
+def dispatch(child_functions, arg):
+    index, x = arg
+    return child_functions[index](x)
+
+
 class BalancingLearner(BaseLearner):
     def __init__(self, learners):
         self.learners = learners
 
+        # Naively we would make 'function' a method, but this causes problems
+        # when using executors from 'concurrent.futures' because we have to
+        # pickle the whole learner.
+        self.function = functools.partial(dispatch, [l.function for l
+                                                     in self.learners])
+
         if len(set(learner.__class__ for learner in self.learners)) > 1:
             raise Exception('A BalacingLearner can handle only one type'
                             'of learners.')
-
-    def function(self, arg):
-        index, x = arg
-        return self.learners[index].function(x)
 
     def choose_points(self, n, add_data=True):
         points = self._choose_points(n)
