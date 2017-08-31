@@ -305,6 +305,10 @@ class Learner1D(BaseLearner):
     def add_point(self, x, y):
         real = y is not None
 
+        # Remove the point from _included_bounds
+        if real and x in self._included_bounds:
+            self._included_bounds.remove(x)
+
         if real:
             # Add point to the real data dict and pop from the unfinished
             # data_interp dict.
@@ -353,15 +357,13 @@ class Learner1D(BaseLearner):
 
         # Return equally spaced points within each interval to which points
         # will be added.
+        if n == 0:
+            return []
+
         for bound in self._included_bounds:
             if bound not in self.data_combined:
-                if n == 1:
-                    xs = [bound]
-                else:
-                    xs = self._included_bounds
-                for x in xs:
-                    self._included_bounds.remove(x)
-                return xs
+                n = min(n, len(self._included_bounds))
+                return self._included_bounds[:n]
 
         def points(x, n):
             return list(np.linspace(x[0], x[1], n, endpoint=False)[1:])
