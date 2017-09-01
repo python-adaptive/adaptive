@@ -377,7 +377,8 @@ class Learner1D(BaseLearner):
             if n == 1:
                 return []
             else:
-                return list(np.linspace(x[0], x[1], n, endpoint=False)[1:])
+                step = (x[1] - x[0]) / n
+                return [x[0] + step * i for i in range(1, n)]
 
         # Calculate how many points belong to each interval.
         quals = [(-loss, x_range, 1) for (x_range, loss) in
@@ -389,7 +390,8 @@ class Learner1D(BaseLearner):
             quality, x, n = quals[0]
             heapq.heapreplace(quals, (quality * n / (n + 1), x, n + 1))
 
-        xs = sum((points(x, n) for quality, x, n in quals), [])
+        xs = list(itertools.chain.from_iterable(points(x, n)
+                  for quality, x, n in quals))
         return xs
 
     def interpolate(self, extra_points=None):
