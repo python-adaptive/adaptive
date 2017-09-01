@@ -260,7 +260,7 @@ class Learner1D(BaseLearner):
         neighbors = copy(self.neighbors_combined)
         losses = copy(self.losses_combined)
         for x in points:
-            neighbors = self.get_neighbors(x, neighbors, check_if_new=False)
+            neighbors = self.get_neighbors(x, neighbors)
             losses = self.get_losses(x, data, neighbors, losses)
 
         # Calculate the loss improvement
@@ -279,8 +279,8 @@ class Learner1D(BaseLearner):
         x_upper = neighbors.iloc[pos] if pos != len(neighbors) else None
         return x_lower, x_upper
 
-    def get_neighbors(self, x, neighbors, check_if_new=True):
-        if not check_if_new or x not in neighbors:  # The point is new
+    def get_neighbors(self, x, neighbors):
+        if x not in neighbors:  # The point is new
             x_lower, x_upper = self.find_neighbors(x, neighbors)
             neighbors[x] = [x_lower, x_upper]
             neighbors.get(x_lower, [None, None])[1] = x
