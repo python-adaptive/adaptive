@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import abc
-from copy import copy
+from copy import deepcopy as copy
+import functools
 import heapq
 import itertools
-from math import sqrt
+from math import sqrt, isinf
 
 import sortedcontainers
 import numpy as np
@@ -53,6 +54,11 @@ class BaseLearner(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def remove_unfinished(self):
+        """Remove uncomputed data from the learner."""
+        pass
+
+    @abc.abstractmethod
     def loss(self, real=True):
         """Return the loss for the current state of the learner.
 
@@ -62,6 +68,15 @@ class BaseLearner(metaclass=abc.ABCMeta):
             If False, return the "expected" loss, i.e. the
             loss including the as-yet unevaluated points
             (possibly by interpolation).
+        """
+
+    @abc.abstractmethod
+    def loss_improvement(self, points):
+        """Return the improvement to the loss if 'points' were to be added.
+
+        Parameters
+        ----------
+        points : sequence of values from the function domain
         """
 
     def choose_points(self, n, add_data=True):
@@ -157,6 +172,13 @@ class AverageLearner(BaseLearner):
         return max(standard_error / self.atol,
                    standard_error / abs(self.mean) / self.rtol)
 
+    def remove_unfinished(self):
+        """Remove uncomputed data from the learner."""
+        pass
+
+    def loss_improvement(self, points):
+        raise NotImplementedError()
+
     def plot(self):
         vals = [v for v in self.data.values() if v is not None]
         if not vals:
@@ -169,14 +191,13 @@ class AverageLearner(BaseLearner):
 class Learner1D(BaseLearner):
     """Learns and predicts a function 'f:ℝ → ℝ'.
 
-    Description
-    -----------
-    Answers questions like:
-    * "How much data do you need to get 2% accuracy?"
-    * "What is the current status?"
-    * "If I give you n data points, which ones would you like?"
-    (initialise/request/promise/put/describe current state)
-
+    Parameters
+    ----------
+    function : callable
+        The function to learn. Must take a single real parameter and
+        return a real number.
+    bounds : pair of reals
+        The bounds of the interval on which to learn 'function'.
     """
 
     def __init__(self, function, bounds):
@@ -184,7 +205,7 @@ class Learner1D(BaseLearner):
 
         # A dict storing the loss function for each interval x_n.
         self.losses = {}
-        self.losses_interp = {}
+        self.losses_combined = {}
 
         self.data = sortedcontainers.SortedDict()
         self.data_interp = {}
@@ -192,7 +213,7 @@ class Learner1D(BaseLearner):
         # A dict {x_n: [x_{n-1}, x_{n+1}]} for quick checking of local
         # properties.
         self.neighbors = sortedcontainers.SortedDict()
-        self.neighbors_interp = sortedcontainers.SortedDict()
+        self.neighbors_combined = sortedcontainers.SortedDict()
 
         # Bounding box [[minx, maxx], [miny, maxy]].
         self._bbox = [list(bounds), [np.inf, -np.inf]]
@@ -222,18 +243,13 @@ class Learner1D(BaseLearner):
                         ((y_right - y_left) / self._scale[1])**2)
 
     def loss(self, real=True):
-        losses = self.losses if real else self.losses_interp
-
+        losses = self.losses if real else self.losses_combined
         if len(losses) == 0:
             return float('inf')
         else:
             return max(losses.values())
 
-    def update_losses(self, x, real):
-        losses = self.losses if real else self.losses_interp
-        neighbors = self.neighbors if real else self.neighbors_interp
-        data = self.data if real else self.data_combined
-
+    def update_losses(self, x, data, neighbors, losses):
         x_lower, x_upper = neighbors[x]
         if x_lower is not None:
             losses[x_lower, x] = self.interval_loss(x_lower, x, data)
@@ -246,32 +262,26 @@ class Learner1D(BaseLearner):
 
     def loss_improvement(self, points):
         current_loss = self.loss(real=False)
+
         data_interp = self.interpolate(points)
-        data = {**self.data, **data_interp}
+        data = {**self.data_combined, **data_interp}
 
-        # Create a new neighbors and losses dict
-        neighbors = copy(self.neighbors_interp)
-        losses = copy(self.losses_interp)
+        # Create a new losses and neighbors dict
+        neighbors = copy(self.neighbors_combined)
+        losses = copy(self.losses_combined)
         for x in points:
-            x_lower, x_upper = self.find_neighbors(x, neighbors)
-            neighbors[x] = [x_lower, x_upper]
-            neighbors.get(x_lower, [None, None])[1] = x
-            neighbors.get(x_upper, [None, None])[0] = x
-
-            if x_lower is not None:
-                losses[x_lower, x] = self.interval_loss(x_lower, x, data)
-            if x_upper is not None:
-                losses[x, x_upper] = self.interval_loss(x, x_upper, data)
-            try:
-                del losses[x_lower, x_upper]
-            except KeyError:
-                pass
+            self.update_neighbors(x, neighbors)
+            self.update_losses(x, data, neighbors, losses)
 
         # Calculate the loss improvement
         if len(losses) == 0:
-            return 0
+            return float('inf')
         else:
-            return current_loss - max(losses.values())
+            loss = max(losses.values())
+            if isinf(loss):
+                return float('inf')
+            else:
+                return current_loss - loss
 
     def find_neighbors(self, x, neighbors):
         pos = neighbors.bisect_left(x)
@@ -279,8 +289,7 @@ class Learner1D(BaseLearner):
         x_upper = neighbors.iloc[pos] if pos != len(neighbors) else None
         return x_lower, x_upper
 
-    def update_neighbors(self, x, real):
-        neighbors = self.neighbors if real else self.neighbors_interp
+    def update_neighbors(self, x, neighbors):
         if x not in neighbors:  # The point is new
             x_lower, x_upper = self.find_neighbors(x, neighbors)
             neighbors[x] = [x_lower, x_upper]
@@ -313,9 +322,9 @@ class Learner1D(BaseLearner):
             self.data_interp[x] = None
 
         # Update the neighbors
-        self.update_neighbors(x, False)
+        self.update_neighbors(x, self.neighbors_combined)
         if real:
-            self.update_neighbors(x, True)
+            self.update_neighbors(x, self.neighbors)
 
         # Update the scale
         self.update_scale(x, y)
@@ -325,17 +334,18 @@ class Learner1D(BaseLearner):
             self.data_interp = self.interpolate()
 
         # Update the losses
-        self.update_losses(x, False)
+        self.update_losses(x, self.data_combined, self.neighbors_combined,
+                           self.losses_combined)
         if real:
-            self.update_losses(x, True)
+            self.update_losses(x, self.data, self.neighbors, self.losses)
 
         if real:
             # If the scale has doubled, recompute all losses.
             if self._scale > self._oldscale * 2:
                     self.losses = {key: self.interval_loss(*key, self.data)
                                    for key in self.losses}
-                    self.losses_interp = {key: self.interval_loss(*key,
-                        self.data_combined) for key in self.losses_interp}
+                    self.losses_combined = {key: self.interval_loss(*key,
+                        self.data_combined) for key in self.losses_combined}
                     self._oldscale = self._scale
 
 
@@ -348,19 +358,27 @@ class Learner1D(BaseLearner):
 
         # Return equally spaced points within each interval to which points
         # will be added.
+        if n == 0:
+            return []
+
+        # If the bounds have not been chosen yet, we choose them first.
+        xs = []
         for bound in self.bounds:
-            if bound not in self.data_combined:
-                if n == 1:
-                    return [bound]
-                else:
-                    return self.bounds
+            if bound not in self.data and bound not in self.data_interp:
+                xs.append(bound)
+        # Ensure we return exactly 'n' points.
+        if xs:
+            if n <= 2:
+                return xs[:n]
+            else:
+                return np.linspace(*self.bounds, n)
 
         def points(x, n):
             return list(np.linspace(x[0], x[1], n, endpoint=False)[1:])
 
         # Calculate how many points belong to each interval.
         quals = [(-loss, x_range, 1) for (x_range, loss) in
-                 self.losses_interp.items()]
+                 self.losses_combined.items()]
 
         heapq.heapify(quals)
 
@@ -371,10 +389,13 @@ class Learner1D(BaseLearner):
         xs = sum((points(x, n) for quality, x, n in quals), [])
         return xs
 
-    def interpolate(self, points=None):
+    def interpolate(self, extra_points=None):
         xs = list(self.data.keys())
         ys = list(self.data.values())
-        xs_unfinished = list(self.data_interp.keys()) if points is None else points
+        xs_unfinished = list(self.data_interp.keys())
+
+        if extra_points is not None:
+            xs_unfinished += extra_points
 
         if len(ys) == 0:
             interp_ys = (0,) * len(xs_unfinished)
@@ -390,3 +411,92 @@ class Learner1D(BaseLearner):
                 return hv.Scatter(self.data)
             else:
                 return hv.Scatter([])
+
+    def remove_unfinished(self):
+        self.data_interp = {}
+        self.losses = copy(self.losses_combined)
+        self.neighbors = copy(self.neighbors_combined)
+
+
+def dispatch(child_functions, arg):
+    index, x = arg
+    return child_functions[index](x)
+
+
+class BalancingLearner(BaseLearner):
+    """Choose the optimal points from a set of learners.
+
+    Parameters
+    ----------
+    learners : sequence of BaseLearner
+        The learners from which to choose. These must all have the same type.
+
+    Notes
+    -----
+    This learner compares the 'loss' calculated from the "child" learners.
+    This requires that the 'loss' from different learners *can be meaningfully
+    compared*. For the moment we enforce this restriction by requiring that
+    all learners are the same type but (depending on the internals of the
+    learner) it may be that the loss cannot be compared *even between learners
+    of the same type*. In this case the BalancingLearner will behave in an
+    undefined way.
+    """
+    def __init__(self, learners):
+        self.learners = learners
+
+        # Naively we would make 'function' a method, but this causes problems
+        # when using executors from 'concurrent.futures' because we have to
+        # pickle the whole learner.
+        self.function = functools.partial(dispatch, [l.function for l
+                                                     in self.learners])
+
+        if len(set(learner.__class__ for learner in self.learners)) > 1:
+            raise TypeError('A BalacingLearner can handle only one type'
+                            'of learners.')
+
+    def choose_points(self, n, add_data=True):
+        points = self._choose_points(n)
+        if add_data:
+            for index, point in points:
+                self.learners[index].add_data(point, None)
+        return points
+
+    def _choose_points(self, n):
+        """Choses points of learners.
+
+        Note: Can only return up to len(self.learners) number of points."""
+        n = min(len(self.learners), n)
+
+        loss_improvements = []
+        pairs = []
+        for index, learner in enumerate(self.learners):
+            points = learner.choose_points(n=1, add_data=False)
+            loss_improvements.append(learner.loss_improvement(points))
+            pairs.append((index, points[0]))
+
+        # If no real data availible yet, choose arcording to
+        # the length of outstanding jobs.
+        if not any(len(L.data) for L in self.learners):
+            loss_improvements = [-len(L.data_interp) for L in self.learners]
+
+        pairs = [p for _, p in sorted(zip(loss_improvements, pairs))][::-1]
+
+        return pairs[:n]
+
+    def add_point(self, x, y):
+        index, x = x
+        self.learners[index].add_point(x, y)
+
+    def loss(self, real=True):
+        return max(learner.loss(real) for learner in self.learners)
+
+    def loss_improvement(self, points):
+        raise NotImplementedError()
+
+    def plot(self, index):
+        return self.learners[index].plot()
+
+    def remove_unfinished(self):
+        """Remove uncomputed data from the learners."""
+        for learner in self.learners:
+            learner.remove_unfinished()
