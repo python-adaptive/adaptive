@@ -70,6 +70,15 @@ class BaseLearner(metaclass=abc.ABCMeta):
             (possibly by interpolation).
         """
 
+    @abc.abstractmethod
+    def loss_improvement(self, points):
+        """Return the improvement to the loss if 'points' were to be added.
+
+        Parameters
+        ----------
+        points : sequence of values from the function domain
+        """
+
     def choose_points(self, n, add_data=True):
         """Choose the next 'n' points to evaluate.
 
@@ -166,6 +175,9 @@ class AverageLearner(BaseLearner):
     def remove_unfinished(self):
         """Remove uncomputed data from the learner."""
         pass
+
+    def loss_improvement(self, points):
+        raise NotImplementedError()
 
     def plot(self):
         vals = [v for v in self.data.values() if v is not None]
@@ -477,6 +489,9 @@ class BalancingLearner(BaseLearner):
 
     def loss(self, real=True):
         return max(learner.loss(real) for learner in self.learners)
+
+    def loss_improvement(self, points):
+        raise NotImplementedError()
 
     def plot(self, index):
         return self.learners[index].plot()
