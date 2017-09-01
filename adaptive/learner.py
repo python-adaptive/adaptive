@@ -419,8 +419,8 @@ class Learner1D(BaseLearner):
 
     def remove_unfinished(self):
         self.data_interp = {}
-        self.losses = copy(self.losses_combined)
-        self.neighbors = copy(self.neighbors_combined)
+        self.losses_combined = copy(self.losses)
+        self.neighbors_combined = copy(self.neighbors)
 
 
 def dispatch(child_functions, arg):
