@@ -474,12 +474,9 @@ class BalancingLearner(BaseLearner):
                 pairs.append((index, point))
 
             x, _ = max(zip(pairs, loss_improvements), key=lambda x: x[1])
-            self.add_point(x, None)
             points.append(x)
+            self.add_point(x, None)
 
-        if add_data:
-            for index, point in points:
-                self.learners[index].add_data(point, None)
         return points
 
     def _choose_points(self, n):
