@@ -374,7 +374,10 @@ class Learner1D(BaseLearner):
                 return np.linspace(*self.bounds, n)
 
         def points(x, n):
-            return list(np.linspace(x[0], x[1], n, endpoint=False)[1:])
+            if n == 1:
+                return []
+            else:
+                return list(np.linspace(x[0], x[1], n, endpoint=False)[1:])
 
         # Calculate how many points belong to each interval.
         quals = [(-loss, x_range, 1) for (x_range, loss) in
