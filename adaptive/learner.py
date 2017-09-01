@@ -179,14 +179,13 @@ class AverageLearner(BaseLearner):
 class Learner1D(BaseLearner):
     """Learns and predicts a function 'f:ℝ → ℝ'.
 
-    Description
-    -----------
-    Answers questions like:
-    * "How much data do you need to get 2% accuracy?"
-    * "What is the current status?"
-    * "If I give you n data points, which ones would you like?"
-    (initialise/request/promise/put/describe current state)
-
+    Parameters
+    ----------
+    function : callable
+        The function to learn. Must take a single real parameter and
+        return a real number.
+    bounds : pair of reals
+        The bounds of the interval on which to learn 'function'.
     """
 
     def __init__(self, function, bounds):
@@ -413,6 +412,23 @@ def dispatch(child_functions, arg):
 
 
 class BalancingLearner(BaseLearner):
+    """Choose the optimal points from a set of learners.
+
+    Parameters
+    ----------
+    learners : sequence of BaseLearner
+        The learners from which to choose. These must all have the same type.
+
+    Notes
+    -----
+    This learner compares the 'loss' calculated from the "child" learners.
+    This requires that the 'loss' from different learners *can be meaningfully
+    compared*. For the moment we enforce this restriction by requiring that
+    all learners are the same type but (depending on the internals of the
+    learner) it may be that the loss cannot be compared *even between learners
+    of the same type*. In this case the BalancingLearner will behave in an
+    undefined way.
+    """
     def __init__(self, learners):
         self.learners = learners
 
