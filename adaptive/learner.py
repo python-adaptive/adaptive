@@ -451,7 +451,7 @@ class BalancingLearner(BaseLearner):
                                                      in self.learners])
 
         if len(set(learner.__class__ for learner in self.learners)) > 1:
-            raise Exception('A BalacingLearner can handle only one type'
+            raise TypeError('A BalacingLearner can handle only one type'
                             'of learners.')
 
     def choose_points(self, n, add_data=True):
