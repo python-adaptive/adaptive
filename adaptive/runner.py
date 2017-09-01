@@ -72,6 +72,7 @@ class Runner:
                     learner.add_point(x, y)
         finally:
             # cancel any outstanding tasks
+            learner.remove_unfinished()
             cancelled = all(fut.cancel() for fut in xs.keys())
             if not cancelled:
                 raise RuntimeError('Some futures remain uncancelled')

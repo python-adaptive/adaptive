@@ -54,6 +54,11 @@ class BaseLearner(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def remove_unfinished(self):
+        """Remove uncomputed data from the learner."""
+        pass
+
+    @abc.abstractmethod
     def loss(self, real=True):
         """Return the loss for the current state of the learner.
 
@@ -157,6 +162,10 @@ class AverageLearner(BaseLearner):
         standard_error = self.std / sqrt(n if real else self.n_requested)
         return max(standard_error / self.atol,
                    standard_error / abs(self.mean) / self.rtol)
+
+    def remove_unfinished(self):
+        """Remove uncomputed data from the learner."""
+        pass
 
     def plot(self):
         vals = [v for v in self.data.values() if v is not None]
@@ -405,6 +414,11 @@ class Learner1D(BaseLearner):
             else:
                 return hv.Scatter([])
 
+    def remove_unfinished(self):
+        self.data_interp = {}
+        self.losses = copy(self.losses_combined)
+        self.neighbors = copy(self.neighbors_combined)
+
 
 def dispatch(child_functions, arg):
     index, x = arg
@@ -463,3 +477,8 @@ class BalancingLearner(BaseLearner):
 
     def plot(self, index):
         return self.learners[index].plot()
+
+    def remove_unfinished(self):
+        """Remove uncomputed data from the learners."""
+        for learner in self.learners:
+            learner.remove_unfinished()
