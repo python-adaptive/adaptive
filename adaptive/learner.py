@@ -238,7 +238,7 @@ class Learner1D(BaseLearner):
         else:
             return max(losses.values())
 
-    def get_losses(self, x, data, neighbors, losses):
+    def update_losses(self, x, data, neighbors, losses):
         x_lower, x_upper = neighbors[x]
         if x_lower is not None:
             losses[x_lower, x] = self.interval_loss(x_lower, x, data)
@@ -248,7 +248,6 @@ class Learner1D(BaseLearner):
             del losses[x_lower, x_upper]
         except KeyError:
             pass
-        return losses
 
     def loss_improvement(self, points):
         current_loss = self.loss(real=False)
@@ -260,8 +259,8 @@ class Learner1D(BaseLearner):
         neighbors = copy(self.neighbors_combined)
         losses = copy(self.losses_combined)
         for x in points:
-            neighbors = self.get_neighbors(x, neighbors)
-            losses = self.get_losses(x, data, neighbors, losses)
+            self.update_neighbors(x, neighbors)
+            self.update_losses(x, data, neighbors, losses)
 
         # Calculate the loss improvement
         if len(losses) == 0:
@@ -279,13 +278,12 @@ class Learner1D(BaseLearner):
         x_upper = neighbors.iloc[pos] if pos != len(neighbors) else None
         return x_lower, x_upper
 
-    def get_neighbors(self, x, neighbors):
+    def update_neighbors(self, x, neighbors):
         if x not in neighbors:  # The point is new
             x_lower, x_upper = self.find_neighbors(x, neighbors)
             neighbors[x] = [x_lower, x_upper]
             neighbors.get(x_lower, [None, None])[1] = x
             neighbors.get(x_upper, [None, None])[0] = x
-        return neighbors
 
     def update_scale(self, x, y):
         self._bbox[0][0] = min(self._bbox[0][0], x)
@@ -313,9 +311,9 @@ class Learner1D(BaseLearner):
             self.data_interp[x] = None
 
         # Update the neighbors
-        self.neighbors_combined = self.get_neighbors(x, self.neighbors_combined)
+        self.update_neighbors(x, self.neighbors_combined)
         if real:
-            self.neighbors = self.get_neighbors(x, self.neighbors)
+            self.update_neighbors(x, self.neighbors)
 
         # Update the scale
         self.update_scale(x, y)
@@ -325,12 +323,10 @@ class Learner1D(BaseLearner):
             self.data_interp = self.interpolate()
 
         # Update the losses
-        self.losses_combined = self.get_losses(x, self.data_combined,
-                                                  self.neighbors_combined,
-                                                  self.losses_combined)
+        self.update_losses(x, self.data_combined, self.neighbors_combined,
+                           self.losses_combined)
         if real:
-            self.losses = self.get_losses(x, self.data, self.neighbors,
-                                             self.losses)
+            self.update_losses(x, self.data, self.neighbors, self.losses)
 
         if real:
             # If the scale has doubled, recompute all losses.
