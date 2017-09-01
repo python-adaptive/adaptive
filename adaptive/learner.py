@@ -212,7 +212,7 @@ class Learner1D(BaseLearner):
         self._oldscale = copy(self._scale)
 
         self.bounds = list(bounds)
-        self._included_bounds = list(bounds)
+        self._include_bounds = list(bounds)
 
     @property
     def data_combined(self):
@@ -301,9 +301,9 @@ class Learner1D(BaseLearner):
     def add_point(self, x, y):
         real = y is not None
 
-        # Remove the point from _included_bounds
-        if real and x in self._included_bounds:
-            self._included_bounds.remove(x)
+        # Remove the point from _include_bounds
+        if x in self._include_bounds:
+            self._include_bounds.remove(x)
 
         if real:
             # Add point to the real data dict and pop from the unfinished
@@ -359,10 +359,13 @@ class Learner1D(BaseLearner):
         if n == 0:
             return []
 
-        for bound in self._included_bounds:
+        for bound in self._include_bounds:
             if bound not in self.data_combined:
-                n = min(n, len(self._included_bounds))
-                return self._included_bounds[:n]
+                bounds = self._include_bounds[:min(n, len(self._include_bounds))]
+                if n <= 2:
+                    return bounds
+                else:
+                    return np.linspace(*bounds, n)
 
         def points(x, n):
             return list(np.linspace(x[0], x[1], n, endpoint=False)[1:])
