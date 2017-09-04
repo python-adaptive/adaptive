@@ -238,7 +238,7 @@ class Learner1D(BaseLearner):
         """
         y_right, y_left = data[x_right], data[x_left]
         if self._scale[1] == 0:
-            return np.inf
+            return sqrt(((x_right - x_left) / self._scale[0])**2)
         else:
             return sqrt(((x_right - x_left) / self._scale[0])**2 +
                         ((y_right - y_left) / self._scale[1])**2)
