@@ -72,12 +72,12 @@ class BaseLearner(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def loss_improvement(self, points):
-        """Return the improvement to the loss if 'points' were to be added.
+    def loss_improvement(self, point):
+        """Return the improvement to the loss if 'point' were to be added.
 
         Parameters
         ----------
-        points : sequence of values from the function domain
+        points : value from the function domain
         """
 
     def choose_points(self, n, add_data=True):
@@ -177,7 +177,7 @@ class AverageLearner(BaseLearner):
         """Remove uncomputed data from the learner."""
         pass
 
-    def loss_improvement(self, points):
+    def loss_improvement(self, point):
         raise NotImplementedError()
 
     def plot(self):
@@ -261,28 +261,14 @@ class Learner1D(BaseLearner):
         except KeyError:
             pass
 
-    def loss_improvement(self, points):
-        current_loss = self.loss(real=False)
-
-        data_interp = self.interpolate(points)
-        data = {**self.data_combined, **data_interp}
-
-        # Create a new losses and neighbors dict
-        neighbors = copy(self.neighbors_combined)
-        losses = copy(self.losses_combined)
-        for x in points:
-            self.update_neighbors(x, neighbors)
-            self.update_losses(x, data, neighbors, losses)
-
+    def loss_improvement(self, point):
         # Calculate the loss improvement
-        if len(losses) == 0:
+        if len(self.losses_combined) == 0:
             return float('inf')
         else:
-            loss = max(losses.values())
-            if isinf(loss):
-                return float('inf')
-            else:
-                return current_loss - loss
+            x_left, x_right = self.find_neighbors(point,
+                                                  self.neighbors_combined)
+            return self.losses_combined[x_left, x_right]
 
     def find_neighbors(self, x, neighbors):
         pos = neighbors.bisect_left(x)
@@ -471,7 +457,7 @@ class BalancingLearner(BaseLearner):
             pairs = []
             for index, learner in enumerate(self.learners):
                 point = learner.choose_points(n=1, add_data=False)[0]
-                loss_improvements.append(learner.loss_improvement([point]))
+                loss_improvements.append(learner.loss_improvement(point))
                 pairs.append((index, point))
 
             x, _ = max(zip(pairs, loss_improvements), key=itemgetter(1))
@@ -490,7 +476,7 @@ class BalancingLearner(BaseLearner):
     def loss(self, real=True):
         return max(learner.loss(real) for learner in self.learners)
 
-    def loss_improvement(self, points):
+    def loss_improvement(self, point):
         raise NotImplementedError()
 
     def plot(self, index):
