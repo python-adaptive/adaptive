@@ -5,6 +5,7 @@ import functools
 import heapq
 import itertools
 from math import sqrt, isinf
+from operator import itemgetter
 
 import sortedcontainers
 import numpy as np
@@ -473,7 +474,7 @@ class BalancingLearner(BaseLearner):
                 loss_improvements.append(learner.loss_improvement([point]))
                 pairs.append((index, point))
 
-            x, _ = max(zip(pairs, loss_improvements), key=lambda x: x[1])
+            x, _ = max(zip(pairs, loss_improvements), key=itemgetter(1))
             points.append(x)
             self.add_point(x, None)
 
