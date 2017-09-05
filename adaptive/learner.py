@@ -7,10 +7,10 @@ import itertools
 from math import sqrt, isinf
 from operator import itemgetter
 
-import sortedcontainers
-import numpy as np
 import holoviews as hv
-
+import numpy as np
+from scipy import interpolate, optimize, special
+import sortedcontainers
 
 class BaseLearner(metaclass=abc.ABCMeta):
     """Base class for algorithms for learning a function 'f: X → Y'
@@ -487,281 +487,6 @@ class BalancingLearner(BaseLearner):
         for learner in self.learners:
             learner.remove_unfinished()
 
-import numpy as np
-from scipy import interpolate, optimize, special
-
-
-class AdaptiveTriSampling:
-
-    """
-    Sample a 2-D function adaptively.
-
-    Parameters
-    ----------
-    bounds : list of 2-tuples
-        A list ``[(a1, b1), (a2, b2), ...]`` containing bounds,
-        one per dimension.
-    periodic : list of bool, optional
-        A list of booleans describing which dimensions are periodic.
-        Note: this is not necessarily extremely useful option, your
-        mileage may vary. Default: none.
-    dtype : dtype, optional
-        Type of data from function. Default: float (real-valued)
-
-    Methods
-    -------
-    sample
-        Add new samples obtained from a function.
-    add
-        Add a new sample point. Use in combination with `next()`.
-    next
-        Return next sampling point.
-
-    Attributes
-    ----------
-    points
-        Sample points so far.
-    values
-        Sampled values so far.
-    integral
-        Estimate for the N-dim integral over the bounded area,
-        based on an interpolant constructed from the samples.
-
-    Notes
-    -----
-    Requires Scipy >= 0.9.0.
-
-    The sample points are chosen by estimating the point where the
-    linear and cubic interpolants based on the existing points have
-    maximal disagreement. This point is then taken as the next point
-    to be sampled.
-
-    In practice, this sampling protocol results to sparser sampling of
-    smooth regions, and denser sampling of regions where the function
-    changes rapidly, which is useful if the function is expensive to
-    compute.
-
-    This sampling procedure is not extremely fast, so to benefit from
-    it, your function needs to be slow enough to compute.
-
-    Examples
-    --------
-    See below.
-
-    """
-
-    def __init__(self, bounds, periodic=None, dtype=float):
-        self.ndim = len(bounds)
-        if self.ndim != 2:
-            raise ValueError("Only 2-D sampling supported (for now)")
-        self.bounds = tuple([(float(a), float(b)) for a, b in bounds])
-        self.periods = (None,)*self.ndim
-        if periodic is not None:
-            if not hasattr(periodic, '__len__'):
-                if periodic:
-                    self.periods = [b[1] - b[0] for b in self.bounds]
-            else:
-                self.periods = [b[1] - b[0] if x else None
-                                for b, x in zip(self.bounds, periodic)]
-                if len(self.periods) != self.ndim:
-                    raise ValueError("Wrong number of periods")
-        self._points = np.zeros([100, self.ndim])
-        self._values = np.zeros([100], dtype)
-        self.n = 0
-        self.ip = None
-        self.nstack = 10
-        self._stack = []
-
-        pts = []
-        for j, (a, b) in enumerate(self.bounds):
-            if j == 0:
-                def _append(x):
-                    pts.append((x,))
-            else:
-                opts = pts
-                pts = []
-
-                def _append(x):
-                    for r in opts:
-                        pts.append(r + (x,))
-
-            if self.periods[j] is None:
-                _append(a)
-                _append(b)
-            else:
-                _append(a)
-        self._stack = pts
-
-    def sample(self, func, n, *a, **kw):
-        for j in range(n):
-            p = self.next()
-            arg = tuple(p) + a
-            v = func(*arg, **kw)
-            self.add(p, v)
-
-    @property
-    def points(self):
-        return self._points[:self.n]
-
-    @property
-    def values(self):
-        return self._values[:self.n]
-
-    @property
-    def integral(self):
-        """Integral over triangles, via midpoint rule"""
-        if self.ip is None:
-            return np.nan
-
-        self.ip = interpolate.LinearNDInterpolator(self.points, self.values)
-
-        tri = self.ip.tri
-
-        center = tri.points[tri.vertices].mean(axis=1) / (self.ndim + 1)
-        center_val = self.ip(center)
-
-        p = tri.points[tri.vertices]
-        q = p[:, :-1, :] - p[:, -1, None, :]
-        vol = abs(np.asarray([np.linalg.det(q[k, :, :])
-                              for k in range(tri.nsimplex)]))
-        vol /= special.gamma(1 + self.ndim)
-
-        return (vol * center_val).sum()
-
-    def add(self, point, value):
-        nmax = self.values.shape[0]
-        if self.n >= nmax:
-            self._values = np.resize(self._values, [2*nmax + 10])
-            self._points = np.resize(self._points, [2*nmax + 10, self.ndim])
-        self._points[self.n] = point
-        self._values[self.n] = value
-        self.n += 1
-
-    def next(self):
-        if not self._stack:
-            self._fill_stack()
-
-        p = self._stack.pop(0)
-        return p
-
-    def _fill_stack(self):
-        # Deal with periodicity: extend by one period
-        p = self.points
-        v = self.values
-        for j, per in enumerate(self.periods):
-            if per is not None:
-                pp = p.copy()
-                pp[:, j] += per
-                pm = p.copy()
-                pm[:, j] -= per
-                p = np.r_[p, pm, pp]
-                v = np.r_[v, v, v]
-
-        if v.shape[0] < self.ndim+1:
-            raise ValueError("too few points...")
-
-        # Interpolate
-        self.ip = interpolate.LinearNDInterpolator(p, v)
-        ip = self.ip
-        tri = ip.tri
-
-        # Gradients
-
-        # XXX: the following line is the only line that is specific to 2D;
-        #      otherwise this approach will work also in N dimensions
-        grad = interpolate.interpnd.estimate_gradients_2d_global(
-            tri, self.ip.values.ravel(), tol=1e-6)
-
-        p = tri.points[tri.vertices]
-        g = grad[tri.vertices]
-        v = (ip.values.ravel())[tri.vertices]
-
-        dev = 0
-        for j in range(self.ndim):
-            vest = v[
-                :, j, None] + ((p[:, :, :] - p[:, j, None, :]) * g[:, j, None, :]).sum(axis=-1)
-            dev += abs(vest - v).max(axis=1)
-
-        q = p[:, :-1, :] - p[:, -1, None, :]
-        if self.ndim == 2:
-            # faster specialization in 2D
-            vol = abs(q[:, 0, 0]*q[:, 1, 1] - q[:, 0, 1]*q[:, 1, 0])
-        elif self.ndim == 3:
-            # faster specialization in 3D
-            vol = abs(
-                + q[:, 0, 0]*q[:, 1, 1]*q[:, 2, 2]
-                + q[:, 0, 1]*q[:, 1, 2]*q[:, 2, 0]
-                + q[:, 0, 2]*q[:, 1, 0]*q[:, 2, 1]
-                - q[:, 0, 2]*q[:, 1, 1]*q[:, 2, 0]
-                - q[:, 0, 1]*q[:, 1, 0]*q[:, 2, 2]
-                - q[:, 0, 0]*q[:, 1, 2]*q[:, 2, 1]
-            )
-        else:
-            # slow general case
-            vol = abs(np.asarray([np.linalg.det(q[k, :, :])
-                                  for k in range(tri.nsimplex)]))
-        vol /= special.gamma(1 + self.ndim)
-        dev *= vol
-
-        # Take new points
-        try:
-            cp = 0.9*dev.max()
-            nstack = min(self.nstack, (dev > cp).sum())
-            if nstack <= 0:
-                raise ValueError()
-        except ValueError:
-            nstack = 1
-
-        def point_exists(p):
-            eps = np.finfo(float).eps * self.points.ptp() * 100
-            if abs(p - self.points).sum(axis=1).min() < eps:
-                return True
-            if self._stack:
-                if abs(p - np.asarray(self._stack)).sum(axis=1).min() < eps:
-                    return True
-            return False
-
-        for j in range(len(dev)):
-            jsimplex = np.argmax(dev)
-
-            # -- Estimate point of maximum curvature inside the simplex
-            p = tri.points[tri.vertices[jsimplex]]
-            v = ip.values[tri.vertices[jsimplex]]
-            g = grad[tri.vertices[jsimplex]]
-            transform = tri.transform[jsimplex]
-
-            point_new = _max_disagreement_location_in_simplex(
-                p, v, g, transform)
-
-            # -- Reduce to main period
-            for j, per in enumerate(self.periods):
-                if per is not None:
-                    point_new[j] = point_new[j] % per
-
-            # -- Reduce to bounds
-            for j, (a, b) in enumerate(self.bounds):
-                point_new[j] = max(a, min(b, point_new[j]))
-
-            # -- Check if it is really new (also, revert to mean point optionally)
-            if point_exists(point_new):
-                dev[jsimplex] = 0
-                continue
-
-            # Add to stack
-            self._stack.append(point_new.copy())
-            if len(self._stack) >= nstack:
-                break
-            else:
-                dev[jsimplex] = 0
-
-    def mean(self):
-        n = self.n**(1.0/self.ndim + 0.1)
-        p = np.zeros((n, self.ndim), float)
-        for j in range(self.ndim):
-            p[:, j] = np.linspace(self.bounds[j][0], self.bounds[j][1], n)
-
-        return self.ip(p).mean()
-
 
 def _max_disagreement_location_in_simplex(points, values, grad, transform):
     """
@@ -860,3 +585,279 @@ def _max_disagreement_location_in_simplex(points, values, grad, transform):
     p = itr.dot(p) + points[-1]
 
     return p
+
+
+class AdaptiveTriSampling(BaseLearner):
+
+    """
+    Sample a 2-D function adaptively.
+
+    Parameters
+    ----------
+    bounds : list of 2-tuples
+        A list ``[(a1, b1), (a2, b2), ...]`` containing bounds,
+        one per dimension.
+    dtype : dtype, optional
+        Type of data from function. Default: float (real-valued)
+
+    Methods
+    -------
+    sample
+        Add new samples obtained from a function.
+    add
+        Add a new sample point. Use in combination with `next()`.
+    next
+        Return next sampling point.
+
+    Attributes
+    ----------
+    points
+        Sample points so far.
+    values
+        Sampled values so far.
+    integral
+        Estimate for the N-dim integral over the bounded area,
+        based on an interpolant constructed from the samples.
+
+    Notes
+    -----
+    Requires Scipy >= 0.9.0.
+
+    The sample points are chosen by estimating the point where the
+    linear and cubic interpolants based on the existing points have
+    maximal disagreement. This point is then taken as the next point
+    to be sampled.
+
+    In practice, this sampling protocol results to sparser sampling of
+    smooth regions, and denser sampling of regions where the function
+    changes rapidly, which is useful if the function is expensive to
+    compute.
+
+    This sampling procedure is not extremely fast, so to benefit from
+    it, your function needs to be slow enough to compute.
+
+    Examples
+    --------
+    See below.
+
+    """
+
+    def __init__(self, function, bounds, dtype=float):
+        self.function = function
+        self.ndim = len(bounds)
+        if self.ndim != 2:
+            raise ValueError("Only 2-D sampling supported (for now)")
+        self.bounds = tuple([(float(a), float(b)) for a, b in bounds])
+        self._points = np.zeros([100, self.ndim])
+        self._values = np.zeros([100], dtype)
+        self.n = 0
+        self.ip = None
+        self.nstack = 10
+        self._stack = []
+        self._interp = {}
+
+        pts = []
+        for j, (a, b) in enumerate(self.bounds):
+            if j == 0:
+                def _append(x):
+                    pts.append((x,))
+            else:
+                opts = pts
+                pts = []
+
+                def _append(x):
+                    for r in opts:
+                        pts.append(r + (x,))
+            _append(a)
+            _append(b)
+        self._stack = pts
+
+    @property
+    def points(self):
+        return self._points[:self.n]
+
+    @property
+    def values(self):
+        return self._values[:self.n]
+
+    @property
+    def points_real(self):
+        return np.delete(self.points, list(self._interp.values()), axis=0)
+
+    @property
+    def values_real(self):
+        return np.delete(self.values, list(self._interp.values()), axis=0)
+
+    def get_dev(self, p, v, g):
+        dev = 0
+        for j in range(self.ndim):
+            vest = v[:, j, None] + ((p[:, :, :] -
+                                     p[:, j, None, :]) *
+                                     g[:, j, None, :]).sum(axis=-1)
+            dev += abs(vest - v).max(axis=1)
+
+        q = p[:, :-1, :] - p[:, -1, None, :]
+
+        if self.ndim == 2:
+            # faster specialization in 2D
+            vol = abs(q[:, 0, 0]*q[:, 1, 1] - q[:, 0, 1]*q[:, 1, 0])
+        elif self.ndim == 3:
+            # faster specialization in 3D
+            vol = abs(+ q[:, 0, 0]*q[:, 1, 1]*q[:, 2, 2]
+                      + q[:, 0, 1]*q[:, 1, 2]*q[:, 2, 0]
+                      + q[:, 0, 2]*q[:, 1, 0]*q[:, 2, 1]
+                      - q[:, 0, 2]*q[:, 1, 1]*q[:, 2, 0]
+                      - q[:, 0, 1]*q[:, 1, 0]*q[:, 2, 2]
+                      - q[:, 0, 0]*q[:, 1, 2]*q[:, 2, 1])
+        else:
+            # slow general case
+            vol = abs(np.asarray([np.linalg.det(q[k, :, :])
+                                  for k in range(tri.nsimplex)]))
+        vol /= special.gamma(1 + self.ndim)
+
+        dev *= vol
+        return dev
+
+    def add_point(self, point, value):
+        nmax = self.values.shape[0]
+        if self.n >= nmax:
+            self._values = np.resize(self._values, [2*nmax + 10])
+            self._points = np.resize(self._points, [2*nmax + 10, self.ndim])
+
+        point = tuple(point)
+        if value is None:
+            self._interp[point] = self.n
+            old_point = False
+        else:
+            old_point = point in self._interp
+
+        if old_point:
+            n = self._interp.pop(point)
+            self._points[n] = point
+            self._values[n] = value
+        else:
+            self._points[self.n] = point
+            self._values[self.n] = value
+            self.n += 1
+
+    def _fill_stack(self, stack_till=None):
+        # Deal with periodicity: extend by one period
+        p = self.points
+        v = self.values
+
+        if v.shape[0] < self.ndim+1:
+            raise ValueError("too few points...")
+
+        # Interpolate
+        if self._interp:
+            try:
+                ip = interpolate.LinearNDInterpolator(self.points_real,
+                                                      self.values_real)
+            except ValueError:
+                ip = lambda x: np.empty(len(x))  # Important not to return exact zeros
+            n_interp = list(self._interp.values())
+            for n, value in zip(n_interp, ip(p[n_interp])):
+                v[n] = value
+
+        self.ip = interpolate.LinearNDInterpolator(p, v)
+        ip = self.ip
+        tri = ip.tri
+
+        # Gradients
+
+        # XXX: the following line is the only line that is specific to 2D;
+        #      otherwise this approach will work also in N dimensions
+        grad = interpolate.interpnd.estimate_gradients_2d_global(
+            tri, ip.values.ravel(), tol=1e-6)
+
+        p = tri.points[tri.vertices]
+        g = grad[tri.vertices]
+        v = ip.values.ravel()[tri.vertices]
+
+        dev = self.get_dev(p, v, g)
+
+        if stack_till is None:
+            # Take new points
+            try:
+                cp = 0.9*dev.max()
+                nstack = min(self.nstack, (dev > cp).sum())
+                if nstack <= 0:
+                    raise ValueError()
+            except ValueError:
+                nstack = 1
+        else:
+            nstack = stack_till
+
+        def point_exists(p):
+            eps = np.finfo(float).eps * self.points.ptp() * 100
+            if abs(p - self.points).sum(axis=1).min() < eps:
+                return True
+            if self._stack:
+                if abs(p - np.asarray(self._stack)).sum(axis=1).min() < eps:
+                    return True
+            return False
+
+        for j in range(len(dev)):
+            jsimplex = np.argmax(dev)
+            # -- Estimate point of maximum curvature inside the simplex
+            p = tri.points[tri.vertices[jsimplex]]
+            v = ip.values[tri.vertices[jsimplex]]
+            g = grad[tri.vertices[jsimplex]]
+            transform = tri.transform[jsimplex]
+
+            point_new = _max_disagreement_location_in_simplex(
+                p, v, g, transform)
+
+            # -- Reduce to bounds
+            for j, (a, b) in enumerate(self.bounds):
+                point_new[j] = max(a, min(b, point_new[j]))
+
+            # -- Check if it is really new (also, revert to mean point optionally)
+            if point_exists(point_new):
+                dev[jsimplex] = 0
+                continue
+
+            # Add to stack
+            self._stack.append(point_new.copy())
+
+            if len(self._stack) >= nstack:
+                break
+            else:
+                dev[jsimplex] = 0
+
+    def _choose_points(self, n):
+        pass
+
+    def choose_points(self, n, add_data=True):
+        if len(self._stack) < n:
+            if n > self.n:
+                raise NotImplementedError('Need to recursively fill up the stack')
+            else:
+                self._fill_stack(stack_till=max(n, self.nstack))
+        points = self._stack[:n]
+        if add_data:
+            for point in points:
+                self.add_point(point, None)
+            self._stack = self._stack[n:]
+        return points
+
+    def loss(self):
+        return self.n - len(self._interp)
+
+    def loss_improvement(self, point):
+        return -self.loss()
+
+    def remove_unfinished(self):
+        self._points = self.points_real
+        self._values = self.values_real
+        self.n -= len(self._interp)
+        self._interp = {}
+
+    def plot(self, n_x=201, n_y=201):
+        x = np.linspace(*self.bounds[0], n_x)
+        y = np.linspace(*self.bounds[1], n_y)
+
+        ip = interpolate.LinearNDInterpolator(self.points_real,
+                                              self.values_real)
+        z = ip(x[:, None], y[None, :])
+        return hv.Image(z)
