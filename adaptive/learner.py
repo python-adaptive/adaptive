@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import abc
+from contextlib import contextmanager
 from copy import deepcopy as copy
 import functools
 import heapq
@@ -833,16 +834,22 @@ class Learner2D(BaseLearner):
         z = ip(x[:, None], y[None, :])
         return hv.Image(z)
 
-    def save_state(self):
-        self._values_copy = self._values.copy()
-        self._points_copy = self._points.copy()
-        self._interp_copy = copy(self._interp)
-        self._stack_copy = copy(self._stack)
-        self.n_copy = self.n
+    def __getstate__(self):
+        return (self._values.copy(),
+                self._points.copy(),
+                copy(self._interp),
+                copy(self._stack),
+                self.n)
 
-    def reset_state(self):
-        self._values = self._values_copy.copy()
-        self._points = self._points_copy.copy()
-        self._interp = copy(self._interp_copy)
-        self._stack = copy(self._stack_copy)
-        self.n = self.n_copy
+    def __setstate__(self, state):
+        self._values, self._points, self._interp, self._stack, self.n = state
+
+
+@contextmanager
+def restore(*learners):
+    states = [learner.__getstate__() for learner in learners]
+    try:
+        yield
+    finally:
+        for state, learner in zip(states, learners):
+            learner.__setstate__(state)
