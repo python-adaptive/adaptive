@@ -71,7 +71,9 @@ class Runner:
                 # on the last iteration.
                 if do_log:
                     self.log.append(('choose_points', len(done)))
-                for x in self.learner.choose_points(len(done)):
+
+                points, _ = self.learner.choose_points(len(done))
+                for x in points:
                     xs[self.executor.submit(self.learner.function, x)] = x
 
                 # Collect and results and add them to the learner
