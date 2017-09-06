@@ -489,8 +489,7 @@ class BalancingLearner(BaseLearner):
 
 
 def _max_disagreement_location_in_simplex(points, values, grad, transform):
-    """
-    Find the point of maximum disagreement between linear and quadratic model
+    """Find the point of maximum disagreement between linear and quadratic model
 
     Parameters
     ----------
@@ -589,35 +588,29 @@ def _max_disagreement_location_in_simplex(points, values, grad, transform):
 
 class Learner2D(BaseLearner):
 
-    """
-    Sample a 2-D function adaptively.
+    """Sample a 2-D function adaptively.
 
     Parameters
     ----------
+    function : callable
+        The function to learn. Must take a tuple of two real
+        parameters and return a real number.
     bounds : list of 2-tuples
         A list ``[(a1, b1), (a2, b2)]`` containing bounds,
         one per dimension.
     dtype : dtype, optional
         Type of data from function. Default: float (real-valued)
 
-    Methods
-    -------
-    sample
-        Add new samples obtained from a function.
-    add
-        Add a new sample point. Use in combination with `next()`.
-    next
-        Return next sampling point.
-
     Attributes
     ----------
     points
-        Sample points so far.
+        Sample points so far including the unknown interpolated ones.
     values
+        Sampled values so far including the unknown interpolated ones.
+    points_real
+        Sample points so far.
+    values_real
         Sampled values so far.
-    integral
-        Estimate for the N-dim integral over the bounded area,
-        based on an interpolant constructed from the samples.
 
     Notes
     -----
