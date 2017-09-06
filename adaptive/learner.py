@@ -644,7 +644,6 @@ class Learner2D(BaseLearner):
         self._points = np.zeros([100, self.ndim])
         self._values = np.zeros([100], dtype)
         self.n = 0
-        self.ip = None
         self.nstack = 10
         self._stack = []
         self._interp = {}
@@ -724,8 +723,7 @@ class Learner2D(BaseLearner):
                 v[n] = value
 
         # Interpolate
-        self.ip = interpolate.LinearNDInterpolator(p, v)
-        ip = self.ip
+        ip = interpolate.LinearNDInterpolator(p, v)
         tri = ip.tri
 
         # Gradients
