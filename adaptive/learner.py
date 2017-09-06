@@ -587,7 +587,7 @@ def _max_disagreement_location_in_simplex(points, values, grad, transform):
     return p
 
 
-class AdaptiveTriSampling(BaseLearner):
+class Learner2D(BaseLearner):
 
     """
     Sample a 2-D function adaptively.
@@ -595,7 +595,7 @@ class AdaptiveTriSampling(BaseLearner):
     Parameters
     ----------
     bounds : list of 2-tuples
-        A list ``[(a1, b1), (a2, b2), ...]`` containing bounds,
+        A list ``[(a1, b1), (a2, b2)]`` containing bounds,
         one per dimension.
     dtype : dtype, optional
         Type of data from function. Default: float (real-valued)
@@ -646,7 +646,7 @@ class AdaptiveTriSampling(BaseLearner):
         self.function = function
         self.ndim = len(bounds)
         if self.ndim != 2:
-            raise ValueError("Only 2-D sampling supported (for now)")
+            raise ValueError("Only 2-D sampling supported.")
         self.bounds = tuple([(float(a), float(b)) for a, b in bounds])
         self._points = np.zeros([100, self.ndim])
         self._values = np.zeros([100], dtype)
@@ -688,36 +688,6 @@ class AdaptiveTriSampling(BaseLearner):
     def values_real(self):
         return np.delete(self.values, list(self._interp.values()), axis=0)
 
-    def get_dev(self, p, v, g):
-        dev = 0
-        for j in range(self.ndim):
-            vest = v[:, j, None] + ((p[:, :, :] -
-                                     p[:, j, None, :]) *
-                                     g[:, j, None, :]).sum(axis=-1)
-            dev += abs(vest - v).max(axis=1)
-
-        q = p[:, :-1, :] - p[:, -1, None, :]
-
-        if self.ndim == 2:
-            # faster specialization in 2D
-            vol = abs(q[:, 0, 0]*q[:, 1, 1] - q[:, 0, 1]*q[:, 1, 0])
-        elif self.ndim == 3:
-            # faster specialization in 3D
-            vol = abs(+ q[:, 0, 0]*q[:, 1, 1]*q[:, 2, 2]
-                      + q[:, 0, 1]*q[:, 1, 2]*q[:, 2, 0]
-                      + q[:, 0, 2]*q[:, 1, 0]*q[:, 2, 1]
-                      - q[:, 0, 2]*q[:, 1, 1]*q[:, 2, 0]
-                      - q[:, 0, 1]*q[:, 1, 0]*q[:, 2, 2]
-                      - q[:, 0, 0]*q[:, 1, 2]*q[:, 2, 1])
-        else:
-            # slow general case
-            vol = abs(np.asarray([np.linalg.det(q[k, :, :])
-                                  for k in range(tri.nsimplex)]))
-        vol /= special.gamma(1 + self.ndim)
-
-        dev *= vol
-        return dev
-
     def add_point(self, point, value):
         nmax = self.values.shape[0]
         if self.n >= nmax:
@@ -748,7 +718,7 @@ class AdaptiveTriSampling(BaseLearner):
         if v.shape[0] < self.ndim+1:
             raise ValueError("too few points...")
 
-        # Interpolate
+        # Interpolate the unfinished points
         if self._interp:
             try:
                 ip = interpolate.LinearNDInterpolator(self.points_real,
@@ -756,17 +726,16 @@ class AdaptiveTriSampling(BaseLearner):
             except ValueError:
                 ip = lambda x: np.empty(len(x))  # Important not to return exact zeros
             n_interp = list(self._interp.values())
-            for n, value in zip(n_interp, ip(p[n_interp])):
+            values = ip(p[n_interp])
+            for n, value in zip(n_interp, values):
                 v[n] = value
 
+        # Interpolate
         self.ip = interpolate.LinearNDInterpolator(p, v)
         ip = self.ip
         tri = ip.tri
 
         # Gradients
-
-        # XXX: the following line is the only line that is specific to 2D;
-        #      otherwise this approach will work also in N dimensions
         grad = interpolate.interpnd.estimate_gradients_2d_global(
             tri, ip.values.ravel(), tol=1e-6)
 
@@ -774,7 +743,18 @@ class AdaptiveTriSampling(BaseLearner):
         g = grad[tri.vertices]
         v = ip.values.ravel()[tri.vertices]
 
-        dev = self.get_dev(p, v, g)
+        dev = 0
+        for j in range(self.ndim):
+            vest = v[:, j, None] + ((p[:, :, :] -
+                                     p[:, j, None, :]) *
+                                     g[:, j, None, :]).sum(axis=-1)
+            dev += abs(vest - v).max(axis=1)
+
+        q = p[:, :-1, :] - p[:, -1, None, :]
+        vol = abs(q[:, 0, 0]*q[:, 1, 1] - q[:, 0, 1]*q[:, 1, 0])
+        vol /= special.gamma(1 + self.ndim)
+
+        dev *= vol
 
         if stack_till is None:
             # Take new points
