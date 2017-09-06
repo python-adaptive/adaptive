@@ -832,3 +832,17 @@ class Learner2D(BaseLearner):
                                               self.values_real)
         z = ip(x[:, None], y[None, :])
         return hv.Image(z)
+
+    def save_state(self):
+        self._values_copy = self._values.copy()
+        self._points_copy = self._points.copy()
+        self._interp_copy = copy(self._interp)
+        self._stack_copy = copy(self._stack)
+        self.n_copy = self.n
+
+    def reset_state(self):
+        self._values = self._values_copy.copy()
+        self._points = self._points_copy.copy()
+        self._interp = copy(self._interp_copy)
+        self._stack = copy(self._stack_copy)
+        self.n = self.n_copy
