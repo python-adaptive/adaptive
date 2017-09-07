@@ -595,7 +595,7 @@ class Learner2D(BaseLearner):
 
     Notes
     -----
-    Requires Scipy >= 0.9.0.
+    Adapted from an initial implementation by Pauli Virtanen.
 
     The sample points are chosen by estimating the point where the
     linear and cubic interpolants based on the existing points have
@@ -609,11 +609,6 @@ class Learner2D(BaseLearner):
 
     This sampling procedure is not extremely fast, so to benefit from
     it, your function needs to be slow enough to compute.
-
-    Examples
-    --------
-    See below.
-
     """
 
     def __init__(self, function, bounds, dtype=float):
