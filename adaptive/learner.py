@@ -304,15 +304,14 @@ class Learner1D(BaseLearner):
         if real:
             self.update_losses(x, self.data, self.neighbors, self.losses)
 
-        if real:
-            # If the scale has doubled, recompute all losses.
-            if self._scale > self._oldscale * 2:
-                self.losses = {xs: self.interval_loss(*xs, self.data)
-                               for xs in self.losses}
-                self.losses_combined = {x: self.interval_loss(*x,
-                                                              self.data_combined)
-                                        for x in self.losses_combined}
-                self._oldscale = self._scale
+        # If the scale has doubled, recompute all losses.
+        if self._scale > self._oldscale * 2:
+            self.losses = {xs: self.interval_loss(*xs, self.data)
+                           for xs in self.losses}
+            self.losses_combined = {x: self.interval_loss(*x,
+                                                          self.data_combined)
+                                    for x in self.losses_combined}
+            self._oldscale = self._scale
 
     def choose_points(self, n=10, add_data=True):
         """Return n points that are expected to maximally reduce the loss."""
