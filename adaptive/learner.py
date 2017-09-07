@@ -663,6 +663,10 @@ class Learner2D(BaseLearner):
     def values_real(self):
         return np.delete(self.values, list(self._interp.values()), axis=0)
 
+    @property
+    def n_real(self):
+        return self.n - len(self._interp)
+
     def add_point(self, point, value):
         nmax = self.values.shape[0]
         if self.n >= nmax:
@@ -695,7 +699,7 @@ class Learner2D(BaseLearner):
 
         # Interpolate the unfinished points
         if self._interp:
-            if self.n - len(self._interp) > 3:
+            if self.n_real >= 4:
                 ip = interpolate.LinearNDInterpolator(self.points_real,
                                                       self.values_real)
             else:
@@ -803,7 +807,7 @@ class Learner2D(BaseLearner):
         return points, loss_improvements
 
     def loss(self):
-        return self.n - len(self._interp)
+        return self.n_real
 
     def remove_unfinished(self):
         self._points = self.points_real
