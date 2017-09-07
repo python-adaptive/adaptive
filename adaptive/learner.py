@@ -804,10 +804,9 @@ class Learner2D(BaseLearner):
     def choose_points(self, n, add_data=True):
         if not add_data:
             with restore(self):
-                points, loss_improvements = self._choose_and_add_points(n)
+                return self._choose_and_add_points(n)
         else:
-            points, loss_improvements = self._choose_and_add_points(n)
-        return points, loss_improvements
+            return self._choose_and_add_points(n)
 
     def loss(self):
         return self.n_real
