@@ -440,11 +440,7 @@ class BalancingLearner(BaseLearner):
             raise TypeError('A BalacingLearner can handle only one type'
                             'of learners.')
 
-    def choose_points(self, n, add_data=True):
-        """Choses points for learners."""
-        if not add_data:
-            raise NotImplementedError('')
-
+    def _choose_and_add_points(self, n):
         points = []
         for _ in range(n):
             loss_improvements = []
@@ -457,6 +453,14 @@ class BalancingLearner(BaseLearner):
             points.append(x)
             self.add_point(x, None)
         return points, None
+
+    def choose_points(self, n, add_data=True):
+        """Choses points for learners."""
+        if not add_data:
+            with restore(*self.learners):
+                return self._choose_and_add_points(n)
+        else:
+            return self._choose_and_add_points(n)
 
     def _choose_points(self, n):
         pass
