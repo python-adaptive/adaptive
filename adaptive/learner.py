@@ -102,6 +102,12 @@ class BaseLearner(metaclass=abc.ABCMeta):
             The number of points to choose.
         """
 
+    def __getstate__(self):
+        return copy(self.__dict__)
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+
 class AverageLearner(BaseLearner):
     def __init__(self, function, atol=None, rtol=None):
         """A naive implementation of adaptive computing of averages.
