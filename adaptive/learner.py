@@ -786,7 +786,7 @@ class Learner2D(BaseLearner):
     def _choose_points(self, n):
         pass
 
-    def choose_points(self, n, add_data=True):
+    def _choose_and_add_points(self, n):
         if n <= len(self._stack):
             points = self._stack[:n]
             self.add_data(points, itertools.repeat(None))
@@ -804,6 +804,14 @@ class Learner2D(BaseLearner):
                 n_left -= len(from_stack)
 
         loss_improvements = [1] * n
+        return points, loss_improvements
+
+    def choose_points(self, n, add_data=True):
+        if not add_data:
+            with restore(self):
+                points, loss_improvements = self._choose_and_add_points(n)
+        else:
+            points, loss_improvements = self._choose_and_add_points(n)
         return points, loss_improvements
 
     def loss(self):
