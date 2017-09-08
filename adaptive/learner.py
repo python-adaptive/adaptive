@@ -767,8 +767,7 @@ class Learner2D(BaseLearner):
                 p, v, g, transform)
 
             # Reduce to bounds
-            for j, (a, b) in enumerate(self.bounds):
-                point_new[j] = max(a, min(b, point_new[j]))
+            point_new = np.clip(point_new, *zip(*self.bounds))
 
             # Check if it is really new (also, revert to mean point optionally)
             if point_exists(point_new):
