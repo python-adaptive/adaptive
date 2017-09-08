@@ -834,7 +834,7 @@ class Learner2D(BaseLearner):
             ip = interpolate.LinearNDInterpolator(self.points_real,
                                                   self.values_real)
             z = ip(x[:, None], y[None, :])
-            return hv.Image(z, bounds=lbrt)
+            return hv.Image(np.rot90(z), bounds=lbrt)
         else:
             return hv.Image(np.zeros((2, 2)), bounds=lbrt)
 
