@@ -813,6 +813,8 @@ class Learner2D(BaseLearner):
         self._interp = {}
 
     def plot(self, n_x=201, n_y=201):
+        bounds = self.bounds
+        lbrt = bounds[0][0], bounds[1][0], bounds[0][1], bounds[1][1]
         if self.n_real >= 4:
             x = np.linspace(*self.bounds[0], n_x)
             y = np.linspace(*self.bounds[1], n_y)
@@ -820,19 +822,9 @@ class Learner2D(BaseLearner):
             ip = interpolate.LinearNDInterpolator(self.points_real,
                                                   self.values_real)
             z = ip(x[:, None], y[None, :])
-            return hv.Image(z)
+            return hv.Image(z, bounds=lbrt)
         else:
-            return hv.Image(np.zeros((2, 2)))
-
-    def __getstate__(self):
-        return (self._values.copy(),
-                self._points.copy(),
-                copy(self._interp),
-                copy(self._stack),
-                self.n)
-
-    def __setstate__(self, state):
-        self._values, self._points, self._interp, self._stack, self.n = state
+            return hv.Image(np.zeros((2, 2)), bounds=lbrt)
 
 
 @contextmanager
