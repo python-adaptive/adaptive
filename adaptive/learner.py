@@ -29,6 +29,7 @@ class BaseLearner(metaclass=abc.ABCMeta):
     Subclasses may define a 'plot' method that takes no parameters
     and returns a holoviews plot.
     """
+
     def __init__(self, function):
         self.data = {}
         self.function = function
@@ -97,19 +98,20 @@ class BaseLearner(metaclass=abc.ABCMeta):
 
 
 class AverageLearner(BaseLearner):
+    """A naive implementation of adaptive computing of averages.
+
+    The learned function must depend on an integer input variable that
+    represents the source of randomness.
+
+    Parameters:
+    -----------
+    atol : float
+        Desired absolute tolerance
+    rtol : float
+        Desired relative tolerance
+    """
+
     def __init__(self, function, atol=None, rtol=None):
-        """A naive implementation of adaptive computing of averages.
-
-        The learned function must depend on an integer input variable that
-        represents the source of randomness.
-
-        Parameters:
-        -----------
-        atol : float
-            Desired absolute tolerance
-        rtol : float
-            Desired relative tolerance
-        """
         super().__init__(function)
 
         if atol is None and rtol is None:
@@ -419,6 +421,7 @@ class BalancingLearner(BaseLearner):
     of the same type*. In this case the BalancingLearner will behave in an
     undefined way.
     """
+
     def __init__(self, learners):
         self.learners = learners
 
@@ -448,7 +451,7 @@ class BalancingLearner(BaseLearner):
         return points, None
 
     def choose_points(self, n, add_data=True):
-        """Choses points for learners."""
+        """Chose points for learners."""
         if not add_data:
             with restore(*self.learners):
                 return self._choose_and_add_points(n)
@@ -681,7 +684,6 @@ class Learner2D(BaseLearner):
             self.n += 1
 
     def _fill_stack(self, stack_till=None):
-        # Deal with periodicity: extend by one period
         p = self.points
         v = self.values
 
