@@ -792,7 +792,11 @@ class Learner2D(BaseLearner):
             points = []
             n_left = n
             while n_left > 0:
+                # The while loop is needed because `stack_till` could be larger
+                # than the number of triangles between the points. Therefore
+                # it could fill up till a length smaller than `stack_till`.
                 if self.n >= 2**self.ndim:
+                    # Only fill the stack if no more bounds left in _stack
                     self._fill_stack(stack_till=max(n_left, self.nstack))
                 from_stack = self._stack[:n_left]
                 points += from_stack
