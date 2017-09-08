@@ -617,7 +617,7 @@ class Learner2D(BaseLearner):
         self.ndim = len(bounds)
         if self.ndim != 2:
             raise ValueError("Only 2-D sampling supported.")
-        self.bounds = tuple([(float(a), float(b)) for a, b in bounds])
+        self.bounds = tuple((float(a), float(b)) for a, b in bounds)
         self._points = np.zeros([100, self.ndim])
         self._values = np.zeros([100], dtype=float)
         self.n = 0
