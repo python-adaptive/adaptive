@@ -741,16 +741,7 @@ class Learner2D(BaseLearner):
         dev = self._deviation_from_linear_estimate(ip, grad)
 
         if stack_till is None:
-            # Take new points
-            try:
-                cp = 0.9 * dev.max()
-                nstack = min(self.nstack, (dev > cp).sum())
-                if nstack <= 0:
-                    raise ValueError()
-            except ValueError:
-                nstack = 1
-        else:
-            nstack = stack_till
+            stack_till = 1
 
         def point_exists(p):
             eps = np.finfo(float).eps * self.points_combined.ptp() * 100
@@ -783,7 +774,7 @@ class Learner2D(BaseLearner):
             # Add to stack
             self._stack.append(tuple(point_new))
 
-            if len(self._stack) >= nstack:
+            if len(self._stack) >= stack_till:
                 break
             else:
                 dev[jsimplex] = 0
@@ -802,7 +793,7 @@ class Learner2D(BaseLearner):
                 # it could fill up till a length smaller than `stack_till`.
                 if self.n >= 2**self.ndim:
                     # Only fill the stack if no more bounds left in _stack
-                    self._fill_stack(stack_till=max(n_left, self.nstack))
+                    self._fill_stack(stack_till=n_left)
                 from_stack = self._stack[:n_left]
                 points += from_stack
                 self.add_data(from_stack, itertools.repeat(None))
