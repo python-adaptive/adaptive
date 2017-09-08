@@ -703,7 +703,9 @@ class Learner2D(BaseLearner):
                 ip_real = interpolate.LinearNDInterpolator(self.points_real,
                                                            self.values_real)
             else:
-                # It is important not to return exact zeros
+                # It is important not to return exact zeros because
+                # otherwise the algo will try to add the same point
+                # to the stack each time.
                 ip_real = lambda x: np.empty(len(x))
             n_interp = list(self._interp.values())
             values = ip_real(p[n_interp])
