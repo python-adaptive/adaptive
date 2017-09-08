@@ -475,7 +475,7 @@ class BalancingLearner(BaseLearner):
 
 
 def _max_disagreement_location_in_simplex(points, values, grad, transform):
-    """Find the point of maximum disagreement between linear and quadratic model.
+    """Find the point of maximum disagreement between linear and cubic model.
 
     Parameters
     ----------
