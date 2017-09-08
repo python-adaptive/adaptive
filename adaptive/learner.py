@@ -570,7 +570,7 @@ def _max_disagreement_location_in_simplex(points, values, grad, transform):
 
 
 class Learner2D(BaseLearner):
-    """Sample a 2-D function adaptively.
+    """Learns and predicts a function 'f: ℝ^2 → ℝ'.
 
     Parameters
     ----------
