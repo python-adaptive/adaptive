@@ -717,18 +717,16 @@ class Learner2D(BaseLearner):
 
         # Interpolate the unfinished points
         if self._interp:
+            n_interp = list(self._interp.values())
             if self.n_real >= 4:
                 ip_real = interpolate.LinearNDInterpolator(self.points,
                                                            self.values)
+                v[n_interp] = ip_real(p[n_interp])
             else:
                 # It is important not to return exact zeros because
                 # otherwise the algo will try to add the same point
                 # to the stack each time.
-                ip_real = lambda x: np.random.rand(len(x)) * 1e-15
-            n_interp = list(self._interp.values())
-            values = ip_real(p[n_interp])
-            for n, value in zip(n_interp, values):
-                v[n] = value
+                v[n_interp] = np.random.rand(len(n_interp)) * 1e-15
 
         # Interpolate
         ip = interpolate.LinearNDInterpolator(p, v)
