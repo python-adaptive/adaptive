@@ -582,8 +582,6 @@ class Learner2D(BaseLearner):
     bounds : list of 2-tuples
         A list ``[(a1, b1), (a2, b2)]`` containing bounds,
         one per dimension.
-    dtype : dtype, optional
-        Type of data from function. Default: float (real-valued)
 
     Attributes
     ----------
@@ -614,14 +612,14 @@ class Learner2D(BaseLearner):
     it, your function needs to be slow enough to compute.
     """
 
-    def __init__(self, function, bounds, dtype=float):
+    def __init__(self, function, bounds):
         self.function = function
         self.ndim = len(bounds)
         if self.ndim != 2:
             raise ValueError("Only 2-D sampling supported.")
         self.bounds = tuple([(float(a), float(b)) for a, b in bounds])
         self._points = np.zeros([100, self.ndim])
-        self._values = np.zeros([100], dtype)
+        self._values = np.zeros([100], dtype=float)
         self.n = 0
         self.nstack = 10
         self._stack = []
