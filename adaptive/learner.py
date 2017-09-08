@@ -804,6 +804,7 @@ class Learner2D(BaseLearner):
                 self._stack = self._stack[n_left:]
                 n_left -= len(from_stack)
 
+        # XXX: change this when we have a better `loss` method
         loss_improvements = [1] * n
         return points, loss_improvements
 
@@ -815,6 +816,7 @@ class Learner2D(BaseLearner):
             return self._choose_and_add_points(n)
 
     def loss(self):
+        # XXX: we need a smarter way of determining the loss
         return self.n_real
 
     def remove_unfinished(self):
