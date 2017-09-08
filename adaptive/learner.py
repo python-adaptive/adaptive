@@ -670,12 +670,17 @@ class Learner2D(BaseLearner):
             self._points = np.resize(self._points, [2*nmax + 10, self.ndim])
 
         point = tuple(point)
+
+        # When the point is not evaluated yet, add an entry to self._interp
+        # that saves the point and index.
         if value is None:
             self._interp[point] = self.n
             old_point = False
         else:
             old_point = point in self._interp
 
+        # If the point is new add it a new value to _points and _values,
+        # otherwise get the index of the value that is being replaced.
         if old_point:
             n = self._interp.pop(point)
             self._points[n] = point
