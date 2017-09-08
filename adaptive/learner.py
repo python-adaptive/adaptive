@@ -127,7 +127,7 @@ class AverageLearner(BaseLearner):
         self.sum_f = 0
         self.sum_f_sq = 0
 
-    def choose_points(self, n=10, add_data=True):
+    def choose_points(self, n, add_data=True):
         points = list(range(self.n_requested, self.n_requested + n))
         loss_improvements = [None] * n
         if add_data:
@@ -313,7 +313,7 @@ class Learner1D(BaseLearner):
                                     for x in self.losses_combined}
             self._oldscale = self._scale
 
-    def choose_points(self, n=10, add_data=True):
+    def choose_points(self, n, add_data=True):
         """Return n points that are expected to maximally reduce the loss."""
         # Find out how to divide the n points over the intervals
         # by finding  positive integer n_i that minimize max(L_i / n_i) subject
