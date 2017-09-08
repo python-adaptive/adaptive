@@ -131,6 +131,8 @@ class AverageLearner(BaseLearner):
 
     def choose_points(self, n, add_data=True):
         points = list(range(self.n_requested, self.n_requested + n))
+
+        # XXX: We should return the actual loss improvements
         loss_improvements = [None] * n
         if add_data:
             self.add_data(points, itertools.repeat(None))
