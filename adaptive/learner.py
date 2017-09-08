@@ -690,6 +690,24 @@ class Learner2D(BaseLearner):
             self._values[self.n] = value
             self.n += 1
 
+    def _deviation_from_linear_estimate(self, ip, gradients):
+        tri = ip.tri
+        p = tri.points[tri.vertices]
+        g = gradients[tri.vertices]
+        v = ip.values.ravel()[tri.vertices]
+
+        grad = gradients
+        dev = 0
+        for j in range(self.ndim):
+            vest = v[:, j, None] + ((p[:, :, :] - p[:, j, None, :]) *
+                                    g[:, j, None, :]).sum(axis=-1)
+            dev += abs(vest - v).max(axis=1)
+
+        q = p[:, :-1, :] - p[:, -1, None, :]
+        vol = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
+        vol /= special.gamma(1 + self.ndim)
+        return dev * vol
+
     def _fill_stack(self, stack_till=None):
         p = self.points_combined
         v = self.values_combined
@@ -720,21 +738,7 @@ class Learner2D(BaseLearner):
         grad = interpolate.interpnd.estimate_gradients_2d_global(
             tri, ip.values.ravel(), tol=1e-6)
 
-        p = tri.points[tri.vertices]
-        g = grad[tri.vertices]
-        v = ip.values.ravel()[tri.vertices]
-
-        dev = 0
-        for j in range(self.ndim):
-            vest = v[:, j, None] + ((p[:, :, :] - p[:, j, None, :]) *
-                                    g[:, j, None, :]).sum(axis=-1)
-            dev += abs(vest - v).max(axis=1)
-
-        q = p[:, :-1, :] - p[:, -1, None, :]
-        vol = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
-        vol /= special.gamma(1 + self.ndim)
-
-        dev *= vol
+        dev = self._deviation_from_linear_estimate(ip, grad)
 
         if stack_till is None:
             # Take new points
