@@ -585,14 +585,14 @@ class Learner2D(BaseLearner):
 
     Attributes
     ----------
-    points
+    points_combined
         Sample points so far including the unknown interpolated ones.
-    values
+    values_combined
         Sampled values so far including the unknown interpolated ones.
-    points_real
-        Sample points so far.
-    values_real
-        Sampled values so far.
+    points
+        Sample points so far with real results.
+    values
+        Sampled values so far with real results.
 
     Notes
     -----
@@ -642,27 +642,29 @@ class Learner2D(BaseLearner):
         self._stack = pts
 
     @property
-    def points(self):
+    def points_combined(self):
         return self._points[:self.n]
 
     @property
-    def values(self):
+    def values_combined(self):
         return self._values[:self.n]
 
     @property
-    def points_real(self):
-        return np.delete(self.points, list(self._interp.values()), axis=0)
+    def points(self):
+        return np.delete(self.points_combined,
+                         list(self._interp.values()), axis=0)
 
     @property
-    def values_real(self):
-        return np.delete(self.values, list(self._interp.values()), axis=0)
+    def values(self):
+        return np.delete(self.values_combined,
+                         list(self._interp.values()), axis=0)
 
     @property
     def n_real(self):
         return self.n - len(self._interp)
 
     def add_point(self, point, value):
-        nmax = self.values.shape[0]
+        nmax = self.values_combined.shape[0]
         if self.n >= nmax:
             self._values = np.resize(self._values, [2*nmax + 10])
             self._points = np.resize(self._points, [2*nmax + 10, self.ndim])
@@ -689,8 +691,8 @@ class Learner2D(BaseLearner):
             self.n += 1
 
     def _fill_stack(self, stack_till=None):
-        p = self.points
-        v = self.values
+        p = self.points_combined
+        v = self.values_combined
 
         if v.shape[0] < self.ndim + 1:
             raise ValueError("too few points...")
@@ -698,8 +700,8 @@ class Learner2D(BaseLearner):
         # Interpolate the unfinished points
         if self._interp:
             if self.n_real >= 4:
-                ip_real = interpolate.LinearNDInterpolator(self.points_real,
-                                                           self.values_real)
+                ip_real = interpolate.LinearNDInterpolator(self.points,
+                                                           self.values)
             else:
                 # It is important not to return exact zeros because
                 # otherwise the algo will try to add the same point
@@ -747,8 +749,8 @@ class Learner2D(BaseLearner):
             nstack = stack_till
 
         def point_exists(p):
-            eps = np.finfo(float).eps * self.points.ptp() * 100
-            if abs(p - self.points).sum(axis=1).min() < eps:
+            eps = np.finfo(float).eps * self.points_combined.ptp() * 100
+            if abs(p - self.points_combined).sum(axis=1).min() < eps:
                 return True
             if self._stack:
                 if abs(p - np.asarray(self._stack)).sum(axis=1).min() < eps:
@@ -819,8 +821,8 @@ class Learner2D(BaseLearner):
         return self.n_real
 
     def remove_unfinished(self):
-        self._points = self.points_real
-        self._values = self.values_real
+        self._points = self.points
+        self._values = self.values
         self.n -= len(self._interp)
         self._interp = {}
 
@@ -831,8 +833,8 @@ class Learner2D(BaseLearner):
             x = np.linspace(*self.bounds[0], n_x)
             y = np.linspace(*self.bounds[1], n_y)
 
-            ip = interpolate.LinearNDInterpolator(self.points_real,
-                                                  self.values_real)
+            ip = interpolate.LinearNDInterpolator(self.points,
+                                                  self.values)
             z = ip(x[:, None], y[None, :])
             return hv.Image(np.rot90(z), bounds=lbrt)
         else:
