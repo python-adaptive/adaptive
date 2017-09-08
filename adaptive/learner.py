@@ -769,7 +769,7 @@ class Learner2D(BaseLearner):
             # Reduce to bounds
             point_new = np.clip(point_new, *zip(*self.bounds))
 
-            # Check if it is really new (also, revert to mean point optionally)
+            # Check if it is really new
             if point_exists(point_new):
                 dev[jsimplex] = 0
                 continue
