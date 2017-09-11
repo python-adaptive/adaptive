@@ -637,7 +637,9 @@ class Learner2D(BaseLearner):
                         pts.append(r + (x,))
             _append(a)
             _append(b)
-        self._stack = pts
+
+        # Add the loss improvement to the bounds in the stack
+        self._stack = [point + (np.inf,) for point in pts]
 
     @property
     def points_combined(self):
@@ -688,13 +690,20 @@ class Learner2D(BaseLearner):
             self._values[self.n] = value
             self.n += 1
 
+
+        # Remove the point if in the stack, this can only happen using
+        # 2DLearners in a BalancingLearner.
+        for i, (*_point, _) in enumerate(self._stack):
+            if point == tuple(_point):
+                self._stack.pop(i)
+                break
+
     def _deviation_from_linear_estimate(self, ip, gradients):
         tri = ip.tri
         p = tri.points[tri.vertices]
         g = gradients[tri.vertices]
         v = ip.values.ravel()[tri.vertices]
 
-        grad = gradients
         dev = 0
         for j in range(self.ndim):
             vest = v[:, j, None] + ((p[:, :, :] - p[:, j, None, :]) *
@@ -744,7 +753,8 @@ class Learner2D(BaseLearner):
             if abs(p - self.points_combined).sum(axis=1).min() < eps:
                 return True
             if self._stack:
-                if abs(p - np.asarray(self._stack)).sum(axis=1).min() < eps:
+                _stack_points, _ = self._split_stack()
+                if abs(p - np.asarray(_stack_points)).sum(axis=1).min() < eps:
                     return True
             return False
 
@@ -768,20 +778,29 @@ class Learner2D(BaseLearner):
                 continue
 
             # Add to stack
-            self._stack.append(tuple(point_new))
+            self._stack.append(tuple(point_new) + (dev[jsimplex],))
 
             if len(self._stack) >= stack_till:
                 break
             else:
                 dev[jsimplex] = 0
 
+    def _split_stack(self, n=None):
+        points = []
+        loss_improvements = []
+        for *point, loss_improvement in self._stack[:n]:
+            points.append(point)
+            loss_improvements.append(loss_improvement)
+        return points, loss_improvements
+
     def _choose_and_add_points(self, n):
         if n <= len(self._stack):
-            points = self._stack[:n]
+            points, loss_improvements = self._split_stack(n)
             self.add_data(points, itertools.repeat(None))
             self._stack = self._stack[n:]
         else:
             points = []
+            loss_improvements = []
             n_left = n
             while n_left > 0:
                 # The while loop is needed because `stack_till` could be larger
@@ -790,14 +809,13 @@ class Learner2D(BaseLearner):
                 if self.n >= 2**self.ndim:
                     # Only fill the stack if no more bounds left in _stack
                     self._fill_stack(stack_till=n_left)
-                from_stack = self._stack[:n_left]
-                points += from_stack
-                self.add_data(from_stack, itertools.repeat(None))
+                new_points, new_loss_improvements = self._split_stack(n_left)
+                points += new_points
+                loss_improvements += new_loss_improvements
+                self.add_data(new_points, itertools.repeat(None))
                 self._stack = self._stack[n_left:]
-                n_left -= len(from_stack)
+                n_left -= len(new_points)
 
-        # XXX: change this when we have a better `loss` method
-        loss_improvements = [1] * n
         return points, loss_improvements
 
     def choose_points(self, n, add_data=True):
@@ -807,7 +825,7 @@ class Learner2D(BaseLearner):
         else:
             return self._choose_and_add_points(n)
 
-    def loss(self):
+    def loss(self, real=True):
         # XXX: we need a smarter way of determining the loss
         return self.n_real
 
