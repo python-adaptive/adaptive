@@ -562,11 +562,11 @@ def _max_disagreement_location_in_simplex(points, values, grad, transform):
         cons.append(lambda x: np.array([x[j]]))
 
     ps = [1.0 / (ndim + 1)] * ndim
-    p = optimize.fmin_slsqp(func, ps, ieqcons=cons, disp=False,
-                            bounds=[(0, 1)] * ndim)
+    p, fx, *_ = optimize.fmin_slsqp(func, ps, ieqcons=cons, disp=False,
+                                    bounds=[(0, 1)] * ndim, full_output=True)
     p = itr.dot(p) + points[-1]
 
-    return p
+    return p, -fx
 
 
 class Learner2D(BaseLearner):
@@ -618,10 +618,11 @@ class Learner2D(BaseLearner):
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
         self._points = np.zeros([100, self.ndim])
         self._values = np.zeros([100], dtype=float)
-        self.n = 0
-        self.nstack = 10
         self._stack = []
         self._interp = {}
+        self._loss_improvements = []
+        # Keeps track till which index _points and _values are filled
+        self.n = 0
 
         pts = []
         for j, (a, b) in enumerate(self.bounds):
@@ -691,8 +692,7 @@ class Learner2D(BaseLearner):
             self.n += 1
 
 
-        # Remove the point if in the stack, this can only happen using
-        # 2DLearners in a BalancingLearner.
+        # Remove the point if in the stack.
         for i, (*_point, _) in enumerate(self._stack):
             if point == tuple(_point):
                 self._stack.pop(i)
@@ -766,7 +766,7 @@ class Learner2D(BaseLearner):
             g = grad[tri.vertices[jsimplex]]
             transform = tri.transform[jsimplex]
 
-            point_new = _max_disagreement_location_in_simplex(
+            point_new, loss_improvement = _max_disagreement_location_in_simplex(
                 p, v, g, transform)
 
             # Reduce to bounds
@@ -778,7 +778,7 @@ class Learner2D(BaseLearner):
                 continue
 
             # Add to stack
-            self._stack.append(tuple(point_new) + (dev[jsimplex],))
+            self._stack.append(tuple(point_new) + (loss_improvement,))
 
             if len(self._stack) >= stack_till:
                 break
@@ -797,7 +797,6 @@ class Learner2D(BaseLearner):
         if n <= len(self._stack):
             points, loss_improvements = self._split_stack(n)
             self.add_data(points, itertools.repeat(None))
-            self._stack = self._stack[n:]
         else:
             points = []
             loss_improvements = []
@@ -813,9 +812,8 @@ class Learner2D(BaseLearner):
                 points += new_points
                 loss_improvements += new_loss_improvements
                 self.add_data(new_points, itertools.repeat(None))
-                self._stack = self._stack[n_left:]
                 n_left -= len(new_points)
-
+        self._loss_improvements += loss_improvements
         return points, loss_improvements
 
     def choose_points(self, n, add_data=True):
