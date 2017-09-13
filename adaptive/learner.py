@@ -620,7 +620,6 @@ class Learner2D(BaseLearner):
         self._stack = []
         self._interp = {}
         self._loss_improvements = []
-        self.tri = None
         self.tri_combined = None
 
         # Keeps track till which index _points and _values are filled
@@ -664,15 +663,11 @@ class Learner2D(BaseLearner):
 
     @property
     def ip(self):
-        # Create the Delaunay object
-        if self.tri is None:
-            self.tri = spatial.Delaunay(self.points, incremental=True,
-                                        qhull_options='Q11 QJ')
-
-        return interpolate.LinearNDInterpolator(self.tri, self.values)
+        return interpolate.LinearNDInterpolator(self.points, self.values)
 
     @property
     def ip_combined(self):
+        # Create the Delaunay object
         if self.tri_combined is None:
             self.tri_combined = spatial.Delaunay(self.points_combined,
                                                  incremental=True,
@@ -718,12 +713,9 @@ class Learner2D(BaseLearner):
                 self._stack.pop(i)
                 break
 
-        # Add the points to the Delaunay objects
+        # Add the points to the Delaunay object
         if self.tri_combined and not old_point:
             self.tri_combined.add_points([point])
-
-        if self.tri and value is not None:
-            self.tri.add_points([point])
 
     def _deviation_from_linear_estimate(self, ip, gradients):
         tri = ip.tri
@@ -744,7 +736,6 @@ class Learner2D(BaseLearner):
 
     def tri_radius(self, points):
         center = points.mean(axis=-2) / (self.ndim + 1)
-        center_val = self.ip_combined(center)
         return np.linalg.norm(points - center, axis=1).max()
 
     def _fill_stack(self, stack_till=None):
@@ -767,7 +758,7 @@ class Learner2D(BaseLearner):
 
         # Interpolate
         ip = self.ip_combined
-        tri = ip.tri
+        tri = self.tri_combined
 
         # Gradients
         grad = interpolate.interpnd.estimate_gradients_2d_global(
@@ -863,6 +854,8 @@ class Learner2D(BaseLearner):
     def remove_unfinished(self):
         self._points = self.points
         self._values = self.values
+        self.tri_combined = spatial.Delaunay(self.points, incremental=True,
+                                             qhull_options='Q11 QJ')
         self.n -= len(self._interp)
         self._interp = {}
 
