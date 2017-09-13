@@ -10,7 +10,7 @@ from operator import itemgetter
 
 import holoviews as hv
 import numpy as np
-from scipy import interpolate, optimize, special
+from scipy import interpolate, optimize, spatial, special
 import sortedcontainers
 
 
@@ -620,6 +620,9 @@ class Learner2D(BaseLearner):
         self._stack = []
         self._interp = {}
         self._loss_improvements = []
+        self.tri = None
+        self.tri_combined = None
+
         # Keeps track till which index _points and _values are filled
         self.n = 0
 
@@ -660,6 +663,25 @@ class Learner2D(BaseLearner):
                          list(self._interp.values()), axis=0)
 
     @property
+    def ip(self):
+        # Create the Delaunay object
+        if self.tri is None:
+            self.tri = spatial.Delaunay(self.points, incremental=True,
+                                        qhull_options='Q11 QJ')
+
+        return interpolate.LinearNDInterpolator(self.tri, self.values)
+
+    @property
+    def ip_combined(self):
+        if self.tri_combined is None:
+            self.tri_combined = spatial.Delaunay(self.points_combined,
+                                                 incremental=True,
+                                                 qhull_options='Q11 QJ')
+
+        return interpolate.LinearNDInterpolator(self.tri_combined,
+                                                self.values_combined)
+
+    @property
     def n_real(self):
         return self.n - len(self._interp)
 
@@ -690,12 +712,18 @@ class Learner2D(BaseLearner):
             self._values[self.n] = value
             self.n += 1
 
-
         # Remove the point if in the stack.
         for i, (*_point, _) in enumerate(self._stack):
             if point == tuple(_point):
                 self._stack.pop(i)
                 break
+
+        # Add the points to the Delaunay objects
+        if self.tri_combined and not old_point:
+            self.tri_combined.add_points([point])
+
+        if self.tri and value is not None:
+            self.tri.add_points([point])
 
     def _deviation_from_linear_estimate(self, ip, gradients):
         tri = ip.tri
@@ -716,7 +744,7 @@ class Learner2D(BaseLearner):
 
     def tri_radius(self, points):
         center = points.mean(axis=-2) / (self.ndim + 1)
-        center_val = self.ip(center)
+        center_val = self.ip_combined(center)
         return np.linalg.norm(points - center, axis=1).max()
 
     def _fill_stack(self, stack_till=None):
@@ -730,9 +758,7 @@ class Learner2D(BaseLearner):
         if self._interp:
             n_interp = list(self._interp.values())
             if self.n_real >= 4:
-                ip_real = interpolate.LinearNDInterpolator(self.points,
-                                                           self.values)
-                v[n_interp] = ip_real(p[n_interp])
+                v[n_interp] = self.ip(p[n_interp])
             else:
                 # It is important not to return exact zeros because
                 # otherwise the algo will try to add the same point
@@ -740,8 +766,7 @@ class Learner2D(BaseLearner):
                 v[n_interp] = np.random.rand(len(n_interp)) * 1e-15
 
         # Interpolate
-        self.ip = interpolate.LinearNDInterpolator(p, v)
-        ip = self.ip
+        ip = self.ip_combined
         tri = ip.tri
 
         # Gradients
@@ -847,10 +872,7 @@ class Learner2D(BaseLearner):
         if self.n_real >= 4:
             x = np.linspace(*self.bounds[0], n_x)
             y = np.linspace(*self.bounds[1], n_y)
-
-            ip = interpolate.LinearNDInterpolator(self.points,
-                                                  self.values)
-            z = ip(x[:, None], y[None, :])
+            z = self.ip(x[:, None], y[None, :])
             return hv.Image(np.rot90(z), bounds=lbrt)
         else:
             return hv.Image(np.zeros((2, 2)), bounds=lbrt)
