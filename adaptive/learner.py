@@ -619,6 +619,7 @@ class Learner2D(BaseLearner):
         self._values = np.zeros([100], dtype=float)
         self._stack = []
         self._interp = {}
+        # XXX: Remove this once we correctly implemented the loss_improvements
         self._loss_improvements = []
         self.tri_combined = None
 
@@ -791,7 +792,11 @@ class Learner2D(BaseLearner):
                 p, v, g, transform)
 
             # XXX: scale dev[jsimplex] by max(z) - min(z) and tri_radius by bounds diagonal
-            loss_improvement = np.sqrt(dev[jsimplex]**2 + self.tri_radius(p)**2)
+            z_scale = self.values_combined.max() - self.values_combined.min()
+            x, y = self.bounds
+            xy_scale = (x[1] - x[0])**2 + (y[1] - y[0])**2
+            loss_improvement = sqrt((dev[jsimplex] / z_scale)**2 +
+                                    self.tri_radius(p)**2 / xy_scale)
 
             # Reduce to bounds
             point_new = np.clip(point_new, *zip(*self.bounds))
@@ -837,6 +842,7 @@ class Learner2D(BaseLearner):
                 loss_improvements += new_loss_improvements
                 self.add_data(new_points, itertools.repeat(None))
                 n_left -= len(new_points)
+        # XXX: Remove this once we correctly implemented the loss_improvements
         self._loss_improvements += loss_improvements
         return points, loss_improvements
 
@@ -852,8 +858,9 @@ class Learner2D(BaseLearner):
         return self.n_real
 
     def remove_unfinished(self):
-        self._points = self.points
-        self._values = self.values
+        n_real = self.n_real
+        self._points[:n_real] = self.points
+        self._values[:n_real] = self.values
         self.tri_combined = spatial.Delaunay(self.points, incremental=True,
                                              qhull_options='Q11 QJ')
         self.n -= len(self._interp)
