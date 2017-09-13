@@ -562,11 +562,10 @@ def _max_disagreement_location_in_simplex(points, values, grad, transform):
         cons.append(lambda x: np.array([x[j]]))
 
     ps = [1.0 / (ndim + 1)] * ndim
-    p, fx, *_ = optimize.fmin_slsqp(func, ps, ieqcons=cons, disp=False,
-                                    bounds=[(0, 1)] * ndim, full_output=True)
+    p = optimize.fmin_slsqp(func, ps, ieqcons=cons, disp=False, bounds=[(0, 1)] * ndim)
     p = itr.dot(p) + points[-1]
 
-    return p, -fx
+    return p
 
 
 class Learner2D(BaseLearner):
@@ -715,6 +714,11 @@ class Learner2D(BaseLearner):
         vol /= special.gamma(1 + self.ndim)
         return dev * vol
 
+    def tri_radius(self, points):
+        center = points.mean(axis=-2) / (self.ndim + 1)
+        center_val = self.ip(center)
+        return np.linalg.norm(points - center, axis=1).max()
+
     def _fill_stack(self, stack_till=None):
         p = self.points_combined
         v = self.values_combined
@@ -736,7 +740,8 @@ class Learner2D(BaseLearner):
                 v[n_interp] = np.random.rand(len(n_interp)) * 1e-15
 
         # Interpolate
-        ip = interpolate.LinearNDInterpolator(p, v)
+        self.ip = interpolate.LinearNDInterpolator(p, v)
+        ip = self.ip
         tri = ip.tri
 
         # Gradients
@@ -766,8 +771,11 @@ class Learner2D(BaseLearner):
             g = grad[tri.vertices[jsimplex]]
             transform = tri.transform[jsimplex]
 
-            point_new, loss_improvement = _max_disagreement_location_in_simplex(
+            point_new = _max_disagreement_location_in_simplex(
                 p, v, g, transform)
+
+            # XXX: scale dev[jsimplex] by max(z) - min(z) and tri_radius by bounds diagonal
+            loss_improvement = np.sqrt(dev[jsimplex]**2 + self.tri_radius(p)**2)
 
             # Reduce to bounds
             point_new = np.clip(point_new, *zip(*self.bounds))
