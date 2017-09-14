@@ -619,35 +619,16 @@ class Learner2D(BaseLearner):
         self._values = np.zeros([100], dtype=float)
         self._stack = []
         self._interp = {}
-        # XXX: Remove this once we correctly implemented the loss_improvements
-        self._loss_improvements = []
-        self.tri_combined = None
-        self._loss = np.inf
-        self._loss_combined = np.inf
-
         x, y = self.bounds
         self.xy_scale = hypot(x[1]-x[0], y[1]-y[0])
 
         # Keeps track till which index _points and _values are filled
         self.n = 0
 
-        pts = []
-        for j, (a, b) in enumerate(self.bounds):
-            if j == 0:
-                def _append(x):
-                    pts.append((x,))
-            else:
-                opts = pts
-                pts = []
-
-                def _append(x):
-                    for r in opts:
-                        pts.append(r + (x,))
-            _append(a)
-            _append(b)
+        self._bounds_points = list(itertools.product(*bounds))
 
         # Add the loss improvement to the bounds in the stack
-        self._stack = [point + (np.inf,) for point in pts]
+        self._stack = [p + (np.inf,) for p in self._bounds_points]
 
     @property
     def points_combined(self):
@@ -667,35 +648,29 @@ class Learner2D(BaseLearner):
         return np.delete(self.values_combined,
                          list(self._interp.values()), axis=0)
 
-    @property
     def ip(self):
         return interpolate.LinearNDInterpolator(self.points, self.values)
 
-    @property
     def ip_combined(self):
-        # Create the Delaunay object
-        if self.tri_combined is None:
-            self.tri_combined = spatial.Delaunay(self.points_combined,
-                                                 incremental=True,
-                                                 qhull_options='Q11 QJ')
+        p = self.points_combined
+        v = self.values_combined
 
-        return interpolate.LinearNDInterpolator(self.tri_combined,
-                                                self.values_combined)
+        # Interpolate the unfinished points
+        if self._interp:
+            n_interp = list(self._interp.values())
+            if  self.n_real >= 4 and not any(p in self._interp for p in self._bounds_points):
+                v[n_interp] = self.ip()(p[n_interp])
+            else:
+                # It is important not to return exact zeros because
+                # otherwise the algo will try to add the same point
+                # to the stack each time.
+                v[n_interp] = np.random.rand(len(n_interp)) * 1e-15
+
+        return interpolate.LinearNDInterpolator(p, v)
 
     @property
     def n_real(self):
         return self.n - len(self._interp)
-
-    def calculate_loss(self, real=True):
-        n = self.n_real if real else self.n
-        if n <= 4:
-            return np.inf
-        ip = self.ip if real else self.ip_combined
-        grad = interpolate.interpnd.estimate_gradients_2d_global(
-            ip.tri, ip.values.ravel(), tol=1e-6)
-        dev = self._deviation_from_linear_estimate(ip, grad)
-        return hypot(dev.max() / (v.max() - v.min()),
-                     self.tri_radius(p) / self.xy_scale)
 
     def add_point(self, point, value):
         nmax = self.values_combined.shape[0]
@@ -717,32 +692,18 @@ class Learner2D(BaseLearner):
         # otherwise get the index of the value that is being replaced.
         if old_point:
             n = self._interp.pop(point)
-            self._points[n] = point
-            self._values[n] = value
         else:
-            self._points[self.n] = point
-            self._values[self.n] = value
+            n = self.n
             self.n += 1
+
+        self._points[n] = point
+        self._values[n] = value
 
         # Remove the point if in the stack.
         for i, (*_point, _) in enumerate(self._stack):
             if point == tuple(_point):
                 self._stack.pop(i)
                 break
-
-        # Add the points to the Delaunay object
-        if self.tri_combined and not old_point:
-            self.tri_combined.add_points([point])
-
-        # Add None to the _loss_improvements if the point is added without
-        # using choose_points.
-        for _ in range(self.n - len(self._loss_improvements) + 1):
-            self._loss_improvements.append(None)
-
-        if value:
-            if self._loss_improvements[self.n] is None:
-                self._loss_improvements[self.n] = self.calculate_loss(True)
-            self._loss = min(self._loss, self._loss_improvements[self.n])
 
     def _deviation_from_linear_estimate(self, ip, gradients):
         tri = ip.tri
@@ -761,31 +722,17 @@ class Learner2D(BaseLearner):
         vol /= special.gamma(1 + self.ndim)
         return dev * vol
 
-    def tri_radius(self, points):
+    def triangle_radius(self, points):
         center = points.mean(axis=-2)
         return np.linalg.norm(points - center, axis=1).max()
 
     def _fill_stack(self, stack_till=None):
-        p = self.points_combined
-        v = self.values_combined
-
-        if v.shape[0] < self.ndim + 1:
+        if self.values_combined.shape[0] < self.ndim + 1:
             raise ValueError("too few points...")
 
-        # Interpolate the unfinished points
-        if self._interp:
-            n_interp = list(self._interp.values())
-            if self.n_real >= 4:
-                v[n_interp] = self.ip(p[n_interp])
-            else:
-                # It is important not to return exact zeros because
-                # otherwise the algo will try to add the same point
-                # to the stack each time.
-                v[n_interp] = np.random.rand(len(n_interp)) * 1e-15
-
         # Interpolate
-        ip = self.ip_combined
-        tri = self.tri_combined
+        ip = self.ip_combined()
+        tri = ip.tri
 
         # Gradients
         grad = interpolate.interpnd.estimate_gradients_2d_global(
@@ -826,7 +773,11 @@ class Learner2D(BaseLearner):
                 continue
 
             loss_improvement = hypot(dev[jsimplex] / (v.max() - v.min()),
-                                     self.tri_radius(p) / self.xy_scale)
+                                     self.triangle_radius(p) / self.xy_scale)
+
+            if np.isnan(point_new).all():
+                raise Exception('')
+
             # Add to stack
             self._stack.append(tuple(point_new) + (loss_improvement,))
 
@@ -861,11 +812,9 @@ class Learner2D(BaseLearner):
                 new_points, new_loss_improvements = self._split_stack(n_left)
                 points += new_points
                 loss_improvements += new_loss_improvements
-                self._loss_improvements += new_loss_improvements
                 self.add_data(new_points, itertools.repeat(None))
                 n_left -= len(new_points)
 
-        self._loss_combined = min(self._loss_combined, max(loss_improvements))
         return points, loss_improvements
 
     def choose_points(self, n, add_data=True):
@@ -876,18 +825,24 @@ class Learner2D(BaseLearner):
             return self._choose_and_add_points(n)
 
     def loss(self, real=True):
-        # XXX: currently the loss is set before the result of the point is known.
-        if real:
-            return self._loss
-        else:
-            return self._loss_combined
+        n = self.n_real if real else self.n
+        if n <= 4:
+            return np.inf
+        ip = self.ip() if real else self.ip_combined()
+        grad = interpolate.interpnd.estimate_gradients_2d_global(
+            ip.tri, ip.values.ravel(), tol=1e-6)
+
+        dev = self._deviation_from_linear_estimate(ip, grad)
+        jsimplex = np.argmax(dev)
+        p = ip.tri.points[ip.tri.vertices[jsimplex]]
+        v = ip.values[ip.tri.vertices[jsimplex]]
+        return hypot(dev[jsimplex] / (v.max() - v.min()),
+                     self.triangle_radius(p) / self.xy_scale)
 
     def remove_unfinished(self):
         n_real = self.n_real
         self._points[:n_real] = self.points
         self._values[:n_real] = self.values
-        self.tri_combined = spatial.Delaunay(self.points, incremental=True,
-                                             qhull_options='Q11 QJ')
         self.n -= len(self._interp)
         self._interp = {}
 
@@ -897,7 +852,8 @@ class Learner2D(BaseLearner):
         if self.n_real >= 4:
             x = np.linspace(*self.bounds[0], n_x)
             y = np.linspace(*self.bounds[1], n_y)
-            z = self.ip(x[:, None], y[None, :])
+            ip = self.ip()
+            z = ip(x[:, None], y[None, :])
             return hv.Image(np.rot90(z), bounds=lbrt)
         else:
             return hv.Image(np.zeros((2, 2)), bounds=lbrt)
@@ -911,3 +867,4 @@ def restore(*learners):
     finally:
         for state, learner in zip(states, learners):
             learner.__setstate__(state)
+
