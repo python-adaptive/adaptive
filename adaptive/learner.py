@@ -840,9 +840,8 @@ class Learner2D(BaseLearner):
                      self.triangle_radius(p) / self.xy_scale)
 
     def remove_unfinished(self):
-        n_real = self.n_real
-        self._points[:n_real] = self.points
-        self._values[:n_real] = self.values
+        self._points = self.points.copy()
+        self._values = self.values.copy()
         self.n -= len(self._interp)
         self._interp = {}
 
