@@ -623,6 +623,10 @@ class Learner2D(BaseLearner):
         self._loss_improvements = []
         self.tri_combined = None
         self._loss = np.inf
+        self._loss_combined = np.inf
+
+        x, y = self.bounds
+        self.xy_scale = hypot(x[1]-x[0], y[1]-y[0])
 
         # Keeps track till which index _points and _values are filled
         self.n = 0
@@ -682,6 +686,17 @@ class Learner2D(BaseLearner):
     def n_real(self):
         return self.n - len(self._interp)
 
+    def calculate_loss(self, real=True):
+        n = self.n_real if real else self.n
+        if n <= 4:
+            return np.inf
+        ip = self.ip if real else self.ip_combined
+        grad = interpolate.interpnd.estimate_gradients_2d_global(
+            ip.tri, ip.values.ravel(), tol=1e-6)
+        dev = self._deviation_from_linear_estimate(ip, grad)
+        return hypot(dev.max() / (v.max() - v.min()),
+                     self.tri_radius(p) / self.xy_scale)
+
     def add_point(self, point, value):
         nmax = self.values_combined.shape[0]
         if self.n >= nmax:
@@ -718,6 +733,16 @@ class Learner2D(BaseLearner):
         # Add the points to the Delaunay object
         if self.tri_combined and not old_point:
             self.tri_combined.add_points([point])
+
+        # Add None to the _loss_improvements if the point is added without
+        # using choose_points.
+        for _ in range(self.n - len(self._loss_improvements) + 1):
+            self._loss_improvements.append(None)
+
+        if value:
+            if self._loss_improvements[self.n] is None:
+                self._loss_improvements[self.n] = self.calculate_loss(True)
+            self._loss = min(self._loss, self._loss_improvements[self.n])
 
     def _deviation_from_linear_estimate(self, ip, gradients):
         tri = ip.tri
@@ -792,11 +817,6 @@ class Learner2D(BaseLearner):
             point_new = _max_disagreement_location_in_simplex(
                 p, v, g, transform)
 
-            x, y = self.bounds
-            xy_scale = hypot(x[1]-x[0], y[1]-y[0])
-            loss_improvement = hypot(dev[jsimplex] / (v.max() - v.min()),
-                                     self.tri_radius(p) / xy_scale)
-
             # Reduce to bounds
             point_new = np.clip(point_new, *zip(*self.bounds))
 
@@ -805,6 +825,8 @@ class Learner2D(BaseLearner):
                 dev[jsimplex] = 0
                 continue
 
+            loss_improvement = hypot(dev[jsimplex] / (v.max() - v.min()),
+                                     self.tri_radius(p) / self.xy_scale)
             # Add to stack
             self._stack.append(tuple(point_new) + (loss_improvement,))
 
@@ -839,12 +861,11 @@ class Learner2D(BaseLearner):
                 new_points, new_loss_improvements = self._split_stack(n_left)
                 points += new_points
                 loss_improvements += new_loss_improvements
+                self._loss_improvements += new_loss_improvements
                 self.add_data(new_points, itertools.repeat(None))
                 n_left -= len(new_points)
 
-        # XXX: Remove this once we correctly implemented the loss_improvements
-        self._loss_improvements += loss_improvements
-        self._loss = min(self._loss, max(loss_improvements))
+        self._loss_combined = min(self._loss_combined, max(loss_improvements))
         return points, loss_improvements
 
     def choose_points(self, n, add_data=True):
@@ -856,7 +877,10 @@ class Learner2D(BaseLearner):
 
     def loss(self, real=True):
         # XXX: currently the loss is set before the result of the point is known.
-        return self._loss
+        if real:
+            return self._loss
+        else:
+            return self._loss_combined
 
     def remove_unfinished(self):
         n_real = self.n_real
