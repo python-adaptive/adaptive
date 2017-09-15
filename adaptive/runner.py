@@ -37,6 +37,9 @@ class Runner:
     def __init__(self, learner, executor=None, goal=None, *,
                  log=False, ioloop=None):
         self.ioloop = ioloop if ioloop else asyncio.get_event_loop()
+        # if we instantiate our own executor, then we are also responsible
+        # for calling 'shutdown'
+        self.shutdown_executor = executor is None
         self.executor = _ensure_async_executor(executor, self.ioloop)
         self.learner = learner
         self.log = [] if log else None
@@ -86,6 +89,8 @@ class Runner:
             # cancel any outstanding tasks
             self.learner.remove_unfinished()
             cancelled = all(fut.cancel() for fut in xs.keys())
+            if self.shutdown_executor:
+                self.executor.shutdown()
             if not cancelled:
                 raise RuntimeError('Some futures remain uncancelled')
 
@@ -115,6 +120,9 @@ class _AsyncExecutor:
 
     def submit(self, f, *args, **kwargs):
         return self.ioloop.run_in_executor(self.executor, f, *args, **kwargs)
+
+    def shutdown(self, wait=True):
+        self.executor.shutdown(wait=wait)
 
 
 def _ensure_async_executor(executor, ioloop):
