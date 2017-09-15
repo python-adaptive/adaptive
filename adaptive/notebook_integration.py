@@ -33,7 +33,7 @@ def notebook_extension():
 
 # Plotting
 
-def live_plot(runner, *, plotter=None, update_interval=1):
+def live_plot(runner, *, plotter=None, update_interval=0.1):
 
     def plot_generator():
         while True:
