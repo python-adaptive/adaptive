@@ -659,7 +659,9 @@ class Learner2D(BaseLearner):
         # Interpolate the unfinished points
         if self._interp:
             n_interp = list(self._interp.values())
-            if  self.n_real >= 4 and not any(p in self._interp for p in self._bounds_points):
+            bounds_are_done = not any(p in self._interp
+                                      for p in self._bounds_points)
+            if bounds_are_done:
                 v[n_interp] = self.ip()(p[n_interp])
             else:
                 # It is important not to return exact zeros because
