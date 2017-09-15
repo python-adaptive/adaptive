@@ -86,13 +86,15 @@ class Runner:
                         self.log.append(('add_point', x, y))
                     self.learner.add_point(x, y)
         finally:
-            # cancel any outstanding tasks
+            # remove points with 'None' values from the learner
             self.learner.remove_unfinished()
-            cancelled = all(fut.cancel() for fut in xs.keys())
+            # cancel any outstanding tasks
+            remaining = list(xs.keys())
+            for fut in remaining:
+                fut.cancel()
+            await asyncio.wait(remaining)
             if self.shutdown_executor:
                 self.executor.shutdown()
-            if not cancelled:
-                raise RuntimeError('Some futures remain uncancelled')
 
 
 def replay_log(learner, log):
