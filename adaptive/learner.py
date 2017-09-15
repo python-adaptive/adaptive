@@ -474,6 +474,8 @@ class BalancingLearner(BaseLearner):
             learner.remove_unfinished()
 
 
+# Learner2D and helper functions.
+
 def _max_disagreement_location_in_simplex(points, values, grad, transform):
     """Find the point of maximum disagreement between linear and cubic model.
 
@@ -652,6 +654,10 @@ class Learner2D(BaseLearner):
     def ip(self):
         return interpolate.LinearNDInterpolator(self.points, self.values)
 
+    @property
+    def n_real(self):
+        return self.n - len(self._interp)
+
     def ip_combined(self):
         p = self.points_combined
         v = self.values_combined
@@ -670,10 +676,6 @@ class Learner2D(BaseLearner):
                 v[n_interp] = np.random.rand(len(n_interp)) * 1e-15
 
         return interpolate.LinearNDInterpolator(p, v)
-
-    @property
-    def n_real(self):
-        return self.n - len(self._interp)
 
     def add_point(self, point, value):
         nmax = self.values_combined.shape[0]
