@@ -609,8 +609,9 @@ class Learner2D(BaseLearner):
     it, your function needs to be slow enough to compute.
     """
 
-    def __init__(self, function, bounds):
+    def __init__(self, function, bounds, *, advanced_point_chosing=False):
         self.function = function
+        self.advanced_point_chosing = advanced_point_chosing
         self.ndim = len(bounds)
         if self.ndim != 2:
             raise ValueError("Only 2-D sampling supported.")
@@ -758,11 +759,15 @@ class Learner2D(BaseLearner):
             # Estimate point of maximum curvature inside the simplex
             p = tri.points[tri.vertices[jsimplex]]
             v = ip.values[tri.vertices[jsimplex]]
-            g = grad[tri.vertices[jsimplex]]
-            transform = tri.transform[jsimplex]
 
-            point_new = _max_disagreement_location_in_simplex(
-                p, v, g, transform)
+            if self.advanced_point_chosing:
+                g = grad[tri.vertices[jsimplex]]
+                transform = tri.transform[jsimplex]
+
+                point_new = _max_disagreement_location_in_simplex(
+                    p, v, g, transform)
+            else:
+                point_new = p.mean(axis=-2)
 
             # Reduce to bounds
             point_new = np.clip(point_new, *zip(*self.bounds))
@@ -846,11 +851,11 @@ class Learner2D(BaseLearner):
         self._interp = {}
 
     def plot(self, n_x=201, n_y=201):
-        bounds = self.bounds
-        lbrt = bounds[0][0], bounds[1][0], bounds[0][1], bounds[1][1]
+        x, y = self.bounds
+        lbrt = x[0], y[0], x[1], y[1]
         if self.n_real >= 4:
-            x = np.linspace(*self.bounds[0], n_x)
-            y = np.linspace(*self.bounds[1], n_y)
+            x = np.linspace(*x, n_x)
+            y = np.linspace(*y, n_y)
             ip = self.ip()
             z = ip(x[:, None], y[None, :])
             return hv.Image(np.rot90(z), bounds=lbrt)
@@ -866,4 +871,3 @@ def restore(*learners):
     finally:
         for state, learner in zip(states, learners):
             learner.__setstate__(state)
-
