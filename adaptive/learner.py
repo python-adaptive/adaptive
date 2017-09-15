@@ -5,12 +5,12 @@ from copy import deepcopy as copy
 import functools
 import heapq
 import itertools
-from math import sqrt, isinf, hypot
+from math import sqrt, hypot
 from operator import itemgetter
 
 import holoviews as hv
 import numpy as np
-from scipy import interpolate, optimize, spatial, special
+from scipy import interpolate, optimize, special
 import sortedcontainers
 
 
@@ -29,10 +29,6 @@ class BaseLearner(metaclass=abc.ABCMeta):
     Subclasses may define a 'plot' method that takes no parameters
     and returns a holoviews plot.
     """
-
-    def __init__(self, function):
-        self.data = {}
-        self.function = function
 
     def add_data(self, xvalues, yvalues):
         """Add data to the learner.
@@ -112,8 +108,6 @@ class AverageLearner(BaseLearner):
     """
 
     def __init__(self, function, atol=None, rtol=None):
-        super().__init__(function)
-
         if atol is None and rtol is None:
             raise Exception('At least one of `atol` and `rtol` should be set.')
         if atol is None:
@@ -191,7 +185,7 @@ class Learner1D(BaseLearner):
     """
 
     def __init__(self, function, bounds):
-        super().__init__(function)
+        self.function = function
 
         # A dict storing the loss function for each interval x_n.
         self.losses = {}
@@ -570,6 +564,43 @@ def _max_disagreement_location_in_simplex(points, values, grad, transform):
     return p
 
 
+def triangle_radius(points):
+    """The radius of a triangle defined by `points`.
+
+    Parameters
+    ----------
+    points : numpy array
+        A sequence of the positions of the vertices of the triangle,
+        with shape (..., 3, ndim).
+
+    Returns
+    -------
+    radius : float
+        The longest distance from the center to one of the vertices.
+    """
+    center = points.mean(axis=-2)
+    return np.linalg.norm(points - center, axis=1).max()
+
+
+def _deviation_from_linear_estimate(self, ip, gradients):
+    tri = ip.tri
+    p = tri.points[tri.vertices]
+    g = gradients[tri.vertices]
+    v = ip.values.ravel()[tri.vertices]
+    ndim = p.shape[1]
+
+    dev = 0
+    for j in range(ndim):
+        vest = v[:, j, None] + ((p[:, :, :] - p[:, j, None, :]) *
+                                g[:, j, None, :]).sum(axis=-1)
+        dev += abs(vest - v).max(axis=1)
+
+    q = p[:, :-1, :] - p[:, -1, None, :]
+    vol = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
+    vol /= special.gamma(1 + ndim)
+    return dev * vol
+
+
 class Learner2D(BaseLearner):
     """Learns and predicts a function 'f: ℝ^2 → ℝ'.
 
@@ -710,27 +741,6 @@ class Learner2D(BaseLearner):
                 self._stack.pop(i)
                 break
 
-    def _deviation_from_linear_estimate(self, ip, gradients):
-        tri = ip.tri
-        p = tri.points[tri.vertices]
-        g = gradients[tri.vertices]
-        v = ip.values.ravel()[tri.vertices]
-
-        dev = 0
-        for j in range(self.ndim):
-            vest = v[:, j, None] + ((p[:, :, :] - p[:, j, None, :]) *
-                                    g[:, j, None, :]).sum(axis=-1)
-            dev += abs(vest - v).max(axis=1)
-
-        q = p[:, :-1, :] - p[:, -1, None, :]
-        vol = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
-        vol /= special.gamma(1 + self.ndim)
-        return dev * vol
-
-    def triangle_radius(self, points):
-        center = points.mean(axis=-2)
-        return np.linalg.norm(points - center, axis=1).max()
-
     def _fill_stack(self, stack_till=None):
         if self.values_combined.shape[0] < self.ndim + 1:
             raise ValueError("too few points...")
@@ -743,7 +753,7 @@ class Learner2D(BaseLearner):
         grad = interpolate.interpnd.estimate_gradients_2d_global(
             tri, ip.values.ravel(), tol=1e-6)
 
-        dev = self._deviation_from_linear_estimate(ip, grad)
+        dev = _deviation_from_linear_estimate(ip, grad)
 
         if stack_till is None:
             stack_till = 1
@@ -782,7 +792,7 @@ class Learner2D(BaseLearner):
                 continue
 
             loss_improvement = hypot(dev[jsimplex] / (v.max() - v.min()),
-                                     self.triangle_radius(p) / self.xy_scale)
+                                     triangle_radius(p) / self.xy_scale)
 
             if np.isnan(point_new).all():
                 raise Exception('')
@@ -841,12 +851,12 @@ class Learner2D(BaseLearner):
         grad = interpolate.interpnd.estimate_gradients_2d_global(
             ip.tri, ip.values.ravel(), tol=1e-6)
 
-        dev = self._deviation_from_linear_estimate(ip, grad)
+        dev = _deviation_from_linear_estimate(ip, grad)
         jsimplex = np.argmax(dev)
         p = ip.tri.points[ip.tri.vertices[jsimplex]]
         v = ip.values[ip.tri.vertices[jsimplex]]
         return hypot(dev[jsimplex] / (v.max() - v.min()),
-                     self.triangle_radius(p) / self.xy_scale)
+                     triangle_radius(p) / self.xy_scale)
 
     def remove_unfinished(self):
         self._points = self.points.copy()
