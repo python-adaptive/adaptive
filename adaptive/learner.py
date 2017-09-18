@@ -742,6 +742,9 @@ class Learner2D(BaseLearner):
                 break
 
     def _fill_stack(self, stack_till=None):
+        if stack_till is None:
+            stack_till = 1
+
         if self.values_combined.shape[0] < self.ndim + 1:
             raise ValueError("too few points...")
 
@@ -755,9 +758,6 @@ class Learner2D(BaseLearner):
 
         dev = _deviation_from_linear_estimate(ip, grad)
 
-        if stack_till is None:
-            stack_till = 1
-
         def point_exists(p):
             eps = np.finfo(float).eps * self.points_combined.ptp() * 100
             if abs(p - self.points_combined).sum(axis=1).min() < eps:
@@ -769,8 +769,8 @@ class Learner2D(BaseLearner):
             return False
 
         for j, _ in enumerate(dev):
-            jsimplex = np.argmax(dev)
             # Estimate point of maximum curvature inside the simplex
+            jsimplex = np.argmax(dev)
             p = tri.points[tri.vertices[jsimplex]]
             v = ip.values[tri.vertices[jsimplex]]
 
@@ -783,7 +783,8 @@ class Learner2D(BaseLearner):
             else:
                 point_new = p.mean(axis=-2)
 
-            # Reduce to bounds
+            # XXX: not sure whether this is necessary it was there
+            # originally.
             point_new = np.clip(point_new, *zip(*self.bounds))
 
             # Check if it is really new
@@ -793,9 +794,6 @@ class Learner2D(BaseLearner):
 
             loss_improvement = hypot(dev[jsimplex] / (v.max() - v.min()),
                                      triangle_radius(p) / self.xy_scale)
-
-            if np.isnan(point_new).all():
-                raise Exception('')
 
             # Add to stack
             self._stack.append(tuple(point_new) + (loss_improvement,))
