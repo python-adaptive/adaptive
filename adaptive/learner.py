@@ -582,7 +582,7 @@ def triangle_radius(points):
     return np.linalg.norm(points - center, axis=1).max()
 
 
-def _deviation_from_linear_estimate(self, ip, gradients):
+def _deviation_from_linear_estimate(ip, gradients):
     tri = ip.tri
     p = tri.points[tri.vertices]
     g = gradients[tri.vertices]
