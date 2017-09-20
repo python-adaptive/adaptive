@@ -407,5 +407,120 @@ def test():
     np.seterr(**old_settings)
 
 
-if __name__ == '__main__':
-    test()
+# if __name__ == '__main__':
+#     test()
+
+def __eq__(self, other):
+    variables = []
+    for slot in self.__slots__:
+        try:
+            eq = np.allclose(getattr(self, slot), getattr(other, slot), equal_nan=True)
+        except:
+            eq = getattr(self, slot) == getattr(other, slot)
+        if not eq:
+            print(slot, getattr(self, slot) - getattr(other, slot))
+        variables.append(eq)
+    return all(variables)
+
+
+from math import sqrt
+from copy import deepcopy as copy
+import itertools
+import operator
+from sortedcontainers import SortedList
+from adaptive.learner import BaseLearner
+class Interval:
+    __slots__ = ['a', 'b', 'c', 'c_old', 'fx', 'igral', 'err', 'tol',
+                 'rdepth', 'ndiv', 'parent', 'children', 'done_points']
+
+    @classmethod
+    def make_first(cls, a, b, tol):
+        points = (a+b)/2 + (b-a) * xi[3] / 2
+        fx = np.empty(len(points))
+        fx[:] = np.nan
+        ival = Interval()
+        ival.fx = fx
+        ival.c = np.zeros((4, n[3]))
+        ival.c_old = np.zeros(fx.shape)
+        ival.a = a
+        ival.b = b
+        ival.tol = tol
+        ival.ndiv = 0
+        ival.rdepth = 1
+        ival.parent = None
+        ival.children = []
+        ival.done_points = []
+
+        ival.err = np.inf
+        ival.igral = None
+        return ival, points
+
+    @property
+    def depth(self):
+        return n.index(len(self.fx)) + 1
+
+class Learner(BaseLearner):
+    def __init__(self, function, bounds, tol):
+        self.function = function
+        self.bounds = bounds
+        self.tol = tol
+        ival, points = Interval.make_first(*self.bounds, self.tol)
+
+        self.ivals = SortedList([ival], key=operator.attrgetter('err'))
+        self._stack = copy(points)
+        self.x_mapping = {x: [ival] for x in points}
+
+    def add_point(self, point, value):
+        ivals = self.x_mapping[point]
+        for ival in ivals:
+            ival.done_points.append((point, value))
+            complete = len(ival.done_points) == n[ival.depth-1]
+            if ival.parent is None and complete:
+                _, fx = zip(*sorted(ival.done_points))
+                fx = np.array(fx)
+                nans = []
+                for i in range(len(fx)):
+                    if not np.isfinite(fx[i]):
+                        nans.append(i)
+                        fx[i] = 0.0
+
+                ival.c[3, :n[3]] = V_inv[3] @ fx
+                ival.c[2, :n[2]] = V_inv[2] @ fx[:n[3]:2]
+                fx[nans] = np.nan
+                ival.fx = fx
+                ival.c_old = np.zeros(fx.shape)
+                a, b = ival.a, ival.b
+                ival.igral = (b-a) * ival.c[3, 0] / sqrt(2)
+                c_diff = norm(ival.c[3] - ival.c[2])
+                ival.err = (b-a) * c_diff
+                if c_diff / norm(ival.c[3]) > 0.1:
+                    ival.err = max( ival.err , (b-a) * norm(ival.c[3]) )
+
+    def choose_points(self, n):
+        points, loss_improvements = self.from_stack(n)
+        if len(points) < n:
+            self._fill_stack(n)
+        return points, loss_improvements
+
+    def from_stack(self, n):
+        points = self._stack[:n]
+        loss_improvements = [max(ival.err for ival in self.x_mapping[x]) for x in self._stack[:n]]
+        return points, loss_improvements
+
+    def loss(self, real=True):
+        pass
+
+    def remove_unfinished(self):
+        pass
+
+    def _fill_stack(self, n):
+        raise NotImplementedError
+
+f, a, b, tol = f0, 0, 3, 1e-5
+l = Learner(f, bounds=(a, b), tol=tol)
+points, loss_improvement = l.choose_points(33)
+l.add_data(points, map(l.function, points))
+ival_new = l.ivals[0]
+
+ival, points = _Interval.make_first(f, a, b, tol)
+print(__eq__(ival, ival_new))
