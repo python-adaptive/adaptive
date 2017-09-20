@@ -425,39 +425,86 @@ def __eq__(self, other):
 
 from math import sqrt
 from copy import deepcopy as copy
+from collections import defaultdict
 import itertools
 import operator
-from sortedcontainers import SortedList
+from sortedcontainers import SortedList, SortedDict
 from adaptive.learner import BaseLearner
+
+T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
+
 class Interval:
     __slots__ = ['a', 'b', 'c', 'c_old', 'fx', 'igral', 'err', 'tol',
                  'rdepth', 'ndiv', 'parent', 'children', 'done_points']
 
     @classmethod
     def make_first(cls, a, b, tol):
-        points = (a+b)/2 + (b-a) * xi[3] / 2
-        fx = np.empty(len(points))
-        fx[:] = np.nan
         ival = Interval()
-        ival.fx = fx
-        ival.c = np.zeros((4, n[3]))
-        ival.c_old = np.zeros(fx.shape)
-        ival.a = a
-        ival.b = b
+        ival.c = np.zeros((len(ns), ns[-1]))
         ival.tol = tol
         ival.ndiv = 0
         ival.rdepth = 1
         ival.parent = None
         ival.children = []
-        ival.done_points = []
-
+        ival.done_points = SortedDict()
+        ival.a = a
+        ival.b = b
+        points = ival.points(len(ns) - 1)
+        fx = np.empty(len(points))
+        fx[:] = np.nan
+        ival.fx = fx
+        ival.c_old = np.zeros(fx.shape)
         ival.err = np.inf
-        ival.igral = None
+        ival.igral = 0
         return ival, points
 
     @property
     def depth(self):
         return n.index(len(self.fx)) + 1
+
+    @property
+    def complete(self):
+        return len(self.done_points) == ns[self.depth-1]
+
+    @property
+    def T(self):
+        if self.parent is not None:
+            if self.a == self.parent.a:
+                return T_left
+            elif self.b == self.parent.b:
+                return T_right
+            else:
+                raise Exception('This should not happen.')
+
+    def points(self, depth):
+        a = self.a
+        b = self.b
+        return (a+b)/2 + (b-a)*xi[depth]/2
+
+    def split(self, f, ndiv_max=20):
+        a = self.a
+        b = self.b
+        m = (a + b) / 2
+        f_center = self.fx[(len(self.fx)-1)//2]
+        ivals = (Interval(), Interval())
+        ival_left, ival_right = ivals
+        ival_left.a, ival_left.b = (a, m)
+        ival_right.a, ival_right.b = (m, b)
+
+        for ival in ivals:
+            ival.tol = self.tol / np.sqrt(2)
+            ival.rdepth = self.rdepth + 1
+            ival.c = np.zeros((len(ns), ns[-1]))
+            ival.fx = np.empty(ns[0])
+            ival.parent = self
+            ival.done_points = SortedDict()
+            self.children.append(ival)
+            ival.err = self.err / np.sqrt(2)  # XXX: is this correct even though we know some points?
+            ival.igral = 0
+            assert len(ival.fx) == n[ival.depth - 1]
+
+        return ivals
+
 
 class Learner(BaseLearner):
     def __init__(self, function, bounds, tol):
@@ -467,25 +514,25 @@ class Learner(BaseLearner):
         ival, points = Interval.make_first(*self.bounds, self.tol)
 
         self.ivals = SortedList([ival], key=operator.attrgetter('err'))
-        self._stack = copy(points)
-        self.x_mapping = {x: [ival] for x in points}
+        self._stack = copy(list(points))
+        self.x_mapping = defaultdict(set)
+        for x in points:
+            self.x_mapping[x].add(ival)
 
     def add_point(self, point, value):
         ivals = self.x_mapping[point]
         for ival in ivals:
-            ival.done_points.append((point, value))
-            complete = len(ival.done_points) == n[ival.depth-1]
-            if ival.parent is None and complete:
-                _, fx = zip(*sorted(ival.done_points))
-                fx = np.array(fx)
+            ival.done_points[point] = value
+            if ival.parent is None and ival.complete:
+                fx = np.array(ival.done_points.values())
                 nans = []
                 for i in range(len(fx)):
                     if not np.isfinite(fx[i]):
                         nans.append(i)
                         fx[i] = 0.0
 
-                ival.c[3, :n[3]] = V_inv[3] @ fx
-                ival.c[2, :n[2]] = V_inv[2] @ fx[:n[3]:2]
+                ival.c[3, :ns[3]] = V_inv[3] @ fx
+                ival.c[2, :ns[2]] = V_inv[2] @ fx[:ns[3]:2]
                 fx[nans] = np.nan
                 ival.fx = fx
                 ival.c_old = np.zeros(fx.shape)
@@ -497,24 +544,106 @@ class Learner(BaseLearner):
                     ival.err = max( ival.err , (b-a) * norm(ival.c[3]) )
 
     def choose_points(self, n):
-        points, loss_improvements = self.from_stack(n)
+        points, loss_improvements = self.take_from_stack(n)
+
         if len(points) < n:
             self._fill_stack(n)
         return points, loss_improvements
 
-    def from_stack(self, n):
+    def take_from_stack(self, n):
         points = self._stack[:n]
-        loss_improvements = [max(ival.err for ival in self.x_mapping[x]) for x in self._stack[:n]]
+        loss_improvements = [max(ival.err for ival in self.x_mapping[x])
+                             for x in self._stack[:n]]
+
+        # Remove from stack
+        self._stack = self._stack[n:]
         return points, loss_improvements
 
     def loss(self, real=True):
-        pass
+        return self.err_final
 
     def remove_unfinished(self):
         pass
 
     def _fill_stack(self, n):
-        raise NotImplementedError
+        ival = self.ivals[-1]
+        if ival.depth == len(ns):
+            # Always split when depth is 4
+            split = True
+            points = ival.points(ival.depth - 1)
+        else:
+            # Refine
+            points = ival.points(ival.depth)
+            fx = np.empty(ns[ival.depth])
+            for i, x in enumerate(points):
+                self.x_mapping[x].add(ival)  # the values of x_mapping are sets
+                if x in ival.done_points:
+                    fx[i] = x
+            self._stack += list(points[1::2])
+
+        # Check whether the point spacing is smaller than machine precision
+        # and pop the interval with the largest error and do not split
+        if (points[1] <= points[0]
+            or points[-1] <= points[-2]
+            or ival.err < (abs(ival.igral) * eps
+                                   * Vcond[ival.depth - 1])):
+            # XXX: maybe just set the err = 0?
+            self.ivals.pop()
+        elif split:
+            ivals_new = ival.split(f)
+            done_points_parent = ival.done_points
+            self.ivals.pop()  # XXX: What do I do here? Same as above?
+
+            for ival in ivals_new:
+                points = ival.points(depth=0)
+                for index in (0, -1):
+                    # Add the known outermost points if they are done in the parent
+                    x = points[index]
+                    if x in done_points_parent:
+                        ival.fx[index] = done_points_parent[x]
+                        ival.done_points[x] = ival.fx[index]
+
+                # XXX: Didn't I already calculate the center value?
+                self._stack += list(points[1:-1])
+
+                # Update the mappings
+                # XXX: Do I remove the parent ival from the set?
+                for x in points:
+                    self.x_mapping[x].add(ival)
+
+            self.ivals += list(ivals_new)
+
+        # nuke smallest element if stack is larger than 200
+        # XXX: not changed yet
+        if len(self.ivals) > 200:
+            err_final += ivals[i_min].err
+            igral_final += ivals[i_min].igral
+            ivals[i_min] = ivals.pop()
+            if i_max == len(ivals):
+                i_max = i_min
+
+    @property
+    def nr_points(self):
+        return sum(len(ival.done_points) for ival in self.ivals)
+
+    @property
+    def igral(self):
+        return sum(ival.igral for ival in self.ivals
+                   if ival.complete and not ival.children)
+
+    @property
+    def err(self):
+        return sum(ival.err for ival in self.ivals
+                   if ival.complete and not ival.children)
+
+    def loss(self, real=True):
+        return (err == 0
+                or err < abs(igral) * tol
+                or (err_final > abs(igral) * tol
+                    and err - err_final < abs(igral) * tol)
+                or not ivals)
+
+
 
 f, a, b, tol = f0, 0, 3, 1e-5
 l = Learner(f, bounds=(a, b), tol=tol)
