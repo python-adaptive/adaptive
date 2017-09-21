@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import abc
+import collections
 from contextlib import contextmanager
 from copy import deepcopy as copy
 import functools
@@ -42,10 +43,10 @@ class BaseLearner(metaclass=abc.ABCMeta):
             If 'None', then it indicates that the value has not yet
             been computed.
         """
-        try:
+        if all(isinstance(i, collections.Iterable) for i in [xvalues, yvalues]):
             for x, y in zip(xvalues, yvalues):
                 self.add_point(x, y)
-        except TypeError:
+        else:
             self.add_point(xvalues, yvalues)
 
     @abc.abstractmethod
