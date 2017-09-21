@@ -412,6 +412,7 @@ def test():
 # if __name__ == '__main__':
 #     test()
 
+
 def __eq__(self, other):
     variables = []
     for slot in self.__slots__:
@@ -430,39 +431,34 @@ from copy import deepcopy as copy
 from collections import defaultdict
 import itertools
 import operator
-from sortedcontainers import SortedList, SortedDict
+from sortedcontainers import SortedList, SortedDict, SortedSet
 from adaptive.learner import BaseLearner
 
 T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
 
 class Interval:
-    __slots__ = ['a', 'b', 'c', 'c_old', 'fx', 'igral', 'err', 'tol',
-                 'rdepth', 'ndiv', 'parent', 'children', 'done_points']
+    __slots__ = ['a', 'b', 'c', 'c_old', 'depth', 'fx', 'igral', 'err', 'tol',
+                 'rdepth', 'ndiv', 'parent', 'children', 'done_points', 'done']
+
+    def __init__(self, a, b):
+        self.children = []
+        self.done_points = SortedDict()
+        self.a = a
+        self.b = b
+        self.c = np.zeros((len(ns), ns[-1]))
 
     @classmethod
     def make_first(cls, a, b, tol):
-        ival = Interval()
-        ival.c = np.zeros((len(ns), ns[-1]))
+        ival = Interval(a, b)
         ival.tol = tol
         ival.ndiv = 0
         ival.rdepth = 1
         ival.parent = None
-        ival.children = []
-        ival.done_points = SortedDict()
-        ival.a = a
-        ival.b = b
-        points = ival.points(len(ns) - 1)
-        fx = np.empty(len(points))
-        fx[:] = np.nan
-        ival.fx = fx
-        ival.c_old = np.zeros(fx.shape)
+        ival.depth = 4
+        ival.c_old = np.zeros(n[ival.depth - 1])
         ival.err = np.inf
         ival.igral = 0
-        return ival, points
-
-    @property
-    def depth(self):
-        return n.index(len(self.fx)) + 1
+        return ival, ival.points(ival.depth - 1)
 
     @property
     def complete(self):
@@ -493,24 +489,17 @@ class Interval:
         a = self.a
         b = self.b
         m = (a + b) / 2
-        f_center = self.fx[(len(self.fx)-1)//2]
-        ivals = (Interval(), Interval())
+        ivals = (Interval(a, m), Interval(m, b))
         ival_left, ival_right = ivals
-        ival_left.a, ival_left.b = (a, m)
-        ival_right.a, ival_right.b = (m, b)
 
         for ival in ivals:
+            ival.depth = 1
             ival.tol = self.tol / np.sqrt(2)
             ival.rdepth = self.rdepth + 1
-            ival.c = np.zeros((len(ns), ns[-1]))
-            ival.fx = np.empty(ns[0])
             ival.parent = self
-            ival.done_points = SortedDict()
-            ival.children = []
             self.children.append(ival)
             ival.err = self.err / np.sqrt(2)  # XXX: is this correct even though we know some points?
             ival.igral = 0
-            assert len(ival.fx) == n[ival.depth - 1]
 
         return ivals
 
@@ -524,14 +513,17 @@ class Learner(BaseLearner):
 
         self.ivals = SortedList([ival], key=operator.attrgetter('err'))
         self._stack = copy(list(points))
-        self.x_mapping = defaultdict(set)
+        self.x_mapping = defaultdict(lambda: SortedSet([], key=operator.attrgetter('rdepth')))
         for x in points:
             self.x_mapping[x].add(ival)
 
     def add_point(self, point, value):
+        # Select the intervals that have this point
         ivals = self.x_mapping[point]
-        for ival in ivals:
+        while ivals:
+            ival = ivals.pop(0)  # This pops the one with lowest rdepth
             ival.done_points[point] = value
+            a, b = ival.a, ival.b
             if ival.complete:
                 fx = np.array(ival.done_points.values())
                 # Add points for the very first ival
@@ -547,16 +539,16 @@ class Learner(BaseLearner):
                     fx[nans] = np.nan
                     ival.fx = fx
                     ival.c_old = np.zeros(fx.shape)
-                    a, b = ival.a, ival.b
-                    ival.igral = (b-a) * ival.c[3, 0] / sqrt(2)
                     c_diff = norm(ival.c[3] - ival.c[2])
-                    ival.err = (b-a) * c_diff
+                    ival.igral = (b - a) * ival.c[3, 0] / sqrt(2)
+                    ival.err = (b - a) * c_diff
+
                     if c_diff / norm(ival.c[3]) > 0.1:
-                        ival.err = max( ival.err , (b-a) * norm(ival.c[3]) )
+                        ival.err = max(ival.err, (b-a) * norm(ival.c[3]))
                 else:
                     depth = ival.depth
-                    # split
-                    if depth == 0:
+                    if depth == 1:
+                        # Split logic
                         ival.c[0, :n[0]] = c_new = _calc_coeffs(fx, 0)
                         ival.fx = fx
                         parent = ival.parent
@@ -571,14 +563,14 @@ class Learner(BaseLearner):
                         if ival.ndiv > ndiv_max and 2*ival.ndiv > ival.rdepth:
                             return (a, b, b-a), nr_points
                     else:
-                        ival.c[depth, :n[depth]] = c_new = _calc_coeffs(fx, depth)
+                        # Refine logic
                         ival.fx = fx
-                        c_diff = norm(ival.c[depth - 1] - ival.c[depth])
-                        ival.err = (b-a) * c_diff
-                        ival.igral = (b-a) * w * c_new[0]
-                        nc = norm(c_new)
+                        own_depth = ival.depth - 1
+                        ival.c[own_depth, :n[own_depth]] = c_new = _calc_coeffs(fx, own_depth)
+                        c_diff = norm(ival.c[own_depth - 1] - ival.c[own_depth])
+                        ival.err = (b - a) * c_diff
+                        ival.igral = (b - a) * c_new[0] / sqrt(2)
                     assert len(ival.fx) == n[ival.depth - 1]
-                    return points, split, n[depth] - n[depth-1]
 
     def choose_points(self, n):
         points, loss_improvements = self.take_from_stack(n)
@@ -621,13 +613,13 @@ class Learner(BaseLearner):
         else:
             # Refine
             points = ival.points(ival.depth)
-            ival.fx = np.empty(len(points))
-            for i, x in enumerate(points):
+            for x in points:
                 self.x_mapping[x].add(ival)  # the values of x_mapping are sets
                 if x in ival.done_points:
                     self.add_point(x, ival.done_points[x])
             self._stack += list(points[1::2])
             split = False
+            ival.depth += 1
 
         # Check whether the point spacing is smaller than machine precision
         # and pop the interval with the largest error and do not split
@@ -635,11 +627,10 @@ class Learner(BaseLearner):
             or points[-1] <= points[-2]
             or ival.err < (abs(ival.igral) * eps
                                    * Vcond[ival.depth - 1])):
-            # XXX: maybe just set the err = 0?
             self.ivals.pop()
         elif split:
             ivals_new = ival.split(f)
-            self.ivals.pop()  # XXX: What do I do here? Same as above?
+            self.ivals.pop()
 
             done_points_parent = ival.done_points
             for ival in ivals_new:
@@ -661,7 +652,7 @@ class Learner(BaseLearner):
 
         # Remove the smallest element if number of intervals is larger than 200
         if len(self.ivals) > 200:
-            ivals.pop(0)
+            self.ivals.pop(0)
 
         return self._stack
 
@@ -687,7 +678,6 @@ class Learner(BaseLearner):
                 or not ivals)
 
 
-
 f, a, b, tol = f0, 0, 3, 1e-5
 l = Learner(f, bounds=(a, b), tol=tol)
 points, loss_improvement = l.choose_points(33)
@@ -695,9 +685,16 @@ l.add_data(points, map(l.function, points))
 ival_new = l.ivals[0]
 
 ival, points = _Interval.make_first(f, a, b, tol)
-
+ivals = [ival]
 print(__eq__(ival, ival_new))
+result, nr_points_inc = ivals.pop(0).split(f)
+ivals.extend(result)
 
-for i in range(100):
+for i in range(6):
+    print(i)
     points, loss_improvement = l.choose_points(1)
     l.add_data(points, map(l.function, points))
+
+new1, new2 = l.ivals
+old1, old2 = ivals
+print(__eq__(old1, new1), __eq__(old2, new2))
