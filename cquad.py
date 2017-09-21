@@ -116,7 +116,7 @@ class DivergentIntegralError(ValueError):
 
 class _Interval:
     __slots__ = ['a', 'b', 'c', 'c_old', 'fx', 'igral', 'err', 'tol',
-                 'rdepth', 'ndiv']
+                 'depth', 'rdepth', 'ndiv']
 
     @classmethod
     def make_first(cls, f, a, b, tol):
@@ -142,13 +142,10 @@ class _Interval:
         if c_diff / norm(ival.c[3]) > 0.1:
             ival.err = max( ival.err , (b-a) * norm(ival.c[3]) )
         ival.tol = tol
+        ival.depth = 4
         ival.ndiv = 0
         ival.rdepth = 1
         return ival, points
-
-    @property
-    def depth(self):
-        return n.index(len(self.fx)) + 1
 
     def split(self, f, ndiv_max=20):
         a = self.a
@@ -166,6 +163,7 @@ class _Interval:
             ival.a = aa
             ival.b = bb
             ival.tol = self.tol / np.sqrt(2)
+            ival.depth = 1
             ival.rdepth = self.rdepth + 1
             ival.c = np.zeros((4, n[3]))
             fx = np.concatenate(
@@ -173,8 +171,6 @@ class _Interval:
                  f((aa + bb) / 2 + (bb - aa) * xi[0][1:-1] / 2),
                  [f_right]))
             nr_points += n[0] - 2
-
-
 
             ival.c[0, :n[0]] = c_new = _calc_coeffs(fx, 0)
             ival.fx = fx
@@ -188,21 +184,18 @@ class _Interval:
                             and ival.c[0, 0] / self.c[0, 0] > 2))
             if ival.ndiv > ndiv_max and 2*ival.ndiv > ival.rdepth:
                 return (aa, bb, bb-aa), nr_points
-        for ival in ivals:
-            assert len(ival.fx) == n[ival.depth - 1]
+
         return ivals, nr_points
 
     def refine(self, f):
         """Increase degree of interval."""
         depth = self.depth
-        if depth >= 4:
-            raise RuntimeError('Max refinement level exceeded.')
         a = self.a
         b = self.b
         points = (a+b)/2 + (b-a)*xi[depth]/2
         fx = np.empty(n[depth])
-        fx[0::2] = self.fx
-        fx[1:-1:2] = f(points[1:n[depth]-1:2])
+        fx[0:n[depth]:2] = self.fx
+        fx[1:n[depth]-1:2] = f(points[1:n[depth]-1:2])
         fx = fx[:n[depth]]
         self.c[depth, :n[depth]] = c_new = _calc_coeffs(fx, depth)
         self.fx = fx
@@ -214,7 +207,8 @@ class _Interval:
             split = True
         else:
             split = False
-        assert len(self.fx) == n[self.depth - 1]
+            self.depth = depth + 1
+
         return points, split, n[depth] - n[depth-1]
 
 
@@ -362,8 +356,7 @@ def hex2float(hex):
 
 def assert_equal(value, hex, eps=0):
     assert (float2hex(value) == hex # for NaN, etc.
-            or abs((value - hex2float(hex))) <= abs(eps * value)),\
-            (abs((value - hex2float(hex))), eps, value)
+            or abs((value - hex2float(hex))) <= abs(eps * value))
 
 def test():
     old_settings = np.seterr(all='ignore')
@@ -372,31 +365,31 @@ def test():
     print(igral, err, nr_points)
     assert_equal(igral, '3fffb6084c1dabf4')
     assert_equal(err, '3ef46042cb969374')
-    assert nr_points == 1419, nr_points
+    assert nr_points == 1419
 
     igral, err, nr_points = algorithm_4(f7, 0, 1, 1e-6)
     print(igral, err, nr_points)
     assert_equal(igral, '3fffffffd9fa6513')
     assert_equal(err, '3ebd8955755be30c')
-    assert nr_points == 709, nr_points
+    assert nr_points == 709
 
     igral, err, nr_points = algorithm_4(f24, 0, 3, 1e-3)
     print(igral, err, nr_points)
     assert_equal(igral, '4031aa1505ba7b41')
     assert_equal(err, '3f9202232bd03a6a')
-    assert nr_points == 4515, nr_points
+    assert nr_points == 4515
 
     igral, err, nr_points = algorithm_4(f21, 0, 1, 1e-3)
     print(igral, err, nr_points)
     assert_equal(igral, '3fc4e088c36827c1')
     assert_equal(err, '3f247d00177a3f07')
-    assert nr_points == 203, nr_points
+    assert nr_points == 203
 
     igral, err, nr_points = algorithm_4(f63, 0, 1, 1e-10)
     print(igral, err, nr_points)
     assert_equal(igral, '3fff7ccfd769d160')
     assert_equal(err, '3e28f421b487f15a', 2e-15)
-    assert nr_points == 2715, nr_points
+    assert nr_points == 2715
 
     try:
         igral, err, nr_points = algorithm_4(fdiv, 0, 1, 1e-6)
@@ -404,7 +397,7 @@ def test():
         print(e.igral, e.err, e.nr_points)
         assert_equal(e.igral, '7ff0000000000000')
         assert_equal(e.err, '4073b48aeb356df5')
-        assert e.nr_points == 457, e.nr_points
+        assert e.nr_points == 457
 
     np.seterr(**old_settings)
 
@@ -413,15 +406,116 @@ def test():
 #     test()
 
 
+def intervals(f, a, b, tol, N_times):
+    """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
+    algorithm uses Clenshaw-Curtis quadrature rules of increasing
+    degree in each interval and bisects the interval if either the
+    function does not appear to be smooth or a rule of maximum degree
+    has been reached. The error estimate is computed from the L2-norm
+    of the difference between two successive interpolations of the
+    integrand over the nodes of the respective quadrature rules.
 
-def __eq__(self, other):
+    INT = ALGORITHM_4 ( F , A , B , TOL ) approximates the integral of
+    F in the interval [A,B] up to the relative tolerance TOL. The
+    integrand F should accept a vector argument and return a vector
+    result containing the integrand evaluated at each element of the
+    argument.
+
+    [INT,ERR,NR_POINTS] = ALGORITHM_4 ( F , A , B , TOL ) returns ERR,
+    an estimate of the absolute integration error as well as
+    NR_POINTS, the number of function values for which the integrand
+    was evaluated. The value of ERR may be larger than the requested
+    tolerance, indicating that the integration may have failed.
+
+    ALGORITHM_4 halts with a warning if the integral is or appears to
+    be divergent.
+
+    Reference: "Increasing the Reliability of Adaptive Quadrature
+        Using Explicit Interpolants", P. Gonnet, ACM Transactions on
+        Mathematical Software, 37 (3), art. no. 26, 2008.
+    """
+
+    # compute the first interval
+    ival, points = _Interval.make_first(f, a, b, tol)
+    ivals = [ival]
+
+    # init some globals
+    igral = ival.igral
+    err = ival.err
+    igral_final = 0
+    err_final = 0
+    i_max = 0
+    nr_points = n[3]
+
+    # do we even need to go this way?
+    if err < igral * tol:
+        return igral, err, nr_points
+
+    # main loop
+    for _ in range(N_times):
+        if ivals[i_max].depth == 4:
+            split = True
+        else:
+            points, split, nr_points_inc = ivals[i_max].refine(f)
+            nr_points += nr_points_inc
+        # can we safely ignore this interval?
+        if (points[1] <= points[0]
+            or points[-1] <= points[-2]
+            or ivals[i_max].err < (abs(ivals[i_max].igral) * eps
+                                   * Vcond[ivals[i_max].depth - 1])):
+            err_final += ivals[i_max].err
+            igral_final += ivals[i_max].igral
+            ivals[i_max] = ivals.pop()
+        elif split:
+            result, nr_points_inc = ivals[i_max].split(f)
+            nr_points += nr_points_inc
+            if isinstance(result, tuple):
+                igral = np.sign(igral) * np.inf
+                raise DivergentIntegralError(
+                    'Possibly divergent integral in the interval'
+                    ' [{}, {}]! (h={})'.format(*result),
+                    igral, err, nr_points)
+            ivals.extend(result)
+            ivals[i_max] = ivals.pop()
+        # compute the running err and new max
+        i_max = 0
+        i_min = 0
+        err = err_final
+        igral = igral_final
+        for i in range(len(ivals)):
+            if ivals[i].err > ivals[i_max].err:
+                i_max = i
+            elif ivals[i].err < ivals[i_min].err:
+                i_min = i
+            err += ivals[i].err
+            igral += ivals[i].igral
+
+        # nuke smallest element if stack is larger than 200
+        if len(ivals) > 200:
+            err_final += ivals[i_min].err
+            igral_final += ivals[i_min].igral
+            ivals[i_min] = ivals.pop()
+            if i_max == len(ivals):
+                i_max = i_min
+
+        # get up and leave?
+        if (err == 0
+            or err < abs(igral) * tol
+            or (err_final > abs(igral) * tol
+                and err - err_final < abs(igral) * tol)
+            or not ivals):
+            break
+
+    return ivals
+
+def __eq__(self, other, *, verbose=True):
     variables = []
     for slot in self.__slots__:
         try:
             eq = np.allclose(getattr(self, slot), getattr(other, slot), equal_nan=True)
         except:
             eq = getattr(self, slot) == getattr(other, slot)
-        if not eq:
+        if not eq and verbose:
             print(slot, getattr(self, slot) - getattr(other, slot))
         variables.append(eq)
     return all(variables)
@@ -430,7 +524,10 @@ def __eq__(self, other):
 def same_ivals(old, new):
     old = sorted(old, key=operator.attrgetter('a'))
     new = sorted(new, key=operator.attrgetter('a'))
-    return [__eq__(ival1, ival2) for ival1, ival2 in zip(old, new)]
+    try:
+        return [__eq__(ival1, ival2, verbose=False) for ival1, ival2 in zip(old, new)]
+    except:
+        return [False]
 
 
 from math import sqrt
@@ -452,7 +549,7 @@ class Interval:
         self.done_points = SortedDict()
         self.a = a
         self.b = b
-        self.c = np.zeros((len(ns), ns[-1]))
+        self.c = np.zeros((len(n), n[-1]))
         self.needs_split = False
 
     @classmethod
@@ -471,7 +568,7 @@ class Interval:
     @property
     def complete(self):
         """The interval has all the values needed to calculate the intergral."""
-        return len(self.done_points) == ns[self.depth-1]
+        return len(self.done_points) == n[self.depth-1]
 
     @property
     def done(self):
@@ -493,23 +590,13 @@ class Interval:
         b = self.b
         return (a+b)/2 + (b-a)*xi[depth]/2
 
-    def split_after_refine(self):
-        depth = self.depth
-        print('depth', depth)
-        c_diff = norm(self.c[depth - 2] - self.c[depth- 1])
-        print('c_diff', c_diff)
-        nc = norm(self.c[depth, :n[depth]])
-        split = nc > 0 and c_diff / nc > 0.1
-        if split:
-            print('split_after_refine, ival: ({}, {})'.format(self.a, self.b))
-        return split
-
     def refine(self):
         ival = Interval(self.a, self.b)
         ival.tol = self.tol
         ival.rdepth = self.rdepth
         ival.ndiv = self.ndiv
-        ival.c = self.c
+        ival.c = self.c.copy()
+        ival.c_old = self.c_old.copy()
         ival.parent = self
         self.children.append(ival)
         ival.err = self.err
@@ -517,7 +604,7 @@ class Interval:
         points = ival.points(self.depth)
         ival.depth = self.depth + 1
         return ival, points
-    
+
     def split(self):
         a = self.a
         b = self.b
@@ -531,7 +618,7 @@ class Interval:
             ival.rdepth = self.rdepth + 1
             ival.parent = self
             self.children.append(ival)
-            ival.err = self.err / np.sqrt(2)  # XXX: is this correct even though we know some points?
+            ival.err = self.err / np.sqrt(2)
             ival.igral = 0
 
         return ivals
@@ -540,14 +627,12 @@ class Interval:
         if self.parent is None:
             self.process_make_first()
         else:
-            if self.depth == 1 or self.needs_split: # XXX: THE self.depth == 1 IS NOT CORRECT FOR THE SPLIT_AFTER_REFINE
+            if self.depth == 1 or self.needs_split:
                 self.process_split()
             else:
                 self.process_refine()
 
     def process_make_first(self):
-        # Add points for the very first ival
-        print('complete: first')
         fx = np.array(self.done_points.values())
         nans = []
         for i in range(len(fx)):
@@ -555,8 +640,8 @@ class Interval:
                 nans.append(i)
                 fx[i] = 0.0
 
-        self.c[3, :ns[3]] = V_inv[3] @ fx
-        self.c[2, :ns[2]] = V_inv[2] @ fx[:ns[3]:2]
+        self.c[3, :n[3]] = V_inv[3] @ fx
+        self.c[2, :n[2]] = V_inv[2] @ fx[:n[3]:2]
         fx[nans] = np.nan
         self.fx = fx
         self.c_old = np.zeros(fx.shape)
@@ -569,17 +654,14 @@ class Interval:
             self.err = max(self.err, (b-a) * norm(self.c[3]))
 
     def process_split(self, ndiv_max=20):
-        print('complete: split, ival: ({}, {})'.format(self.a, self.b))
         fx = np.array(self.done_points.values())
         self.c[0, :n[0]] = c_new = _calc_coeffs(fx, 0)
         self.fx = fx
         parent = self.parent
-        
+
         self.c_old = mvmul(self.T, parent.c[parent.depth - 1])
         c_diff = norm(self.c[0] - self.c_old)
-        
-        
-        
+
         a, b = self.a, self.b
         self.err = (b - a) * c_diff
         self.igral = (b - a) * self.c[0, 0] / sqrt(2)
@@ -600,10 +682,9 @@ class Interval:
         self.igral = (b - a) * c_new[0] / sqrt(2)
         nc = norm(self.c[own_depth, :n[own_depth]])
         self.needs_split = nc > 0 and c_diff / nc > 0.1
-        print('complete: refine, ival: ({}, {})'.format(self.a, self.b))
-        print('complete: refine, c_new', c_new)
-        print('complete: refine, needs_split', self.needs_split)
-        print('complete: refine, fx', self.fx, 'depth', self.depth)
+        if self.needs_split:
+            self.depth -= 1
+
 
 class Learner(BaseLearner):
     def __init__(self, function, bounds, tol):
@@ -635,7 +716,6 @@ class Learner(BaseLearner):
         points, loss_improvements = self.pop_from_stack(n)
         n_left = n - len(points)
         while n_left > 0:
-            print('n_left', n_left)
             self._fill_stack()
             new_points, new_loss_improvements = self.pop_from_stack(n_left)
             points += new_points
@@ -665,13 +745,11 @@ class Learner(BaseLearner):
         ival = self.ivals[-1]
         points = ival.points(ival.depth - 1)
 
-        if ival.depth == len(ns) or ival.needs_split:
+        if ival.depth == len(n) or ival.needs_split:
             # Always split when depth is maximal or if refining is not helping
             split = True
-            print('fill_stack: depth = 4 or split after refine')
         else:
             # Refine
-            print('fill_stack: refine, ival: ({}, {})'.format(ival.a, ival.b))
             self.ivals.remove(ival)
             ival_new, points = ival.refine()
             for x in points:
@@ -691,8 +769,7 @@ class Learner(BaseLearner):
             self.ivals.pop()
             pass
         elif split:
-            print(f'fill_stack: split, ival ({ival.a}, {ival.b}])')
-            ival.needs_split = False  # Reset
+            ival.needs_split = False
             self.ivals.remove(ival)  # first remove because ival.split changes the hash
             ivals_new = ival.split()
 
@@ -745,20 +822,32 @@ class Learner(BaseLearner):
 
 f, a, b, tol = f0, 0, 3, 1e-5
 l = Learner(f, bounds=(a, b), tol=tol)
+
 points, loss_improvement = l.choose_points(33)
 l.add_data(points, map(l.function, points))
-
 print(same_ivals(intervals(f, a, b, tol, 0), l.ivals))
 
-l = Learner(f, bounds=(a, b), tol=tol)
-for i in range(6+33):
+for i in range(6):
     points, loss_improvement = l.choose_points(1)
     l.add_data(points, map(l.function, points))
-
 print(same_ivals(intervals(f, a, b, tol, 1), l.ivals))
 
 for i in range(10):
     points, loss_improvement = l.choose_points(1)
     l.add_data(points, map(l.function, points))
-
 print(same_ivals(intervals(f, a, b, tol, 2), l.ivals))
+
+# Currently till point 98, they are identical!
+
+l = Learner(f, bounds=(a, b), tol=tol)
+j = 0
+for i in range(99):
+    points, loss_improvement = l.choose_points(1)
+    l.add_data(points, map(l.function, points))
+    if not l._stack:
+        all_the_same = all(same_ivals(intervals(f, a, b, tol, j), l.ivals))
+        if all_the_same:
+            print(all_the_same, i, j)
+            j += 1
+
+ivals = intervals(f, a, b, tol, 4)
