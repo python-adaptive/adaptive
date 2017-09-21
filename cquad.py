@@ -413,6 +413,7 @@ def test():
 #     test()
 
 
+
 def __eq__(self, other):
     variables = []
     for slot in self.__slots__:
@@ -424,6 +425,12 @@ def __eq__(self, other):
             print(slot, getattr(self, slot) - getattr(other, slot))
         variables.append(eq)
     return all(variables)
+
+
+def same_ivals(old, new):
+    old = sorted(old, key=operator.attrgetter('a'))
+    new = sorted(new, key=operator.attrgetter('a'))
+    return [__eq__(ival1, ival2) for ival1, ival2 in zip(old, new)]
 
 
 from math import sqrt
@@ -528,6 +535,7 @@ class Learner(BaseLearner):
                 fx = np.array(ival.done_points.values())
                 # Add points for the very first ival
                 if ival.parent is None:
+                    print('first complete interval logic')
                     nans = []
                     for i in range(len(fx)):
                         if not np.isfinite(fx[i]):
@@ -549,6 +557,7 @@ class Learner(BaseLearner):
                     depth = ival.depth
                     if depth == 1:
                         # Split logic
+                        print('split logic')
                         ival.c[0, :n[0]] = c_new = _calc_coeffs(fx, 0)
                         ival.fx = fx
                         parent = ival.parent
@@ -564,6 +573,7 @@ class Learner(BaseLearner):
                             return (a, b, b-a), nr_points
                     else:
                         # Refine logic
+                        print('refine logic')
                         ival.fx = fx
                         own_depth = ival.depth - 1
                         ival.c[own_depth, :n[own_depth]] = c_new = _calc_coeffs(fx, own_depth)
@@ -610,8 +620,10 @@ class Learner(BaseLearner):
             split = True
         elif ival.split_after_refine() and ival.complete:
             split = True
+            print('split_after_refine')
         else:
             # Refine
+            print('refine because no split')
             points = ival.points(ival.depth)
             for x in points:
                 self.x_mapping[x].add(ival)  # the values of x_mapping are sets
@@ -627,7 +639,9 @@ class Learner(BaseLearner):
             or points[-1] <= points[-2]
             or ival.err < (abs(ival.igral) * eps
                                    * Vcond[ival.depth - 1])):
+            print('interval too smal, removing')
             self.ivals.pop()
+            pass
         elif split:
             ivals_new = ival.split(f)
             self.ivals.pop()
@@ -658,6 +672,8 @@ class Learner(BaseLearner):
 
     @property
     def nr_points(self):
+        # XXX: this is still incorrect, it should start from the first
+        # interval and sum all the way down, subtracting 2 each time.
         return sum(len(ival.done_points) for ival in self.ivals)
 
     @property
@@ -678,23 +694,17 @@ class Learner(BaseLearner):
                 or not ivals)
 
 
+
 f, a, b, tol = f0, 0, 3, 1e-5
 l = Learner(f, bounds=(a, b), tol=tol)
 points, loss_improvement = l.choose_points(33)
 l.add_data(points, map(l.function, points))
-ival_new = l.ivals[0]
 
-ival, points = _Interval.make_first(f, a, b, tol)
-ivals = [ival]
-print(__eq__(ival, ival_new))
-result, nr_points_inc = ivals.pop(0).split(f)
-ivals.extend(result)
+print(same_ivals(intervals(f, a, b, tol, 0), l.ivals))
 
 for i in range(6):
     print(i)
     points, loss_improvement = l.choose_points(1)
     l.add_data(points, map(l.function, points))
 
-new1, new2 = l.ivals
-old1, old2 = ivals
-print(__eq__(old1, new1), __eq__(old2, new2))
+print(same_ivals(intervals(f, a, b, tol, 1), l.ivals))
