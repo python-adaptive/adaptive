@@ -445,7 +445,7 @@ T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
 
 class Interval:
     __slots__ = ['a', 'b', 'c', 'c_old', 'depth', 'fx', 'igral', 'err', 'tol',
-                 'rdepth', 'ndiv', 'parent', 'children', 'done_points']
+                 'rdepth', 'ndiv', 'parent', 'children', 'done_points', 'needs_split']
 
     def __init__(self, a, b):
         self.children = []
@@ -453,6 +453,7 @@ class Interval:
         self.a = a
         self.b = b
         self.c = np.zeros((len(ns), ns[-1]))
+        self.needs_split = False
 
     @classmethod
     def make_first(cls, a, b, tol):
@@ -475,7 +476,7 @@ class Interval:
     @property
     def done(self):
         """The interval is complete and has the intergral calculated."""
-        return hasattr(self, 'fx') and len(self.fx) == n[self.depth - 1]
+        return hasattr(self, 'fx') and len(self.done_points) == n[self.depth - 1]
 
     @property
     def T(self):
@@ -494,13 +495,29 @@ class Interval:
 
     def split_after_refine(self):
         depth = self.depth
-        c_diff = norm(self.c[depth - 1] - self.c[depth])
+        print('depth', depth)
+        c_diff = norm(self.c[depth - 2] - self.c[depth- 1])
+        print('c_diff', c_diff)
         nc = norm(self.c[depth, :n[depth]])
         split = nc > 0 and c_diff / nc > 0.1
-        if not split:
-            self.depth += 1
+        if split:
+            print('split_after_refine, ival: ({}, {})'.format(self.a, self.b))
         return split
 
+    def refine(self):
+        ival = Interval(self.a, self.b)
+        ival.tol = self.tol
+        ival.rdepth = self.rdepth
+        ival.ndiv = self.ndiv
+        ival.c = self.c
+        ival.parent = self
+        self.children.append(ival)
+        ival.err = self.err
+        ival.igral = 0
+        points = ival.points(self.depth)
+        ival.depth = self.depth + 1
+        return ival, points
+    
     def split(self):
         a = self.a
         b = self.b
@@ -520,18 +537,17 @@ class Interval:
         return ivals
 
     def complete_process(self):
-        if not self.done:  # Only do this once
-            if self.parent is None:
-                self.process_first_ival()
+        if self.parent is None:
+            self.process_make_first()
+        else:
+            if self.depth == 1 or self.needs_split: # XXX: THE self.depth == 1 IS NOT CORRECT FOR THE SPLIT_AFTER_REFINE
+                self.process_split()
             else:
-                if self.depth == 1:
-                    self.process_split_logic()
-                else:
-                    self.process_refine_logic()
+                self.process_refine()
 
-    def process_first_ival(self):
+    def process_make_first(self):
         # Add points for the very first ival
-        print('first')
+        print('complete: first')
         fx = np.array(self.done_points.values())
         nans = []
         for i in range(len(fx)):
@@ -552,14 +568,18 @@ class Interval:
         if c_diff / norm(self.c[3]) > 0.1:
             self.err = max(self.err, (b-a) * norm(self.c[3]))
 
-    def process_split_logic(self, ndiv_max=20):
-        print('split')
+    def process_split(self, ndiv_max=20):
+        print('complete: split, ival: ({}, {})'.format(self.a, self.b))
         fx = np.array(self.done_points.values())
         self.c[0, :n[0]] = c_new = _calc_coeffs(fx, 0)
         self.fx = fx
         parent = self.parent
+        
         self.c_old = mvmul(self.T, parent.c[parent.depth - 1])
         c_diff = norm(self.c[0] - self.c_old)
+        
+        
+        
         a, b = self.a, self.b
         self.err = (b - a) * c_diff
         self.igral = (b - a) * self.c[0, 0] / sqrt(2)
@@ -569,8 +589,7 @@ class Interval:
         if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
             return (a, b, b-a), nr_points
 
-    def process_refine_logic(self):
-        print('refine')
+    def process_refine(self):
         fx = np.array(self.done_points.values())
         self.fx = fx
         own_depth = self.depth - 1
@@ -579,7 +598,12 @@ class Interval:
         a, b = self.a, self.b
         self.err = (b - a) * c_diff
         self.igral = (b - a) * c_new[0] / sqrt(2)
-
+        nc = norm(self.c[own_depth, :n[own_depth]])
+        self.needs_split = nc > 0 and c_diff / nc > 0.1
+        print('complete: refine, ival: ({}, {})'.format(self.a, self.b))
+        print('complete: refine, c_new', c_new)
+        print('complete: refine, needs_split', self.needs_split)
+        print('complete: refine, fx', self.fx, 'depth', self.depth)
 
 class Learner(BaseLearner):
     def __init__(self, function, bounds, tol):
@@ -608,19 +632,19 @@ class Learner(BaseLearner):
                     self.ivals.add(ival)
 
     def choose_points(self, n):
-        points, loss_improvements = self.take_from_stack(n)
+        points, loss_improvements = self.pop_from_stack(n)
         n_left = n - len(points)
         while n_left > 0:
             print('n_left', n_left)
             self._fill_stack()
-            new_points, new_loss_improvements = self.take_from_stack(n_left)
+            new_points, new_loss_improvements = self.pop_from_stack(n_left)
             points += new_points
             loss_improvements += new_loss_improvements
             n_left -= len(new_points)
 
         return points, loss_improvements
 
-    def take_from_stack(self, n):
+    def pop_from_stack(self, n):
         points = self._stack[:n]
         loss_improvements = [max(ival.err for ival in self.x_mapping[x])
                              for x in self._stack[:n]]
@@ -641,18 +665,20 @@ class Learner(BaseLearner):
         ival = self.ivals[-1]
         points = ival.points(ival.depth - 1)
 
-        if ival.depth == len(ns):
-            # Always split when depth is maximal
+        if ival.depth == len(ns) or ival.needs_split:
+            # Always split when depth is maximal or if refining is not helping
             split = True
-        elif ival.complete:
-            split = ival.split_after_refine()
+            print('fill_stack: depth = 4 or split after refine')
         else:
             # Refine
-            points = ival.points(ival.depth)
+            print('fill_stack: refine, ival: ({}, {})'.format(ival.a, ival.b))
+            self.ivals.remove(ival)
+            ival_new, points = ival.refine()
             for x in points:
-                self.x_mapping[x].add(ival)
+                self.x_mapping[x].add(ival_new)
                 if x in ival.done_points:
                     self.add_point(x, ival.done_points[x])
+            self.ivals.add(ival_new)
             self._stack += list(points[1::2])
             split = False
 
@@ -665,8 +691,10 @@ class Learner(BaseLearner):
             self.ivals.pop()
             pass
         elif split:
+            print(f'fill_stack: split, ival ({ival.a}, {ival.b}])')
+            ival.needs_split = False  # Reset
+            self.ivals.remove(ival)  # first remove because ival.split changes the hash
             ivals_new = ival.split()
-            self.ivals.pop() # XXX: should be self.ivals.remove(ival), but doesn't work
 
             done_points_parent = ival.done_points
             for ival in ivals_new:
@@ -722,9 +750,15 @@ l.add_data(points, map(l.function, points))
 
 print(same_ivals(intervals(f, a, b, tol, 0), l.ivals))
 
-for i in range(6):
-    print(i)
+l = Learner(f, bounds=(a, b), tol=tol)
+for i in range(6+33):
     points, loss_improvement = l.choose_points(1)
     l.add_data(points, map(l.function, points))
 
 print(same_ivals(intervals(f, a, b, tol, 1), l.ivals))
+
+for i in range(10):
+    points, loss_improvement = l.choose_points(1)
+    l.add_data(points, map(l.function, points))
+
+print(same_ivals(intervals(f, a, b, tol, 2), l.ivals))
