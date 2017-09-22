@@ -456,7 +456,7 @@ def intervals(f, a, b, tol, N_times):
 
     # main loop
     for _ in range(N_times):
-        verbose = _ >= 7
+        verbose = False #  _ >= 7
         if verbose:
             print('interval ({}, {}), imax={}'.format(ivals[i_max].a, ivals[i_max].b, i_max))
         if ivals[i_max].depth == 4:
@@ -647,6 +647,8 @@ class Interval:
         if self.parent is None:
             self.process_make_first()
         else:
+            # XXX: `self.depth == 1` is a bad condition to determine whether the inverval resulted from a split or refine.
+            # rather one should probably compare the rdept of self and parent.
             if self.depth == 1 or self.needs_split:
                 if verbose and self.depth == 1:
                     print('split because of maximum depth')
@@ -779,7 +781,8 @@ class Learner(BaseLearner):
         if verbose:
             print('filling stack')
         if self.priority_split:
-            print('interval in priority_split')
+            if verbose:
+                print('interval in priority_split')
             ival = self.priority_split.pop()
         else:
             ival = self.ivals[-1]
@@ -884,3 +887,16 @@ for i in range(10):
     points, loss_improvement = l.choose_points(1)
     l.add_data(points, map(l.function, points))
 print(same_ivals(intervals(f, a, b, tol, 3), l.ivals))
+
+
+verbose = False
+l = Learner(f, bounds=(a, b), tol=tol)
+j = 0
+for i in range(2000):
+    points, loss_improvement = l.choose_points(1)
+    l.add_data(points, map(l.function, points))
+    if not l._stack:
+        all_the_same = all(same_ivals(intervals(f, a, b, tol, j), l.ivals))
+        if all_the_same:
+            print(all_the_same, i, j)
+            j += 1
