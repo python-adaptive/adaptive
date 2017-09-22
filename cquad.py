@@ -1,4 +1,3 @@
-verbose = False
 # Copyright 2010 Pedro Gonnet
 # Copyright 2017 Christoph Groth
 
@@ -456,20 +455,11 @@ def intervals(f, a, b, tol, N_times):
 
     # main loop
     for _ in range(N_times):
-        verbose = False #  _ >= 7
-        if verbose:
-            print('interval ({}, {}), imax={}'.format(ivals[i_max].a, ivals[i_max].b, i_max))
         if ivals[i_max].depth == 4:
             split = True
-            if verbose:
-                print('split because of maximum depth')
         else:
             points, split, nr_points_inc = ivals[i_max].refine(f)
             nr_points += nr_points_inc
-            if verbose:
-                print('refine')
-                if split:
-                    print('going to split because of refine')
         # can we safely ignore this interval?
         if (points[1] <= points[0]
             or points[-1] <= points[-2]
@@ -478,12 +468,8 @@ def intervals(f, a, b, tol, N_times):
             err_final += ivals[i_max].err
             igral_final += ivals[i_max].igral
             ivals[i_max] = ivals.pop()
-            if verbose:
-                print('machine tol reached')
         elif split:
             result, nr_points_inc = ivals[i_max].split(f)
-            if verbose:
-                print('split')
             nr_points += nr_points_inc
             if isinstance(result, tuple):
                 igral = np.sign(igral) * np.inf
@@ -493,8 +479,7 @@ def intervals(f, a, b, tol, N_times):
                     igral, err, nr_points)
             ivals.extend(result)
             ivals[i_max] = ivals.pop()
-            
-            
+
         # compute the running err and new max
         i_max = 0
         i_min = 0
@@ -539,14 +524,13 @@ def __eq__(self, other, *, verbose=True):
     return all(variables)
 
 
-def same_ivals(old, new):
+def same_ivals(old, new, * ,verbose=False):
     old = sorted(old, key=operator.attrgetter('a'))
     new = sorted(new, key=operator.attrgetter('a'))
     try:
-        return [__eq__(ival1, ival2, verbose=False) for ival1, ival2 in zip(old, new)]
+        return [__eq__(ival1, ival2, verbose=verbose) for ival1, ival2 in zip(old, new)]
     except:
         return [False]
-
 
 from math import sqrt
 from copy import deepcopy as copy
@@ -642,25 +626,16 @@ class Interval:
         return ivals
 
     def complete_process(self):
-        if verbose:
-            print('interval {}'.format(self))
         if self.parent is None:
             self.process_make_first()
         else:
-            # XXX: `self.depth == 1` is a bad condition to determine whether the inverval resulted from a split or refine.
-            # rather one should probably compare the rdept of self and parent.
+            # XXX: `self.depth == 1` might be a bad condition to determine
+            # whether the inverval resulted from a split or refine.
+            # One should probably compare the rdept of self and parent.
             if self.depth == 1 or self.needs_split:
-                if verbose and self.depth == 1:
-                    print('split because of maximum depth')
-                if verbose and self.needs_split:
-                    print('split because of refine')
-                if verbose:
-                    print('split')
                 self.process_split()
             else:
                 self.process_refine()
-            if verbose:
-                print('refine')
 
     def process_make_first(self):
         fx = np.array(self.done_points.values())
@@ -778,11 +753,7 @@ class Learner(BaseLearner):
     def _fill_stack(self):
         # XXX: to-do if all the ivals have err=inf, take the interval
         # with the lowest rdepth and no children.
-        if verbose:
-            print('filling stack')
         if self.priority_split:
-            if verbose:
-                print('interval in priority_split')
             ival = self.priority_split.pop()
         else:
             ival = self.ivals[-1]
@@ -813,8 +784,6 @@ class Learner(BaseLearner):
             self.ivals.remove(ival)
             pass
         elif split:
-            if ival.needs_split:
-                print('priority splitting of ival: ({}, {})'.format(ival.a, ival.b))
             ival.needs_split = False
             self.ivals.remove(ival)  # first remove because ival.split changes the hash
             ivals_new = ival.split()
@@ -866,30 +835,9 @@ class Learner(BaseLearner):
                     and err - err_final < abs(igral) * tol)
                 or not ivals)
 
+
 f, a, b, tol = f0, 0, 3, 1e-5
-l = Learner(f, bounds=(a, b), tol=tol)
 
-points, loss_improvement = l.choose_points(33)
-l.add_data(points, map(l.function, points))
-print(same_ivals(intervals(f, a, b, tol, 0), l.ivals))
-
-for i in range(6):
-    points, loss_improvement = l.choose_points(1)
-    l.add_data(points, map(l.function, points))
-print(same_ivals(intervals(f, a, b, tol, 1), l.ivals))
-
-for i in range(10):
-    points, loss_improvement = l.choose_points(1)
-    l.add_data(points, map(l.function, points))
-print(same_ivals(intervals(f, a, b, tol, 2), l.ivals))
-
-for i in range(10):
-    points, loss_improvement = l.choose_points(1)
-    l.add_data(points, map(l.function, points))
-print(same_ivals(intervals(f, a, b, tol, 3), l.ivals))
-
-
-verbose = False
 l = Learner(f, bounds=(a, b), tol=tol)
 j = 0
 for i in range(2000):
@@ -898,5 +846,5 @@ for i in range(2000):
     if not l._stack:
         all_the_same = all(same_ivals(intervals(f, a, b, tol, j), l.ivals))
         if all_the_same:
-            print(all_the_same, i, j)
+            print('Identical till point number: {}, which are {} full cycles in the while loop.'.format(i, j))
             j += 1
