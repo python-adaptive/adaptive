@@ -1,3 +1,4 @@
+verbose = False
 # Copyright 2010 Pedro Gonnet
 # Copyright 2017 Christoph Groth
 
@@ -210,7 +211,9 @@ class _Interval:
             self.depth = depth + 1
 
         return points, split, n[depth] - n[depth-1]
-
+    
+    def __repr__(self):
+        return str({'ab': (self.a, self.b), 'depth': self.depth})
 
 def algorithm_4 (f, a, b, tol):
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
@@ -453,11 +456,20 @@ def intervals(f, a, b, tol, N_times):
 
     # main loop
     for _ in range(N_times):
+        verbose = _ >= 7
+        if verbose:
+            print('interval ({}, {}), imax={}'.format(ivals[i_max].a, ivals[i_max].b, i_max))
         if ivals[i_max].depth == 4:
             split = True
+            if verbose:
+                print('split because of maximum depth')
         else:
             points, split, nr_points_inc = ivals[i_max].refine(f)
             nr_points += nr_points_inc
+            if verbose:
+                print('refine')
+                if split:
+                    print('going to split because of refine')
         # can we safely ignore this interval?
         if (points[1] <= points[0]
             or points[-1] <= points[-2]
@@ -466,8 +478,12 @@ def intervals(f, a, b, tol, N_times):
             err_final += ivals[i_max].err
             igral_final += ivals[i_max].igral
             ivals[i_max] = ivals.pop()
+            if verbose:
+                print('machine tol reached')
         elif split:
             result, nr_points_inc = ivals[i_max].split(f)
+            if verbose:
+                print('split')
             nr_points += nr_points_inc
             if isinstance(result, tuple):
                 igral = np.sign(igral) * np.inf
@@ -477,6 +493,8 @@ def intervals(f, a, b, tol, N_times):
                     igral, err, nr_points)
             ivals.extend(result)
             ivals[i_max] = ivals.pop()
+            
+            
         # compute the running err and new max
         i_max = 0
         i_min = 0
@@ -624,13 +642,23 @@ class Interval:
         return ivals
 
     def complete_process(self):
+        if verbose:
+            print('interval {}'.format(self))
         if self.parent is None:
             self.process_make_first()
         else:
             if self.depth == 1 or self.needs_split:
+                if verbose and self.depth == 1:
+                    print('split because of maximum depth')
+                if verbose and self.needs_split:
+                    print('split because of refine')
+                if verbose:
+                    print('split')
                 self.process_split()
             else:
                 self.process_refine()
+            if verbose:
+                print('refine')
 
     def process_make_first(self):
         fx = np.array(self.done_points.values())
@@ -685,6 +713,8 @@ class Interval:
         if self.needs_split:
             self.depth -= 1
 
+    def __repr__(self):
+        return str({'ab': (self.a, self.b), 'depth': self.depth})
 
 class Learner(BaseLearner):
     def __init__(self, function, bounds, tol):
@@ -692,7 +722,8 @@ class Learner(BaseLearner):
         self.bounds = bounds
         self.tol = tol
         ival, points = Interval.make_first(*self.bounds, self.tol)
-
+    
+        self.priority_split = []
         self.ivals = SortedSet([ival], key=operator.attrgetter('err'))
         self._stack = list(points)
         self.x_mapping = defaultdict(lambda: SortedSet([], key=operator.attrgetter('rdepth')))
@@ -711,6 +742,9 @@ class Learner(BaseLearner):
                 ival.complete_process()  # Note: this changes the hash, so first remove if it was present
                 if in_ivals:
                     self.ivals.add(ival)
+                if ival.needs_split:
+                    # Make sure that the next execution of _fill_stack(), this ival will be split
+                    self.priority_split.append(ival)
 
     def choose_points(self, n):
         points, loss_improvements = self.pop_from_stack(n)
@@ -742,7 +776,14 @@ class Learner(BaseLearner):
     def _fill_stack(self):
         # XXX: to-do if all the ivals have err=inf, take the interval
         # with the lowest rdepth and no children.
-        ival = self.ivals[-1]
+        if verbose:
+            print('filling stack')
+        if self.priority_split:
+            print('interval in priority_split')
+            ival = self.priority_split.pop()
+        else:
+            ival = self.ivals[-1]
+
         points = ival.points(ival.depth - 1)
 
         if ival.depth == len(n) or ival.needs_split:
@@ -766,9 +807,11 @@ class Learner(BaseLearner):
             or points[-1] <= points[-2]
             or ival.err < (abs(ival.igral) * eps
                                    * Vcond[ival.depth - 1])):
-            self.ivals.pop()
+            self.ivals.remove(ival)
             pass
         elif split:
+            if ival.needs_split:
+                print('priority splitting of ival: ({}, {})'.format(ival.a, ival.b))
             ival.needs_split = False
             self.ivals.remove(ival)  # first remove because ival.split changes the hash
             ivals_new = ival.split()
@@ -837,17 +880,7 @@ for i in range(10):
     l.add_data(points, map(l.function, points))
 print(same_ivals(intervals(f, a, b, tol, 2), l.ivals))
 
-# Currently till point 98, they are identical!
-
-l = Learner(f, bounds=(a, b), tol=tol)
-j = 0
-for i in range(99):
+for i in range(10):
     points, loss_improvement = l.choose_points(1)
     l.add_data(points, map(l.function, points))
-    if not l._stack:
-        all_the_same = all(same_ivals(intervals(f, a, b, tol, j), l.ivals))
-        if all_the_same:
-            print(all_the_same, i, j)
-            j += 1
-
-ivals = intervals(f, a, b, tol, 4)
+print(same_ivals(intervals(f, a, b, tol, 3), l.ivals))
