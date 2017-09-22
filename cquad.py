@@ -507,6 +507,7 @@ def intervals(f, a, b, tol, N_times):
             or (err_final > abs(igral) * tol
                 and err - err_final < abs(igral) * tol)
             or not ivals):
+            print('Tol reached in the original code with n={}!'.format(nr_points))
             break
 
     return ivals
@@ -628,14 +629,10 @@ class Interval:
     def complete_process(self):
         if self.parent is None:
             self.process_make_first()
+        elif self.rdepth > self.parent.rdepth or self.needs_split:
+            self.process_split()
         else:
-            # XXX: `self.depth == 1` might be a bad condition to determine
-            # whether the inverval resulted from a split or refine.
-            # One should probably compare the rdept of self and parent.
-            if self.depth == 1 or self.needs_split:
-                self.process_split()
-            else:
-                self.process_refine()
+            self.process_refine()
 
     def process_make_first(self):
         fx = np.array(self.done_points.values())
@@ -699,7 +696,7 @@ class Learner(BaseLearner):
         self.bounds = bounds
         self.tol = tol
         ival, points = Interval.make_first(*self.bounds, self.tol)
-    
+
         self.priority_split = []
         self.ivals = SortedSet([ival], key=operator.attrgetter('err'))
         self._stack = list(points)
@@ -839,12 +836,13 @@ class Learner(BaseLearner):
 f, a, b, tol = f0, 0, 3, 1e-5
 
 l = Learner(f, bounds=(a, b), tol=tol)
+igral, err, nr_points = algorithm_4(f, a, b, tol)
 j = 0
-for i in range(2000):
+for i in range(nr_points):
     points, loss_improvement = l.choose_points(1)
     l.add_data(points, map(l.function, points))
     if not l._stack:
         all_the_same = all(same_ivals(intervals(f, a, b, tol, j), l.ivals))
         if all_the_same:
-            print('Identical till point number: {}, which are {} full cycles in the while loop.'.format(i, j))
+            print('Identical till point number: {}, which are {} full cycles in the while loop.'.format(i + 1, j + 1))
             j += 1
