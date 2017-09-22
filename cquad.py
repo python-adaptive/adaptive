@@ -545,7 +545,7 @@ T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
 
 class Interval:
     __slots__ = ['a', 'b', 'c', 'c_old', 'depth', 'fx', 'igral', 'err', 'tol',
-                 'rdepth', 'ndiv', 'parent', 'children', 'done_points', 'needs_split']
+                 'rdepth', 'ndiv', 'parent', 'children', 'done_points']
 
     def __init__(self, a, b):
         self.children = []
@@ -553,7 +553,6 @@ class Interval:
         self.a = a
         self.b = b
         self.c = np.zeros((len(n), n[-1]))
-        self.needs_split = False
 
     @classmethod
     def make_first(cls, a, b, tol):
@@ -627,12 +626,14 @@ class Interval:
         return ivals
 
     def complete_process(self):
+        force_split = False
         if self.parent is None:
             self.process_make_first()
-        elif self.rdepth > self.parent.rdepth or self.needs_split:
+        elif self.rdepth > self.parent.rdepth:
             self.process_split()
         else:
-            self.process_refine()
+            force_split = self.process_refine()
+        return force_split
 
     def process_make_first(self):
         fx = np.array(self.done_points.values())
@@ -683,9 +684,10 @@ class Interval:
         self.err = (b - a) * c_diff
         self.igral = (b - a) * c_new[0] / sqrt(2)
         nc = norm(self.c[own_depth, :n[own_depth]])
-        self.needs_split = nc > 0 and c_diff / nc > 0.1
-        if self.needs_split:
+        force_split = nc > 0 and c_diff / nc > 0.1
+        if force_split:
             self.depth -= 1
+        return force_split
 
     def __repr__(self):
         return str({'ab': (self.a, self.b), 'depth': self.depth})
@@ -710,13 +712,15 @@ class Learner(BaseLearner):
         for ival in ivals:
             ival.done_points[point] = value
             if ival.complete and not ival.done:
-                in_ivals = ival in self.ivals
-                if in_ivals:
+
+                if ival in self.ivals:
                     self.ivals.remove(ival)
-                ival.complete_process()  # Note: this changes the hash, so first remove if it was present
-                if in_ivals:
+                    force_split = ival.complete_process()
                     self.ivals.add(ival)
-                if ival.needs_split:
+                else:
+                    force_split = ival.complete_process()
+
+                if force_split:
                     # Make sure that the next execution of _fill_stack(), this ival will be split
                     self.priority_split.append(ival)
 
@@ -752,12 +756,14 @@ class Learner(BaseLearner):
         # with the lowest rdepth and no children.
         if self.priority_split:
             ival = self.priority_split.pop()
+            force_split = True
         else:
             ival = self.ivals[-1]
+            force_split = False
 
         points = ival.points(ival.depth - 1)
 
-        if ival.depth == len(n) or ival.needs_split:
+        if ival.depth == len(n) or force_split:
             # Always split when depth is maximal or if refining is not helping
             split = True
         else:
@@ -781,7 +787,6 @@ class Learner(BaseLearner):
             self.ivals.remove(ival)
             pass
         elif split:
-            ival.needs_split = False
             self.ivals.remove(ival)  # first remove because ival.split changes the hash
             ivals_new = ival.split()
 
@@ -834,6 +839,11 @@ class Learner(BaseLearner):
 
 
 f, a, b, tol = f0, 0, 3, 1e-5
+# f, a, b, tol = f7, 0, 1, 1e-6
+# f, a, b, tol = f24, 0, 3, 1e-3
+# f, a, b, tol = f21, 0, 1, 1e-3
+# f, a, b, tol = f63, 0, 1, 1e-10
+# f, a, b, tol = fdiv, 0, 1, 1e-6
 
 l = Learner(f, bounds=(a, b), tol=tol)
 igral, err, nr_points = algorithm_4(f, a, b, tol)
