@@ -616,9 +616,11 @@ class Interval:
 
         for ival in ivals:
             ival.depth = 1
+            ival.c_old = self.c_old.copy()
             ival.tol = self.tol / np.sqrt(2)
             ival.rdepth = self.rdepth + 1
             ival.parent = self
+            ival.ndiv = self.ndiv
             self.children.append(ival)
             ival.err = self.err / np.sqrt(2)
             ival.igral = 0
@@ -838,8 +840,8 @@ class Learner(BaseLearner):
                 or not ivals)
 
 
-f, a, b, tol = f0, 0, 3, 1e-5
-# f, a, b, tol = f7, 0, 1, 1e-6
+# f, a, b, tol = f0, 0, 3, 1e-5
+f, a, b, tol = f7, 0, 1, 1e-6
 # f, a, b, tol = f24, 0, 3, 1e-3
 # f, a, b, tol = f21, 0, 1, 1e-3
 # f, a, b, tol = f63, 0, 1, 1e-10
