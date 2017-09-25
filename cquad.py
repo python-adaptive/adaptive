@@ -210,7 +210,7 @@ class _Interval:
             self.depth = depth + 1
 
         return points, split, n[depth] - n[depth-1]
-    
+
     def __repr__(self):
         return str({'ab': (self.a, self.b), 'depth': self.depth})
 
@@ -570,7 +570,7 @@ class Interval:
     @property
     def complete(self):
         """The interval has all the values needed to calculate the intergral."""
-        return len(self.done_points) == n[self.depth-1]
+        return len(self.done_points) == n[self.depth-1] #and self.parent.done # XXX: TO-DO check this condition
 
     @property
     def done(self):
@@ -610,7 +610,7 @@ class Interval:
     def split(self):
         a = self.a
         b = self.b
-        m = (a + b) / 2
+        m = self.points(self.depth - 1)[(n[self.depth - 1] - 1)//2]
         ivals = (Interval(a, m), Interval(m, b))
         ival_left, ival_right = ivals
 
