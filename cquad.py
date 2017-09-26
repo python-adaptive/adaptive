@@ -270,6 +270,25 @@ class Interval:
         return str({'ab': (self.a, self.b), 'depth': self.depth,
                     'rdepth': self.rdepth, 'igral': self.igral, 'err': self.err})
 
+    def equal(self, other, *, verbose=False):
+        """Note: Implementing __eq__ breaks SortedContainers in some way."""
+        if not self.complete:
+            if verbose:
+                print('Interval {} is not complete.'.format(self))
+            return False
+
+        slots = set(self.__slots__).intersection(other.__slots__)
+        same_slots = []
+        for s in slots:
+            a = getattr(self, s)
+            b = getattr(other, s)
+            is_equal = np.allclose(a, b, rtol=0, atol=eps, equal_nan=True)
+            if verbose and not is_equal:
+                print('self.{} - other.{} = {}'.format(s, s, a - b))
+            same_slots.append(is_equal)
+
+        return all(same_slots)
+
 class Learner(BaseLearner):
     def __init__(self, function, bounds, tol):
         self.function = function
@@ -358,6 +377,7 @@ class Learner(BaseLearner):
                 or points[-1] <= points[-2]
                 or ival.err < (abs(ival.igral) * eps
                                * Vcond[ival.depth - 1])):
+            print('ignore')
             self.ivals.remove(ival)
         elif split:
             self.ivals.remove(ival)
@@ -387,6 +407,7 @@ class Learner(BaseLearner):
 
         # Remove the smallest element if number of intervals is larger than 200
         if len(self.ivals) > 200:
+            print('nuke')
             self.ivals.pop(0)
 
         return self._stack
@@ -398,6 +419,8 @@ class Learner(BaseLearner):
 
     @property
     def igral(self):
+        # XXX: Need some recursion here for the parallel execution.
+        # When `not ival.complete` take the `i.igral for i in ival.children`.
         return sum(ival.igral for ival in self.ivals
                    if ival.complete and not ival.children)
 
@@ -418,3 +441,15 @@ class Learner(BaseLearner):
                 or (err_final > abs(igral) * tol
                     and err - err_final < abs(igral) * tol)
                 or not ivals)
+
+    def equal(self, other, *, verbose=False):
+        """Note: `other` is a list of ivals."""
+        if len(self.ivals) != len(other):
+            if verbose:
+                print('len(self.ivals)={} != len(other)={}'.format(
+                    len(self.ivals), len(other)))
+            return False
+
+        ivals = [sorted(i, key=attrgetter('a')) for i in [self.ivals, other]]
+        return all(ival.equal(other_ival, verbose=verbose)
+                   for ival, other_ival in zip(*ivals))
