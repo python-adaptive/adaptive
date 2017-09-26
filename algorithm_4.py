@@ -318,7 +318,7 @@ def algorithm_4 (f, a, b, tol, until_iteration=None):
             or not ivals):
             break
 
-    return igral, err, nr_points
+    return igral, err, nr_points, ivals
 
 
 ################ Tests ################
@@ -365,38 +365,38 @@ def assert_equal(value, hex, eps=0):
 def test():
     old_settings = np.seterr(all='ignore')
 
-    igral, err, nr_points = algorithm_4(f0, 0, 3, 1e-5)
+    igral, err, nr_points, _ = algorithm_4(f0, 0, 3, 1e-5)
     print(igral, err, nr_points)
     assert_equal(igral, '3fffb6084c1dabf4')
     assert_equal(err, '3ef46042cb969374')
     assert nr_points == 1419
 
-    igral, err, nr_points = algorithm_4(f7, 0, 1, 1e-6)
+    igral, err, nr_points, _ = algorithm_4(f7, 0, 1, 1e-6)
     print(igral, err, nr_points)
     assert_equal(igral, '3fffffffd9fa6513')
     assert_equal(err, '3ebd8955755be30c')
     assert nr_points == 709
 
-    igral, err, nr_points = algorithm_4(f24, 0, 3, 1e-3)
+    igral, err, nr_points, _ = algorithm_4(f24, 0, 3, 1e-3)
     print(igral, err, nr_points)
     assert_equal(igral, '4031aa1505ba7b41')
     assert_equal(err, '3f9202232bd03a6a')
     assert nr_points == 4515
 
-    igral, err, nr_points = algorithm_4(f21, 0, 1, 1e-3)
+    igral, err, nr_points, _ = algorithm_4(f21, 0, 1, 1e-3)
     print(igral, err, nr_points)
     assert_equal(igral, '3fc4e088c36827c1')
     assert_equal(err, '3f247d00177a3f07')
     assert nr_points == 203
 
-    igral, err, nr_points = algorithm_4(f63, 0, 1, 1e-10)
+    igral, err, nr_points, _ = algorithm_4(f63, 0, 1, 1e-10)
     print(igral, err, nr_points)
     assert_equal(igral, '3fff7ccfd769d160')
     assert_equal(err, '3e28f421b487f15a', 2e-15)
     assert nr_points == 2715
 
     try:
-        igral, err, nr_points = algorithm_4(fdiv, 0, 1, 1e-6)
+        igral, err, nr_points, _ = algorithm_4(fdiv, 0, 1, 1e-6)
     except DivergentIntegralError as e:
         print(e.igral, e.err, e.nr_points)
         assert_equal(e.igral, '7ff0000000000000')
