@@ -267,8 +267,8 @@ class Interval:
         return force_split
 
     def __repr__(self):
-        return str({'ab': (self.a, self.b), 'depth': self.depth, 'rdepth': self.rdepth,
-                    'igral': self.igral, 'err': self.err})
+        return str({'ab': (self.a, self.b), 'depth': self.depth,
+                    'rdepth': self.rdepth, 'igral': self.igral, 'err': self.err})
 
 class Learner(BaseLearner):
     def __init__(self, function, bounds, tol):
@@ -405,6 +405,12 @@ class Learner(BaseLearner):
     def err(self):
         return sum(ival.err for ival in self.ivals
                    if ival.complete and not ival.children)
+
+    @property
+    def first_ival(self):
+        def go_up(ival):
+            return go_up(ival.parent) if ival.parent else ival
+        return go_up(self.ivals[0])
 
     def loss(self, real=True):
         return (err == 0
