@@ -23,6 +23,9 @@ def mvmul(a, b):
 # the nodes and newton polynomials
 n = (5, 9, 17, 33)
 xi = [-np.cos(np.arange(n[j])/(n[j]-1) * np.pi) for j in range(4)]
+# Make `xi` perfectly anti-symmetric, important for splitting the intervals
+xi = [(row - row[::-1]) / 2 for row in xi]
+
 b_def = (np.array([0, .233284737407921723637836578544e-1,
                    0, -.831479419283098085685277496071e-1,
                    0, .0541462136776153483932540272848 ]),
