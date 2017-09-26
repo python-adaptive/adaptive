@@ -3,10 +3,8 @@
 # Copyright 2017 `adaptive` authors
 
 from collections import defaultdict
-from copy import deepcopy as copy
 from math import sqrt
 from operator import attrgetter
-import warnings
 
 import numpy as np
 import scipy.linalg
@@ -46,12 +44,12 @@ U = (np.diag(np.sqrt((k+1)**2 / (2*k+1) / (2*k+3)))
 
 b_def = (np.array([0, .233284737407921723637836578544e-1,
                    0, -.831479419283098085685277496071e-1,
-                   0, .0541462136776153483932540272848 ]),
+                   0, .0541462136776153483932540272848]),
          np.array([0, .883654308363339862264532494396e-4,
                    0, .238811521522368331303214066075e-3,
                    0, .135365534194038370983135068211e-2,
                    0, -.520710690438660595086839959882e-2,
-                   0, .00341659266223572272892690737979 ]),
+                   0, .00341659266223572272892690737979]),
          np.array([0, .379785635776247894184454273159e-7,
                    0, .655473977795402040043020497901e-7,
                    0, .103479954638984842226816620692e-6,
@@ -60,7 +58,7 @@ b_def = (np.array([0, .233284737407921723637836578544e-1,
                    0, .877423283550614343733565759649e-6,
                    0, .515657204371051131603503471028e-5,
                    0, -.203244736027387801432055290742e-4,
-                   0, .0000134265158311651777460545854542 ]),
+                   0, .0000134265158311651777460545854542]),
          np.array([0, .703046511513775683031092069125e-13,
                    0, .110617117381148770138566741591e-12,
                    0, .146334657087392356024202217074e-12,
@@ -91,8 +89,8 @@ def mvmul(a, b):
 def _calc_coeffs(fx, depth):
     """Caution: this function modifies fx."""
     nans = []
-    for i in range(len(fx)):
-        if not np.isfinite(fx[i]):
+    for i, f in enumerate(fx):
+        if not np.isfinite(f):
             fx[i] = 0.0
             nans.append(i)
     c_new = mvmul(V_inv[depth], fx)
@@ -102,7 +100,7 @@ def _calc_coeffs(fx, depth):
         for i in nans:
             b_new[:-1] = scipy.linalg.solve(
                 (U[:ns[depth], :ns[depth]] - np.diag(np.ones(ns[depth] - 1)
-                                                   * xi[depth][i], 1)),
+                                                     * xi[depth][i], 1)),
                 b_new[1:])
             b_new[-1] = 0
             c_new -= c_new[n_new] / b_new[n_new] * b_new[:-1]
@@ -145,13 +143,14 @@ class Interval:
 
     @property
     def complete(self):
-        """The interval has all the values needed to calculate the intergral."""
-        return len(self.done_points) == ns[self.depth-1] #and self.parent.done # XXX: TO-DO check this condition
+        """The interval has all the y-values to calculate the intergral."""
+        return len(self.done_points) == ns[self.depth-1]
 
     @property
     def done(self):
         """The interval is complete and has the intergral calculated."""
-        return hasattr(self, 'fx') and len(self.done_points) == ns[self.depth - 1]
+        return (hasattr(self, 'fx') and
+                len(self.done_points) == ns[self.depth - 1])
 
     @property
     def T(self):
@@ -218,8 +217,8 @@ class Interval:
     def process_make_first(self):
         fx = np.array(self.done_points.values())
         nans = []
-        for i in range(len(fx)):
-            if not np.isfinite(fx[i]):
+        for i, f in enumerate(fx):
+            if not np.isfinite(f):
                 nans.append(i)
                 fx[i] = 0.0
 
@@ -326,9 +325,6 @@ class Learner(BaseLearner):
         self._stack = self._stack[n:]
         return points, loss_improvements
 
-    def loss(self, real=True):
-        return self.err_final
-
     def remove_unfinished(self):
         pass
 
@@ -362,11 +358,10 @@ class Learner(BaseLearner):
         # Check whether the point spacing is smaller than machine precision
         # and pop the interval with the largest error and do not split
         if (points[1] <= points[0]
-            or points[-1] <= points[-2]
-            or ival.err < (abs(ival.igral) * eps
-                                   * Vcond[ival.depth - 1])):
+                or points[-1] <= points[-2]
+                or ival.err < (abs(ival.igral) * eps
+                               * Vcond[ival.depth - 1])):
             self.ivals.remove(ival)
-            pass
         elif split:
             ivals_new = ival.split()
             self.ivals.remove(ival)
