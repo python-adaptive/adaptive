@@ -212,7 +212,7 @@ class _Interval:
         return points, split, n[depth] - n[depth-1]
 
 
-def algorithm_4 (f, a, b, tol):
+def algorithm_4 (f, a, b, tol, until_iteration=None):
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
     algorithm uses Clenshaw-Curtis quadrature rules of increasing
     degree in each interval and bisects the interval if either the
@@ -258,7 +258,11 @@ def algorithm_4 (f, a, b, tol):
         return igral, err, nr_points
 
     # main loop
-    while True:
+    if until_iteration is None:
+        # To simulate the while loop
+        until_iteration = int(1e15)
+
+    for _ in range(until_iteration):
         if ivals[i_max].depth == 4:
             split = True
         else:
