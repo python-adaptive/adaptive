@@ -145,20 +145,19 @@ class Interval:
     @property
     def complete(self):
         """The interval has all the y-values to calculate the intergral."""
-        return len(self.done_points) == ns[self.depth-1]
+        return len(self.done_points) == ns[self.depth - 1]
 
     @property
     def done(self):
         """The interval is complete and has the intergral calculated."""
-        return (hasattr(self, 'fx') and
-                len(self.done_points) == ns[self.depth - 1])
+        return hasattr(self, 'fx') and self.complete
 
     @property
     def T(self):
         if self.parent is not None:
-            if self.a - self.parent.a < 1e-15:
+            if self.a == self.parent.a:
                 return T_left
-            elif self.b - self.parent.b < 1e-15:
+            elif self.b == self.parent.b:
                 return T_right
             else:
                 raise Exception('This should not happen.')
