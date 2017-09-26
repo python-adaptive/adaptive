@@ -21,8 +21,10 @@ def mvmul(a, b):
 
 
 # the nodes and newton polynomials
-n = (5, 9, 17, 33)
-xi = [-np.cos(np.arange(n[j])/(n[j]-1) * np.pi) for j in range(4)]
+ns = (5, 9, 17, 33)
+xi = [-np.cos(np.arange(n)/(n-1) * np.pi) for n in ns]
+xi = [(row - row[::-1]) / 2 for row in xi]
+
 b_def = (np.array([0, .233284737407921723637836578544e-1,
                    0, -.831479419283098085685277496071e-1,
                    0, .0541462136776153483932540272848 ]),
@@ -67,18 +69,18 @@ def calc_V(xi, n):
     return np.array(V).T
 
 # compute the coefficients
-V = [calc_V(*args) for args in zip(xi, n)]
+V = [calc_V(*args) for args in zip(xi, ns)]
 V_inv = list(map(inv, V))
 Vcond = list(map(cond, V))
 
 # shift matrix
-T_lr = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
+T_lr = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
 
 # compute the integral
 w = np.sqrt(0.5)                # legendre
 
 # set-up the downdate matrix
-k = np.arange(n[3])
+k = np.arange(ns[3])
 U = (np.diag(np.sqrt((k+1)**2 / (2*k+1) / (2*k+3)))
      + np.diag(np.sqrt(k[2:]**2 / (4*k[2:]**2-1)), 2))
 
@@ -93,10 +95,10 @@ def _calc_coeffs(fx, depth):
     c_new = mvmul(V_inv[depth], fx)
     if len(nans) > 0:
         b_new = b_def[depth].copy()
-        n_new = n[depth] - 1
+        n_new = ns[depth] - 1
         for i in nans:
             b_new[:-1] = solve(
-                (U[:n[depth], :n[depth]] - np.diag(np.ones(n[depth] - 1)
+                (U[:ns[depth], :ns[depth]] - np.diag(np.ones(ns[depth] - 1)
                                                    * xi[depth][i], 1)),
                 b_new[1:])
             b_new[-1] = 0
@@ -128,9 +130,9 @@ class _Interval:
                 nans.append(i)
                 fx[i] = 0.0
         ival = _Interval()
-        ival.c = np.zeros((4, n[3]))
-        ival.c[3, :n[3]] = mvmul(V_inv[3], fx)
-        ival.c[2, :n[2]] = mvmul(V_inv[2], fx[:n[3]:2])
+        ival.c = np.zeros((4, ns[3]))
+        ival.c[3, :ns[3]] = mvmul(V_inv[3], fx)
+        ival.c[2, :ns[2]] = mvmul(V_inv[2], fx[:ns[3]:2])
         fx[nans] = np.nan
         ival.fx = fx
         ival.c_old = np.zeros(fx.shape)
@@ -165,14 +167,14 @@ class _Interval:
             ival.tol = self.tol / np.sqrt(2)
             ival.depth = 1
             ival.rdepth = self.rdepth + 1
-            ival.c = np.zeros((4, n[3]))
+            ival.c = np.zeros((4, ns[3]))
             fx = np.concatenate(
                 ([f_left],
                  f((aa + bb) / 2 + (bb - aa) * xi[0][1:-1] / 2),
                  [f_right]))
-            nr_points += n[0] - 2
+            nr_points += ns[0] - 2
 
-            ival.c[0, :n[0]] = c_new = _calc_coeffs(fx, 0)
+            ival.c[0, :ns[0]] = c_new = _calc_coeffs(fx, 0)
             ival.fx = fx
 
             ival.c_old = mvmul(T, self.c[self.depth - 1])
@@ -193,11 +195,11 @@ class _Interval:
         a = self.a
         b = self.b
         points = (a+b)/2 + (b-a)*xi[depth]/2
-        fx = np.empty(n[depth])
-        fx[0:n[depth]:2] = self.fx
-        fx[1:n[depth]-1:2] = f(points[1:n[depth]-1:2])
-        fx = fx[:n[depth]]
-        self.c[depth, :n[depth]] = c_new = _calc_coeffs(fx, depth)
+        fx = np.empty(ns[depth])
+        fx[0:ns[depth]:2] = self.fx
+        fx[1:ns[depth]-1:2] = f(points[1:ns[depth]-1:2])
+        fx = fx[:ns[depth]]
+        self.c[depth, :ns[depth]] = c_new = _calc_coeffs(fx, depth)
         self.fx = fx
         c_diff = norm(self.c[depth - 1] - self.c[depth])
         self.err = (b-a) * c_diff
@@ -209,10 +211,11 @@ class _Interval:
             split = False
             self.depth = depth + 1
 
-        return points, split, n[depth] - n[depth-1]
-
+        return points, split, ns[depth] - ns[depth-1]
+    
     def __repr__(self):
-        return str({'ab': (self.a, self.b), 'depth': self.depth})
+        return str({'ab': (self.a, self.b), 'depth': self.depth, 'rdepth': self.rdepth,
+                    'igral': self.igral, 'err': self.err})
 
 def algorithm_4 (f, a, b, tol):
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
@@ -253,7 +256,7 @@ def algorithm_4 (f, a, b, tol):
     igral_final = 0
     err_final = 0
     i_max = 0
-    nr_points = n[3]
+    nr_points = ns[3]
 
     # do we even need to go this way?
     if err < igral * tol:
@@ -447,7 +450,7 @@ def intervals(f, a, b, tol, N_times):
     igral_final = 0
     err_final = 0
     i_max = 0
-    nr_points = n[3]
+    nr_points = ns[3]
 
     # do we even need to go this way?
     if err < igral * tol:
@@ -541,7 +544,9 @@ import operator
 from sortedcontainers import SortedList, SortedDict, SortedSet
 from adaptive.learner import BaseLearner
 
-T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
+T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
+
+
 
 class Interval:
     __slots__ = ['a', 'b', 'c', 'c_old', 'depth', 'fx', 'igral', 'err', 'tol',
@@ -552,7 +557,7 @@ class Interval:
         self.done_points = SortedDict()
         self.a = a
         self.b = b
-        self.c = np.zeros((len(n), n[-1]))
+        self.c = np.zeros((len(ns), ns[-1]))
 
     @classmethod
     def make_first(cls, a, b, tol):
@@ -562,7 +567,7 @@ class Interval:
         ival.rdepth = 1
         ival.parent = None
         ival.depth = 4
-        ival.c_old = np.zeros(n[ival.depth - 1])
+        ival.c_old = np.zeros(ns[ival.depth - 1])
         ival.err = np.inf
         ival.igral = 0
         return ival, ival.points(ival.depth - 1)
@@ -570,12 +575,12 @@ class Interval:
     @property
     def complete(self):
         """The interval has all the values needed to calculate the intergral."""
-        return len(self.done_points) == n[self.depth-1] #and self.parent.done # XXX: TO-DO check this condition
+        return len(self.done_points) == ns[self.depth-1] #and self.parent.done # XXX: TO-DO check this condition
 
     @property
     def done(self):
         """The interval is complete and has the intergral calculated."""
-        return hasattr(self, 'fx') and len(self.done_points) == n[self.depth - 1]
+        return hasattr(self, 'fx') and len(self.done_points) == ns[self.depth - 1]
 
     @property
     def T(self):
@@ -616,8 +621,8 @@ class Interval:
 
         for ival in ivals:
             ival.depth = 1
-            ival.c_old = self.c_old.copy()
             ival.tol = self.tol / np.sqrt(2)
+            ival.c_old = self.c_old.copy()
             ival.rdepth = self.rdepth + 1
             ival.parent = self
             ival.ndiv = self.ndiv
@@ -645,8 +650,8 @@ class Interval:
                 nans.append(i)
                 fx[i] = 0.0
 
-        self.c[3, :n[3]] = V_inv[3] @ fx
-        self.c[2, :n[2]] = V_inv[2] @ fx[:n[3]:2]
+        self.c[3, :ns[3]] = V_inv[3] @ fx
+        self.c[2, :ns[2]] = V_inv[2] @ fx[:ns[3]:2]
         fx[nans] = np.nan
         self.fx = fx
         self.c_old = np.zeros(fx.shape)
@@ -660,7 +665,7 @@ class Interval:
 
     def process_split(self, ndiv_max=20):
         fx = np.array(self.done_points.values())
-        self.c[0, :n[0]] = c_new = _calc_coeffs(fx, 0)
+        self.c[0, :ns[0]] = c_new = _calc_coeffs(fx, 0)
         self.fx = fx
         parent = self.parent
 
@@ -680,19 +685,20 @@ class Interval:
         fx = np.array(self.done_points.values())
         self.fx = fx
         own_depth = self.depth - 1
-        self.c[own_depth, :n[own_depth]] = c_new = _calc_coeffs(fx, own_depth)
+        self.c[own_depth, :ns[own_depth]] = c_new = _calc_coeffs(fx, own_depth)
         c_diff = norm(self.c[own_depth - 1] - self.c[own_depth])
         a, b = self.a, self.b
         self.err = (b - a) * c_diff
         self.igral = (b - a) * c_new[0] / sqrt(2)
-        nc = norm(self.c[own_depth, :n[own_depth]])
+        nc = norm(self.c[own_depth, :ns[own_depth]])
         force_split = nc > 0 and c_diff / nc > 0.1
         if force_split:
             self.depth -= 1
         return force_split
 
     def __repr__(self):
-        return str({'ab': (self.a, self.b), 'depth': self.depth})
+        return str({'ab': (self.a, self.b), 'depth': self.depth, 'rdepth': self.rdepth,
+                    'igral': self.igral, 'err': self.err})
 
 class Learner(BaseLearner):
     def __init__(self, function, bounds, tol):
@@ -765,7 +771,7 @@ class Learner(BaseLearner):
 
         points = ival.points(ival.depth - 1)
 
-        if ival.depth == len(n) or force_split:
+        if ival.depth == len(ns) or force_split:
             # Always split when depth is maximal or if refining is not helping
             split = True
         else:
@@ -789,8 +795,8 @@ class Learner(BaseLearner):
             self.ivals.remove(ival)
             pass
         elif split:
-            self.ivals.remove(ival)  # first remove because ival.split changes the hash
             ivals_new = ival.split()
+            self.ivals.remove(ival)
 
             done_points_parent = ival.done_points
             for ival in ivals_new:
@@ -850,11 +856,13 @@ f, a, b, tol = f7, 0, 1, 1e-6
 l = Learner(f, bounds=(a, b), tol=tol)
 igral, err, nr_points = algorithm_4(f, a, b, tol)
 j = 0
+print('Original: {} points'.format(nr_points))
 for i in range(nr_points):
     points, loss_improvement = l.choose_points(1)
     l.add_data(points, map(l.function, points))
     if not l._stack:
-        all_the_same = all(same_ivals(intervals(f, a, b, tol, j), l.ivals))
+        ivals = intervals(f, a, b, tol, j)
+        all_the_same = all(same_ivals(ivals, l.ivals))
         if all_the_same:
             print('Identical till point number: {}, which are {} full cycles in the while loop.'.format(i + 1, j + 1))
             j += 1
