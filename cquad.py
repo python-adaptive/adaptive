@@ -212,7 +212,20 @@ class Interval:
             self.process_split()
         else:
             force_split = self.process_refine()
-        return force_split
+
+        # Check whether the point spacing is smaller than machine precision
+        # and pop the interval with the largest error and do not split
+        points = self.points(self.depth - 1)
+        remove = (points[1] <= points[0]
+                  or points[-1] <= points[-2]
+                  or self.err < (abs(self.igral) * eps
+                                 * Vcond[self.depth - 1]))
+        if remove:
+            # If this interval is discarded from ivals, there is no need
+            # to split it further.
+            force_split = False
+
+        return force_split, remove
 
     def process_make_first(self):
         fx = np.array(self.done_points.values())
@@ -298,6 +311,8 @@ class Learner(BaseLearner):
         self.priority_split = []
         self.ivals = SortedSet([ival], key=attrgetter('err'))
         self._stack = list(points)
+        self._err_final = 0
+        self._igral_final = 0
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
         for x in points:
             self.x_mapping[x].add(ival)
@@ -308,13 +323,13 @@ class Learner(BaseLearner):
         for ival in ivals:
             ival.done_points[point] = value
             if ival.complete and not ival.done:
-
-                if ival in self.ivals:
-                    self.ivals.remove(ival)
-                    force_split = ival.complete_process()
+                self.ivals.discard(ival)
+                force_split, remove = ival.complete_process()
+                if remove:
+                    self._err_final += ival.err
+                    self._igral_final += ival.igral
+                if not remove:
                     self.ivals.add(ival)
-                else:
-                    force_split = ival.complete_process()
 
                 if force_split:
                     # Make sure that at the next execution of _fill_stack(), this ival will be split
@@ -371,15 +386,7 @@ class Learner(BaseLearner):
             self._stack += list(points[1::2])
             split = False
 
-        # Check whether the point spacing is smaller than machine precision
-        # and pop the interval with the largest error and do not split
-        if (points[1] <= points[0]
-                or points[-1] <= points[-2]
-                or ival.err < (abs(ival.igral) * eps
-                               * Vcond[ival.depth - 1])):
-            print('ignore')
-            self.ivals.remove(ival)
-        elif split:
+        if split:
             self.ivals.remove(ival)
 
             if force_split:
@@ -421,13 +428,13 @@ class Learner(BaseLearner):
     def igral(self):
         # XXX: Need some recursion here for the parallel execution.
         # When `not ival.complete` take the `i.igral for i in ival.children`.
-        return sum(ival.igral for ival in self.ivals
-                   if ival.complete and not ival.children)
+        return self._igral_final + sum(ival.igral for ival in self.ivals
+                                       if ival.complete and not ival.children)
 
     @property
     def err(self):
-        return sum(ival.err for ival in self.ivals
-                   if ival.complete and not ival.children)
+        return self._err_final + sum(ival.err for ival in self.ivals
+                                     if ival.complete and not ival.children)
 
     @property
     def first_ival(self):
@@ -436,11 +443,11 @@ class Learner(BaseLearner):
         return go_up(self.ivals[0])
 
     def loss(self, real=True):
-        return (err == 0
-                or err < abs(igral) * tol
-                or (err_final > abs(igral) * tol
-                    and err - err_final < abs(igral) * tol)
-                or not ivals)
+        return (self.err == 0
+                or self.err < abs(self.igral) * self.tol
+                or (self._err_final > abs(self.igral) * self.tol
+                    and self.err - self._err_final < abs(self.igral) * self.tol)
+                or not self.ivals)
 
     def equal(self, other, *, verbose=False):
         """Note: `other` is a list of ivals."""

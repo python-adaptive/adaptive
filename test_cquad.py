@@ -35,11 +35,11 @@ if __name__ == '__main__':
     old_settings = np.seterr(all='ignore')
     from algorithm_4 import f0, f7, f24, f21, f63, fdiv
     for i, args in enumerate([[f0, 0, 3, 1e-5],
-                             [f7, 0, 1, 1e-6],
-                             [f21, 0, 1, 1e-3],
-                             [f24, 0, 3, 1e-3],  # Not the same
-                             [f63, 0, 1, 1e-10],  # Error
-                             [fdiv, 0, 1, 1e-6]]):  # diverging error not implemented correctly
+                              [f7, 0, 1, 1e-6],
+                              [f21, 0, 1, 1e-3],
+                              [f24, 0, 3, 1e-3],
+                              [f63, 0, 1, 1e-10],  # Error
+                              [fdiv, 0, 1, 1e-6]]):  # diverging error not implemented correctly
         print('\nFunction {}'.format(i))
         if same_ivals(*args, verbose=True):
             print(True)
