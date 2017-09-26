@@ -23,6 +23,7 @@ def mvmul(a, b):
 # the nodes and newton polynomials
 ns = (5, 9, 17, 33)
 xi = [-np.cos(np.arange(n)/(n-1) * np.pi) for n in ns]
+# Make `xi` perfectly anti-symmetrical, important when splitting the intervals
 xi = [(row - row[::-1]) / 2 for row in xi]
 
 b_def = (np.array([0, .233284737407921723637836578544e-1,
@@ -212,10 +213,10 @@ class _Interval:
             self.depth = depth + 1
 
         return points, split, ns[depth] - ns[depth-1]
-    
+
     def __repr__(self):
-        return str({'ab': (self.a, self.b), 'depth': self.depth, 'rdepth': self.rdepth,
-                    'igral': self.igral, 'err': self.err})
+        return str({'ab': (self.a, self.b), 'depth': self.depth,
+                    'rdepth': self.rdepth, 'igral': self.igral, 'err': self.err})
 
 def algorithm_4 (f, a, b, tol):
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
@@ -528,7 +529,7 @@ def __eq__(self, other, *, verbose=True):
     return all(variables)
 
 
-def same_ivals(old, new, * ,verbose=False):
+def same_ivals(old, new, *, verbose=False):
     old = sorted(old, key=operator.attrgetter('a'))
     new = sorted(new, key=operator.attrgetter('a'))
     try:
@@ -613,9 +614,11 @@ class Interval:
         return ival, points
 
     def split(self):
+        points = self.points(self.depth - 1)
         a = self.a
         b = self.b
-        m = self.points(self.depth - 1)[(n[self.depth - 1] - 1)//2]
+        m = points[len(points) // 2]
+
         ivals = (Interval(a, m), Interval(m, b))
         ival_left, ival_right = ivals
 
