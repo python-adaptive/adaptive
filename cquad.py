@@ -1,30 +1,48 @@
 # Copyright 2010 Pedro Gonnet
 # Copyright 2017 Christoph Groth
+# Copyright 2017 `adaptive` authors
 
+from collections import defaultdict
+from copy import deepcopy as copy
+from math import sqrt
+from operator import attrgetter
 import warnings
+
 import numpy as np
-from numpy.linalg import cond
-from scipy.linalg import inv, solve
+import scipy.linalg
 from scipy.linalg.blas import dgemv
+from sortedcontainers import SortedDict, SortedSet
 
+from adaptive.learner import BaseLearner
 eps = np.spacing(1)
-
-# The following two functions allow for almost bit-per-bit equivalence
-# with the matlab code as interpreted by octave.
-
-def norm(a):
-    return np.sqrt(a @ a)
-
-
-def mvmul(a, b):
-    return dgemv(1.0, a, b)
-
 
 # the nodes and newton polynomials
 ns = (5, 9, 17, 33)
 xi = [-np.cos(np.linspace(0, np.pi, n)) for n in ns]
-# Make `xi` perfectly anti-symmetrical, important when splitting the intervals
+# Make `xi` perfectly anti-symmetric, important for splitting the intervals
 xi = [(row - row[::-1]) / 2 for row in xi]
+
+# compute the coefficients
+def calc_V(x, n):
+    V = [np.ones(x.shape), x.copy()]
+    for i in range(2, n):
+        V.append((2*i-1) / i * x * V[-1] - (i-1) / i * V[-2])
+    for i in range(n):
+        V[i] *= np.sqrt(i + 0.5)
+    return np.array(V).T
+
+V = [calc_V(x, n) for x, n in zip(xi, ns)]
+V_inv = list(map(scipy.linalg.inv, V))
+Vcond = list(map(np.linalg.cond, V))
+
+# shift matrix
+T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
+
+# set-up the downdate matrix
+k = np.arange(ns[3])
+U = (np.diag(np.sqrt((k+1)**2 / (2*k+1) / (2*k+3)))
+     + np.diag(np.sqrt(k[2:]**2 / (4*k[2:]**2-1)), 2))
+
 
 b_def = (np.array([0, .233284737407921723637836578544e-1,
                    0, -.831479419283098085685277496071e-1,
@@ -61,29 +79,13 @@ b_def = (np.array([0, .233284737407921723637836578544e-1,
                    0, -.309866395328070487426324760520e-9,
                    0, .205572320292667201732878773151e-9]))
 
-def calc_V(xi, n):
-    V = [np.ones(xi.shape), xi.copy()]
-    for i in range(2, n):
-        V.append((2*i-1) / i * xi * V[-1] - (i-1) / i * V[-2])
-    for i in range(n):
-        V[i] *= np.sqrt(i + 0.5)
-    return np.array(V).T
 
-# compute the coefficients
-V = [calc_V(*args) for args in zip(xi, ns)]
-V_inv = list(map(inv, V))
-Vcond = list(map(cond, V))
+def norm(a):
+    return np.sqrt(a @ a)
 
-# shift matrix
-T_lr = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
 
-# compute the integral
-w = np.sqrt(0.5)                # legendre
-
-# set-up the downdate matrix
-k = np.arange(ns[3])
-U = (np.diag(np.sqrt((k+1)**2 / (2*k+1) / (2*k+3)))
-     + np.diag(np.sqrt(k[2:]**2 / (4*k[2:]**2-1)), 2))
+def mvmul(a, b):
+    return dgemv(1.0, a, b)
 
 
 def _calc_coeffs(fx, depth):
@@ -98,7 +100,7 @@ def _calc_coeffs(fx, depth):
         b_new = b_def[depth].copy()
         n_new = ns[depth] - 1
         for i in nans:
-            b_new[:-1] = solve(
+            b_new[:-1] = scipy.linalg.solve(
                 (U[:ns[depth], :ns[depth]] - np.diag(np.ones(ns[depth] - 1)
                                                    * xi[depth][i], 1)),
                 b_new[1:])
@@ -115,438 +117,6 @@ class DivergentIntegralError(ValueError):
         self.err = err
         self.nr_points = nr_points
         super().__init__(msg)
-
-
-class _Interval:
-    __slots__ = ['a', 'b', 'c', 'c_old', 'fx', 'igral', 'err', 'tol',
-                 'depth', 'rdepth', 'ndiv']
-
-    @classmethod
-    def make_first(cls, f, a, b, tol):
-        points = (a+b)/2 + (b-a) * xi[3] / 2
-        fx = f(points)
-        nans = []
-        for i in range(len(fx)):
-            if not np.isfinite(fx[i]):
-                nans.append(i)
-                fx[i] = 0.0
-        ival = _Interval()
-        ival.c = np.zeros((4, ns[3]))
-        ival.c[3, :ns[3]] = mvmul(V_inv[3], fx)
-        ival.c[2, :ns[2]] = mvmul(V_inv[2], fx[:ns[3]:2])
-        fx[nans] = np.nan
-        ival.fx = fx
-        ival.c_old = np.zeros(fx.shape)
-        ival.a = a
-        ival.b = b
-        ival.igral = (b-a) * w * ival.c[3, 0]
-        c_diff = norm(ival.c[3] - ival.c[2])
-        ival.err = (b-a) * c_diff
-        if c_diff / norm(ival.c[3]) > 0.1:
-            ival.err = max( ival.err , (b-a) * norm(ival.c[3]) )
-        ival.tol = tol
-        ival.depth = 4
-        ival.ndiv = 0
-        ival.rdepth = 1
-        return ival, points
-
-    def split(self, f, ndiv_max=20):
-        a = self.a
-        b = self.b
-        m = (a + b) / 2
-        f_center = self.fx[(len(self.fx)-1)//2]
-
-        ivals = []
-        nr_points = 0
-        for aa, bb, f_left, f_right, T in [
-                (a, m, self.fx[0], f_center, T_lr[0]),
-                (m, b, f_center, self.fx[-1], T_lr[1])]:
-            ival = _Interval()
-            ivals.append(ival)
-            ival.a = aa
-            ival.b = bb
-            ival.tol = self.tol / np.sqrt(2)
-            ival.depth = 1
-            ival.rdepth = self.rdepth + 1
-            ival.c = np.zeros((4, ns[3]))
-            fx = np.concatenate(
-                ([f_left],
-                 f((aa + bb) / 2 + (bb - aa) * xi[0][1:-1] / 2),
-                 [f_right]))
-            nr_points += ns[0] - 2
-
-            ival.c[0, :ns[0]] = c_new = _calc_coeffs(fx, 0)
-            ival.fx = fx
-
-            ival.c_old = mvmul(T, self.c[self.depth - 1])
-            c_diff = norm(ival.c[0] - ival.c_old)
-            ival.err = (bb - aa) * c_diff
-            ival.igral = (bb - aa) * ival.c[0, 0] * w
-            ival.ndiv = (self.ndiv
-                         + (abs(self.c[0, 0]) > 0
-                            and ival.c[0, 0] / self.c[0, 0] > 2))
-            if ival.ndiv > ndiv_max and 2*ival.ndiv > ival.rdepth:
-                return (aa, bb, bb-aa), nr_points
-
-        return ivals, nr_points
-
-    def refine(self, f):
-        """Increase degree of interval."""
-        depth = self.depth
-        a = self.a
-        b = self.b
-        points = (a+b)/2 + (b-a)*xi[depth]/2
-        fx = np.empty(ns[depth])
-        fx[0:ns[depth]:2] = self.fx
-        fx[1:ns[depth]-1:2] = f(points[1:ns[depth]-1:2])
-        fx = fx[:ns[depth]]
-        self.c[depth, :ns[depth]] = c_new = _calc_coeffs(fx, depth)
-        self.fx = fx
-        c_diff = norm(self.c[depth - 1] - self.c[depth])
-        self.err = (b-a) * c_diff
-        self.igral = (b-a) * w * c_new[0]
-        nc = norm(c_new)
-        if nc > 0 and c_diff / nc > 0.1:
-            split = True
-        else:
-            split = False
-            self.depth = depth + 1
-
-        return points, split, ns[depth] - ns[depth-1]
-
-    def __repr__(self):
-        return str({'ab': (self.a, self.b), 'depth': self.depth,
-                    'rdepth': self.rdepth, 'igral': self.igral, 'err': self.err})
-
-def algorithm_4 (f, a, b, tol):
-    """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
-    algorithm uses Clenshaw-Curtis quadrature rules of increasing
-    degree in each interval and bisects the interval if either the
-    function does not appear to be smooth or a rule of maximum degree
-    has been reached. The error estimate is computed from the L2-norm
-    of the difference between two successive interpolations of the
-    integrand over the nodes of the respective quadrature rules.
-
-    INT = ALGORITHM_4 ( F , A , B , TOL ) approximates the integral of
-    F in the interval [A,B] up to the relative tolerance TOL. The
-    integrand F should accept a vector argument and return a vector
-    result containing the integrand evaluated at each element of the
-    argument.
-
-    [INT,ERR,NR_POINTS] = ALGORITHM_4 ( F , A , B , TOL ) returns ERR,
-    an estimate of the absolute integration error as well as
-    NR_POINTS, the number of function values for which the integrand
-    was evaluated. The value of ERR may be larger than the requested
-    tolerance, indicating that the integration may have failed.
-
-    ALGORITHM_4 halts with a warning if the integral is or appears to
-    be divergent.
-
-    Reference: "Increasing the Reliability of Adaptive Quadrature
-        Using Explicit Interpolants", P. Gonnet, ACM Transactions on
-        Mathematical Software, 37 (3), art. no. 26, 2008.
-    """
-
-    # compute the first interval
-    ival, points = _Interval.make_first(f, a, b, tol)
-    ivals = [ival]
-
-    # init some globals
-    igral = ival.igral
-    err = ival.err
-    igral_final = 0
-    err_final = 0
-    i_max = 0
-    nr_points = ns[3]
-
-    # do we even need to go this way?
-    if err < igral * tol:
-        return igral, err, nr_points
-
-    # main loop
-    while True:
-        if ivals[i_max].depth == 4:
-            split = True
-        else:
-            points, split, nr_points_inc = ivals[i_max].refine(f)
-            nr_points += nr_points_inc
-
-        # can we safely ignore this interval?
-        if (points[1] <= points[0]
-            or points[-1] <= points[-2]
-            or ivals[i_max].err < (abs(ivals[i_max].igral) * eps
-                                   * Vcond[ivals[i_max].depth - 1])):
-            err_final += ivals[i_max].err
-            igral_final += ivals[i_max].igral
-            ivals[i_max] = ivals.pop()
-        elif split:
-            result, nr_points_inc = ivals[i_max].split(f)
-            nr_points += nr_points_inc
-            if isinstance(result, tuple):
-                igral = np.sign(igral) * np.inf
-                raise DivergentIntegralError(
-                    'Possibly divergent integral in the interval'
-                    ' [{}, {}]! (h={})'.format(*result),
-                    igral, err, nr_points)
-            ivals.extend(result)
-            ivals[i_max] = ivals.pop()
-
-        # compute the running err and new max
-        i_max = 0
-        i_min = 0
-        err = err_final
-        igral = igral_final
-        for i in range(len(ivals)):
-            if ivals[i].err > ivals[i_max].err:
-                i_max = i
-            elif ivals[i].err < ivals[i_min].err:
-                i_min = i
-            err += ivals[i].err
-            igral += ivals[i].igral
-
-        # nuke smallest element if stack is larger than 200
-        if len(ivals) > 200:
-            err_final += ivals[i_min].err
-            igral_final += ivals[i_min].igral
-            ivals[i_min] = ivals.pop()
-            if i_max == len(ivals):
-                i_max = i_min
-
-        # get up and leave?
-        if (err == 0
-            or err < abs(igral) * tol
-            or (err_final > abs(igral) * tol
-                and err - err_final < abs(igral) * tol)
-            or not ivals):
-            break
-
-    return igral, err, nr_points
-
-
-################ Tests ################
-
-def f0(x):
-    return x * np.sin(1/x) * np.sqrt(abs(1 - x))
-
-
-def f7(x):
-    return x**-0.5
-
-
-def f24(x):
-    return np.floor(np.exp(x))
-
-
-def f21(x):
-    y = 0
-    for i in range(1, 4):
-        y += 1 / np.cosh(20**i * (x - 2 * i / 10))
-    return y
-
-
-def f63(x):
-    return abs(x - 0.987654321)**-0.45
-
-
-def fdiv(x):
-    return abs(x - 0.987654321)**-1.1
-
-
-import struct
-
-def float2hex(x):
-    return struct.pack('!d', x).hex()
-
-def hex2float(hex):
-    return struct.unpack('!d', bytes.fromhex(hex))[0]
-
-def assert_equal(value, hex, eps=0):
-    assert (float2hex(value) == hex # for NaN, etc.
-            or abs((value - hex2float(hex))) <= abs(eps * value))
-
-def test():
-    old_settings = np.seterr(all='ignore')
-
-    igral, err, nr_points = algorithm_4(f0, 0, 3, 1e-5)
-    print(igral, err, nr_points)
-    assert_equal(igral, '3fffb6084c1dabf4')
-    assert_equal(err, '3ef46042cb969374')
-    assert nr_points == 1419
-
-    igral, err, nr_points = algorithm_4(f7, 0, 1, 1e-6)
-    print(igral, err, nr_points)
-    assert_equal(igral, '3fffffffd9fa6513')
-    assert_equal(err, '3ebd8955755be30c')
-    assert nr_points == 709
-
-    igral, err, nr_points = algorithm_4(f24, 0, 3, 1e-3)
-    print(igral, err, nr_points)
-    assert_equal(igral, '4031aa1505ba7b41')
-    assert_equal(err, '3f9202232bd03a6a')
-    assert nr_points == 4515
-
-    igral, err, nr_points = algorithm_4(f21, 0, 1, 1e-3)
-    print(igral, err, nr_points)
-    assert_equal(igral, '3fc4e088c36827c1')
-    assert_equal(err, '3f247d00177a3f07')
-    assert nr_points == 203
-
-    igral, err, nr_points = algorithm_4(f63, 0, 1, 1e-10)
-    print(igral, err, nr_points)
-    assert_equal(igral, '3fff7ccfd769d160')
-    assert_equal(err, '3e28f421b487f15a', 2e-15)
-    assert nr_points == 2715
-
-    try:
-        igral, err, nr_points = algorithm_4(fdiv, 0, 1, 1e-6)
-    except DivergentIntegralError as e:
-        print(e.igral, e.err, e.nr_points)
-        assert_equal(e.igral, '7ff0000000000000')
-        assert_equal(e.err, '4073b48aeb356df5')
-        assert e.nr_points == 457
-
-    np.seterr(**old_settings)
-
-
-# if __name__ == '__main__':
-#     test()
-
-
-def intervals(f, a, b, tol, N_times):
-    """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
-    algorithm uses Clenshaw-Curtis quadrature rules of increasing
-    degree in each interval and bisects the interval if either the
-    function does not appear to be smooth or a rule of maximum degree
-    has been reached. The error estimate is computed from the L2-norm
-    of the difference between two successive interpolations of the
-    integrand over the nodes of the respective quadrature rules.
-
-    INT = ALGORITHM_4 ( F , A , B , TOL ) approximates the integral of
-    F in the interval [A,B] up to the relative tolerance TOL. The
-    integrand F should accept a vector argument and return a vector
-    result containing the integrand evaluated at each element of the
-    argument.
-
-    [INT,ERR,NR_POINTS] = ALGORITHM_4 ( F , A , B , TOL ) returns ERR,
-    an estimate of the absolute integration error as well as
-    NR_POINTS, the number of function values for which the integrand
-    was evaluated. The value of ERR may be larger than the requested
-    tolerance, indicating that the integration may have failed.
-
-    ALGORITHM_4 halts with a warning if the integral is or appears to
-    be divergent.
-
-    Reference: "Increasing the Reliability of Adaptive Quadrature
-        Using Explicit Interpolants", P. Gonnet, ACM Transactions on
-        Mathematical Software, 37 (3), art. no. 26, 2008.
-    """
-
-    # compute the first interval
-    ival, points = _Interval.make_first(f, a, b, tol)
-    ivals = [ival]
-
-    # init some globals
-    igral = ival.igral
-    err = ival.err
-    igral_final = 0
-    err_final = 0
-    i_max = 0
-    nr_points = ns[3]
-
-    # do we even need to go this way?
-    if err < igral * tol:
-        return igral, err, nr_points
-
-    # main loop
-    for _ in range(N_times):
-        if ivals[i_max].depth == 4:
-            split = True
-        else:
-            points, split, nr_points_inc = ivals[i_max].refine(f)
-            nr_points += nr_points_inc
-        # can we safely ignore this interval?
-        if (points[1] <= points[0]
-            or points[-1] <= points[-2]
-            or ivals[i_max].err < (abs(ivals[i_max].igral) * eps
-                                   * Vcond[ivals[i_max].depth - 1])):
-            err_final += ivals[i_max].err
-            igral_final += ivals[i_max].igral
-            ivals[i_max] = ivals.pop()
-        elif split:
-            result, nr_points_inc = ivals[i_max].split(f)
-            nr_points += nr_points_inc
-            if isinstance(result, tuple):
-                igral = np.sign(igral) * np.inf
-                raise DivergentIntegralError(
-                    'Possibly divergent integral in the interval'
-                    ' [{}, {}]! (h={})'.format(*result),
-                    igral, err, nr_points)
-            ivals.extend(result)
-            ivals[i_max] = ivals.pop()
-
-        # compute the running err and new max
-        i_max = 0
-        i_min = 0
-        err = err_final
-        igral = igral_final
-        for i in range(len(ivals)):
-            if ivals[i].err > ivals[i_max].err:
-                i_max = i
-            elif ivals[i].err < ivals[i_min].err:
-                i_min = i
-            err += ivals[i].err
-            igral += ivals[i].igral
-
-        # nuke smallest element if stack is larger than 200
-        if len(ivals) > 200:
-            err_final += ivals[i_min].err
-            igral_final += ivals[i_min].igral
-            ivals[i_min] = ivals.pop()
-            if i_max == len(ivals):
-                i_max = i_min
-
-        # get up and leave?
-        if (err == 0
-            or err < abs(igral) * tol
-            or (err_final > abs(igral) * tol
-                and err - err_final < abs(igral) * tol)
-            or not ivals):
-            print('Tol reached in the original code with n={}!'.format(nr_points))
-            break
-
-    return ivals
-
-def __eq__(self, other, *, verbose=True):
-    variables = []
-    for slot in self.__slots__:
-        try:
-            eq = np.allclose(getattr(self, slot), getattr(other, slot), equal_nan=True)
-        except:
-            eq = getattr(self, slot) == getattr(other, slot)
-        if not eq and verbose:
-            print(slot, getattr(self, slot) - getattr(other, slot))
-        variables.append(eq)
-    return all(variables)
-
-
-def same_ivals(old, new, *, verbose=False):
-    old = sorted(old, key=operator.attrgetter('a'))
-    new = sorted(new, key=operator.attrgetter('a'))
-    try:
-        return [__eq__(ival1, ival2, verbose=verbose) for ival1, ival2 in zip(old, new)]
-    except:
-        return [False]
-
-from math import sqrt
-from copy import deepcopy as copy
-from collections import defaultdict
-import itertools
-import operator
-from sortedcontainers import SortedList, SortedDict, SortedSet
-from adaptive.learner import BaseLearner
-
-T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
-
 
 
 class Interval:
@@ -586,9 +156,9 @@ class Interval:
     @property
     def T(self):
         if self.parent is not None:
-            if self.a == self.parent.a:
+            if self.a - self.parent.a < 1e-15:
                 return T_left
-            elif self.b == self.parent.b:
+            elif self.b - self.parent.b < 1e-15:
                 return T_right
             else:
                 raise Exception('This should not happen.')
@@ -624,13 +194,13 @@ class Interval:
 
         for ival in ivals:
             ival.depth = 1
-            ival.tol = self.tol / np.sqrt(2)
+            ival.tol = self.tol / sqrt(2)
             ival.c_old = self.c_old.copy()
             ival.rdepth = self.rdepth + 1
             ival.parent = self
             ival.ndiv = self.ndiv
             self.children.append(ival)
-            ival.err = self.err / np.sqrt(2)
+            ival.err = self.err / sqrt(2)
             ival.igral = 0
 
         return ivals
@@ -711,9 +281,9 @@ class Learner(BaseLearner):
         ival, points = Interval.make_first(*self.bounds, self.tol)
 
         self.priority_split = []
-        self.ivals = SortedSet([ival], key=operator.attrgetter('err'))
+        self.ivals = SortedSet([ival], key=attrgetter('err'))
         self._stack = list(points)
-        self.x_mapping = defaultdict(lambda: SortedSet([], key=operator.attrgetter('rdepth')))
+        self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
         for x in points:
             self.x_mapping[x].add(ival)
 
@@ -847,25 +417,3 @@ class Learner(BaseLearner):
                 or (err_final > abs(igral) * tol
                     and err - err_final < abs(igral) * tol)
                 or not ivals)
-
-
-# f, a, b, tol = f0, 0, 3, 1e-5
-f, a, b, tol = f7, 0, 1, 1e-6
-# f, a, b, tol = f24, 0, 3, 1e-3
-# f, a, b, tol = f21, 0, 1, 1e-3
-# f, a, b, tol = f63, 0, 1, 1e-10
-# f, a, b, tol = fdiv, 0, 1, 1e-6
-
-l = Learner(f, bounds=(a, b), tol=tol)
-igral, err, nr_points = algorithm_4(f, a, b, tol)
-j = 0
-print('Original: {} points'.format(nr_points))
-for i in range(nr_points):
-    points, loss_improvement = l.choose_points(1)
-    l.add_data(points, map(l.function, points))
-    if not l._stack:
-        ivals = intervals(f, a, b, tol, j)
-        all_the_same = all(same_ivals(ivals, l.ivals))
-        if all_the_same:
-            print('Identical till point number: {}, which are {} full cycles in the while loop.'.format(i + 1, j + 1))
-            j += 1
