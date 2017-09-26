@@ -3,6 +3,7 @@
 # Copyright 2017 `adaptive` authors
 
 from collections import defaultdict
+from copy import deepcopy as copy
 from math import sqrt
 from operator import attrgetter
 
@@ -264,8 +265,6 @@ class Interval:
         self.igral = (b - a) * c_new[0] / sqrt(2)
         nc = norm(self.c[own_depth, :ns[own_depth]])
         force_split = nc > 0 and c_diff / nc > 0.1
-        if force_split:
-            self.depth -= 1
         return force_split
 
     def __repr__(self):
@@ -278,7 +277,6 @@ class Learner(BaseLearner):
         self.bounds = bounds
         self.tol = tol
         ival, points = Interval.make_first(*self.bounds, self.tol)
-
         self.priority_split = []
         self.ivals = SortedSet([ival], key=attrgetter('err'))
         self._stack = list(points)
@@ -301,7 +299,7 @@ class Learner(BaseLearner):
                     force_split = ival.complete_process()
 
                 if force_split:
-                    # Make sure that the next execution of _fill_stack(), this ival will be split
+                    # Make sure that at the next execution of _fill_stack(), this ival will be split
                     self.priority_split.append(ival)
 
     def choose_points(self, n):
@@ -363,8 +361,12 @@ class Learner(BaseLearner):
                                * Vcond[ival.depth - 1])):
             self.ivals.remove(ival)
         elif split:
-            ivals_new = ival.split()
             self.ivals.remove(ival)
+
+            if force_split:
+                ival = copy(ival)
+                ival.depth -= 1
+            ivals_new = ival.split()
 
             done_points_parent = ival.done_points
             for ival in ivals_new:
@@ -392,9 +394,8 @@ class Learner(BaseLearner):
 
     @property
     def nr_points(self):
-        # XXX: this is still incorrect, it should start from the first
-        # interval and sum all the way down, subtracting 2 each time.
-        return sum(len(ival.done_points) for ival in self.ivals)
+        return sum(1 for x, ivals in self.x_mapping.items()
+                   if any(ival.complete for ival in ivals))
 
     @property
     def igral(self):
