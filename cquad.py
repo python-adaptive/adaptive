@@ -215,9 +215,7 @@ class Interval:
 
         # Check whether the point spacing is smaller than machine precision
         # and pop the interval with the largest error and do not split
-        points = self.points(self.depth - 1)
-        remove = (points[1] <= points[0]
-                  or points[-1] <= points[-2]
+        remove = (abs(self.b - self.a) / ns[self.depth - 1] < eps
                   or self.err < (abs(self.igral) * eps
                                  * Vcond[self.depth - 1]))
         if remove:
