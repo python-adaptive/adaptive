@@ -326,37 +326,38 @@ class Learner1D(BaseLearner):
         for bound in self.bounds:
             if bound not in self.data and bound not in self.data_interp:
                 points.append(bound)
+
         # Ensure we return exactly 'n' points.
         if points:
             loss_improvements = [float('inf')] * n
             if n <= 2:
-                return points[:n], loss_improvements
+                points = points[:n]
             else:
-                return np.linspace(*self.bounds, n), loss_improvements
+                points = np.linspace(*self.bounds, n)
+        else:
+            def xs(x, n):
+                if n == 1:
+                    return []
+                else:
+                    step = (x[1] - x[0]) / n
+                    return [x[0] + step * i for i in range(1, n)]
 
-        def xs(x, n):
-            if n == 1:
-                return []
-            else:
-                step = (x[1] - x[0]) / n
-                return [x[0] + step * i for i in range(1, n)]
+            # Calculate how many points belong to each interval.
+            quals = [(-loss, x_range, 1) for (x_range, loss) in
+                     self.losses_combined.items()]
 
-        # Calculate how many points belong to each interval.
-        quals = [(-loss, x_range, 1) for (x_range, loss) in
-                 self.losses_combined.items()]
+            heapq.heapify(quals)
 
-        heapq.heapify(quals)
+            for point_number in range(n):
+                quality, x, n = quals[0]
+                heapq.heapreplace(quals, (quality * n / (n + 1), x, n + 1))
 
-        for point_number in range(n):
-            quality, x, n = quals[0]
-            heapq.heapreplace(quals, (quality * n / (n + 1), x, n + 1))
+            points = list(itertools.chain.from_iterable(xs(x, n)
+                          for quality, x, n in quals))
 
-        points = list(itertools.chain.from_iterable(xs(x, n)
-                      for quality, x, n in quals))
-
-        loss_improvements = list(itertools.chain.from_iterable(
-                                 itertools.repeat(-quality, n)
-                                 for quality, x, n in quals))
+            loss_improvements = list(itertools.chain.from_iterable(
+                                     itertools.repeat(-quality, n)
+                                     for quality, x, n in quals))
 
         if add_data:
             self.add_data(points, itertools.repeat(None))
