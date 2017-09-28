@@ -94,6 +94,7 @@ def _calc_coeffs(fx, depth):
         if not np.isfinite(f):
             fx[i] = 0.0
             nans.append(i)
+
     c_new = mvmul(V_inv[depth], fx)
     if len(nans) > 0:
         b_new = b_def[depth].copy()
@@ -120,7 +121,8 @@ class DivergentIntegralError(ValueError):
 
 class Interval:
     __slots__ = ['a', 'b', 'c', 'c_old', 'depth', 'fx', 'igral', 'err', 'tol',
-                 'rdepth', 'ndiv', 'parent', 'children', 'done_points']
+                 'rdepth', 'ndiv', 'parent', 'children', 'done_points',
+                 'est_err']
 
     def __init__(self, a, b):
         self.children = []
@@ -128,6 +130,7 @@ class Interval:
         self.a = a
         self.b = b
         self.c = np.zeros((len(ns), ns[-1]))
+        self.est_err = np.inf
 
     @classmethod
     def make_first(cls, a, b, tol):
@@ -168,6 +171,7 @@ class Interval:
         return (a+b)/2 + (b-a)*xi[depth]/2
 
     def refine(self):
+        assert not self.children
         ival = Interval(self.a, self.b)
         ival.tol = self.tol
         ival.rdepth = self.rdepth
@@ -175,7 +179,7 @@ class Interval:
         ival.c = self.c.copy()
         ival.c_old = self.c_old.copy()
         ival.parent = self
-        self.children.append(ival)
+        self.children = [ival]
         ival.err = self.err
         ival.igral = 0
         points = ival.points(self.depth)
@@ -213,11 +217,21 @@ class Interval:
         else:
             force_split = self.process_refine()
 
+        if not np.isfinite(self.est_err):
+            self.est_err = self.err
+
+        ival = self.parent
+        while ival is not None:
+            children_err = sum(i.est_err for i in ival.children)
+            if np.isfinite(children_err):
+                ival.est_err = children_err
+                ival = ival.parent
+            else:
+                break
+
         # Check whether the point spacing is smaller than machine precision
         # and pop the interval with the largest error and do not split
-        remove = (abs(self.b - self.a) / ns[self.depth - 1] < eps
-                  or self.err < (abs(self.igral) * eps
-                                 * Vcond[self.depth - 1]))
+        remove = self.err < (abs(self.igral) * eps * Vcond[self.depth - 1])
         if remove:
             # If this interval is discarded from ivals, there is no need
             # to split it further.
@@ -237,27 +251,30 @@ class Interval:
         self.c[2, :ns[2]] = V_inv[2] @ fx[:ns[3]:2]
         fx[nans] = np.nan
         self.fx = fx
+
         self.c_old = np.zeros(fx.shape)
-        c_diff = norm(self.c[3] - self.c[2])
+        c_diff = norm(self.c[self.depth - 1] - self.c[2])
+
         a, b = self.a, self.b
-        self.igral = (b - a) * self.c[3, 0] / sqrt(2)
         self.err = (b - a) * c_diff
+        self.igral = (b - a) * self.c[self.depth - 1, 0] / sqrt(2)
 
         if c_diff / norm(self.c[3]) > 0.1:
             self.err = max(self.err, (b-a) * norm(self.c[3]))
 
     def process_split(self, ndiv_max=20):
         fx = np.array(self.done_points.values())
-        self.c[0, :ns[0]] = c_new = _calc_coeffs(fx, 0)
+        self.c[self.depth - 1, :ns[self.depth - 1]] = c_new = _calc_coeffs(fx, self.depth - 1)
         self.fx = fx
-        parent = self.parent
 
+        parent = self.parent
         self.c_old = mvmul(self.T, parent.c[parent.depth - 1])
-        c_diff = norm(self.c[0] - self.c_old)
+        c_diff = norm(self.c[self.depth - 1] - self.c_old)
 
         a, b = self.a, self.b
         self.err = (b - a) * c_diff
-        self.igral = (b - a) * self.c[0, 0] / sqrt(2)
+        self.igral = (b - a) * self.c[self.depth - 1, 0] / sqrt(2)
+
         self.ndiv = (parent.ndiv
                      + (abs(parent.c[0, 0]) > 0
                         and self.c[0, 0] / parent.c[0, 0] > 2))
@@ -266,20 +283,26 @@ class Interval:
 
     def process_refine(self):
         fx = np.array(self.done_points.values())
+        self.c[self.depth - 1, :ns[self.depth - 1]] = c_new = _calc_coeffs(fx, self.depth - 1)
         self.fx = fx
-        own_depth = self.depth - 1
-        self.c[own_depth, :ns[own_depth]] = c_new = _calc_coeffs(fx, own_depth)
-        c_diff = norm(self.c[own_depth - 1] - self.c[own_depth])
+
+        c_diff = norm(self.c[self.depth - 1 - 1] - self.c[self.depth - 1])
+
         a, b = self.a, self.b
         self.err = (b - a) * c_diff
-        self.igral = (b - a) * c_new[0] / sqrt(2)
-        nc = norm(self.c[own_depth, :ns[own_depth]])
+        self.igral = (b - a) * self.c[self.depth - 1, 0] / sqrt(2)
+
+        nc = norm(self.c[self.depth - 1, :ns[self.depth - 1]])
         force_split = nc > 0 and c_diff / nc > 0.1
         return force_split
 
     def __repr__(self):
-        return str({'ab': (self.a, self.b), 'depth': self.depth,
-                    'rdepth': self.rdepth, 'igral': self.igral, 'err': self.err})
+        return ' '.join(['(a, b)=({:.5f}, {:.5f})'.format(self.a, self.b),
+                         'depth={}'.format(self.depth),
+                         'rdepth={}'.format(self.rdepth),
+                         'igral={:.5E}'.format(self.igral),
+                         'err={:.5E}'.format(self.err),
+                         'est_err={:.5E}'.format(self.est_err)])
 
     def equal(self, other, *, verbose=False):
         """Note: Implementing __eq__ breaks SortedContainers in some way."""
@@ -305,17 +328,23 @@ class Learner(BaseLearner):
         self.function = function
         self.bounds = bounds
         self.tol = tol
-        ival, points = Interval.make_first(*self.bounds, self.tol)
         self.priority_split = []
-        self.ivals = SortedSet([ival], key=attrgetter('err'))
-        self._stack = list(points)
+        self.ivals = SortedSet([], key=attrgetter('err'))
+        self.done_points = {}
+        self.not_done_points = set()
+        self._stack = []
         self._err_final = 0
         self._igral_final = 0
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
-        for x in points:
-            self.x_mapping[x].add(ival)
+        ival, points = Interval.make_first(*self.bounds, self.tol)
+        self._update_ival(ival, points)
 
     def add_point(self, point, value):
+        if point not in self.x_mapping:
+            raise RuntimeError("Point doesn't belong to any interval")
+        self.done_points[point] = value
+        self.not_done_points.discard(point)
+
         # Select the intervals that have this point
         ivals = self.x_mapping[point]
         for ival in ivals:
@@ -326,12 +355,25 @@ class Learner(BaseLearner):
                 if remove:
                     self._err_final += ival.err
                     self._igral_final += ival.igral
-                if not remove:
+                else:
                     self.ivals.add(ival)
 
                 if force_split:
-                    # Make sure that at the next execution of _fill_stack(), this ival will be split
+                    # Make sure that at the next execution of _fill_stack(),
+                    # this ival will be split.
                     self.priority_split.append(ival)
+
+    def _update_ival(self, ival, points):
+        for x in points:
+            # Update the mappings
+            self.x_mapping[x].add(ival)
+            if x in self.done_points:
+                self.add_point(x, self.done_points[x])
+            elif x not in self.not_done_points:
+                self._stack.append(x)
+                self.not_done_points.add(x)
+        # Add the new interval to the err sorted set
+        self.ivals.add(ival)
 
     def choose_points(self, n):
         points, loss_improvements = self.pop_from_stack(n)
@@ -347,11 +389,9 @@ class Learner(BaseLearner):
 
     def pop_from_stack(self, n):
         points = self._stack[:n]
-        loss_improvements = [max(ival.err for ival in self.x_mapping[x])
-                             for x in self._stack[:n]]
-
-        # Remove from stack
         self._stack = self._stack[n:]
+        loss_improvements = [max(ival.err for ival in self.x_mapping[x])
+                             for x in points]
         return points, loss_improvements
 
     def remove_unfinished(self):
@@ -367,48 +407,27 @@ class Learner(BaseLearner):
             ival = self.ivals[-1]
             force_split = False
 
-        points = ival.points(ival.depth - 1)
+        self.ivals.remove(ival)
 
         if ival.depth == len(ns) or force_split:
             # Always split when depth is maximal or if refining is not helping
             split = True
         else:
             # Refine
-            self.ivals.remove(ival)
             ival_new, points = ival.refine()
-            for x in points:
-                self.x_mapping[x].add(ival_new)
-                if x in ival.done_points:
-                    self.add_point(x, ival.done_points[x])
-            self.ivals.add(ival_new)
-            self._stack += list(points[1::2])
+            self._update_ival(ival_new, points)
             split = False
 
-        if split:
-            self.ivals.remove(ival)
-
+        points = ival.points(ival.depth - 1)
+        if split and not (points[1] <= points[0] or points[-1] <= points[-2]):
             if force_split:
                 ival = copy(ival)
                 ival.depth -= 1
             ivals_new = ival.split()
 
-            done_points_parent = ival.done_points
             for ival in ivals_new:
                 points = ival.points(depth=0)
-                self._stack += list(points[1:-1])
-
-                # Update the mappings
-                for x in points:
-                    self.x_mapping[x].add(ival)
-
-                # Add the known outermost points if they are done in the parent
-                for index in (0, -1):
-                    x = points[index]
-                    if x in done_points_parent:
-                        self.add_point(x, done_points_parent[x])
-
-            # Add the new intervals to the err sorted set
-            self.ivals.update(ivals_new)
+                self._update_ival(ival, points)
 
         # Remove the smallest element if number of intervals is larger than 200
         if len(self.ivals) > 200:
@@ -431,14 +450,18 @@ class Learner(BaseLearner):
 
     @property
     def err(self):
+        if not any(ival.complete for ival in self.ivals):
+            return np.inf
+
         return self._err_final + sum(ival.err for ival in self.ivals
                                      if ival.complete and not ival.children)
 
     @property
     def first_ival(self):
-        def go_up(ival):
-            return go_up(ival.parent) if ival.parent else ival
-        return go_up(self.ivals[0])
+        ival = self.ivals[0]
+        while ival.parent:
+            ival = ival.parent
+        return ival
 
     def loss(self, real=True):
         return (self.err == 0
