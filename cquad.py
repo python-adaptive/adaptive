@@ -453,16 +453,14 @@ class Learner(BaseLearner):
 
     @property
     def igral(self):
-        return self._igral_final + sum(i.igral for i in
-                                       self.deepest_complete_branches())
+        return sum(i.igral for i in self.deepest_complete_branches())
 
     @property
     def err(self):
         deepest_complete_branches = self.deepest_complete_branches()
         if not deepest_complete_branches:
             return np.inf
-        return self._err_final + sum(i.err for i in
-                                     deepest_complete_branches)
+        return sum(i.err for i in deepest_complete_branches)
 
     @property
     def first_ival(self):
