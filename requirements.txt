@@ -1,4 +1,5 @@
 numpy
+scipy
 holoviews
 ipython
 ipyparallel
