@@ -142,7 +142,6 @@ class Interval:
         ival.depth = 4
         ival.c_old = np.zeros(ns[ival.depth - 1])
         ival.err = np.inf
-        ival.igral = 0
         return ival, ival.points(ival.depth - 1)
 
     @property
@@ -185,7 +184,6 @@ class Interval:
         ival.parent = self
         self.children = [ival]
         ival.err = self.err
-        ival.igral = 0
         points = ival.points(self.depth)
         ival.depth = self.depth + 1
         return ival, points
@@ -211,7 +209,6 @@ class Interval:
             ival.parent = self
             ival.ndiv = self.ndiv
             ival.err = self.err / sqrt(2)
-            ival.igral = 0
 
         return ivals
 
