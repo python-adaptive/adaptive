@@ -156,6 +156,10 @@ class Interval:
         return hasattr(self, 'fx') and self.complete
 
     @property
+    def branch_complete(self):
+        return np.isinf(sum(i.est_err for i in self.children))
+
+    @property
     def T(self):
         if self.parent is not None:
             if self.a == self.parent.a:
@@ -441,8 +445,7 @@ class Learner(BaseLearner):
     def deepest_complete_branches(ival):
         complete_branches = []
         def _find_deepest(ival):
-            branch_complete = np.isinf(sum(i.est_err for i in ival.children))
-            if not ival.children and ival.complete or branch_complete:
+            if not ival.children and ival.complete or ival.branch_complete:
                 complete_branches.append(ival)
             else:
                 for i in ival.children:
