@@ -186,8 +186,13 @@ class Interval:
         ival.depth = self.depth + 1
         return ival, points
 
-    def split(self):
-        points = self.points(self.depth - 1)
+    def split(self, force_split=False):
+        depth = self.depth
+
+        if force_split:
+            self.depth -= 1
+
+        points = self.points(depth - 1)
         a = self.a
         b = self.b
         m = points[len(points) // 2]
@@ -419,14 +424,10 @@ class Learner(BaseLearner):
 
         points = ival.points(ival.depth - 1)
         if split and not (points[1] <= points[0] or points[-1] <= points[-2]):
-            if force_split:
-                ival = copy(ival)
-                ival.depth -= 1
-            ivals_new = ival.split()
-
-            for ival in ivals_new:
-                points = ival.points(depth=0)
-                self._update_ival(ival, points)
+            ivals_new = ival.split(force_split)
+            for ival_new in ivals_new:
+                points = ival_new.points(depth=0)
+                self._update_ival(ival_new, points)
 
         # Remove the smallest element if number of intervals is larger than 200
         if len(self.ivals) > 200:
