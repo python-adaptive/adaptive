@@ -192,8 +192,8 @@ class Interval:
         b = self.b
         m = points[len(points) // 2]
 
-        ivals = (Interval(a, m), Interval(m, b))
-        ival_left, ival_right = ivals
+        ivals = [Interval(a, m), Interval(m, b)]
+        self.children = ivals
 
         for ival in ivals:
             ival.depth = 1
@@ -202,7 +202,6 @@ class Interval:
             ival.rdepth = self.rdepth + 1
             ival.parent = self
             ival.ndiv = self.ndiv
-            self.children.append(ival)
             ival.err = self.err / sqrt(2)
             ival.igral = 0
 
@@ -217,7 +216,7 @@ class Interval:
         else:
             force_split = self.process_refine()
 
-        if not np.isfinite(self.est_err):
+        if np.isinf(self.est_err):
             self.est_err = self.err
 
         ival = self.parent
