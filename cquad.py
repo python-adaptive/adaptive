@@ -187,12 +187,11 @@ class Interval:
         return ival, points
 
     def split(self, force_split=False):
-        depth = self.depth
+        points = self.points(self.depth - 1)
 
         if force_split:
             self.depth -= 1
 
-        points = self.points(depth - 1)
         a = self.a
         b = self.b
         m = points[len(points) // 2]
@@ -436,6 +435,17 @@ class Learner(BaseLearner):
 
         return self._stack
 
+    def deepest_complete_branches(self):
+        complete_branches = []
+        def _find_deepest_complete_branch(ival):
+            if not ival.children and ival.complete or np.isinf(sum(i.est_err for i in ival.children)):
+                complete_branches.append(ival)
+            else:
+                for i in ival.children:
+                    _find_deepest_complete_branch(i)
+        _find_deepest_complete_branch(self.first_ival)
+        return complete_branches
+
     @property
     def nr_points(self):
         return sum(1 for x, ivals in self.x_mapping.items()
@@ -443,18 +453,16 @@ class Learner(BaseLearner):
 
     @property
     def igral(self):
-        # XXX: Need some recursion here for the parallel execution.
-        # When `not ival.complete` take the `i.igral for i in ival.children`.
-        return self._igral_final + sum(ival.igral for ival in self.ivals
-                                       if ival.complete and not ival.children)
+        return self._igral_final + sum(i.igral for i in
+                                       self.deepest_complete_branches())
 
     @property
     def err(self):
-        if not any(ival.complete for ival in self.ivals):
+        deepest_complete_branches = self.deepest_complete_branches()
+        if not deepest_complete_branches:
             return np.inf
-
-        return self._err_final + sum(ival.err for ival in self.ivals
-                                     if ival.complete and not ival.children)
+        return self._err_final + sum(i.err for i in
+                                     deepest_complete_branches)
 
     @property
     def first_ival(self):
