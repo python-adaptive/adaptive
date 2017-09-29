@@ -326,6 +326,7 @@ class Interval:
 
         return all(same_slots)
 
+
 class Learner(BaseLearner):
     def __init__(self, function, bounds, tol):
         self.function = function
@@ -341,6 +342,7 @@ class Learner(BaseLearner):
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
         ival, points = Interval.make_first(*self.bounds, self.tol)
         self._update_ival(ival, points)
+        self._complete_branches = []
 
     def add_point(self, point, value):
         if point not in self.x_mapping:
@@ -435,16 +437,29 @@ class Learner(BaseLearner):
 
         return self._stack
 
-    def deepest_complete_branches(self):
+    @staticmethod
+    def deepest_complete_branches(ival):
         complete_branches = []
-        def _find_deepest_complete_branch(ival):
-            if not ival.children and ival.complete or np.isinf(sum(i.est_err for i in ival.children)):
+        def _find_deepest(ival):
+            branch_complete = np.isinf(sum(i.est_err for i in ival.children))
+            if not ival.children and ival.complete or branch_complete:
                 complete_branches.append(ival)
             else:
                 for i in ival.children:
-                    _find_deepest_complete_branch(i)
-        _find_deepest_complete_branch(self.first_ival)
+                    _find_deepest(i)
+        _find_deepest(ival)
         return complete_branches
+
+    @property
+    def complete_branches(self):
+        if not self._complete_branches and self.first_ival.done:
+            self._complete_branches.append(self.first_ival)
+        else:
+            complete_branches = []
+            for ival in self._complete_branches:
+                complete_branches.extend(self.deepest_complete_branches(ival))
+            self._complete_branches = complete_branches
+        return self._complete_branches
 
     @property
     def nr_points(self):
@@ -453,14 +468,13 @@ class Learner(BaseLearner):
 
     @property
     def igral(self):
-        return sum(i.igral for i in self.deepest_complete_branches())
+        return sum(i.igral for i in self.complete_branches)
 
     @property
     def err(self):
-        deepest_complete_branches = self.deepest_complete_branches()
-        if not deepest_complete_branches:
+        if not self.complete_branches:
             return np.inf
-        return sum(i.err for i in deepest_complete_branches)
+        return sum(i.err for i in self.complete_branches)
 
     @property
     def first_ival(self):
@@ -470,10 +484,12 @@ class Learner(BaseLearner):
         return ival
 
     def loss(self, real=True):
-        return (self.err == 0
-                or self.err < abs(self.igral) * self.tol
-                or (self._err_final > abs(self.igral) * self.tol
-                    and self.err - self._err_final < abs(self.igral) * self.tol)
+        err = self.err
+        igral = self.igral
+        return (err == 0
+                or err < abs(igral) * self.tol
+                or (self._err_final > abs(igral) * self.tol
+                    and err - self._err_final < abs(igral) * self.tol)
                 or not self.ivals)
 
     def equal(self, other, *, verbose=False):
