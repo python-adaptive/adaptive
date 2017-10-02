@@ -158,7 +158,10 @@ class Interval:
 
     @property
     def branch_complete(self):
-        return np.isinf(sum(i.est_err for i in self.children))
+        if not self.children and self.complete:
+            return True
+        else:
+            return np.isfinite(sum(i.est_err for i in self.children))
 
     @property
     def T(self):
@@ -189,7 +192,7 @@ class Interval:
         ival.depth = self.depth + 1
         return ival, points
 
-    def split(self, force_split=False):
+    def split(self):
         points = self.points(self.depth - 1)
 
         a = self.a
@@ -305,6 +308,8 @@ class Interval:
                'err={:.5E}'.format(self.err),
                'igral={:.5E}'.format(self.igral if self.igral else 0),
                'est_err={:.5E}'.format(self.est_err)]
+        if self.discard:
+            lst += ['discard']
         return ' '.join(lst)
 
     def equal(self, other, *, verbose=False):
@@ -354,15 +359,14 @@ class Learner(BaseLearner):
         ivals = self.x_mapping[point]
         for ival in ivals:
             ival.done_points[point] = value
-            if ival.complete and not ival.done:
+            if ival.complete and not ival.done and not ival.discard:
+                in_ivals = ival in self.ivals
                 self.ivals.discard(ival)
                 force_split, remove = ival.complete_process()
                 if remove:
                     self._err_final += ival.err
                     self._igral_final += ival.igral
-                    self.set_discard(ival)
-                elif not ival.discard and (not ival.children or
-                    any(i.discard for i in ival.children)):
+                elif in_ivals:
                     self.ivals.add(ival)
 
                 if force_split:
@@ -430,6 +434,7 @@ class Learner(BaseLearner):
         else:
             ival = self.ivals[-1]
             force_split = False
+            assert not ival.children
 
         # Remove the interval from the err sorted set because we're going to
         # split or refine this interval
@@ -444,7 +449,7 @@ class Learner(BaseLearner):
         if not ival.discard:
             if ival.depth == 4 or force_split:
                 # Always split when depth is maximal or if refining didn't help
-                ivals_new = ival.split(force_split)
+                ivals_new = ival.split()
                 for ival_new in ivals_new:
                     points = ival_new.points(depth=0)
                     self._update_ival(ival_new, points)
@@ -464,7 +469,9 @@ class Learner(BaseLearner):
     def deepest_complete_branches(ival):
         complete_branches = []
         def _find_deepest(ival):
-            if not ival.children and ival.complete or ival.branch_complete:
+            children_err = (sum(i.est_err for i in ival.children)
+                            if ival.children else np.inf)
+            if np.isfinite(ival.est_err) and np.isinf(children_err):
                 complete_branches.append(ival)
             else:
                 for i in ival.children:
@@ -474,14 +481,20 @@ class Learner(BaseLearner):
 
     @property
     def complete_branches(self):
-        if not self._complete_branches and self.first_ival.done:
+        if not self.first_ival.done:
+            return []
+
+        if not self._complete_branches:
             self._complete_branches.append(self.first_ival)
         else:
             complete_branches = []
             for ival in self._complete_branches:
+                if ival.discard:
+                    ival = ival.parent
                 complete_branches.extend(self.deepest_complete_branches(ival))
             self._complete_branches = complete_branches
         return self._complete_branches
+
 
     @property
     def nr_points(self):
