@@ -122,7 +122,7 @@ class DivergentIntegralError(ValueError):
 class Interval:
     __slots__ = ['a', 'b', 'c', 'c_old', 'depth', 'fx', 'igral', 'err', 'tol',
                  'rdepth', 'ndiv', 'parent', 'children', 'done_points',
-                 'est_err']
+                 'est_err', 'discard']
 
     def __init__(self, a, b):
         self.children = []
@@ -131,6 +131,8 @@ class Interval:
         self.b = b
         self.c = np.zeros((len(ns), ns[-1]))
         self.est_err = np.inf
+        self.discard = False
+        self.igral = None
 
     @classmethod
     def make_first(cls, a, b, tol):
@@ -174,7 +176,6 @@ class Interval:
         return (a+b)/2 + (b-a)*xi[depth]/2
 
     def refine(self):
-        assert not self.children
         ival = Interval(self.a, self.b)
         ival.tol = self.tol
         ival.rdepth = self.rdepth
@@ -221,9 +222,9 @@ class Interval:
         else:
             force_split = self.process_refine()
 
+        # Set the estimated error
         if np.isinf(self.est_err):
             self.est_err = self.err
-
         ival = self.parent
         while ival is not None:
             children_err = sum(i.est_err for i in ival.children)
@@ -301,12 +302,13 @@ class Interval:
         return force_split
 
     def __repr__(self):
-        return ' '.join(['(a, b)=({:.5f}, {:.5f})'.format(self.a, self.b),
-                         'depth={}'.format(self.depth),
-                         'rdepth={}'.format(self.rdepth),
-                         'igral={:.5E}'.format(self.igral),
-                         'err={:.5E}'.format(self.err),
-                         'est_err={:.5E}'.format(self.est_err)])
+        lst = ['(a, b)=({:.5f}, {:.5f})'.format(self.a, self.b),
+               'depth={}'.format(self.depth),
+               'rdepth={}'.format(self.rdepth),
+               'err={:.5E}'.format(self.err),
+               'igral={:.5E}'.format(self.igral if self.igral else 0),
+               'est_err={:.5E}'.format(self.est_err)]
+        return ' '.join(lst)
 
     def equal(self, other, *, verbose=False):
         """Note: Implementing __eq__ breaks SortedContainers in some way."""
@@ -361,7 +363,9 @@ class Learner(BaseLearner):
                 if remove:
                     self._err_final += ival.err
                     self._igral_final += ival.igral
-                else:
+                    self.set_discard(ival)
+                elif not ival.discard and (not ival.children or
+                    any(i.discard for i in ival.children)):
                     self.ivals.add(ival)
 
                 if force_split:
@@ -370,21 +374,32 @@ class Learner(BaseLearner):
                     self.priority_split.append(ival)
 
     def _update_ival(self, ival, points):
+        assert not ival.discard
         for x in points:
             # Update the mappings
             self.x_mapping[x].add(ival)
             if x in self.done_points:
                 self.add_point(x, self.done_points[x])
             elif x not in self.not_done_points:
-                self._stack.append(x)
                 self.not_done_points.add(x)
+                self._stack.append(x)
+
         # Add the new interval to the err sorted set
         self.ivals.add(ival)
+
+    def set_discard(self, ival):
+        def _discard(ival):
+            ival.discard = True
+            self.ivals.discard(ival)
+            for child in ival.children:
+                _discard(child)
+        _discard(ival)
 
     def choose_points(self, n):
         points, loss_improvements = self.pop_from_stack(n)
         n_left = n - len(points)
         while n_left > 0:
+            assert n_left >= 0
             self._fill_stack()
             new_points, new_loss_improvements = self.pop_from_stack(n_left)
             points += new_points
@@ -409,30 +424,40 @@ class Learner(BaseLearner):
         if self.priority_split:
             ival = self.priority_split.pop()
             force_split = True
+            if ival.children:
+                # If the interval already has children (which is the result of an
+                # earlier refinement when the data of the interval wasn't known
+                # yet,) then discard the children and propagate it down.
+                for child in ival.children:
+                    self.set_discard(child)
         else:
             ival = self.ivals[-1]
             force_split = False
 
-        self.ivals.remove(ival)
+        # Remove the interval from the err sorted set because we're going to
+        # split or refine this interval
+        self.ivals.discard(ival)
 
-        if ival.depth == len(ns) or force_split:
-            # Always split when depth is maximal or if refining is not helping
-            split = True
-        else:
-            # Refine
-            ival_new, points = ival.refine()
-            self._update_ival(ival_new, points)
-            split = False
-
+        # If the interval points are smaller than machine precision, then
+        # discard the ival.
         points = ival.points(ival.depth - 1)
-        if split and not (points[1] <= points[0] or points[-1] <= points[-2]):
-            ivals_new = ival.split(force_split)
-            for ival_new in ivals_new:
-                points = ival_new.points(depth=0)
+        if points[1] <= points[0] or points[-1] <= points[-2]:
+            self.set_discard(ival)
+
+        if not ival.discard:
+            if ival.depth == 4 or force_split:
+                # Always split when depth is maximal or if refining didn't help
+                ivals_new = ival.split(force_split)
+                for ival_new in ivals_new:
+                    points = ival_new.points(depth=0)
+                    self._update_ival(ival_new, points)
+            else:
+                # Refine
+                ival_new, points = ival.refine()
                 self._update_ival(ival_new, points)
 
         # Remove the smallest element if number of intervals is larger than 200
-        if len(self.ivals) > 200:
+        if len(self.ivals) > 1000:
             print('nuke')
             self.ivals.pop(0)
 
