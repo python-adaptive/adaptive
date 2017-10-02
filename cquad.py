@@ -192,9 +192,6 @@ class Interval:
     def split(self, force_split=False):
         points = self.points(self.depth - 1)
 
-        if force_split:
-            self.depth -= 1
-
         a = self.a
         b = self.b
         m = points[len(points) // 2]

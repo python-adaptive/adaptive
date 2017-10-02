@@ -206,11 +206,11 @@ class _Interval:
         self.err = (b-a) * c_diff
         self.igral = (b-a) * w * c_new[0]
         nc = norm(c_new)
+        self.depth = depth + 1
         if nc > 0 and c_diff / nc > 0.1:
             split = True
         else:
             split = False
-            self.depth = depth + 1
 
         return points, split, n[depth] - n[depth-1]
 
