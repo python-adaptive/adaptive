@@ -392,6 +392,10 @@ class Learner(BaseLearner):
         def _discard(ival):
             ival.discard = True
             self.ivals.discard(ival)
+            for x in self._stack:
+                # XXX: is this check worth it?
+                if all(i.discard for i in self.x_mapping[x]):
+                    self._stack.remove(x)
             for child in ival.children:
                 _discard(child)
         _discard(ival)
@@ -441,12 +445,11 @@ class Learner(BaseLearner):
         self.ivals.discard(ival)
 
         # If the interval points are smaller than machine precision, then
-        # discard the ival.
+        # don't continue with splitting or refining.
         points = ival.points(ival.depth - 1)
-        if points[1] <= points[0] or points[-1] <= points[-2]:
-            self.set_discard(ival)
+        reached_machine_tol = points[1] <= points[0] or points[-1] <= points[-2]
 
-        if not ival.discard:
+        if not ival.discard or reached_machine_tol:
             if ival.depth == 4 or force_split:
                 # Always split when depth is maximal or if refining didn't help
                 ivals_new = ival.split()
@@ -498,8 +501,7 @@ class Learner(BaseLearner):
 
     @property
     def nr_points(self):
-        return sum(1 for x, ivals in self.x_mapping.items()
-                   if any(ival.complete for ival in ivals))
+        return len(self.x_mapping)
 
     @property
     def igral(self):
@@ -507,9 +509,10 @@ class Learner(BaseLearner):
 
     @property
     def err(self):
-        if not self.complete_branches:
+        complete_branches = self.complete_branches
+        if not complete_branches:
             return np.inf
-        return sum(i.err for i in self.complete_branches)
+        return sum(i.err for i in complete_branches)
 
     @property
     def first_ival(self):
