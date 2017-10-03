@@ -7,6 +7,7 @@ from copy import deepcopy as copy
 from math import sqrt
 from operator import attrgetter
 
+import holoviews as hv
 import numpy as np
 import scipy.linalg
 from scipy.linalg.blas import dgemv
@@ -548,3 +549,6 @@ class Learner(BaseLearner):
         ivals = [sorted(i, key=attrgetter('a')) for i in [self.ivals, other]]
         return all(ival.equal(other_ival, verbose=verbose)
                    for ival, other_ival in zip(*ivals))
+
+    def plot(self):
+        return hv.Scatter(self.done_points)
