@@ -473,6 +473,7 @@ class Learner(BaseLearner):
 
     @staticmethod
     def deepest_complete_branches(ival):
+        """Finds the deepest complete set of intervals starting from `ival`."""
         complete_branches = []
         def _find_deepest(ival):
             children_err = (sum(i.est_err for i in ival.children)
@@ -495,8 +496,9 @@ class Learner(BaseLearner):
 
         complete_branches = []
         for ival in self._complete_branches:
-            while ival.discard:
-                ival = ival.parent
+            if ival.discard:
+                complete_branches = self.deepest_complete_branches(self.first_ival)
+                break
             if not ival.children:
                 # If the interval has no children, than is already is the deepest
                 # complete branch.
@@ -533,7 +535,7 @@ class Learner(BaseLearner):
                 or not self.ivals)
 
     def loss(self, real=True):
-        return abs(self.igral) * self.tol - self.err
+        return abs(abs(self.igral) * self.tol - self.err)
 
     def equal(self, other, *, verbose=False):
         """Note: `other` is a list of ivals."""
