@@ -283,7 +283,9 @@ class Interval:
         self.ndiv = (parent.ndiv
                      + (abs(parent.c[0, 0]) > 0
                         and self.c[0, 0] / parent.c[0, 0] > 2))
+
         if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
+            raise NotImplementedError
             return (a, b, b-a), nr_points
 
     def process_refine(self):
@@ -392,9 +394,9 @@ class Learner(BaseLearner):
         def _discard(ival):
             ival.discard = True
             self.ivals.discard(ival)
-            for x in self._stack:
+            for point in self._stack:
                 # XXX: is this check worth it?
-                if all(i.discard for i in self.x_mapping[x]):
+                if all(i.discard for i in self.x_mapping[point]):
                     self._stack.remove(x)
             for child in ival.children:
                 _discard(child)
@@ -449,7 +451,7 @@ class Learner(BaseLearner):
         points = ival.points(ival.depth - 1)
         reached_machine_tol = points[1] <= points[0] or points[-1] <= points[-2]
 
-        if not ival.discard or reached_machine_tol:
+        if not ival.discard or not reached_machine_tol:
             if ival.depth == 4 or force_split:
                 # Always split when depth is maximal or if refining didn't help
                 ivals_new = ival.split()
