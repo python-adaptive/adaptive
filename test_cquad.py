@@ -9,7 +9,8 @@ def same_ivals(f, a, b, tol, verbose):
         for i in range(nr_points):
             points, loss_improvement = l.choose_points(1)
             l.add_data(points, map(l.function, points))
-
+        if verbose:
+            print('igral diff, ', l.igral-igral, 'err diff', l.err - err)
         return l.equal(ivals, verbose=verbose)
 
 
