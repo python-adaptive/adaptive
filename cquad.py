@@ -349,6 +349,7 @@ class Learner(BaseLearner):
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
         ival, points = Interval.make_first(*self.bounds, self.tol)
         self._update_ival(ival, points)
+        self.first_ival = ival
         self._complete_branches = []
 
     def add_point(self, point, value):
@@ -491,13 +492,13 @@ class Learner(BaseLearner):
 
         if not self._complete_branches:
             self._complete_branches.append(self.first_ival)
-        else:
-            complete_branches = []
-            for ival in self._complete_branches:
-                if ival.discard:
-                    ival = ival.parent
-                complete_branches.extend(self.deepest_complete_branches(ival))
-            self._complete_branches = complete_branches
+
+        complete_branches = []
+        for ival in self._complete_branches:
+            while ival.discard:
+                ival = ival.parent
+            complete_branches.extend(self.deepest_complete_branches(ival))
+        self._complete_branches = complete_branches
         return self._complete_branches
 
 
@@ -515,13 +516,6 @@ class Learner(BaseLearner):
         if not complete_branches:
             return np.inf
         return sum(i.err for i in complete_branches)
-
-    @property
-    def first_ival(self):
-        ival = self.ivals[0]
-        while ival.parent:
-            ival = ival.parent
-        return ival
 
     def loss(self, real=True):
         err = self.err
