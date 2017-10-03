@@ -512,7 +512,7 @@ class Learner(BaseLearner):
 
     @property
     def nr_points(self):
-        return len(self.x_mapping)
+        return len(self.done_points)
 
     @property
     def igral(self):
