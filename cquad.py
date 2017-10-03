@@ -497,7 +497,12 @@ class Learner(BaseLearner):
         for ival in self._complete_branches:
             while ival.discard:
                 ival = ival.parent
-            complete_branches.extend(self.deepest_complete_branches(ival))
+            if not ival.children:
+                # If the interval has no children, than is already is the deepest
+                # complete branch.
+                complete_branches.append(ival)
+            else:
+                complete_branches.extend(self.deepest_complete_branches(ival))
         self._complete_branches = complete_branches
         return self._complete_branches
 
@@ -515,9 +520,10 @@ class Learner(BaseLearner):
         complete_branches = self.complete_branches
         if not complete_branches:
             return np.inf
-        return sum(i.err for i in complete_branches)
+        else:
+            return sum(i.err for i in complete_branches)
 
-    def loss(self, real=True):
+    def done(self):
         err = self.err
         igral = self.igral
         return (err == 0
@@ -525,6 +531,9 @@ class Learner(BaseLearner):
                 or (self._err_final > abs(igral) * self.tol
                     and err - self._err_final < abs(igral) * self.tol)
                 or not self.ivals)
+
+    def loss(self, real=True):
+        return abs(self.igral) * self.tol - self.err
 
     def equal(self, other, *, verbose=False):
         """Note: `other` is a list of ivals."""
