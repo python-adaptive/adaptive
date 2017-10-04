@@ -565,7 +565,7 @@ def _max_disagreement_location_in_simplex(points, values, grad, transform):
     return p
 
 
-def triangle_radius(points):
+def triangle_radius(points, ndim=2):
     """The radius of a triangle defined by `points`.
 
     Parameters
@@ -579,8 +579,9 @@ def triangle_radius(points):
     radius : float
         The longest distance from the center to one of the vertices.
     """
+    points = points.reshape(-1, 3, ndim)
     center = points.mean(axis=-2)
-    return np.linalg.norm(points - center, axis=1).max()
+    return np.linalg.norm((points - center[:, None, :]), axis=-1).max(axis=1)
 
 
 def _deviation_from_linear_estimate(ip, gradients):
@@ -742,6 +743,14 @@ class Learner2D(BaseLearner):
                 self._stack.pop(i)
                 break
 
+    def _losses_per_triangle(self, ip, gradients):
+        dev = _deviation_from_linear_estimate(ip, gradients)
+        ps = ip.tri.points[ip.tri.vertices]
+        vs = ip.values[ip.tri.vertices]
+        losses = np.hypot(dev / (vs.max()-vs.min()),
+                          triangle_radius(ps) / self.xy_scale)
+        return losses
+
     def _fill_stack(self, stack_till=None):
         if stack_till is None:
             stack_till = 1
@@ -757,7 +766,7 @@ class Learner2D(BaseLearner):
         grad = interpolate.interpnd.estimate_gradients_2d_global(
             tri, ip.values.ravel(), tol=1e-6)
 
-        dev = _deviation_from_linear_estimate(ip, grad)
+        losses = self._losses_per_triangle(ip, grad)
 
         def point_exists(p):
             eps = np.finfo(float).eps * self.points_combined.ptp() * 100
@@ -769,9 +778,9 @@ class Learner2D(BaseLearner):
                     return True
             return False
 
-        for j, _ in enumerate(dev):
+        for j, _ in enumerate(losses):
             # Estimate point of maximum curvature inside the simplex
-            jsimplex = np.argmax(dev)
+            jsimplex = np.argmax(losses)
             p = tri.points[tri.vertices[jsimplex]]
             v = ip.values[tri.vertices[jsimplex]]
 
@@ -790,19 +799,16 @@ class Learner2D(BaseLearner):
 
             # Check if it is really new
             if point_exists(point_new):
-                dev[jsimplex] = 0
+                losses[jsimplex] = 0
                 continue
 
-            loss_improvement = hypot(dev[jsimplex] / (v.max() - v.min()),
-                                     triangle_radius(p) / self.xy_scale)
-
             # Add to stack
-            self._stack.append(tuple(point_new) + (loss_improvement,))
+            self._stack.append((*point_new, losses[jsimplex]))
 
             if len(self._stack) >= stack_till:
                 break
             else:
-                dev[jsimplex] = 0
+                losses[jsimplex] = 0
 
     def _split_stack(self, n=None):
         points = []
@@ -850,12 +856,8 @@ class Learner2D(BaseLearner):
         grad = interpolate.interpnd.estimate_gradients_2d_global(
             ip.tri, ip.values.ravel(), tol=1e-6)
 
-        dev = _deviation_from_linear_estimate(ip, grad)
-        jsimplex = np.argmax(dev)
-        p = ip.tri.points[ip.tri.vertices[jsimplex]]
-        v = ip.values[ip.tri.vertices[jsimplex]]
-        return hypot(dev[jsimplex] / (v.max() - v.min()),
-                     triangle_radius(p) / self.xy_scale)
+        losses = self._losses_per_triangle(ip, grad)
+        return losses.max()
 
     def remove_unfinished(self):
         self._points = self.points.copy()
