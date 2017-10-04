@@ -645,7 +645,6 @@ class Learner2D(BaseLearner):
     """
 
     def __init__(self, function, bounds, *, advanced_point_chosing=False):
-        self.function = function
         self.advanced_point_chosing = advanced_point_chosing
         self.ndim = len(bounds)
         if self.ndim != 2:
@@ -665,6 +664,14 @@ class Learner2D(BaseLearner):
 
         # Add the loss improvement to the bounds in the stack
         self._stack = [p + (np.inf,) for p in self._bounds_points]
+
+        def f(xy):
+            x, y = xy
+            x /= self.bounds[0][1] - self.bounds[0][0]
+            y /= self.bounds[1][1] - self.bounds[1][0]
+            return function((x, y))
+        
+        self.function = f
 
     @property
     def points_combined(self):
@@ -747,7 +754,7 @@ class Learner2D(BaseLearner):
         dev = _deviation_from_linear_estimate(ip, gradients)
         ps = ip.tri.points[ip.tri.vertices]
         vs = ip.values[ip.tri.vertices]
-        losses = np.hypot(dev / (vs.max()-vs.min()),
+        losses = np.hypot(dev / vs.ptp(),
                           triangle_radius(ps) / self.xy_scale)
         return losses
 
