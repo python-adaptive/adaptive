@@ -654,8 +654,10 @@ class Learner2D(BaseLearner):
         self._values = np.zeros([100], dtype=float)
         self._stack = []
         self._interp = {}
-        x, y = self.bounds
-        self.xy_scale = hypot(x[1]-x[0], y[1]-y[0])
+
+        self.x_scale = self.bounds[0][1] - self.bounds[0][0]
+        self.y_scale = self.bounds[1][1] - self.bounds[1][0]
+        self.xy_scale = hypot(self.x_scale, self.y_scale)
 
         # Keeps track till which index _points and _values are filled
         self.n = 0
@@ -667,10 +669,10 @@ class Learner2D(BaseLearner):
 
         def f(xy):
             x, y = xy
-            x /= self.bounds[0][1] - self.bounds[0][0]
-            y /= self.bounds[1][1] - self.bounds[1][0]
+            x /= self.x_scale
+            y /= self.y_scale
             return function((x, y))
-        
+
         self.function = f
 
     @property
