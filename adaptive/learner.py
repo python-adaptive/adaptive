@@ -471,100 +471,6 @@ class BalancingLearner(BaseLearner):
 
 # Learner2D and helper functions.
 
-def _max_disagreement_location_in_simplex(points, values, grad, transform):
-    """Find the point of maximum disagreement between linear and cubic model.
-
-    Parameters
-    ----------
-    points : (ndim+1, ndim)
-        Locations
-    values : (ndim+1)
-        Values
-    grad : (ndim+1, ndim)
-        Gradients
-
-    Notes
-    -----
-    Based on maximizing the disagreement between a linear and a cubic model:
-
-        f_1(x) = a + sum_j b_j (x_j - x_0)
-        f_2(x) = a + sum_j c_j (x_j - x_0) + sum_ij d_ij (x_i - x_0) (x_j - x_0)
-                   + sum_ijk e_ijk (x_i - x_0) (x_j - x_0) (x_k - x_0)
-
-        |f_1(x) - f_2(x)|^2 = max!
-
-    The parameter a, b are estimated from values of the function, and the
-    parameters c, d, e from values and gradients.
-
-    """
-    ndim = points.shape[1]
-    m = points.shape[0]
-    values = values.ravel()
-
-    x = points - points[-1]
-    z = values - values[-1]
-
-    # -- Least-squares fit: (i) linear model
-    b, _, _, _ = np.linalg.lstsq(x[:-1], z[:-1])
-
-    # -- Least-squares fit: (ii) cubic model
-
-    # (ii.a) fitting function values
-    x2 = (x[:-1, :, None] * x[:-1, None, :]).reshape(m - 1, ndim**2)
-    x3 = (x[:-1, :, None, None] * x[:-1, None, :, None] * x[:-1, None, None, :]
-          ).reshape(m - 1, ndim**3)
-    lhs1 = np.c_[x[:-1], x2, x3]
-    rhs1 = z[:-1]
-
-    # (ii.b) fitting gradients
-    d_b = np.tile(np.eye(ndim)[None, :, :], (m, 1, 1)).reshape(m * ndim, ndim)
-
-    o = np.eye(ndim)
-
-    d_d = (o[None, :, None, :] * x[:, None, :, None] +
-           x[:, None, None, :] * o[None, :, :, None]).reshape(m * ndim,
-                                                              ndim * ndim)
-    d_e = (o[:, None, :, None, None] * x[None, :, None, :, None] *
-           x[None, :, None, None, :] +
-           x[None, :, :, None, None] * o[:, None, None, :, None] *
-           x[None, :, None, None, :] +
-           x[None, :, :, None, None] * x[None, :, None, :, None] *
-           o[:, None, None, None, :]).reshape(m * ndim, ndim**3)
-
-    lhs2 = np.c_[d_b, d_d, d_e]
-    rhs2 = grad.ravel()
-
-    # (ii.c) fit it
-    lhs = np.r_[lhs1, lhs2]
-    rhs = np.r_[rhs1, rhs2]
-    cd, _, rank, _ = np.linalg.lstsq(lhs, rhs)
-    c = cd[:ndim]
-    d = cd[ndim:ndim + ndim**2].reshape(ndim, ndim)
-    e = cd[ndim + ndim**2:].reshape(ndim, ndim, ndim)
-
-    # -- Find point of maximum disagreement, inside the triangle
-
-    itr = np.linalg.inv(transform[:-1])
-
-    def func(x):
-        x = itr.dot(x)
-        v = (((c - b) * x).sum() +
-             (d * x[:, None] * x[None, :]).sum() +
-             (e * x[:, None, None] * x[None, :, None] * x[None, None, :]).sum())
-        v = -abs(v)**2
-        return np.array(v)
-
-    cons = [lambda x: np.array([1 - x.sum()])]
-    for j in range(ndim):
-        cons.append(lambda x: np.array([x[j]]))
-
-    ps = [1.0 / (ndim + 1)] * ndim
-    p = optimize.fmin_slsqp(func, ps, ieqcons=cons, disp=False, bounds=[(0, 1)] * ndim)
-    p = itr.dot(p) + points[-1]
-
-    return p
-
-
 def triangle_radius(points, ndim=2):
     """The radius of a triangle defined by `points`.
 
@@ -662,8 +568,7 @@ class Learner2D(BaseLearner):
     it, your function needs to be slow enough to compute.
     """
 
-    def __init__(self, function, bounds, *, advanced_point_chosing=False):
-        self.advanced_point_chosing = advanced_point_chosing
+    def __init__(self, function, bounds):
         self.ndim = len(bounds)
         if self.ndim != 2:
             raise ValueError("Only 2-D sampling supported.")
@@ -806,15 +711,7 @@ class Learner2D(BaseLearner):
             jsimplex = np.argmax(losses)
             p = tri.points[tri.vertices[jsimplex]]
             v = ip.values[tri.vertices[jsimplex]]
-
-            if self.advanced_point_chosing:
-                g = grad[tri.vertices[jsimplex]]
-                transform = tri.transform[jsimplex]
-
-                point_new = _max_disagreement_location_in_simplex(
-                    p, v, g, transform)
-            else:
-                point_new = p.mean(axis=-2)
+            point_new = p.mean(axis=-2)
 
             # XXX: not sure whether this is necessary it was there
             # originally.
