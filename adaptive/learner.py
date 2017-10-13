@@ -683,15 +683,19 @@ class Learner2D(BaseLearner):
         self._bounds_points = list(itertools.product(*bounds))
 
         # Add the loss improvement to the bounds in the stack
-        self._stack = [p + (np.inf,) for p in self._bounds_points]
+        self._bounds_points = [(x / self.x_scale, y / self.y_scale)
+                               for x, y in self._bounds_points]
+        self._stack = [(*p, np.inf) for p in self._bounds_points]
 
-        def f(xy):
+        self.original_function = function
+
+        def scaled_function(xy):
             x, y = xy
-            x /= self.x_scale
-            y /= self.y_scale
-            return function((x, y))
+            x *= self.x_scale
+            y *= self.y_scale
+            return self.original_function((x, y))
 
-        self.function = f
+        self.function = scaled_function
 
     @property
     def points_combined(self):
