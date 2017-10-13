@@ -610,16 +610,22 @@ class Learner2D(BaseLearner):
         return np.delete(self.values_combined,
                          list(self._interp.values()), axis=0)
 
-    def ip(self):
-        return interpolate.LinearNDInterpolator(self.points, self.values)
+    def ip(self, scaled=False):
+        points = self.points
+        if scaled:
+            points = points.copy() / self.xy_scale
+        return interpolate.LinearNDInterpolator(points, self.values)
 
     @property
     def n_real(self):
         return self.n - len(self._interp)
 
-    def ip_combined(self):
-        p = self.points_combined
-        v = self.values_combined
+    def ip_combined(self, scaled=False):
+        points = self.points_combined
+        values = self.values_combined
+
+        if scaled:
+            points = points.copy() / self.xy_scale
 
         # Interpolate the unfinished points
         if self._interp:
@@ -627,14 +633,14 @@ class Learner2D(BaseLearner):
             bounds_are_done = not any(p in self._interp
                                       for p in self._bounds_points)
             if bounds_are_done:
-                v[n_interp] = self.ip()(p[n_interp])
+                values[n_interp] = self.ip(scaled)(points[n_interp])
             else:
                 # It is important not to return exact zeros because
                 # otherwise the algo will try to add the same point
                 # to the stack each time.
-                v[n_interp] = np.random.rand(len(n_interp)) * 1e-15
+                values[n_interp] = np.random.rand(len(n_interp)) * 1e-15
 
-        return interpolate.LinearNDInterpolator(p, v)
+        return interpolate.LinearNDInterpolator(points, values)
 
     def add_point(self, point, value):
         nmax = self.values_combined.shape[0]
@@ -689,7 +695,7 @@ class Learner2D(BaseLearner):
             raise ValueError("too few points...")
 
         # Interpolate
-        ip = self.ip_combined()
+        ip = self.ip_combined(scaled=True)
         tri = ip.tri
 
         losses = self._losses_per_triangle(ip)
@@ -709,7 +715,7 @@ class Learner2D(BaseLearner):
             jsimplex = np.argmax(losses)
             p = tri.points[tri.vertices[jsimplex]]
             v = ip.values[tri.vertices[jsimplex]]
-            point_new = p.mean(axis=-2)
+            point_new = p.mean(axis=-2) * self.xy_scale
 
             # XXX: not sure whether this is necessary it was there
             # originally.
@@ -772,7 +778,7 @@ class Learner2D(BaseLearner):
                                   for p in self._bounds_points)
         if n <= 4 or bounds_are_not_done:
             return np.inf
-        ip = self.ip() if real else self.ip_combined()
+        ip = self.ip(True) if real else self.ip_combined(True)
         losses = self._losses_per_triangle(ip)
         return losses.max()
 
