@@ -669,7 +669,9 @@ class Learner2D(BaseLearner):
                 self._stack.pop(i)
                 break
 
-    def _losses_per_triangle(self, ip, gradients):
+    def _losses_per_triangle(self, ip):
+        gradients = interpolate.interpnd.estimate_gradients_2d_global(
+            ip.tri, ip.values.ravel(), tol=1e-6)
         dev = _deviation_from_linear_estimate(ip, gradients)
         ps = ip.tri.points[ip.tri.vertices]
         vs = ip.values[ip.tri.vertices]
@@ -690,11 +692,7 @@ class Learner2D(BaseLearner):
         ip = self.ip_combined()
         tri = ip.tri
 
-        # Gradients
-        grad = interpolate.interpnd.estimate_gradients_2d_global(
-            tri, ip.values.ravel(), tol=1e-6)
-
-        losses = self._losses_per_triangle(ip, grad)
+        losses = self._losses_per_triangle(ip)
 
         def point_exists(p):
             eps = np.finfo(float).eps * self.points_combined.ptp() * 100
@@ -775,10 +773,7 @@ class Learner2D(BaseLearner):
         if n <= 4 or bounds_are_not_done:
             return np.inf
         ip = self.ip() if real else self.ip_combined()
-        grad = interpolate.interpnd.estimate_gradients_2d_global(
-            ip.tri, ip.values.ravel(), tol=1e-6)
-
-        losses = self._losses_per_triangle(ip, grad)
+        losses = self._losses_per_triangle(ip)
         return losses.max()
 
     def remove_unfinished(self):
