@@ -584,6 +584,24 @@ def triangle_radius(points, ndim=2):
     return np.linalg.norm((points - center[:, None, :]), axis=-1).max(axis=1)
 
 
+def triangle_area(points):
+    """The area of a triangle span by `points`.
+
+    Parameters
+    ----------
+    points : numpy array
+        A sequence of the positions of the vertices of the triangle,
+        with shape (..., 3, ndim).
+
+    Returns
+    -------
+    area : numpy array
+        Areas of the triangles.
+    """
+    a, b, c = np.rollaxis(points, 1)
+    return 0.5 * np.cross(b - a, c - a, axis=1)
+
+
 def _deviation_from_linear_estimate(ip, gradients):
     tri = ip.tri
     p = tri.points[tri.vertices]
@@ -756,8 +774,10 @@ class Learner2D(BaseLearner):
         dev = _deviation_from_linear_estimate(ip, gradients)
         ps = ip.tri.points[ip.tri.vertices]
         vs = ip.values[ip.tri.vertices]
-        losses = np.hypot(dev / vs.ptp(),
-                          triangle_radius(ps) / self.xy_scale)
+        triangle_size = np.sqrt(triangle_area(ps))
+        dev = dev / vs.ptp()
+        losses = np.hypot(
+            dev, 0.5 * triangle_size / triangle_size.max() * dev.max())
         return losses
 
     def _fill_stack(self, stack_till=None):
@@ -859,7 +879,9 @@ class Learner2D(BaseLearner):
 
     def loss(self, real=True):
         n = self.n_real if real else self.n
-        if n <= 4:
+        bounds_are_not_done = any(p in self._interp
+                                  for p in self._bounds_points)
+        if n <= 4 or bounds_are_not_done:
             return np.inf
         ip = self.ip() if real else self.ip_combined()
         grad = interpolate.interpnd.estimate_gradients_2d_global(
