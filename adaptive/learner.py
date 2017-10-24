@@ -471,25 +471,6 @@ class BalancingLearner(BaseLearner):
 
 # Learner2D and helper functions.
 
-def triangle_radius(points, ndim=2):
-    """The radius of a triangle defined by `points`.
-
-    Parameters
-    ----------
-    points : numpy array
-        A sequence of the positions of the vertices of the triangle,
-        with shape (..., 3, ndim).
-
-    Returns
-    -------
-    radius : float
-        The longest distance from the center to one of the vertices.
-    """
-    points = points.reshape(-1, 3, ndim)
-    center = points.mean(axis=-2)
-    return np.linalg.norm((points - center[:, None, :]), axis=-1).max(axis=1)
-
-
 def triangle_area(points):
     """The area of a triangle span by `points`.
 
