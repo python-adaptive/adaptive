@@ -578,9 +578,11 @@ class Learner2D(BaseLearner):
         self._stack = []
         self._interp = {}
 
-        self.x_scale = self.bounds[0][1] - self.bounds[0][0]
-        self.y_scale = self.bounds[1][1] - self.bounds[1][0]
-        self.xy_scale = np.array([self.x_scale, self.y_scale])
+        self.xy_scale = np.array([(self.bounds[0][1] - self.bounds[0][0]) / 2,
+                                  (self.bounds[1][1] - self.bounds[1][0]) / 2])
+
+        self.xy_mean = np.array([(self.bounds[0][1] + self.bounds[0][0]) / 2,
+                                 (self.bounds[1][1] + self.bounds[1][0]) / 2])
 
         # Keeps track till which index _points and _values are filled
         self.n = 0
@@ -613,7 +615,7 @@ class Learner2D(BaseLearner):
     def ip(self, scaled=False):
         points = self.points
         if scaled:
-            points = points.copy() / self.xy_scale
+            points = (points.copy() - self.xy_mean) / self.xy_scale
         return interpolate.LinearNDInterpolator(points, self.values)
 
     @property
@@ -624,21 +626,21 @@ class Learner2D(BaseLearner):
         points = self.points_combined
         values = self.values_combined
 
-        if scaled:
-            points = points.copy() / self.xy_scale
-
         # Interpolate the unfinished points
         if self._interp:
             n_interp = list(self._interp.values())
             bounds_are_done = not any(p in self._interp
                                       for p in self._bounds_points)
             if bounds_are_done:
-                values[n_interp] = self.ip(scaled)(points[n_interp])
+                values[n_interp] = self.ip(True)(points[n_interp])
             else:
                 # It is important not to return exact zeros because
                 # otherwise the algo will try to add the same point
                 # to the stack each time.
                 values[n_interp] = np.random.rand(len(n_interp)) * 1e-15
+
+        if scaled:
+            points = (points.copy() - self.xy_mean) / self.xy_scale
 
         return interpolate.LinearNDInterpolator(points, values)
 
@@ -714,8 +716,7 @@ class Learner2D(BaseLearner):
             # Estimate point of maximum curvature inside the simplex
             jsimplex = np.argmax(losses)
             p = tri.points[tri.vertices[jsimplex]]
-            v = ip.values[tri.vertices[jsimplex]]
-            point_new = p.mean(axis=-2) * self.xy_scale
+            point_new = p.mean(axis=-2) * self.xy_scale + self.xy_mean
 
             # XXX: not sure whether this is necessary it was there
             # originally.
@@ -778,7 +779,7 @@ class Learner2D(BaseLearner):
                                   for p in self._bounds_points)
         if n <= 4 or bounds_are_not_done:
             return np.inf
-        ip = self.ip(True) if real else self.ip_combined(True)
+        ip = self.ip(scaled=True) if real else self.ip_combined(scaled=True)
         losses = self._losses_per_triangle(ip)
         return losses.max()
 
