@@ -9,11 +9,13 @@ from operator import attrgetter
 
 import holoviews as hv
 import numpy as np
+from scipy.linalg import norm
 import scipy.linalg
-from scipy.linalg.blas import dgemv
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner import BaseLearner
+from coeffs import calc_bdef
+
 eps = np.spacing(1)
 
 # the nodes and newton polynomials
@@ -40,75 +42,45 @@ T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
 
 # set-up the downdate matrix
 k = np.arange(ns[3])
-U = (np.diag(np.sqrt((k+1)**2 / (2*k+1) / (2*k+3)))
-     + np.diag(np.sqrt(k[2:]**2 / (4*k[2:]**2-1)), 2))
+alpha = np.sqrt((k+1)**2 / (2*k+1) / (2*k+3))
+gamma = np.concatenate([[0, 0], np.sqrt(k[2:]**2 / (4*k[2:]**2-1))])
+
+b_def = calc_bdef(ns)
 
 
-b_def = (np.array([0, .233284737407921723637836578544e-1,
-                   0, -.831479419283098085685277496071e-1,
-                   0, .0541462136776153483932540272848]),
-         np.array([0, .883654308363339862264532494396e-4,
-                   0, .238811521522368331303214066075e-3,
-                   0, .135365534194038370983135068211e-2,
-                   0, -.520710690438660595086839959882e-2,
-                   0, .00341659266223572272892690737979]),
-         np.array([0, .379785635776247894184454273159e-7,
-                   0, .655473977795402040043020497901e-7,
-                   0, .103479954638984842226816620692e-6,
-                   0, .173700624961660596894381303819e-6,
-                   0, .337719613424065357737699682062e-6,
-                   0, .877423283550614343733565759649e-6,
-                   0, .515657204371051131603503471028e-5,
-                   0, -.203244736027387801432055290742e-4,
-                   0, .0000134265158311651777460545854542]),
-         np.array([0, .703046511513775683031092069125e-13,
-                   0, .110617117381148770138566741591e-12,
-                   0, .146334657087392356024202217074e-12,
-                   0, .184948444492681259461791759092e-12,
-                   0, .231429962470609662207589449428e-12,
-                   0, .291520062115989014852816512412e-12,
-                   0, .373653379768759953435020783965e-12,
-                   0, .491840460397998449461993671859e-12,
-                   0, .671514395653454630785723660045e-12,
-                   0, .963162916392726862525650710866e-12,
-                   0, .147853378943890691325323722031e-11,
-                   0, .250420145651013003355273649380e-11,
-                   0, .495516257435784759806147914867e-11,
-                   0, .130927034711760871648068641267e-10,
-                   0, .779528640561654357271364483150e-10,
-                   0, -.309866395328070487426324760520e-9,
-                   0, .205572320292667201732878773151e-9]))
+def _downdate(c, nans, depth):
+    b = b_def[depth].copy()
+    m = ns[depth] - 1
+    for i in nans:
+        b[m + 1] /= alpha[m]
+        xii = xi[depth][i]
+        b[m] = (b[m] + xii * b[m + 1]) / alpha[m - 1]
+        for j in range(m - 1, 0, -1):
+            b[j] = ((b[j] + xii * b[j + 1] - gamma[j + 1] * b[j + 2])
+                    / alpha[j - 1])
+        b = b[1:]
+
+        c[:m] -= c[m] / b[m] * b[:m]
+        c[m] = 0
+        m -= 1
 
 
-def norm(a):
-    return np.sqrt(a @ a)
-
-
-def mvmul(a, b):
-    return dgemv(1.0, a, b)
+def _zero_nans(fx):
+    nans = []
+    for i in range(len(fx)):
+        if not np.isfinite(fx[i]):
+            nans.append(i)
+            fx[i] = 0.0
+    return nans
 
 
 def _calc_coeffs(fx, depth):
     """Caution: this function modifies fx."""
-    nans = []
-    for i, f in enumerate(fx):
-        if not np.isfinite(f):
-            fx[i] = 0.0
-            nans.append(i)
-
-    c_new = mvmul(V_inv[depth], fx)
-    if len(nans) > 0:
-        b_new = b_def[depth].copy()
-        n_new = ns[depth] - 1
-        for i in nans:
-            b_new[:-1] = scipy.linalg.solve(
-                (U[:ns[depth], :ns[depth]] - np.diag(np.ones(ns[depth] - 1)
-                                                     * xi[depth][i], 1)),
-                b_new[1:])
-            b_new[-1] = 0
-            c_new -= c_new[n_new] / b_new[n_new] * b_new[:-1]
-            n_new -= 1
-            fx[i] = np.nan
+    nans = _zero_nans(fx)
+    c_new = V_inv[depth] @ fx
+    if nans:
+        fx[nans] = np.nan
+        _downdate(c_new, nans, depth)
     return c_new
 
 
@@ -274,7 +246,7 @@ class Interval:
         self.fx = fx
 
         parent = self.parent
-        self.c_old = mvmul(self.T, parent.c[parent.depth - 1])
+        self.c_old = self.T @ parent.c[parent.depth - 1]
         c_diff = norm(self.c[self.depth - 1] - self.c_old)
 
         a, b = self.a, self.b
