@@ -471,32 +471,16 @@ class BalancingLearner(BaseLearner):
 
 # Learner2D and helper functions.
 
-def triangle_area(points):
-    """The area of a triangle span by `points`.
-
-    Parameters
-    ----------
-    points : numpy array
-        A sequence of the positions of the vertices of the triangle,
-        with shape (..., 3, ndim).
-
-    Returns
-    -------
-    area : numpy array
-        Areas of the triangles.
-    """
-    a, b, c = np.rollaxis(points, 1)
-    return 0.5 * np.cross(b - a, c - a, axis=1)
-
-
-def _deviation_from_linear_estimate(ip):
+def _losses_per_triangle(ip):
     tri = ip.tri
+    vs = ip.values.ravel()
+
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
-        tri, ip.values.ravel(), tol=1e-6)
+        tri, vs, tol=1e-6)
     p = tri.points[tri.vertices]
     g = gradients[tri.vertices]
-    v = ip.values.ravel()[tri.vertices]
-    ndim = p.shape[1]
+    v = vs[tri.vertices]
+    ndim = p.shape[-1]
 
     dev = 0
     for j in range(ndim):
@@ -505,10 +489,15 @@ def _deviation_from_linear_estimate(ip):
         dev += abs(vest - v).max(axis=1)
 
     q = p[:, :-1, :] - p[:, -1, None, :]
-    vol = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
-    vol /= special.gamma(1 + ndim)
-    return dev * vol
+    areas = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
+    areas /= special.gamma(1 + ndim)
+    areas = np.sqrt(areas)
 
+    vs_scale = vs[tri.vertices].ptp()
+    if vs_scale != 0:
+        dev /= vs_scale
+
+    return dev * areas + areas**2
 
 class Learner2D(BaseLearner):
     """Learns and predicts a function 'f: ℝ^2 → ℝ'.
@@ -561,9 +550,8 @@ class Learner2D(BaseLearner):
         self._stack = []
         self._interp = {}
 
-        x, y = np.array(self.bounds)
-        xy_scale = np.array([x.ptp(), y.ptp()]) / 2
-        xy_mean = np.array([x.mean(), y.mean()])
+        xy_mean = np.mean(self.bounds, axis=1)
+        xy_scale = np.ptp(self.bounds, axis=1)
 
         def scale(points):
             return (points - xy_mean) / xy_scale
@@ -662,14 +650,6 @@ class Learner2D(BaseLearner):
                 self._stack.pop(i)
                 break
 
-    def _losses_per_triangle(self, ip):
-        dev = _deviation_from_linear_estimate(ip)
-        ps = ip.tri.points[ip.tri.vertices]
-        vs = ip.values[ip.tri.vertices]
-        triangle_size = triangle_area(ps) / 4  # /4 because the area=4
-        losses = np.hypot(dev / vs.ptp(), 0.5 * triangle_size)
-        return losses
-
     def _fill_stack(self, stack_till=None):
         if stack_till is None:
             stack_till = 1
@@ -681,7 +661,7 @@ class Learner2D(BaseLearner):
         ip = self.ip_combined()
         tri = ip.tri
 
-        losses = self._losses_per_triangle(ip)
+        losses = _losses_per_triangle(ip)
 
         def point_exists(p):
             eps = np.finfo(float).eps * self.points_combined.ptp() * 100
@@ -761,7 +741,7 @@ class Learner2D(BaseLearner):
         if n <= 4 or bounds_are_not_done:
             return np.inf
         ip = self.ip() if real else self.ip_combined()
-        losses = self._losses_per_triangle(ip)
+        losses = _losses_per_triangle(ip)
         return losses.max()
 
     def remove_unfinished(self):
@@ -774,8 +754,8 @@ class Learner2D(BaseLearner):
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
         if self.n_real >= 4:
-            x = np.linspace(-1, 1, n_x)
-            y = np.linspace(-1, 1, n_y)
+            x = np.linspace(-0.5, 0.5, n_x)
+            y = np.linspace(-0.5, 0.5, n_y)
             ip = self.ip()
             z = ip(x[:, None], y[None, :])
             return hv.Image(np.rot90(z), bounds=lbrt)
