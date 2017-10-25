@@ -3,49 +3,18 @@
 # Copyright 2017 `adaptive` authors
 
 from collections import defaultdict
-from copy import deepcopy as copy
 from math import sqrt
 from operator import attrgetter
 
 import holoviews as hv
 import numpy as np
 from scipy.linalg import norm
-import scipy.linalg
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner import BaseLearner
-from coeffs import calc_bdef
+from coeffs import b_def, T_left, T_right, ns, xi, V_inv, Vcond, alpha, gamma
 
 eps = np.spacing(1)
-
-# the nodes and newton polynomials
-ns = (5, 9, 17, 33)
-xi = [-np.cos(np.linspace(0, np.pi, n)) for n in ns]
-# Make `xi` perfectly anti-symmetric, important for splitting the intervals
-xi = [(row - row[::-1]) / 2 for row in xi]
-
-# compute the coefficients
-def calc_V(x, n):
-    V = [np.ones(x.shape), x.copy()]
-    for i in range(2, n):
-        V.append((2*i-1) / i * x * V[-1] - (i-1) / i * V[-2])
-    for i in range(n):
-        V[i] *= np.sqrt(i + 0.5)
-    return np.array(V).T
-
-V = [calc_V(x, n) for x, n in zip(xi, ns)]
-V_inv = list(map(scipy.linalg.inv, V))
-Vcond = list(map(np.linalg.cond, V))
-
-# shift matrix
-T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
-
-# set-up the downdate matrix
-k = np.arange(ns[3])
-alpha = np.sqrt((k+1)**2 / (2*k+1) / (2*k+3))
-gamma = np.concatenate([[0, 0], np.sqrt(k[2:]**2 / (4*k[2:]**2-1))])
-
-b_def = calc_bdef(ns)
 
 
 def _downdate(c, nans, depth):

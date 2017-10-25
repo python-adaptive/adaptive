@@ -1,6 +1,7 @@
 from fractions import Fraction as Frac
 from collections import defaultdict
 import numpy as np
+import scipy.linalg
 
 def legendre(n):
     """Return the first n Legendre polynomials.
@@ -127,7 +128,32 @@ def calc_bdef(ns):
     return result
 
 
-# Nodes and Newton polynomials.
-n = (5, 9, 17, 33)
-xi = [-np.cos(np.arange(n[j])/(n[j]-1) * np.pi) for j in range(4)]
-b_def = calc_bdef(n)
+def calc_V(x, n):
+    V = [np.ones(x.shape), x.copy()]
+    for i in range(2, n):
+        V.append((2*i-1) / i * x * V[-1] - (i-1) / i * V[-2])
+    for i in range(n):
+        V[i] *= np.sqrt(i + 0.5)
+    return np.array(V).T
+
+# the nodes and Newton polynomials
+ns = (5, 9, 17, 33)
+xi = [-np.cos(np.linspace(0, np.pi, n)) for n in ns]
+
+# Make `xi` perfectly anti-symmetric, important for splitting the intervals
+xi = [(row - row[::-1]) / 2 for row in xi]
+
+# compute the coefficients
+V = [calc_V(x, n) for x, n in zip(xi, ns)]
+V_inv = list(map(scipy.linalg.inv, V))
+Vcond = list(map(np.linalg.cond, V))
+
+# shift matrix
+T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
+
+# set-up the downdate matrix
+k = np.arange(ns[3])
+alpha = np.sqrt((k+1)**2 / (2*k+1) / (2*k+3))
+gamma = np.concatenate([[0, 0], np.sqrt(k[2:]**2 / (4*k[2:]**2-1))])
+
+b_def = calc_bdef(ns)
