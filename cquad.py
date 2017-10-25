@@ -66,6 +66,7 @@ def _downdate(c, nans, depth):
 
 
 def _zero_nans(fx):
+    """Caution: this function modifies fx."""
     nans = []
     for i in range(len(fx)):
         if not np.isfinite(fx[i]):
@@ -114,15 +115,15 @@ class Interval:
         ival.ndiv = 0
         ival.rdepth = 1
         ival.parent = None
-        ival.depth = 4
-        ival.c_old = np.zeros(ns[ival.depth - 1])
+        ival.depth = 3
+        ival.c_old = np.zeros(ns[ival.depth])
         ival.err = np.inf
-        return ival, ival.points(ival.depth - 1)
+        return ival, ival.points(ival.depth)
 
     @property
     def complete(self):
         """The interval has all the y-values to calculate the intergral."""
-        return len(self.done_points) == ns[self.depth - 1]
+        return len(self.done_points) == ns[self.depth]
 
     @property
     def done(self):
@@ -161,12 +162,12 @@ class Interval:
         ival.parent = self
         self.children = [ival]
         ival.err = self.err
-        points = ival.points(self.depth)
         ival.depth = self.depth + 1
+        points = ival.points(ival.depth)
         return ival, points
 
     def split(self):
-        points = self.points(self.depth - 1)
+        points = self.points(self.depth)
 
         a = self.a
         b = self.b
@@ -176,7 +177,7 @@ class Interval:
         self.children = ivals
 
         for ival in ivals:
-            ival.depth = 1
+            ival.depth = 0
             ival.tol = self.tol / sqrt(2)
             ival.c_old = self.c_old.copy()
             ival.rdepth = self.rdepth + 1
@@ -209,7 +210,7 @@ class Interval:
 
         # Check whether the point spacing is smaller than machine precision
         # and pop the interval with the largest error and do not split
-        remove = self.err < (abs(self.igral) * eps * Vcond[self.depth - 1])
+        remove = self.err < (abs(self.igral) * eps * Vcond[self.depth])
         if remove:
             # If this interval is discarded from ivals, there is no need
             # to split it further.
@@ -219,39 +220,35 @@ class Interval:
 
     def process_make_first(self):
         fx = np.array(self.done_points.values())
-        nans = []
-        for i, f in enumerate(fx):
-            if not np.isfinite(f):
-                nans.append(i)
-                fx[i] = 0.0
+        nans = _zero_nans(fx)
 
-        self.c[3, :ns[3]] = V_inv[3] @ fx
+        self.c[3] = V_inv[3] @ fx
         self.c[2, :ns[2]] = V_inv[2] @ fx[:ns[3]:2]
         fx[nans] = np.nan
         self.fx = fx
 
         self.c_old = np.zeros(fx.shape)
-        c_diff = norm(self.c[self.depth - 1] - self.c[2])
+        c_diff = norm(self.c[self.depth] - self.c[2])
 
         a, b = self.a, self.b
         self.err = (b - a) * c_diff
-        self.igral = (b - a) * self.c[self.depth - 1, 0] / sqrt(2)
+        self.igral = (b - a) * self.c[self.depth, 0] / sqrt(2)
 
         if c_diff / norm(self.c[3]) > 0.1:
             self.err = max(self.err, (b-a) * norm(self.c[3]))
 
     def process_split(self, ndiv_max=20):
         fx = np.array(self.done_points.values())
-        self.c[self.depth - 1, :ns[self.depth - 1]] = c_new = _calc_coeffs(fx, self.depth - 1)
+        self.c[self.depth, :ns[self.depth]] = c_new = _calc_coeffs(fx, self.depth)
         self.fx = fx
 
         parent = self.parent
-        self.c_old = self.T @ parent.c[parent.depth - 1]
-        c_diff = norm(self.c[self.depth - 1] - self.c_old)
+        self.c_old = self.T @ parent.c[parent.depth]
+        c_diff = norm(self.c[self.depth] - self.c_old)
 
         a, b = self.a, self.b
         self.err = (b - a) * c_diff
-        self.igral = (b - a) * self.c[self.depth - 1, 0] / sqrt(2)
+        self.igral = (b - a) * self.c[self.depth, 0] / sqrt(2)
 
         self.ndiv = (parent.ndiv
                      + (abs(parent.c[0, 0]) > 0
@@ -263,16 +260,15 @@ class Interval:
 
     def process_refine(self):
         fx = np.array(self.done_points.values())
-        self.c[self.depth - 1, :ns[self.depth - 1]] = c_new = _calc_coeffs(fx, self.depth - 1)
+        self.c[self.depth, :ns[self.depth]] = c_new = _calc_coeffs(fx, self.depth)
         self.fx = fx
 
-        c_diff = norm(self.c[self.depth - 1 - 1] - self.c[self.depth - 1])
+        c_diff = norm(self.c[self.depth - 1] - self.c[self.depth])
 
         a, b = self.a, self.b
         self.err = (b - a) * c_diff
-        self.igral = (b - a) * self.c[self.depth - 1, 0] / sqrt(2)
-
-        nc = norm(self.c[self.depth - 1, :ns[self.depth - 1]])
+        self.igral = (b - a) * c_new[0] / sqrt(2)
+        nc = norm(c_new)
         force_split = nc > 0 and c_diff / nc > 0.1
         return force_split
 
@@ -422,11 +418,11 @@ class Learner(BaseLearner):
 
         # If the interval points are smaller than machine precision, then
         # don't continue with splitting or refining.
-        points = ival.points(ival.depth - 1)
+        points = ival.points(ival.depth)
         reached_machine_tol = points[1] <= points[0] or points[-1] <= points[-2]
 
         if not ival.discard or not reached_machine_tol:
-            if ival.depth == 4 or force_split:
+            if ival.depth == 3 or force_split:
                 # Always split when depth is maximal or if refining didn't help
                 ivals_new = ival.split()
                 for ival_new in ivals_new:
@@ -437,7 +433,7 @@ class Learner(BaseLearner):
                 ival_new, points = ival.refine()
                 self._update_ival(ival_new, points)
 
-        # Remove the smallest element if number of intervals is larger than 200
+        # Remove the smallest element if number of intervals is larger than 1000
         if len(self.ivals) > 1000:
             print('nuke')
             self.ivals.pop(0)
