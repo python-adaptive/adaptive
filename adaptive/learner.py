@@ -667,7 +667,7 @@ class Learner2D(BaseLearner):
         ps = ip.tri.points[ip.tri.vertices]
         vs = ip.values[ip.tri.vertices]
         triangle_size = triangle_area(ps) / 4  # /4 because the area=4
-        losses = np.hypot(dev / vs.ptp(), triangle_size)
+        losses = np.hypot(dev / vs.ptp(), 0.5 * triangle_size)
         return losses
 
     def _fill_stack(self, stack_till=None):
