@@ -2,64 +2,148 @@
 # Copyright 2017 Christoph Groth
 
 import warnings
+from fractions import Fraction as Frac
+from collections import defaultdict
 import numpy as np
+from numpy.testing import assert_allclose
 from numpy.linalg import cond
-from scipy.linalg import inv, solve
-from scipy.linalg.blas import dgemv
+from scipy.linalg import norm, inv
+
 
 eps = np.spacing(1)
 
-# The following two functions allow for almost bit-per-bit equivalence
-# with the matlab code as interpreted by octave.
+def legendre(n):
+    """Return the first n Legendre polynomials.
 
-def norm(a):
-    return np.sqrt(a @ a)
+    The polynomials have *standard* normalization, i.e.
+    int_{-1}^1 dx L_n(x) L_m(x) = delta(m, n) * 2 / (2 * n + 1).
+
+    The return value is a list of list of fraction.Fraction instances.
+    """
+    result = [[Frac(1)], [Frac(0), Frac(1)]]
+    if n <= 2:
+        return result[:n]
+    for i in range(2, n):
+        # Use Bonnet's recursion formula.
+        new = (i + 1) * [Frac(0)]
+        new[1:] = (r * (2*i - 1) for r in result[-1])
+        new[:-2] = (n - r * (i - 1) for n, r in zip(new[:-2], result[-2]))
+        new[:] = (n / i for n in new)
+        result.append(new)
+    return result
 
 
-def mvmul(a, b):
-    return dgemv(1.0, a, b)
+def newton(n):
+    """Compute the monomial coefficients of the Newton polynomial over the
+    nodes of the n-point Clenshaw-Curtis quadrature rule.
+    """
+    # The nodes of the Clenshaw-Curtis rule are x_i = -cos(i * Pi / (n-1)).
+    # Here, we calculate the coefficients c_i such that sum_i c_i * x^i
+    # = prod_i (x - x_i).  The coefficients are thus sums of products of
+    # cosines.
+    #
+    # This routine uses the relation
+    #   cos(a) cos(b) = (cos(a + b) + cos(a - b)) / 2
+    # to efficiently calculate the coefficients.
+    #
+    # The dictionary 'terms' descibes the terms that make up the
+    # monomial coefficients.  Each item ((d, a), m) corresponds to a
+    # term m * cos(a * Pi / n) to be added to prefactor of the
+    # monomial x^(n-d).
+
+    mod = 2 * (n-1)
+    terms = defaultdict(int)
+    terms[0, 0] += 1
+
+    for i in range(n):
+        newterms = []
+        for (d, a), m in terms.items():
+            for b in [i, -i]:
+                # In order to reduce the number of terms, cosine
+                # arguments are mapped back to the inteval [0, pi/2).
+                arg = (a + b) % mod
+                if arg > n-1:
+                    arg = mod - arg
+                if arg >= n // 2:
+                    if n % 2 and arg == n // 2:
+                        # Zero term: ignore
+                        continue
+                    newterms.append((d + 1, n - 1 - arg, -m))
+                else:
+                    newterms.append((d + 1, arg, m))
+        for d, s, m in newterms:
+            terms[d, s] += m
+
+    c = (n + 1) * [0]
+    for (d, a), m in terms.items():
+        if m and a != 0:
+            raise ValueError("Newton polynomial cannot be represented exactly.")
+        c[n - d] += m
+        # The check could be removed and the above line replaced by
+        # the following, but then the result would be no longer exact.
+        # c[n - d] += m * np.cos(a * np.pi / (n - 1))
+
+    cf = np.array(c, float)
+    assert all(int(cfe) == ce for cfe, ce in zip(cf, c)), 'Precision loss'
+
+    cf /= 2.**np.arange(n, -1, -1)
+    return cf
 
 
-# the nodes and newton polynomials
+def scalar_product(a, b):
+    """Compute the polynomial scalar product int_-1^1 dx a(x) b(x).
+
+    The args must be sequences of polynomial coefficients.  This
+    function is careful to use the input data type for calculations.
+    """
+    la = len(a)
+    lc = len(b) + la + 1
+
+    # Compute the even coefficients of the product of a and b.
+    c = lc * [a[0].__class__()]
+    for i, bi in enumerate(b):
+        if bi == 0:
+            continue
+        for j in range(i % 2, la, 2):
+            c[i + j] += a[j] * bi
+
+    # Calculate the definite integral from -1 to 1.
+    return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))
+
+
+def calc_bdef(ns):
+    """Calculate the decompositions of Newton polynomials (over the nodes
+    of the n-point Clenshaw-Curtis quadrature rule) in terms of
+    Legandre polynomials.
+
+    The parameter 'ns' is a sequence of numers of points of the
+    quadrature rule.  The return value is a corresponding sequence of
+    normalized Legendre polynomial coefficients.
+    """
+    legs = legendre(max(ns) + 1)
+    result = []
+    for n in ns:
+        poly = []
+        a = list(map(Frac, newton(n)))
+        for b in legs[:n + 1]:
+            igral = scalar_product(a, b)
+
+            # Normalize & store.  (The polynomials returned by
+            # legendre() have standard normalization that is not
+            # orthonormal.)
+            poly.append(np.sqrt((2*len(b) - 1) / 2) * igral)
+
+        result.append(np.array(poly))
+    return result
+
+
+# Nodes and Newton polynomials.
 n = (5, 9, 17, 33)
 xi = [-np.cos(np.arange(n[j])/(n[j]-1) * np.pi) for j in range(4)]
 # Make `xi` perfectly anti-symmetric, important for splitting the intervals
 xi = [(row - row[::-1]) / 2 for row in xi]
+b_def = calc_bdef(n)
 
-b_def = (np.array([0, .233284737407921723637836578544e-1,
-                   0, -.831479419283098085685277496071e-1,
-                   0, .0541462136776153483932540272848 ]),
-         np.array([0, .883654308363339862264532494396e-4,
-                   0, .238811521522368331303214066075e-3,
-                   0, .135365534194038370983135068211e-2,
-                   0, -.520710690438660595086839959882e-2,
-                   0, .00341659266223572272892690737979 ]),
-         np.array([0, .379785635776247894184454273159e-7,
-                   0, .655473977795402040043020497901e-7,
-                   0, .103479954638984842226816620692e-6,
-                   0, .173700624961660596894381303819e-6,
-                   0, .337719613424065357737699682062e-6,
-                   0, .877423283550614343733565759649e-6,
-                   0, .515657204371051131603503471028e-5,
-                   0, -.203244736027387801432055290742e-4,
-                   0, .0000134265158311651777460545854542 ]),
-         np.array([0, .703046511513775683031092069125e-13,
-                   0, .110617117381148770138566741591e-12,
-                   0, .146334657087392356024202217074e-12,
-                   0, .184948444492681259461791759092e-12,
-                   0, .231429962470609662207589449428e-12,
-                   0, .291520062115989014852816512412e-12,
-                   0, .373653379768759953435020783965e-12,
-                   0, .491840460397998449461993671859e-12,
-                   0, .671514395653454630785723660045e-12,
-                   0, .963162916392726862525650710866e-12,
-                   0, .147853378943890691325323722031e-11,
-                   0, .250420145651013003355273649380e-11,
-                   0, .495516257435784759806147914867e-11,
-                   0, .130927034711760871648068641267e-10,
-                   0, .779528640561654357271364483150e-10,
-                   0, -.309866395328070487426324760520e-9,
-                   0, .205572320292667201732878773151e-9]))
 
 def calc_V(xi, n):
     V = [np.ones(xi.shape), xi.copy()]
@@ -80,32 +164,44 @@ T_lr = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
 # compute the integral
 w = np.sqrt(0.5)                # legendre
 
-# set-up the downdate matrix
+
 k = np.arange(n[3])
-U = (np.diag(np.sqrt((k+1)**2 / (2*k+1) / (2*k+3)))
-     + np.diag(np.sqrt(k[2:]**2 / (4*k[2:]**2-1)), 2))
+alpha = np.sqrt((k+1)**2 / (2*k+1) / (2*k+3))
+gamma = np.concatenate([[0, 0], np.sqrt(k[2:]**2 / (4*k[2:]**2-1))])
+
+def _downdate(c, nans, depth):
+    b = b_def[depth].copy()
+    m = n[depth] - 1
+    for i in nans:
+        b[m + 1] /= alpha[m]
+        xii = xi[depth][i]
+        b[m] = (b[m] + xii * b[m + 1]) / alpha[m - 1]
+        for j in range(m - 1, 0, -1):
+            b[j] = ((b[j] + xii * b[j + 1] - gamma[j + 1] * b[j + 2])
+                    / alpha[j - 1])
+        b = b[1:]
+
+        c[:m] -= c[m] / b[m] * b[:m]
+        c[m] = 0
+        m -= 1
+
+
+def _zero_nans(fx):
+    nans = []
+    for i in range(len(fx)):
+        if not np.isfinite(fx[i]):
+            nans.append(i)
+            fx[i] = 0.0
+    return nans
 
 
 def _calc_coeffs(fx, depth):
     """Caution: this function modifies fx."""
-    nans = []
-    for i in range(len(fx)):
-        if not np.isfinite(fx[i]):
-            fx[i] = 0.0
-            nans.append(i)
-    c_new = mvmul(V_inv[depth], fx)
-    if len(nans) > 0:
-        b_new = b_def[depth].copy()
-        n_new = n[depth] - 1
-        for i in nans:
-            b_new[:-1] = solve(
-                (U[:n[depth], :n[depth]] - np.diag(np.ones(n[depth] - 1)
-                                                   * xi[depth][i], 1)),
-                b_new[1:])
-            b_new[-1] = 0
-            c_new -= c_new[n_new] / b_new[n_new] * b_new[:-1]
-            n_new -= 1
-            fx[i] = np.nan
+    nans = _zero_nans(fx)
+    c_new = V_inv[depth] @ fx
+    if nans:
+        fx[nans] = np.nan
+        _downdate(c_new, nans, depth)
     return c_new
 
 
@@ -125,15 +221,11 @@ class _Interval:
     def make_first(cls, f, a, b, tol):
         points = (a+b)/2 + (b-a) * xi[3] / 2
         fx = f(points)
-        nans = []
-        for i in range(len(fx)):
-            if not np.isfinite(fx[i]):
-                nans.append(i)
-                fx[i] = 0.0
+        nans = _zero_nans(fx)
         ival = _Interval()
         ival.c = np.zeros((4, n[3]))
-        ival.c[3, :n[3]] = mvmul(V_inv[3], fx)
-        ival.c[2, :n[2]] = mvmul(V_inv[2], fx[:n[3]:2])
+        ival.c[3] = V_inv[3] @ fx
+        ival.c[2, :n[2]] = V_inv[2] @ fx[:n[3]:2]
         fx[nans] = np.nan
         ival.fx = fx
         ival.c_old = np.zeros(fx.shape)
@@ -145,7 +237,7 @@ class _Interval:
         if c_diff / norm(ival.c[3]) > 0.1:
             ival.err = max( ival.err , (b-a) * norm(ival.c[3]) )
         ival.tol = tol
-        ival.depth = 4
+        ival.depth = 3
         ival.ndiv = 0
         ival.rdepth = 1
         return ival, points
@@ -166,7 +258,7 @@ class _Interval:
             ival.a = aa
             ival.b = bb
             ival.tol = self.tol / np.sqrt(2)
-            ival.depth = 1
+            ival.depth = 0
             ival.rdepth = self.rdepth + 1
             ival.c = np.zeros((4, n[3]))
             fx = np.concatenate(
@@ -178,7 +270,7 @@ class _Interval:
             ival.c[0, :n[0]] = c_new = _calc_coeffs(fx, 0)
             ival.fx = fx
 
-            ival.c_old = mvmul(T, self.c[self.depth - 1])
+            ival.c_old = T @ self.c[self.depth]
             c_diff = norm(ival.c[0] - ival.c_old)
             ival.err = (bb - aa) * c_diff
             ival.igral = (bb - aa) * ival.c[0, 0] * w
@@ -192,7 +284,7 @@ class _Interval:
 
     def refine(self, f):
         """Increase degree of interval."""
-        depth = self.depth
+        self.depth = depth = self.depth + 1
         a = self.a
         b = self.b
         points = (a+b)/2 + (b-a)*xi[depth]/2
@@ -206,16 +298,12 @@ class _Interval:
         self.err = (b-a) * c_diff
         self.igral = (b-a) * w * c_new[0]
         nc = norm(c_new)
-        self.depth = depth + 1
-        if nc > 0 and c_diff / nc > 0.1:
-            split = True
-        else:
-            split = False
+        split = nc > 0 and c_diff / nc > 0.1
 
-        return points, split, n[depth] - n[depth-1]
+        return points, split, n[depth] - n[depth - 1]
 
 
-def algorithm_4 (f, a, b, tol, until_iteration=None):
+def algorithm_4 (f, a, b, tol):
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
     algorithm uses Clenshaw-Curtis quadrature rules of increasing
     degree in each interval and bisects the interval if either the
@@ -261,12 +349,8 @@ def algorithm_4 (f, a, b, tol, until_iteration=None):
         return igral, err, nr_points
 
     # main loop
-    if until_iteration is None:
-        # To simulate the while loop
-        until_iteration = int(1e15)
-
-    for _ in range(until_iteration):
-        if ivals[i_max].depth == 4:
+    for _ in range(int(1e9)):
+        if ivals[i_max].depth == 3:
             split = True
         else:
             points, split, nr_points_inc = ivals[i_max].refine(f)
@@ -276,10 +360,11 @@ def algorithm_4 (f, a, b, tol, until_iteration=None):
         if (points[1] <= points[0]
             or points[-1] <= points[-2]
             or ivals[i_max].err < (abs(ivals[i_max].igral) * eps
-                                   * Vcond[ivals[i_max].depth - 1])):
+                                   * Vcond[ivals[i_max].depth])):
             err_final += ivals[i_max].err
             igral_final += ivals[i_max].igral
-            ivals[i_max] = ivals.pop()
+            ivals[i_max] = ivals[-1]
+            ivals.pop()
         elif split:
             result, nr_points_inc = ivals[i_max].split(f)
             nr_points += nr_points_inc
@@ -309,7 +394,8 @@ def algorithm_4 (f, a, b, tol, until_iteration=None):
         if len(ivals) > 200:
             err_final += ivals[i_min].err
             igral_final += ivals[i_min].igral
-            ivals[i_min] = ivals.pop()
+            ivals[i_min] = ivals[-1]
+            ivals.pop()
             if i_max == len(ivals):
                 i_max = i_min
 
@@ -353,61 +439,103 @@ def fdiv(x):
     return abs(x - 0.987654321)**-1.1
 
 
-import struct
+def test_legendre():
+    legs = legendre(11)
+    comparisons = [(legs[0], [1], 1),
+                    (legs[1], [0, 1], 1),
+                    (legs[10], [-63, 0, 3465, 0, -30030, 0,
+                                90090, 0, -109395, 0, 46189], 256)]
+    for a, b, div in comparisons:
+        for c, d in zip(a, b):
+            assert c * div == d
 
-def float2hex(x):
-    return struct.pack('!d', x).hex()
 
-def hex2float(hex):
-    return struct.unpack('!d', bytes.fromhex(hex))[0]
+def test_scalar_product(n=33):
+    legs = legendre(n)
+    selection = [0, 5, 7, n-1]
+    for i in selection:
+        for j in selection:
+            assert (scalar_product(legs[i], legs[j])
+                    == ((i == j) and Frac(2, 2*i + 1)))
 
-def assert_equal(value, hex, eps=0):
-    assert (float2hex(value) == hex # for NaN, etc.
-            or abs((value - hex2float(hex))) <= abs(eps * value))
 
-def test():
+def simple_newton(n):
+    """Slower than 'newton()' and prone to numerical error."""
+    from itertools import combinations
+
+    nodes = -np.cos(np.arange(n) / (n-1) * np.pi)
+    return [sum(np.prod(-np.asarray(sel))
+                for sel in combinations(nodes, n - d))
+            for d in range(n + 1)]
+
+
+def test_newton():
+    assert_allclose(newton(9), simple_newton(9), atol=1e-15)
+
+
+def test_b_def(depth=1):
+    legs = [np.array(leg, float) for leg in legendre(n[depth] + 1)]
+    result = np.zeros(len(legs[-1]))
+    for factor, leg in zip(b_def[depth], legs):
+        factor *= np.sqrt((2*len(leg) - 1) / 2)
+        result[:len(leg)] += factor * leg
+    assert_allclose(result, newton(n[depth]), rtol=1e-15)
+
+
+def test_downdate(depth=3):
+    fx = np.abs(xi[depth])
+    fx[1::2] = np.nan
+    c_downdated = _calc_coeffs(fx, depth)
+
+    depth -= 1
+    fx = np.abs(xi[depth])
+    c = _calc_coeffs(fx, depth)
+
+    assert_allclose(c_downdated[:len(c)], c, rtol=0, atol=1e-9)
+
+
+def test_integration():
     old_settings = np.seterr(all='ignore')
 
-    igral, err, nr_points, _ = algorithm_4(f0, 0, 3, 1e-5)
-    print(igral, err, nr_points)
-    assert_equal(igral, '3fffb6084c1dabf4')
-    assert_equal(err, '3ef46042cb969374')
-    assert nr_points == 1419
+    igral, err, nr_points = algorithm_4(f0, 0, 3, 1e-5)
+    assert_allclose(igral, 1.98194117954329, 1e-15)
+    assert_allclose(err, 1.9563545589988155e-05, 1e-10)
+    assert nr_points == 1129
 
-    igral, err, nr_points, _ = algorithm_4(f7, 0, 1, 1e-6)
-    print(igral, err, nr_points)
-    assert_equal(igral, '3fffffffd9fa6513')
-    assert_equal(err, '3ebd8955755be30c')
-    assert nr_points == 709
+    igral, err, nr_points = algorithm_4(f7, 0, 1, 1e-6)
+    assert_allclose(igral, 1.9999998579359648, 1e-15)
+    assert_allclose(err, 1.8561437334964041e-06, 1e-10)
+    assert nr_points == 693
 
-    igral, err, nr_points, _ = algorithm_4(f24, 0, 3, 1e-3)
-    print(igral, err, nr_points)
-    assert_equal(igral, '4031aa1505ba7b41')
-    assert_equal(err, '3f9202232bd03a6a')
-    assert nr_points == 4515
+    igral, err, nr_points = algorithm_4(f24, 0, 3, 1e-3)
+    assert_allclose(igral, 17.664696186312934, 1e-15)
+    assert_allclose(err, 0.017602618074957457, 1e-10)
+    assert nr_points == 4519
 
-    igral, err, nr_points, _ = algorithm_4(f21, 0, 1, 1e-3)
-    print(igral, err, nr_points)
-    assert_equal(igral, '3fc4e088c36827c1')
-    assert_equal(err, '3f247d00177a3f07')
-    assert nr_points == 203
+    igral, err, nr_points = algorithm_4(f21, 0, 1, 1e-3)
+    assert_allclose(igral, 0.16310022131213361, 1e-15)
+    assert_allclose(err, 0.00011848806384952786, 1e-10)
+    assert nr_points == 191
 
-    igral, err, nr_points, _ = algorithm_4(f63, 0, 1, 1e-10)
-    print(igral, err, nr_points)
-    assert_equal(igral, '3fff7ccfd769d160')
-    assert_equal(err, '3e28f421b487f15a', 2e-15)
+    igral, err, nr_points = algorithm_4(f63, 0, 1, 1e-10)
+    assert_allclose(igral, 1.967971650560763, 1e-15)
+    assert_allclose(err, 2.9049859499240667e-09, 1e-7)
     assert nr_points == 2715
 
     try:
-        igral, err, nr_points, _ = algorithm_4(fdiv, 0, 1, 1e-6)
+        igral, err, nr_points = algorithm_4(fdiv, 0, 1, 1e-6)
     except DivergentIntegralError as e:
-        print(e.igral, e.err, e.nr_points)
-        assert_equal(e.igral, '7ff0000000000000')
-        assert_equal(e.err, '4073b48aeb356df5')
-        assert e.nr_points == 457
+        assert e.igral == np.inf
+        assert_allclose(e.err, 284.56192231467958, 1e-10)
+        assert e.nr_points == 431
 
     np.seterr(**old_settings)
 
 
 if __name__ == '__main__':
-    test()
+    test_legendre()
+    test_scalar_product()
+    test_newton()
+    test_b_def()
+    test_downdate()
+    test_integration()
