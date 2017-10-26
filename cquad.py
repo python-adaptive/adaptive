@@ -108,13 +108,15 @@ class Interval:
 
     @property
     def T(self):
-        if self.parent is not None:
-            if self.a == self.parent.a:
-                return T_left
-            elif self.b == self.parent.b:
-                return T_right
-            else:
-                raise Exception('This should not happen.')
+        """Get the correct shift matrix.
+
+        Should only be called on children of a split interval.
+        """
+        assert self.parent is not None
+        left = self.a == self.parent.a
+        right = self.b == self.parent.b
+        assert left != right
+        return T_left if left else T_right
 
     def points(self, depth):
         a = self.a
