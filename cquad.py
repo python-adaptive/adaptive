@@ -292,7 +292,8 @@ class Learner(BaseLearner):
 
     def add_point(self, point, value):
         if point not in self.x_mapping:
-            raise RuntimeError("Point doesn't belong to any interval")
+            raise ValueError("Point {} doesn't belong to any interval"
+                             .format(point))
         self.done_points[point] = value
         self.not_done_points.discard(point)
 
