@@ -405,7 +405,6 @@ class Learner(BaseLearner):
 
         # Remove the smallest element if number of intervals is larger than 1000
         if len(self.ivals) > 1000:
-            print('nuke')
             self.ivals.pop(0)
 
         return self._stack
