@@ -471,136 +471,33 @@ class BalancingLearner(BaseLearner):
 
 # Learner2D and helper functions.
 
-def _max_disagreement_location_in_simplex(points, values, grad, transform):
-    """Find the point of maximum disagreement between linear and cubic model.
-
-    Parameters
-    ----------
-    points : (ndim+1, ndim)
-        Locations
-    values : (ndim+1)
-        Values
-    grad : (ndim+1, ndim)
-        Gradients
-
-    Notes
-    -----
-    Based on maximizing the disagreement between a linear and a cubic model:
-
-        f_1(x) = a + sum_j b_j (x_j - x_0)
-        f_2(x) = a + sum_j c_j (x_j - x_0) + sum_ij d_ij (x_i - x_0) (x_j - x_0)
-                   + sum_ijk e_ijk (x_i - x_0) (x_j - x_0) (x_k - x_0)
-
-        |f_1(x) - f_2(x)|^2 = max!
-
-    The parameter a, b are estimated from values of the function, and the
-    parameters c, d, e from values and gradients.
-
-    """
-    ndim = points.shape[1]
-    m = points.shape[0]
-    values = values.ravel()
-
-    x = points - points[-1]
-    z = values - values[-1]
-
-    # -- Least-squares fit: (i) linear model
-    b, _, _, _ = np.linalg.lstsq(x[:-1], z[:-1])
-
-    # -- Least-squares fit: (ii) cubic model
-
-    # (ii.a) fitting function values
-    x2 = (x[:-1, :, None] * x[:-1, None, :]).reshape(m - 1, ndim**2)
-    x3 = (x[:-1, :, None, None] * x[:-1, None, :, None] * x[:-1, None, None, :]
-          ).reshape(m - 1, ndim**3)
-    lhs1 = np.c_[x[:-1], x2, x3]
-    rhs1 = z[:-1]
-
-    # (ii.b) fitting gradients
-    d_b = np.tile(np.eye(ndim)[None, :, :], (m, 1, 1)).reshape(m * ndim, ndim)
-
-    o = np.eye(ndim)
-
-    d_d = (o[None, :, None, :] * x[:, None, :, None] +
-           x[:, None, None, :] * o[None, :, :, None]).reshape(m * ndim,
-                                                              ndim * ndim)
-    d_e = (o[:, None, :, None, None] * x[None, :, None, :, None] *
-           x[None, :, None, None, :] +
-           x[None, :, :, None, None] * o[:, None, None, :, None] *
-           x[None, :, None, None, :] +
-           x[None, :, :, None, None] * x[None, :, None, :, None] *
-           o[:, None, None, None, :]).reshape(m * ndim, ndim**3)
-
-    lhs2 = np.c_[d_b, d_d, d_e]
-    rhs2 = grad.ravel()
-
-    # (ii.c) fit it
-    lhs = np.r_[lhs1, lhs2]
-    rhs = np.r_[rhs1, rhs2]
-    cd, _, rank, _ = np.linalg.lstsq(lhs, rhs)
-    c = cd[:ndim]
-    d = cd[ndim:ndim + ndim**2].reshape(ndim, ndim)
-    e = cd[ndim + ndim**2:].reshape(ndim, ndim, ndim)
-
-    # -- Find point of maximum disagreement, inside the triangle
-
-    itr = np.linalg.inv(transform[:-1])
-
-    def func(x):
-        x = itr.dot(x)
-        v = (((c - b) * x).sum() +
-             (d * x[:, None] * x[None, :]).sum() +
-             (e * x[:, None, None] * x[None, :, None] * x[None, None, :]).sum())
-        v = -abs(v)**2
-        return np.array(v)
-
-    cons = [lambda x: np.array([1 - x.sum()])]
-    for j in range(ndim):
-        cons.append(lambda x: np.array([x[j]]))
-
-    ps = [1.0 / (ndim + 1)] * ndim
-    p = optimize.fmin_slsqp(func, ps, ieqcons=cons, disp=False, bounds=[(0, 1)] * ndim)
-    p = itr.dot(p) + points[-1]
-
-    return p
-
-
-def triangle_radius(points):
-    """The radius of a triangle defined by `points`.
-
-    Parameters
-    ----------
-    points : numpy array
-        A sequence of the positions of the vertices of the triangle,
-        with shape (..., 3, ndim).
-
-    Returns
-    -------
-    radius : float
-        The longest distance from the center to one of the vertices.
-    """
-    center = points.mean(axis=-2)
-    return np.linalg.norm(points - center, axis=1).max()
-
-
-def _deviation_from_linear_estimate(ip, gradients):
+def _losses_per_triangle(ip):
     tri = ip.tri
+    vs = ip.values.ravel()
+
+    gradients = interpolate.interpnd.estimate_gradients_2d_global(
+        tri, vs, tol=1e-6)
     p = tri.points[tri.vertices]
     g = gradients[tri.vertices]
-    v = ip.values.ravel()[tri.vertices]
-    ndim = p.shape[1]
+    v = vs[tri.vertices]
+    n_points_per_triangle = p.shape[1]
 
     dev = 0
-    for j in range(ndim):
+    for j in range(n_points_per_triangle):
         vest = v[:, j, None] + ((p[:, :, :] - p[:, j, None, :]) *
                                 g[:, j, None, :]).sum(axis=-1)
         dev += abs(vest - v).max(axis=1)
 
     q = p[:, :-1, :] - p[:, -1, None, :]
-    vol = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
-    vol /= special.gamma(1 + ndim)
-    return dev * vol
+    areas = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
+    areas /= special.gamma(n_points_per_triangle)
+    areas = np.sqrt(areas)
 
+    vs_scale = vs[tri.vertices].ptp()
+    if vs_scale != 0:
+        dev /= vs_scale
+
+    return dev * areas
 
 class Learner2D(BaseLearner):
     """Learns and predicts a function 'f: ℝ^2 → ℝ'.
@@ -643,9 +540,7 @@ class Learner2D(BaseLearner):
     it, your function needs to be slow enough to compute.
     """
 
-    def __init__(self, function, bounds, *, advanced_point_chosing=False):
-        self.function = function
-        self.advanced_point_chosing = advanced_point_chosing
+    def __init__(self, function, bounds):
         self.ndim = len(bounds)
         if self.ndim != 2:
             raise ValueError("Only 2-D sampling supported.")
@@ -654,8 +549,18 @@ class Learner2D(BaseLearner):
         self._values = np.zeros([100], dtype=float)
         self._stack = []
         self._interp = {}
-        x, y = self.bounds
-        self.xy_scale = hypot(x[1]-x[0], y[1]-y[0])
+
+        xy_mean = np.mean(self.bounds, axis=1)
+        xy_scale = np.ptp(self.bounds, axis=1)
+
+        def scale(points):
+            return (points - xy_mean) / xy_scale
+
+        def unscale(points):
+            return points * xy_scale + xy_mean
+
+        self.scale = scale
+        self.unscale = unscale
 
         # Keeps track till which index _points and _values are filled
         self.n = 0
@@ -663,7 +568,9 @@ class Learner2D(BaseLearner):
         self._bounds_points = list(itertools.product(*bounds))
 
         # Add the loss improvement to the bounds in the stack
-        self._stack = [p + (np.inf,) for p in self._bounds_points]
+        self._stack = [(*p, np.inf) for p in self._bounds_points]
+
+        self.function = function
 
     @property
     def points_combined(self):
@@ -684,15 +591,16 @@ class Learner2D(BaseLearner):
                          list(self._interp.values()), axis=0)
 
     def ip(self):
-        return interpolate.LinearNDInterpolator(self.points, self.values)
+        points = self.scale(self.points)
+        return interpolate.LinearNDInterpolator(points, self.values)
 
     @property
     def n_real(self):
         return self.n - len(self._interp)
 
     def ip_combined(self):
-        p = self.points_combined
-        v = self.values_combined
+        points = self.scale(self.points_combined)
+        values = self.values_combined
 
         # Interpolate the unfinished points
         if self._interp:
@@ -700,14 +608,14 @@ class Learner2D(BaseLearner):
             bounds_are_done = not any(p in self._interp
                                       for p in self._bounds_points)
             if bounds_are_done:
-                v[n_interp] = self.ip()(p[n_interp])
+                values[n_interp] = self.ip()(points[n_interp])
             else:
                 # It is important not to return exact zeros because
                 # otherwise the algo will try to add the same point
                 # to the stack each time.
-                v[n_interp] = np.random.rand(len(n_interp)) * 1e-15
+                values[n_interp] = np.random.rand(len(n_interp)) * 1e-15
 
-        return interpolate.LinearNDInterpolator(p, v)
+        return interpolate.LinearNDInterpolator(points, values)
 
     def add_point(self, point, value):
         nmax = self.values_combined.shape[0]
@@ -753,11 +661,7 @@ class Learner2D(BaseLearner):
         ip = self.ip_combined()
         tri = ip.tri
 
-        # Gradients
-        grad = interpolate.interpnd.estimate_gradients_2d_global(
-            tri, ip.values.ravel(), tol=1e-6)
-
-        dev = _deviation_from_linear_estimate(ip, grad)
+        losses = _losses_per_triangle(ip)
 
         def point_exists(p):
             eps = np.finfo(float).eps * self.points_combined.ptp() * 100
@@ -769,20 +673,11 @@ class Learner2D(BaseLearner):
                     return True
             return False
 
-        for j, _ in enumerate(dev):
+        for j, _ in enumerate(losses):
             # Estimate point of maximum curvature inside the simplex
-            jsimplex = np.argmax(dev)
+            jsimplex = np.argmax(losses)
             p = tri.points[tri.vertices[jsimplex]]
-            v = ip.values[tri.vertices[jsimplex]]
-
-            if self.advanced_point_chosing:
-                g = grad[tri.vertices[jsimplex]]
-                transform = tri.transform[jsimplex]
-
-                point_new = _max_disagreement_location_in_simplex(
-                    p, v, g, transform)
-            else:
-                point_new = p.mean(axis=-2)
+            point_new = self.unscale(p.mean(axis=-2))
 
             # XXX: not sure whether this is necessary it was there
             # originally.
@@ -790,19 +685,16 @@ class Learner2D(BaseLearner):
 
             # Check if it is really new
             if point_exists(point_new):
-                dev[jsimplex] = 0
+                losses[jsimplex] = 0
                 continue
 
-            loss_improvement = hypot(dev[jsimplex] / (v.max() - v.min()),
-                                     triangle_radius(p) / self.xy_scale)
-
             # Add to stack
-            self._stack.append(tuple(point_new) + (loss_improvement,))
+            self._stack.append((*point_new, losses[jsimplex]))
 
             if len(self._stack) >= stack_till:
                 break
             else:
-                dev[jsimplex] = 0
+                losses[jsimplex] = 0
 
     def _split_stack(self, n=None):
         points = []
@@ -844,18 +736,13 @@ class Learner2D(BaseLearner):
 
     def loss(self, real=True):
         n = self.n_real if real else self.n
-        if n <= 4:
+        bounds_are_not_done = any(p in self._interp
+                                  for p in self._bounds_points)
+        if n <= 4 or bounds_are_not_done:
             return np.inf
         ip = self.ip() if real else self.ip_combined()
-        grad = interpolate.interpnd.estimate_gradients_2d_global(
-            ip.tri, ip.values.ravel(), tol=1e-6)
-
-        dev = _deviation_from_linear_estimate(ip, grad)
-        jsimplex = np.argmax(dev)
-        p = ip.tri.points[ip.tri.vertices[jsimplex]]
-        v = ip.values[ip.tri.vertices[jsimplex]]
-        return hypot(dev[jsimplex] / (v.max() - v.min()),
-                     triangle_radius(p) / self.xy_scale)
+        losses = _losses_per_triangle(ip)
+        return losses.max()
 
     def remove_unfinished(self):
         self._points = self.points.copy()
@@ -867,8 +754,8 @@ class Learner2D(BaseLearner):
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
         if self.n_real >= 4:
-            x = np.linspace(*x, n_x)
-            y = np.linspace(*y, n_y)
+            x = np.linspace(-0.5, 0.5, n_x)
+            y = np.linspace(-0.5, 0.5, n_y)
             ip = self.ip()
             z = ip(x[:, None], y[None, :])
             return hv.Image(np.rot90(z), bounds=lbrt)
