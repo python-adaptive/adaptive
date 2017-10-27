@@ -159,6 +159,8 @@ class Interval:
         return ivals
 
     def complete_process(self):
+        """Calculate the integral contribution and error from this interval,
+        and update the estimated error of all ancestor intervals."""
         force_split = False
         if self.parent is None:
             self.process_make_first()
