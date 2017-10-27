@@ -172,6 +172,7 @@ class Interval:
             self.est_err = self.err
         ival = self.parent
         while ival is not None:
+            # update the error estimates on all ancestor intervals
             children_err = sum(i.est_err for i in ival.children)
             if np.isfinite(children_err):
                 ival.est_err = children_err
