@@ -428,7 +428,6 @@ class Learner(BaseLearner):
         _find_deepest(ival)
         return complete_branches
 
-    @property
     def complete_branches(self):
         if not self.first_ival.done:
             return []
@@ -457,11 +456,11 @@ class Learner(BaseLearner):
 
     @property
     def igral(self):
-        return sum(i.igral for i in self.complete_branches)
+        return sum(i.igral for i in self.complete_branches())
 
     @property
     def err(self):
-        complete_branches = self.complete_branches
+        complete_branches = self.complete_branches()
         if not complete_branches:
             return np.inf
         else:
