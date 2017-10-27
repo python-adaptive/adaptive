@@ -480,24 +480,24 @@ def _losses_per_triangle(ip):
     p = tri.points[tri.vertices]
     g = gradients[tri.vertices]
     v = vs[tri.vertices]
-    ndim = p.shape[-1]
+    n_points_per_triangle = p.shape[1]
 
     dev = 0
-    for j in range(ndim):
+    for j in range(n_points_per_triangle):
         vest = v[:, j, None] + ((p[:, :, :] - p[:, j, None, :]) *
                                 g[:, j, None, :]).sum(axis=-1)
         dev += abs(vest - v).max(axis=1)
 
     q = p[:, :-1, :] - p[:, -1, None, :]
     areas = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
-    areas /= special.gamma(1 + ndim)
+    areas /= special.gamma(n_points_per_triangle)
     areas = np.sqrt(areas)
 
     vs_scale = vs[tri.vertices].ptp()
     if vs_scale != 0:
         dev /= vs_scale
 
-    return dev * areas + areas**2
+    return dev * areas
 
 class Learner2D(BaseLearner):
     """Learns and predicts a function 'f: ℝ^2 → ℝ'.
