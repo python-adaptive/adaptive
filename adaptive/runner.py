@@ -22,6 +22,10 @@ class Runner:
     ioloop : asyncio.AbstractEventLoop, optional
         The ioloop in which to run the learning algorithm. If not provided,
         the default event loop is used.
+    shutdown_executor : Bool, default: True
+        If True, shutdown the executor when the runner has completed. If
+        'executor' is not provided then the executor created internally
+        by the runner is shut down, regardless of this parameter.
 
     Attributes
     ----------
@@ -35,11 +39,11 @@ class Runner:
     """
 
     def __init__(self, learner, executor=None, goal=None, *,
-                 log=False, ioloop=None):
+                 log=False, ioloop=None, shutdown_executor=True):
         self.ioloop = ioloop if ioloop else asyncio.get_event_loop()
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
-        self.shutdown_executor = executor is None
+        self.shutdown_executor = shutdown_executor or (executor is None)
         self.executor = _ensure_async_executor(executor, self.ioloop)
         self.learner = learner
         self.log = [] if log else None
