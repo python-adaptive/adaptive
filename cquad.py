@@ -249,9 +249,8 @@ class Interval:
                'rdepth={}'.format(self.rdepth),
                'err={:.5E}'.format(self.err),
                'igral={:.5E}'.format(self.igral if self.igral else 0),
-               'est_err={:.5E}'.format(self.est_err)]
-        if self.discard:
-            lst += ['discard']
+               'est_err={:.5E}'.format(self.est_err),
+               'discard={}'.format(self.discard)]
         return ' '.join(lst)
 
     def equal(self, other, *, verbose=False):
