@@ -115,6 +115,7 @@ class AverageLearner(BaseLearner):
         if rtol is None:
             rtol = np.inf
 
+        self.data = {}
         self.function = function
         self.atol = atol
         self.rtol = rtol
