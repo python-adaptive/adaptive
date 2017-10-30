@@ -174,4 +174,4 @@ class _AsyncExecutor:
             return len(ex.view)
         elif isinstance(ex, (concurrent.ProcessPoolExecutor,
                              concurrent.ThreadPoolExecutor)):
-            return executor._max_workers  # not public API!
+            return ex._max_workers  # not public API!
