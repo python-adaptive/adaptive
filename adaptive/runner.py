@@ -44,7 +44,7 @@ class Runner:
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
         self.shutdown_executor = shutdown_executor or (executor is None)
-        self.executor = _ensure_async_executor(executor, self.ioloop)
+        self.executor = ensure_async_executor(executor, self.ioloop)
         self.learner = learner
         self.log = [] if log else None
 
@@ -63,7 +63,7 @@ class Runner:
     async def _run(self):
         first_completed = asyncio.FIRST_COMPLETED
         xs = dict()
-        done = [None] * _get_executor_ncores(self.executor)
+        done = [None] * self.executor.ncores
         do_log = self.log is not None
 
         if len(done) == 0:
@@ -118,11 +118,26 @@ def replay_log(learner, log):
         getattr(learner, method)(*args)
 
 
+def ensure_async_executor(executor, ioloop):
+    if executor is None:
+        executor = concurrent.ProcessPoolExecutor()
+    elif isinstance(executor, concurrent.Executor):
+        pass
+    elif isinstance(executor, ipyparallel.Client):
+        executor = executor.executor()
+    else:
+        raise TypeError('Only concurrent.futures.Executors or ipyparallel '
+                        'clients can be used.')
+
+    return _AsyncExecutor(executor, ioloop)
+
+
 # Internal functionality
 
 class _AsyncExecutor:
 
     def __init__(self, executor, ioloop):
+        assert isinstance(executor, concurrent.Executor)
         self.executor = executor
         self.ioloop = ioloop
 
@@ -132,32 +147,11 @@ class _AsyncExecutor:
     def shutdown(self, wait=True):
         self.executor.shutdown(wait=wait)
 
-
-def _ensure_async_executor(executor, ioloop):
-    if isinstance(executor, ipyparallel.Client):
-        executor = executor.executor()
-    elif isinstance(executor, (concurrent.ProcessPoolExecutor,
-                               concurrent.ThreadPoolExecutor)):
-        pass
-    elif executor is None:
-        executor = concurrent.ProcessPoolExecutor()
-    else:
-        raise TypeError('Only concurrent.futures.Executors or ipyparallel '
-                        'clients can be used.')
-
-    return _AsyncExecutor(executor, ioloop)
-
-
-def _get_executor_ncores(executor):
-
-    if isinstance(executor, _AsyncExecutor):
-        executor = executor.executor
-
-    if isinstance(executor, ipyparallel.client.view.ViewExecutor):
-        return len(executor.view)
-    elif isinstance(executor, (concurrent.ProcessPoolExecutor,
-                               concurrent.ThreadPoolExecutor)):
-        return executor._max_workers  # not public API!
-    else:
-        raise TypeError('Only concurrent.futures.Executors or ipyparallel '
-                        'clients can be used.')
+    @property
+    def ncores(self):
+        ex = self.executor
+        if isinstance(ex, ipyparallel.client.view.ViewExecutor):
+            return len(ex.view)
+        elif isinstance(ex, (concurrent.ProcessPoolExecutor,
+                             concurrent.ThreadPoolExecutor)):
+            return executor._max_workers  # not public API!
