@@ -132,6 +132,26 @@ def ensure_async_executor(executor, ioloop):
     return _AsyncExecutor(executor, ioloop)
 
 
+class SequentialExecutor(concurrent.Executor):
+    """A trivial executor that runs functions synchronously.
+
+    This executor is mainly for testing.
+    """
+    def submit(self, fn, *args, **kwargs):
+        fut = concurrent.Future()
+        try:
+            fut.set_result(f(*args, **kwargs))
+        except Exception as e:
+            fut.set_exception(e)
+        return fut
+
+    def map(self, func, *iterable, timeout=None, chunksize=1):
+        return map(func, iterable)
+
+    def shutdown(self, wait=True):
+        pass
+
+
 # Internal functionality
 
 class _AsyncExecutor:
