@@ -96,9 +96,10 @@ class Runner:
             self.learner.remove_unfinished()
             # cancel any outstanding tasks
             remaining = list(xs.keys())
-            for fut in remaining:
-                fut.cancel()
-            await asyncio.wait(remaining)
+            if remaining:
+                for fut in remaining:
+                    fut.cancel()
+                await asyncio.wait(remaining)
             if self.shutdown_executor:
                 self.executor.shutdown()
 
