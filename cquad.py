@@ -55,11 +55,7 @@ def _calc_coeffs(fx, depth):
 
 
 class DivergentIntegralError(ValueError):
-    def __init__(self, msg, igral, err, nr_points):
-        self.igral = igral
-        self.err = err
-        self.nr_points = nr_points
-        super().__init__(msg)
+    pass
 
 
 class Interval:
@@ -229,8 +225,7 @@ class Interval:
                         and self.c[0, 0] / parent.c[0, 0] > 2))
 
         if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
-            raise NotImplementedError
-            return (a, b, b-a), nr_points
+            raise DivergentIntegralError(self)
 
     def process_refine(self):
         fx = np.array(self.done_points.values())
@@ -247,13 +242,15 @@ class Interval:
         return force_split
 
     def __repr__(self):
-        lst = ['(a, b)=({:.5f}, {:.5f})'.format(self.a, self.b),
-               'depth={}'.format(self.depth),
-               'rdepth={}'.format(self.rdepth),
-               'err={:.5E}'.format(self.err),
-               'igral={:.5E}'.format(self.igral if self.igral else 0),
-               'est_err={:.5E}'.format(self.est_err),
-               'discard={}'.format(self.discard)]
+        lst = [
+            '(a, b)=({:.5f}, {:.5f})'.format(self.a, self.b),
+            'depth={}'.format(self.depth),
+            'rdepth={}'.format(self.rdepth),
+            'err={:.5E}'.format(self.err),
+            'igral={:.5E}'.format(self.igral if self.igral else 0),
+            'est_err={:.5E}'.format(self.est_err),
+            'discard={}'.format(self.discard),
+        ]
         return ' '.join(lst)
 
     def equal(self, other, *, verbose=False):
