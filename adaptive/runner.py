@@ -140,13 +140,13 @@ class SequentialExecutor(concurrent.Executor):
     def submit(self, fn, *args, **kwargs):
         fut = concurrent.Future()
         try:
-            fut.set_result(f(*args, **kwargs))
+            fut.set_result(fn(*args, **kwargs))
         except Exception as e:
             fut.set_exception(e)
         return fut
 
-    def map(self, func, *iterable, timeout=None, chunksize=1):
-        return map(func, iterable)
+    def map(self, fn, *iterable, timeout=None, chunksize=1):
+        return map(fn, iterable)
 
     def shutdown(self, wait=True):
         pass
