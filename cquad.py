@@ -341,7 +341,7 @@ class Learner(BaseLearner):
             for point in self._stack:
                 # XXX: is this check worth it?
                 if all(i.discard for i in self.x_mapping[point]):
-                    self._stack.remove(x)
+                    self._stack.remove(point)
             for child in ival.children:
                 _discard(child)
         _discard(ival)
@@ -395,7 +395,7 @@ class Learner(BaseLearner):
         points = ival.points(ival.depth)
         reached_machine_tol = points[1] <= points[0] or points[-1] <= points[-2]
 
-        if not ival.discard or not reached_machine_tol:
+        if (not ival.discard) and (not reached_machine_tol):
             if ival.depth == 3 or force_split:
                 # Always split when depth is maximal or if refining didn't help
                 ivals_new = ival.split()
@@ -448,7 +448,6 @@ class Learner(BaseLearner):
                 complete_branches.extend(self.deepest_complete_branches(ival))
         self._complete_branches = complete_branches
         return self._complete_branches
-
 
     @property
     def nr_points(self):
