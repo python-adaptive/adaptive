@@ -1,4 +1,5 @@
-from fractions import Fraction as Frac
+# -*- coding: utf-8 -*-
+from fractions import Fraction
 from collections import defaultdict
 import numpy as np
 import scipy.linalg
@@ -11,12 +12,12 @@ def legendre(n):
 
     The return value is a list of list of fraction.Fraction instances.
     """
-    result = [[Frac(1)], [Frac(0), Frac(1)]]
+    result = [[Fraction(1)], [Fraction(0), Fraction(1)]]
     if n <= 2:
         return result[:n]
     for i in range(2, n):
         # Use Bonnet's recursion formula.
-        new = (i + 1) * [Frac(0)]
+        new = (i + 1) * [Fraction(0)]
         new[1:] = (r * (2*i - 1) for r in result[-1])
         new[:-2] = (n - r * (i - 1) for n, r in zip(new[:-2], result[-2]))
         new[:] = (n / i for n in new)
@@ -115,7 +116,7 @@ def calc_bdef(ns):
     result = []
     for n in ns:
         poly = []
-        a = list(map(Frac, newton(n)))
+        a = list(map(Fraction, newton(n)))
         for b in legs[:n + 1]:
             igral = scalar_product(a, b)
 

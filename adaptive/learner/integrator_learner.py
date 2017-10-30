@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2010 Pedro Gonnet
 # Copyright 2017 Christoph Groth
 # Copyright 2017 `adaptive` authors
@@ -11,8 +12,10 @@ import numpy as np
 from scipy.linalg import norm
 from sortedcontainers import SortedDict, SortedSet
 
-from adaptive.learner import BaseLearner
-from coeffs import b_def, T_left, T_right, ns, xi, V_inv, Vcond, alpha, gamma
+from .base_learner import BaseLearner
+from .integrator_coeffs import (b_def, T_left, T_right, ns,
+                                xi, V_inv, Vcond, alpha, gamma)
+
 
 eps = np.spacing(1)
 
@@ -273,7 +276,7 @@ class Interval:
         return all(same_slots)
 
 
-class Learner(BaseLearner):
+class IntegratorLearner(BaseLearner):
     def __init__(self, function, bounds, tol):
         self.function = function
         self.bounds = bounds
