@@ -175,3 +175,8 @@ class _AsyncExecutor:
         elif isinstance(ex, (concurrent.ProcessPoolExecutor,
                              concurrent.ThreadPoolExecutor)):
             return ex._max_workers  # not public API!
+        elif isinstance(ex, SequentialExecutor):
+            return 1
+        else:
+            raise TypeError('Cannot get number of cores for {}'
+                            .format(ex.__class__))
