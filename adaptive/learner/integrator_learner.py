@@ -340,6 +340,24 @@ class IntegratorLearner(BaseLearner):
         tol : float
             Relative tolerance of the error to the integral, this means that the
             learner is done when: `tol > err / abs(igral)`.
+
+        Attributes
+        ----------
+        complete_branches : list of intervals
+            The intervals that can be used in the determination of the integral.
+        nr_points : int
+            The total number of evaluated points.
+        igral : float
+            The integral value in `self.bounds`.
+        err : float
+            The absolute error associated with `self.igral`.
+
+        Methods
+        ------- 
+        done : bool
+            Returns whether the `tol` has been reached.
+        plot : hv.Scatter
+            Plots all the points that are evaluated.
         """
         self.function = function
         self.bounds = bounds
