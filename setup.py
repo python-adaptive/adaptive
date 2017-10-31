@@ -21,6 +21,7 @@ setup(
         'Topic :: Software Development :: Build Tools',
         'Programming Language :: Python :: 3.6',
     ],
-    packages=['adaptive'],
+    packages=['adaptive',
+              'adaptive.learner'],
     install_requires=requirements,
 )
