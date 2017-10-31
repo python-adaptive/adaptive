@@ -62,6 +62,57 @@ class DivergentIntegralError(ValueError):
 
 
 class Interval:
+
+    """
+    Attributes
+    ----------
+    (a, b) : (float, float)
+        The left and right boundary of the interval.
+    c : numpy array of shape (4, 33)
+        Coefficients of the fit.
+    c_old : numpy array of shape `len(fx)`
+        Coefficients of the fit.
+    depth : int
+        The level of refinement, `depth=0` means that it has 5 (the minimal number of) points and
+        `depth=3` means it has 33 (the maximal number of) points.
+    fx : numpy array of size `(5, 9, 17, 33)[self.depth]`.
+        The function values at the points `self.points(self.depth)`.
+    igral : float
+        The integral value of the interval.
+    err : float
+        The error associated with the integral value.
+    tol : float
+        The relative tolerance that needs to be reached in the precision of the integral.
+    rdepth : int
+        The number of splits that the interval has gone through, starting at 1.
+    ndiv : int
+        A number that is used to determine whether the interval is divergent.
+    parent : Interval
+        The parent interval. If the interval resulted from a refinement, it has one parent. If
+        it resulted from a split, it has two parents.
+    children : list of `Interval`s
+        The intervals resulting from a split or refinement.
+    done_points : dict
+        A dictionary with the x-values and y-values: `{x1: y1, x2: y2 ...}`.
+    est_err : float
+        The sum of the errors of the children, if one of the children is not ready yet,
+        the error is infinity.
+    discard : bool
+        If True, the interval and it's children are not participating in the
+        determination of the total integral anymore because its parent had a
+        refinement when the data of the interval was not known, and later it appears
+        that this interval has to be split.
+    complete : bool
+        All the function values in the interval are known. This does not necessarily mean
+        that the integral value has been calculated, see `self.done`.
+    done : bool
+        The integral and the error for the interval has been calculated.
+    branch_complete : bool
+        The interval can be used to determine the total integral, however if its children are
+        also `branch_complete`, they should be used.
+
+    """
+
     __slots__ = ['a', 'b', 'c', 'c_old', 'depth', 'fx', 'igral', 'err', 'tol',
                  'rdepth', 'ndiv', 'parent', 'children', 'done_points',
                  'est_err', 'discard']
@@ -277,7 +328,19 @@ class Interval:
 
 
 class IntegratorLearner(BaseLearner):
+
     def __init__(self, function, bounds, tol):
+        """
+        Parameters
+        ----------
+        function : callable: X → Y
+            The function to learn.
+        bounds : pair of reals
+            The bounds of the interval on which to learn 'function'.
+        tol : float
+            Relative tolerance of the error to the integral, this means that the
+            learner is done when: `tol > err / abs(igral)`.
+        """
         self.function = function
         self.bounds = bounds
         self.tol = tol
