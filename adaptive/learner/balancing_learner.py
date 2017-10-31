@@ -39,6 +39,8 @@ class BalancingLearner(BaseLearner):
         self.function = functools.partial(dispatch, [l.function for l
                                                      in self.learners])
 
+        self._cache = {}
+
         if len(set(learner.__class__ for learner in self.learners)) > 1:
             raise TypeError('A BalacingLearner can handle only one type'
                             'of learners.')
@@ -49,13 +51,19 @@ class BalancingLearner(BaseLearner):
             loss_improvements = []
             pairs = []
             for index, learner in enumerate(self.learners):
-                point, loss_improvement = learner.choose_points(n=1,
-                                                                add_data=False)
+                if index not in self._cache:
+                    self._cache[index] = learner.choose_points(n=1,
+                                                               add_data=False)
+                point, loss_improvement = self._cache[index]
                 loss_improvements.append(loss_improvement[0])
                 pairs.append((index, point[0]))
             x, _ = max(zip(pairs, loss_improvements), key=itemgetter(1))
             points.append(x)
             self.add_point(x, None)
+
+        for index, x in points:
+            self._cache.pop(index, None)
+
         return points, None
 
     def choose_points(self, n, add_data=True):
@@ -68,6 +76,7 @@ class BalancingLearner(BaseLearner):
 
     def add_point(self, x, y):
         index, x = x
+        self._cache.pop(index, None)
         self.learners[index].add_point(x, y)
 
     def loss(self, real=True):
