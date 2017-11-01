@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from collections import OrderedDict
+
 class DataSaver:
-    """Save meta data associated with the values that need to be learned.
+    """Save extra data associated with the values that need to be learned.
 
     Parameters
     ----------
@@ -20,9 +22,8 @@ class DataSaver:
     """
 
     def __init__(self, learner, arg_picker):
-        super().__init__()
         self.learner = learner
-        self.meta_data = {}
+        self.extra_data = OrderedDict()
         self.function = learner.function
         self.arg_picker = arg_picker
 
@@ -31,7 +32,7 @@ class DataSaver:
         self.loss = self.learner.loss
         self.remove_unfinished = self.learner.remove_unfinished
 
-    def add_point(self, x, y):
-        result = self.arg_picker(y)
-        self.meta_data[x] = y
-        self.learner.add_point(x, result)
+    def add_point(self, x, result):
+        y = self.arg_picker(result)
+        self.extra_data[x] = result
+        self.learner.add_point(x, y)
