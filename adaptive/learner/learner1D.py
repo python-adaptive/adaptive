@@ -194,7 +194,7 @@ class Learner1D(BaseLearner):
                           for quality, x, n in quals))
 
             loss_improvements = list(itertools.chain.from_iterable(
-                                     itertools.repeat(-quality, n)
+                                     itertools.repeat(-quality, n-1)
                                      for quality, x, n in quals))
 
         if add_data:
