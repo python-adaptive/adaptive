@@ -82,3 +82,10 @@ def test_convergence_for_arbitrary_ordering(learner_type):
     of the order in which that data is given.
     """
     raise NotImplementedError()
+
+@Learner2D
+def test_choose_point_returns_tuple(learner):
+    points, _ = learner.choose_points(1)
+    for x in points:
+        learner.add_point(x, learner.function(x))
+        assert isinstance(x, tuple)
