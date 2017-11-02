@@ -32,7 +32,12 @@ class DataSaver:
         self.loss = self.learner.loss
         self.remove_unfinished = self.learner.remove_unfinished
 
+        # Methods that the BaseLearner implements
+        self.add_data = self.learner.add_data
+        self.__getstate__ = self.learner.__getstate__
+        self.__setstate__ = self.learner.__setstate__
+
     def add_point(self, x, result):
-        y = self.arg_picker(result)
+        y = self.arg_picker(result) if result is not None else None
         self.extra_data[x] = result
         self.learner.add_point(x, y)
