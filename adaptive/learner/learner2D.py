@@ -240,7 +240,7 @@ class Learner2D(BaseLearner):
         points = []
         loss_improvements = []
         for *point, loss_improvement in self._stack[:n]:
-            points.append(point)
+            points.append(tuple(point))
             loss_improvements.append(loss_improvement)
         return points, loss_improvements
 
