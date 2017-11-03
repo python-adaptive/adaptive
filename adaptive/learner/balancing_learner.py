@@ -39,7 +39,8 @@ class BalancingLearner(BaseLearner):
         self.function = functools.partial(dispatch, [l.function for l
                                                      in self.learners])
 
-        self._cache = {}
+        self._points = {}
+        self._loss = {}
 
         if len(set(learner.__class__ for learner in self.learners)) > 1:
             raise TypeError('A BalacingLearner can handle only one type'
@@ -51,18 +52,15 @@ class BalancingLearner(BaseLearner):
             loss_improvements = []
             pairs = []
             for index, learner in enumerate(self.learners):
-                if index not in self._cache:
-                    self._cache[index] = learner.choose_points(n=1,
-                                                               add_data=False)
-                point, loss_improvement = self._cache[index]
+                if index not in self._points:
+                    self._points[index] = learner.choose_points(
+                        n=1, add_data=False)
+                point, loss_improvement = self._points[index]
                 loss_improvements.append(loss_improvement[0])
                 pairs.append((index, point[0]))
             x, _ = max(zip(pairs, loss_improvements), key=itemgetter(1))
             points.append(x)
             self.add_point(x, None)
-
-        for index, x in points:
-            self._cache.pop(index, None)
 
         return points, None
 
@@ -76,11 +74,18 @@ class BalancingLearner(BaseLearner):
 
     def add_point(self, x, y):
         index, x = x
-        self._cache.pop(index, None)
+        self._points.pop(index, None)
+        self._loss.pop(index, None)
         self.learners[index].add_point(x, y)
 
     def loss(self, real=True):
-        return max(learner.loss(real) for learner in self.learners)
+        losses = []
+        for index, learner in enumerate(self.learners):
+            if index not in self._loss:
+                self._loss[index] = learner.loss(real)
+            loss = self._loss[index]
+            losses.append(loss)
+        return max(losses)
 
     def plot(self, index):
         return self.learners[index].plot()
