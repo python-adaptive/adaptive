@@ -2,7 +2,7 @@
 from copy import deepcopy
 import heapq
 import itertools
-from math import sqrt
+from math import hypot
 
 import holoviews as hv
 import numpy as np
@@ -58,11 +58,13 @@ class Learner1D(BaseLearner):
         never touched. This behavior should be improved later.
         """
         y_right, y_left = data[x_right], data[x_left]
-        if self._scale[1] == 0:
-            return sqrt(((x_right - x_left) / self._scale[0])**2)
+        x_scale, y_scale = self._scale
+        if y_scale == 0:
+            loss = (x_right - x_left) / x_scale
         else:
-            return sqrt(((x_right - x_left) / self._scale[0])**2 +
-                        ((y_right - y_left) / self._scale[1])**2)
+            loss = hypot((x_right - x_left) / x_scale,
+                         (y_right - y_left) / y_scale)
+        return loss
 
     def loss(self, real=True):
         losses = self.losses if real else self.losses_combined
@@ -157,7 +159,7 @@ class Learner1D(BaseLearner):
         # Return equally spaced points within each interval to which points
         # will be added.
         if n == 0:
-            return []
+            return [], []
 
         # If the bounds have not been chosen yet, we choose them first.
         points = []
