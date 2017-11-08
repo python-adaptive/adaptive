@@ -290,7 +290,7 @@ class Learner2D(BaseLearner):
         self.n -= len(self._interp)
         self._interp = {}
 
-    def plot(self, n_x=201, n_y=201):
+    def plot(self, n_x=201, n_y=201, triangles_alpha=0):
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
         if self.n_real >= 4:
@@ -298,6 +298,16 @@ class Learner2D(BaseLearner):
             y = np.linspace(-0.5, 0.5, n_y)
             ip = self.ip()
             z = ip(x[:, None], y[None, :])
-            return hv.Image(np.rot90(z), bounds=lbrt)
+            plot = hv.Image(np.rot90(z), bounds=lbrt)
+
+            if triangles_alpha:
+                tri_points = self.unscale(ip.tri.points[ip.tri.vertices])
+                contours = hv.Contours([p for p in tri_points])
+                contours = contours.opts(style=dict(alpha=triangles_alpha))
+
         else:
-            return hv.Image(np.zeros((2, 2)), bounds=lbrt)
+            plot = hv.Image(np.zeros((2,2)), bounds=lbrt) # XXX: Change to `[]` when https://github.com/ioam/holoviews/pull/2088 is merged
+            contours = hv.Contours([])
+
+        return plot * contours if triangles_alpha else plot
+
