@@ -2,11 +2,12 @@
 from copy import deepcopy
 import heapq
 import itertools
-from math import hypot
+import math
 
 import holoviews as hv
 import numpy as np
 import sortedcontainers
+import scipy.interpolate
 
 from .base_learner import BaseLearner
 
@@ -22,7 +23,7 @@ class Learner1D(BaseLearner):
         The bounds of the interval on which to learn 'function'.
     """
 
-    def __init__(self, function, bounds):
+    def __init__(self, function, bounds, vector_output=False):
         self.function = function
 
         # A dict storing the loss function for each interval x_n.
@@ -46,6 +47,8 @@ class Learner1D(BaseLearner):
 
         self.bounds = list(bounds)
 
+        self.vector_output = vector_output
+
     @property
     def data_combined(self):
         return {**self.data, **self.data_interp}
@@ -59,11 +62,15 @@ class Learner1D(BaseLearner):
         """
         y_right, y_left = data[x_right], data[x_left]
         x_scale, y_scale = self._scale
+        dx = (x_right - x_left) / x_scale
         if y_scale == 0:
-            loss = (x_right - x_left) / x_scale
+            loss = dx
         else:
-            loss = hypot((x_right - x_left) / x_scale,
-                         (y_right - y_left) / y_scale)
+            dy = (y_right - y_left) / y_scale
+            if self.vector_output:
+                loss = np.hypot(dx, dy).max()
+            else:
+                loss = math.hypot(dx, dy)
         return loss
 
     def loss(self, real=True):
@@ -101,8 +108,9 @@ class Learner1D(BaseLearner):
         self._bbox[0][0] = min(self._bbox[0][0], x)
         self._bbox[0][1] = max(self._bbox[0][1], x)
         if y is not None:
-            self._bbox[1][0] = min(self._bbox[1][0], y)
-            self._bbox[1][1] = max(self._bbox[1][1], y)
+            y1, y2 = (min(y), max(y)) if self.vector_output else (y, y)
+            self._bbox[1][0] = min(self._bbox[1][0], y1)
+            self._bbox[1][1] = max(self._bbox[1][1], y2)
 
         self._scale = [self._bbox[0][1] - self._bbox[0][0],
                        self._bbox[1][1] - self._bbox[1][0]]
@@ -212,20 +220,37 @@ class Learner1D(BaseLearner):
         if extra_points is not None:
             xs_unfinished += extra_points
 
-        if len(ys) == 0:
-            interp_ys = (0,) * len(xs_unfinished)
+        if len(xs) < 2:
+            interp_ys = np.zeros(len(xs_unfinished))
+            if self.vector_output:
+                interp_ys = interp_ys.reshape(-1, 1)
         else:
-            interp_ys = np.interp(xs_unfinished, xs, ys)
+            if self.vector_output:
+                ip = scipy.interpolate.interp1d(xs, np.transpose(ys),
+                                                assume_sorted=True,
+                                                bounds_error=False,
+                                                fill_value=0)
+                interp_ys = ip(xs_unfinished).T
+            else:
+                interp_ys = np.interp(xs_unfinished, xs, ys)
 
         data_interp = {x: y for x, y in zip(xs_unfinished, interp_ys)}
 
         return data_interp
 
     def plot(self):
+        if not self.vector_output:
             if self.data:
                 return hv.Scatter(self.data)
             else:
                 return hv.Scatter([])
+        else:
+            if self.data:
+                xs = list(self.data.keys())
+                ys = np.array(list(self.data.values())).T
+                return hv.Overlay([hv.Scatter((xs, y)) for y in ys])
+            else:
+                return hv.Overlay([hv.Scatter([])])
 
     def remove_unfinished(self):
         self.data_interp = {}
