@@ -294,6 +294,9 @@ class Learner2D(BaseLearner):
         self._interp = {}
 
     def plot(self, n_x=201, n_y=201, triangles_alpha=0):
+        if self.vdim > 1:
+            raise NotImplemented('holoviews currently does not support',
+                                 '3D surface plots in bokeh.')
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
         if self.n_real >= 4:
@@ -313,4 +316,3 @@ class Learner2D(BaseLearner):
             contours = hv.Contours([])
 
         return plot * contours if triangles_alpha else plot
-
