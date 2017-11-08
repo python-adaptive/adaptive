@@ -247,10 +247,10 @@ class Learner1D(BaseLearner):
         else:
             if self.data:
                 xs = list(self.data.keys())
-                ys = np.array(list(self.data.values())).T
-                return hv.Overlay([hv.Scatter((xs, y)) for y in ys])
+                ys = list(self.data.values())
+                return hv.Path((xs, ys))
             else:
-                return hv.Overlay([hv.Scatter([])])
+                return hv.Path([])
 
     def remove_unfinished(self):
         self.data_interp = {}
