@@ -12,32 +12,31 @@ from .utils import restore
 # Learner2D and helper functions.
 
 def _losses_per_triangle(ip):
-    tri = ip.tri
-    vs = ip.values.ravel()
-
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
-        tri, vs, tol=1e-6)
-    p = tri.points[tri.vertices]
-    g = gradients[tri.vertices]
-    v = vs[tri.vertices]
-    n_points_per_triangle = p.shape[1]
+        ip.tri, ip.values, tol=1e-6)
 
-    dev = 0
-    for j in range(n_points_per_triangle):
-        vest = v[:, j, None] + ((p[:, :, :] - p[:, j, None, :]) *
-                                g[:, j, None, :]).sum(axis=-1)
-        dev += abs(vest - v).max(axis=1)
+    p = ip.tri.points[ip.tri.vertices]
+    vs = ip.values[ip.tri.vertices]
+    gs = gradients[ip.tri.vertices]
+
+    def deviation(p, v, g):
+        dev = 0
+        for j in range(3):
+            vest = v[:, j, None] + ((p[:, :, :] - p[:, j, None, :]) *
+                                    g[:, j, None, :]).sum(axis=-1)
+            dev += abs(vest - v).max(axis=1)
+        return dev
+
+    n_levels = vs.shape[2]
+    devs = [deviation(p, vs[:, :, i], gs[:, :, i]) for i in range(n_levels)]
 
     q = p[:, :-1, :] - p[:, -1, None, :]
     areas = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
-    areas /= special.gamma(n_points_per_triangle)
+    areas /= special.gamma(3)
     areas = np.sqrt(areas)
+    losses = np.sum([dev * areas for dev in devs], axis=0)
+    return losses
 
-    vs_scale = vs[tri.vertices].ptp()
-    if vs_scale != 0:
-        dev /= vs_scale
-
-    return dev * areas
 
 class Learner2D(BaseLearner):
     """Learns and predicts a function 'f: ℝ^2 → ℝ'.
@@ -50,6 +49,8 @@ class Learner2D(BaseLearner):
     bounds : list of 2-tuples
         A list ``[(a1, b1), (a2, b2)]`` containing bounds,
         one per dimension.
+    vdim : int
+        Number of values that the function returns.
 
     Attributes
     ----------
@@ -80,13 +81,14 @@ class Learner2D(BaseLearner):
     it, your function needs to be slow enough to compute.
     """
 
-    def __init__(self, function, bounds):
+    def __init__(self, function, bounds, vdim=1):
         self.ndim = len(bounds)
+        self.vdim = vdim
         if self.ndim != 2:
             raise ValueError("Only 2-D sampling supported.")
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
         self._points = np.zeros([100, self.ndim])
-        self._values = np.zeros([100], dtype=float)
+        self._values = np.zeros([100, self.vdim], dtype=float)
         self._stack = []
         self._interp = {}
 
@@ -153,14 +155,15 @@ class Learner2D(BaseLearner):
                 # It is important not to return exact zeros because
                 # otherwise the algo will try to add the same point
                 # to the stack each time.
-                values[n_interp] = np.random.rand(len(n_interp)) * 1e-15
+                values[n_interp] = np.random.rand(
+                    len(n_interp), self.vdim) * 1e-15
 
         return interpolate.LinearNDInterpolator(points, values)
 
     def add_point(self, point, value):
         nmax = self.values_combined.shape[0]
         if self.n >= nmax:
-            self._values = np.resize(self._values, [2*nmax + 10])
+            self._values = np.resize(self._values, [2*nmax + 10, self.vdim])
             self._points = np.resize(self._points, [2*nmax + 10, self.ndim])
 
         point = tuple(point)
