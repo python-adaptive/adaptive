@@ -23,7 +23,7 @@ class Learner1D(BaseLearner):
         The bounds of the interval on which to learn 'function'.
     """
 
-    def __init__(self, function, bounds, vector_output=False):
+    def __init__(self, function, bounds):
         self.function = function
 
         # A dict storing the loss function for each interval x_n.
@@ -47,7 +47,7 @@ class Learner1D(BaseLearner):
 
         self.bounds = list(bounds)
 
-        self.vector_output = vector_output
+        self.vector_output = None  # is determined when adding the first point
 
     @property
     def data_combined(self):
@@ -126,6 +126,10 @@ class Learner1D(BaseLearner):
                 del self.data_interp[x]
             except KeyError:
                 pass
+
+            if self.vector_output is None:
+                self.vector_output = hasattr(y, '__len__')
+
         else:
             # The keys of data_interp are the unknown points
             self.data_interp[x] = None
@@ -222,8 +226,6 @@ class Learner1D(BaseLearner):
 
         if len(xs) < 2:
             interp_ys = np.zeros(len(xs_unfinished))
-            if self.vector_output:
-                interp_ys = interp_ys.reshape(-1, 1)
         else:
             if self.vector_output:
                 ip = scipy.interpolate.interp1d(xs, np.transpose(ys),
