@@ -128,7 +128,7 @@ class Learner1D(BaseLearner):
                 pass
 
             if self.vector_output is None:
-                self.vector_output = hasattr(y, '__len__')
+                self.vector_output = hasattr(y, '__len__') and len(y) > 1
 
         else:
             # The keys of data_interp are the unknown points
@@ -234,6 +234,7 @@ class Learner1D(BaseLearner):
                                                 fill_value=0)
                 interp_ys = ip(xs_unfinished).T
             else:
+                ys = np.array(ys).flatten()  # ys could be a list of arrays with shape (1,)
                 interp_ys = np.interp(xs_unfinished, xs, ys)
 
         data_interp = {x: y for x, y in zip(xs_unfinished, interp_ys)}
@@ -241,18 +242,15 @@ class Learner1D(BaseLearner):
         return data_interp
 
     def plot(self):
+        if not self.data:
+            return hv.Scatter([]) * hv.Path([])
+
         if not self.vector_output:
-            if self.data:
-                return hv.Scatter(self.data)
-            else:
-                return hv.Scatter([])
+            return hv.Scatter(self.data) * hv.Path([])
         else:
-            if self.data:
-                xs = list(self.data.keys())
-                ys = list(self.data.values())
-                return hv.Path((xs, ys))
-            else:
-                return hv.Path([])
+            xs = list(self.data.keys())
+            ys = list(self.data.values())
+            return hv.Path((xs, ys)) * hv.Scatter([])
 
     def remove_unfinished(self):
         self.data_interp = {}
