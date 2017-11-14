@@ -125,7 +125,7 @@ learners = [
 bounded_learners = pytest.mark.parametrize(
     "learner_type, f, bounds",
     [(l, f, get_bounds(f))
-     for l in adaptive_learners for f in learner_function_map[l]]
+     for l in bounded_learners for f in learner_function_map[l]]
 )
 
 # In general the only property of a learner that we know about
@@ -137,6 +137,7 @@ learners = pytest.mark.parametrize(
 )
 
 
+@pytest.mark.xfail
 @bounded_learners
 def test_uniform_sampling(learner_type, f, bounds):
     """Points are sampled uniformly if no data is provided.
@@ -232,7 +233,6 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_factory, f):
     """The estimated loss improvement can never be greater than the total loss."""
     f = generate_random_parametrization(f)
     learner = learner_factory(f)
-    control = learner_factory(f)
     N = random.randint(50, 100)
     xs, loss_improvements = learner.choose_points(N)
 
@@ -249,6 +249,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_factory, f):
     assert sum(loss_improvements) < learner.loss()
 
 
+@pytest.mark.xfail
 @bounded_learners
 def test_learner_subdomain(learner_type, f, bounds):
     """Learners that never receive data outside of a subdomain should
@@ -257,8 +258,9 @@ def test_learner_subdomain(learner_type, f, bounds):
     raise NotImplementedError()
 
 
+@pytest.mark.xfail
 @bounded_learners
-def test_learner_performance_is_invariant_under_scaling(learner_factory, f):
+def test_learner_performance_is_invariant_under_scaling(learner_type, f, bounds):
     """Learners behave identically under transformations that leave
        the loss invariant.
 
@@ -269,6 +271,7 @@ def test_learner_performance_is_invariant_under_scaling(learner_factory, f):
     raise NotImplementedError()
 
 
+@pytest.mark.xfail
 @learners
 def test_convergence_for_arbitrary_ordering(learner_factory, f):
     """Learners that are learning the same function should converge
