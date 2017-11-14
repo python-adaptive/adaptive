@@ -1,4 +1,4 @@
-image: adaptive-testing
+image: quantumtinkerer/research
 test:
   script:
      - py.test adaptive
