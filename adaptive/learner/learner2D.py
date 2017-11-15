@@ -319,7 +319,7 @@ class Learner2D(BaseLearner):
         if n <= 4 or bounds_are_not_done:
             return np.inf
         ip = self.ip() if real else self.ip_combined()
-        losses = _losses_per_triangle(ip)
+        losses = self.loss_per_triangle(ip)
         return losses.max()
 
     def remove_unfinished(self):
