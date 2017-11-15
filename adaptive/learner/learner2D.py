@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import collections
 import itertools
 
 import holoviews as hv
@@ -114,7 +115,7 @@ class Learner2D(BaseLearner):
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
         self._points = np.zeros([100, self.ndim])
         self._values = np.zeros([100, self.vdim], dtype=float)
-        self._stack = []
+        self._stack = collections.OrderedDict()
         self._interp = {}
 
         xy_mean = np.mean(self.bounds, axis=1)
@@ -135,7 +136,7 @@ class Learner2D(BaseLearner):
         self._bounds_points = list(itertools.product(*bounds))
 
         # Add the loss improvement to the bounds in the stack
-        self._stack = [(*p, np.inf) for p in self._bounds_points]
+        self._stack.update({p: np.inf for p in self._bounds_points})
 
         self.function = function
 
@@ -223,10 +224,7 @@ class Learner2D(BaseLearner):
             self._values[n] = value
 
         # Remove the point if in the stack.
-        for i, (*_point, _) in enumerate(self._stack):
-            if point == tuple(_point):
-                self._stack.pop(i)
-                break
+        self._stack.pop(point, None)
 
     def _fill_stack(self, stack_till=None):
         if stack_till is None:
@@ -267,7 +265,7 @@ class Learner2D(BaseLearner):
                 continue
 
             # Add to stack
-            self._stack.append((*point_new, losses[jsimplex]))
+            self._stack[tuple(point_new)] = losses[jsimplex]
 
             if len(self._stack) >= stack_till:
                 break
@@ -275,12 +273,8 @@ class Learner2D(BaseLearner):
                 losses[jsimplex] = 0
 
     def _split_stack(self, n=None):
-        points = []
-        loss_improvements = []
-        for *point, loss_improvement in self._stack[:n]:
-            points.append(tuple(point))
-            loss_improvements.append(loss_improvement)
-        return points, loss_improvements
+        points, loss_improvements = zip(*reversed(self._stack.items()))
+        return points[:n], loss_improvements[:n]
 
     def _choose_and_add_points(self, n):
         if n <= len(self._stack):
