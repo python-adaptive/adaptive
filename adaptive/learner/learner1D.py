@@ -47,7 +47,11 @@ class Learner1D(BaseLearner):
 
         self.bounds = list(bounds)
 
-        self.vector_output = None  # is determined when adding the first point
+        self._vdim = None
+
+    @property
+    def vdim(self):
+        return 1 if self._vdim is None else self._vdim
 
     @property
     def data_combined(self):
@@ -67,7 +71,7 @@ class Learner1D(BaseLearner):
             loss = dx
         else:
             dy = (y_right - y_left) / y_scale
-            if self.vector_output:
+            if self.vdim > 1:
                 loss = np.hypot(dx, dy).max()
             else:
                 loss = math.hypot(dx, dy)
@@ -108,7 +112,7 @@ class Learner1D(BaseLearner):
         self._bbox[0][0] = min(self._bbox[0][0], x)
         self._bbox[0][1] = max(self._bbox[0][1], x)
         if y is not None:
-            y1, y2 = (min(y), max(y)) if self.vector_output else (y, y)
+            y1, y2 = (min(y), max(y)) if self.vdim > 1 else (y, y)
             self._bbox[1][0] = min(self._bbox[1][0], y1)
             self._bbox[1][1] = max(self._bbox[1][1], y2)
 
@@ -127,8 +131,8 @@ class Learner1D(BaseLearner):
             except KeyError:
                 pass
 
-            if self.vector_output is None:
-                self.vector_output = hasattr(y, '__len__') and len(y) > 1
+            if self._vdim is None:
+                self._vdim = len(y) if hasattr(y, '__len__') else 1
 
         else:
             # The keys of data_interp are the unknown points
@@ -227,7 +231,7 @@ class Learner1D(BaseLearner):
         if len(xs) < 2:
             interp_ys = np.zeros(len(xs_unfinished))
         else:
-            if self.vector_output:
+            if self.vdim > 1:
                 ip = scipy.interpolate.interp1d(xs, np.transpose(ys),
                                                 assume_sorted=True,
                                                 bounds_error=False,
@@ -245,7 +249,7 @@ class Learner1D(BaseLearner):
         if not self.data:
             return hv.Scatter([]) * hv.Path([])
 
-        if not self.vector_output:
+        if not self.vdim > 1:
             return hv.Scatter(self.data) * hv.Path([])
         else:
             xs = list(self.data.keys())
