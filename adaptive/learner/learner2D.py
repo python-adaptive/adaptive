@@ -3,7 +3,7 @@ import itertools
 
 import holoviews as hv
 import numpy as np
-from scipy import interpolate, special
+from scipy import interpolate
 
 from .base_learner import BaseLearner
 from .utils import restore
@@ -11,7 +11,7 @@ from .utils import restore
 
 # Learner2D and helper functions.
 
-def _losses_per_triangle(ip):
+def deviations(ip):
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
         ip.tri, ip.values, tol=1e-6)
 
@@ -29,12 +29,21 @@ def _losses_per_triangle(ip):
 
     n_levels = vs.shape[2]
     devs = [deviation(p, vs[:, :, i], gs[:, :, i]) for i in range(n_levels)]
+    return devs
 
+
+def areas(ip):
+    p = ip.tri.points[ip.tri.vertices]
     q = p[:, :-1, :] - p[:, -1, None, :]
-    areas = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0])
-    areas /= special.gamma(3)
+    areas = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0]) / 2
     areas = np.sqrt(areas)
-    losses = np.sum([dev * areas for dev in devs], axis=0)
+    return areas
+
+
+def _losses_per_triangle(ip):
+    devs = deviations(ip)
+    area_per_triangle = areas(ip)
+    losses = np.sum([dev * area_per_triangle for dev in devs], axis=0)
     return losses
 
 
