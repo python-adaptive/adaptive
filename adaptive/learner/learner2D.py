@@ -58,8 +58,6 @@ class Learner2D(BaseLearner):
     bounds : list of 2-tuples
         A list ``[(a1, b1), (a2, b2)]`` containing bounds,
         one per dimension.
-    vdim : int
-        The dimension 'N' of the output of 'function'.
 
     Attributes
     ----------
@@ -90,9 +88,9 @@ class Learner2D(BaseLearner):
     it, your function needs to be slow enough to compute.
     """
 
-    def __init__(self, function, bounds, vdim=1):
+    def __init__(self, function, bounds):
         self.ndim = len(bounds)
-        self.vdim = vdim
+        self._vdim = None
         if self.ndim != 2:
             raise ValueError("Only 2-D sampling supported.")
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
@@ -122,6 +120,10 @@ class Learner2D(BaseLearner):
         self._stack = [(*p, np.inf) for p in self._bounds_points]
 
         self.function = function
+
+    @property
+    def vdim(self):
+        return 1 if self._vdim is None else self._vdim
 
     @property
     def points_combined(self):
@@ -194,7 +196,13 @@ class Learner2D(BaseLearner):
             self.n += 1
 
         self._points[n] = point
-        self._values[n] = value
+
+        try:
+            self._values[n] = value
+        except ValueError:
+            self._vdim = len(value)
+            self._values = np.resize(self._values, (nmax, self.vdim))
+            self._values[n] = value
 
         # Remove the point if in the stack.
         for i, (*_point, _) in enumerate(self._stack):
