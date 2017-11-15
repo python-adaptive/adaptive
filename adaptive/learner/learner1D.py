@@ -12,7 +12,7 @@ import scipy.interpolate
 from .base_learner import BaseLearner
 
 class Learner1D(BaseLearner):
-    """Learns and predicts a function 'f:ℝ → ℝ'.
+    """Learns and predicts a function 'f:ℝ → ℝ^N'.
 
     Parameters
     ----------

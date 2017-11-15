@@ -48,7 +48,7 @@ def _losses_per_triangle(ip):
 
 
 class Learner2D(BaseLearner):
-    """Learns and predicts a function 'f: ℝ^2 → ℝ'.
+    """Learns and predicts a function 'f: ℝ^2 → ℝ^N'.
 
     Parameters
     ----------
@@ -59,7 +59,7 @@ class Learner2D(BaseLearner):
         A list ``[(a1, b1), (a2, b2)]`` containing bounds,
         one per dimension.
     vdim : int
-        Number of values that the function returns.
+        The dimension 'N' of the output of 'function'.
 
     Attributes
     ----------
