@@ -162,13 +162,13 @@ class Learner2D(BaseLearner):
         return np.delete(self.values_combined,
                          list(self._interp.values()), axis=0)
 
-    def ip(self):
-        points = self.scale(self.points)
-        return interpolate.LinearNDInterpolator(points, self.values)
-
     @property
     def n_real(self):
         return self.n - len(self._interp)
+
+    def ip(self):
+        points = self.scale(self.points)
+        return interpolate.LinearNDInterpolator(points, self.values)
 
     def ip_combined(self):
         points = self.scale(self.points_combined)
@@ -223,7 +223,6 @@ class Learner2D(BaseLearner):
             self._values = np.resize(self._values, (nmax, self.vdim))
             self._values[n] = value
 
-        # Remove the point if in the stack.
         self._stack.pop(point, None)
 
     def _fill_stack(self, stack_till=None):
@@ -288,8 +287,9 @@ class Learner2D(BaseLearner):
                 # The while loop is needed because `stack_till` could be larger
                 # than the number of triangles between the points. Therefore
                 # it could fill up till a length smaller than `stack_till`.
-                if self.n >= 2**self.ndim:
-                    # Only fill the stack if no more bounds left in _stack
+                no_bounds_in_stack = not any(p in self._stack
+                                             for p in self._bounds_points)
+                if no_bounds_in_stack:
                     self._fill_stack(stack_till=n_left)
                 new_points, new_loss_improvements = self._split_stack(n_left)
                 points += new_points
