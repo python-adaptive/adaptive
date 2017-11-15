@@ -11,6 +11,29 @@ import scipy.interpolate
 
 from .base_learner import BaseLearner
 
+
+def _default_loss_per_interval(interval, scale, function_values):
+    """Calculate loss on a single interval
+
+    Currently returns the rescaled length of the interval. If one of the
+    y-values is missing, returns 0 (so the intervals with missing data are
+    never touched. This behavior should be improved later.
+    """
+    x_left, x_right = interval
+    y_right, y_left = function_values[x_right], function_values[x_left]
+    x_scale, y_scale = scale
+    dx = (x_right - x_left) / x_scale
+    if y_scale == 0:
+        loss = dx
+    else:
+        dy = (y_right - y_left) / y_scale
+        if hasattr(dy, '__len__') and len(y) > 1:
+            loss = np.hypot(dx, dy).max()
+        else:
+            loss = math.hypot(dx, dy)
+    return loss
+
+
 class Learner1D(BaseLearner):
     """Learns and predicts a function 'f:ℝ → ℝ^N'.
 
@@ -21,10 +44,29 @@ class Learner1D(BaseLearner):
         return a real number.
     bounds : pair of reals
         The bounds of the interval on which to learn 'function'.
+    loss_per_interval: callable, optional
+        A function that returns the loss for a single interval of the domain.
+        If not provided, then a default is used, which uses the scaled distance
+        in the x-y plane as the loss. See the notes for more details.
+
+    Notes
+    -----
+    'loss_per_interval' takes 3 parameters: interval, scale, and function_values,
+    and returns a scalar; the loss over the interval.
+
+    interval : (float, float)
+        The bounds of the interval.
+    scale : (float, float)
+        The x and y scale over all the intervals, useful for rescaling the
+        interval loss.
+    function_values : dict(float -> float)
+        A map containing evaluated function values. It is guaranteed
+        to have values for both of the points in 'interval'.
     """
 
-    def __init__(self, function, bounds):
+    def __init__(self, function, bounds, loss_per_interval=None):
         self.function = function
+        self.loss_per_interval = loss_per_interval or _default_loss_per_interval
 
         # A dict storing the loss function for each interval x_n.
         self.losses = {}
@@ -57,26 +99,6 @@ class Learner1D(BaseLearner):
     def data_combined(self):
         return {**self.data, **self.data_interp}
 
-    def interval_loss(self, x_left, x_right, data):
-        """Calculate loss in the interval x_left, x_right.
-
-        Currently returns the rescaled length of the interval. If one of the
-        y-values is missing, returns 0 (so the intervals with missing data are
-        never touched. This behavior should be improved later.
-        """
-        y_right, y_left = data[x_right], data[x_left]
-        x_scale, y_scale = self._scale
-        dx = (x_right - x_left) / x_scale
-        if y_scale == 0:
-            loss = dx
-        else:
-            dy = (y_right - y_left) / y_scale
-            if self.vdim > 1:
-                loss = np.hypot(dx, dy).max()
-            else:
-                loss = math.hypot(dx, dy)
-        return loss
-
     def loss(self, real=True):
         losses = self.losses if real else self.losses_combined
         if len(losses) == 0:
@@ -87,9 +109,11 @@ class Learner1D(BaseLearner):
     def update_losses(self, x, data, neighbors, losses):
         x_lower, x_upper = neighbors[x]
         if x_lower is not None:
-            losses[x_lower, x] = self.interval_loss(x_lower, x, data)
+            losses[x_lower, x] = self.loss_per_interval((x_lower, x),
+                                                        self._scale, data)
         if x_upper is not None:
-            losses[x, x_upper] = self.interval_loss(x, x_upper, data)
+            losses[x, x_upper] = self.loss_per_interval((x, x_upper),
+                                                        self._scale, data)
         try:
             del losses[x_lower, x_upper]
         except KeyError:
@@ -158,10 +182,10 @@ class Learner1D(BaseLearner):
 
         # If the scale has doubled, recompute all losses.
         if self._scale > self._oldscale * 2:
-            self.losses = {xs: self.interval_loss(*xs, self.data)
+            self.losses = {xs: self.loss_per_interval(xs, self._scale, self.data)
                            for xs in self.losses}
-            self.losses_combined = {x: self.interval_loss(*x,
-                                                          self.data_combined)
+            self.losses_combined = {x: self.loss_per_interval(x, self._scale,
+                                                              self.data_combined)
                                     for x in self.losses_combined}
             self._oldscale = self._scale
 

@@ -40,7 +40,7 @@ def areas(ip):
     return areas
 
 
-def _losses_per_triangle(ip):
+def _default_loss_per_triangle(ip):
     devs = deviations(ip)
     area_per_triangle = areas(ip)
     losses = np.sum([dev * area_per_triangle for dev in devs], axis=0)
@@ -58,6 +58,13 @@ class Learner2D(BaseLearner):
     bounds : list of 2-tuples
         A list ``[(a1, b1), (a2, b2)]`` containing bounds,
         one per dimension.
+    loss_per_triangle : callable, optional
+        A function that returns the loss for every triangle.
+        If not provided, then a default is used, which uses
+        the deviation from a linear estimate, as well as
+        triangle area, to determine the loss. See the notes
+        for more details.
+
 
     Attributes
     ----------
@@ -86,10 +93,21 @@ class Learner2D(BaseLearner):
 
     This sampling procedure is not extremely fast, so to benefit from
     it, your function needs to be slow enough to compute.
+
+    'loss_per_triangle' takes a single parameter, 'ip', which is a
+    `scipy.interpolate.LinearNDInterpolator`. You can use the
+    *undocumented* attributes 'tri' and 'values' of 'ip' to get a
+    `scipy.spatial.Delaunay` and a vector of function values.
+    These can be used to compute the loss. The functions
+    `adaptive.learner.learner2D.areas` and
+    `adaptive.learner.learner2D.deviations` to calculate the
+    areas and deviations from a linear interpolation
+    over each triangle.
     """
 
-    def __init__(self, function, bounds):
+    def __init__(self, function, bounds, loss_per_triangle=None):
         self.ndim = len(bounds)
+        self.loss_per_triangle = loss_per_triangle or _default_loss_per_triangle
         self._vdim = None
         if self.ndim != 2:
             raise ValueError("Only 2-D sampling supported.")
@@ -221,7 +239,7 @@ class Learner2D(BaseLearner):
         ip = self.ip_combined()
         tri = ip.tri
 
-        losses = _losses_per_triangle(ip)
+        losses = self.loss_per_triangle(ip)
 
         def point_exists(p):
             eps = np.finfo(float).eps * self.points_combined.ptp() * 100
