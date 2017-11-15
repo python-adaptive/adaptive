@@ -12,134 +12,83 @@ import pytest
 from ..learner import *
 
 
-def get_annotations(f):
-    """Return an ordered dict of parameter annotations for 'f'."""
-    params = inspect.signature(f).parameters
-    annot = collections.OrderedDict((p, params[p].annotation) for p in params)
-    if any(a is inspect._empty for a in annot.values()):
-        raise ValueError('function {} is missing annotated parameters'
-                         .format(f.__name__))
-    return annot
-
-
 def generate_random_parametrization(f):
     """Return a realization of 'f' with parameters bound to random values.
 
     Parameters
     ----------
     f : callable
-        All parameters but the first must be floats, and annotated
-        with a pair (min, max); the bounds on the values of the parameter.
+        All parameters but the first must be annotated with a callable
+        that, when called with no arguments, produces a value of the
+        appropriate type for the parameter in question.
     """
-    bounds = list(get_annotations(f).items())
-    rparams = {name: a + (b - a) * random.random()
-               for name, (a, b) in bounds[1:]}
-
-    return ft.partial(f, **rparams)
-
-
-# The annotation on the first parameter to 'f' are the bounds
-def get_bounds(f):
-    return next(iter(get_annotations(f)))
+    _, *params = inspect.signature(f).parameters.items()
+    if any(not callable(v.annotation) for (p, v) in params):
+        raise TypeError('All parameters to {} must be annotated with functions.'
+                        .format(f.__name__))
+    realization = {p: v.annotation() for (p, v) in params}
+    return ft.partial(f, **realization)
 
 
-# Library of functions and learners that can learn them
+def uniform(a, b):
+    return lambda: random.uniform(a, b)
 
-learner_function_map = collections.defaultdict(list)
 
-def learn_with(*learner_types):
+# Library of functions and associated learners.
+
+learner_function_combos = collections.defaultdict(list)
+
+def learn_with(learner_type, **init_kwargs):
 
     def _(f):
-        get_annotations(f)  # Raise if function is not annotated
-        for l in learner_types:
-            learner_function_map[l].append(f)
+        learner_function_combos[learner_type].append((f, init_kwargs))
+        return f
 
     return _
 
 
-@learn_with(Learner1D)
-def linear(x:(-1, 1), m:(0, 10)):
+# All parameters except the first must be annotated with a callable that
+# returns a random value for that parameter.
+
+
+@learn_with(Learner1D, bounds=(-1, 1))
+def linear(x, m: uniform(0, 10)):
     return m * x
 
 
-@learn_with(Learner1D)
-def linear_with_peak(x:(-1, 1), d:(-1, 1)):
+@learn_with(Learner1D, bounds=(-1, 1))
+def linear_with_peak(x, d: uniform(-1, 1)):
     a = 0.01
     return x + a**2 / (a**2 + (x - d)**2)
 
 
-@learn_with(Learner2D)
-def ring_of_fire(xy:((-1, 1), (-1, 1)), d:(0.2, 1)):
+@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)))
+def ring_of_fire(xy, d: uniform(0.2, 1)):
     a = 0.2
     x, y = xy
     return x + math.exp(-(x**2 + y**2 - d**2)**2 / a**4)
 
 
-@learn_with(AverageLearner)
-def gaussian(n:dict(rtol=1)):
+@learn_with(AverageLearner, rtol=1)
+def gaussian(n):
     return random.gauss(0, 1)
-
-
-# Factories for building learners from a function.
-# This encodes the convention for passing extra information
-# (bounds for 1D and 2D, and rtol/atol for Averaging)
-# in the function annotations. This is necessary because
-# __init__ is not the same for all learners.
-
-factories = {}
-
-def factory(*learner_types):
-
-    def _(builder):
-        for l in learner_types:
-            factories[l] = ft.partial(builder, l)
-    return _
-
-
-@factory(Learner1D, Learner2D)
-def build(l, f):
-    bounds = next(iter(get_annotations(f).values()))
-    return l(f, bounds)
-
-
-@factory(AverageLearner)
-def build(l, f):
-    kwargs = next(iter(get_annotations(f).values()))
-    return l(f, **kwargs)
 
 
 # Decorators for tests.
 
-bounded_learners = [
-    Learner1D,
-    Learner2D,
-]
 
-learners = [
-    *bounded_learners,
-    AverageLearner,
-]
-
-
-# Learners with bounds
-bounded_learners = pytest.mark.parametrize(
-    "learner_type, f, bounds",
-    [(l, f, get_bounds(f))
-     for l in bounded_learners for f in learner_function_map[l]]
-)
-
-# In general the only property of a learner that we know about
-# is the function 'f' that they are learning.
-learners = pytest.mark.parametrize(
-    "learner_factory,f",
-    [(factories[l], f)
-     for l in learners for f in learner_function_map[l]]
-)
+def run_with(*learner_types):
+    return pytest.mark.parametrize(
+        'learner_type, f, learner_kwargs',
+        [(l, f, k)
+         for l in learner_types
+         for f, k in learner_function_combos[l]]
+    )
 
 
 @pytest.mark.xfail
-@bounded_learners
-def test_uniform_sampling(learner_type, f, bounds):
+@run_with(Learner1D, learner2D)
+def test_uniform_sampling(learner_type, f, learner_kwargs):
     """Points are sampled uniformly if no data is provided.
 
     Non-uniform sampling implies that we think we know something about
@@ -148,16 +97,16 @@ def test_uniform_sampling(learner_type, f, bounds):
     raise NotImplementedError()
 
 
-@learners
-def test_adding_existing_data_is_idempotent(learner_factory, f):
+@run_with(Learner1D, Learner2D)
+def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
 
     Either it is idempotent, or it is an error.
     This is the only sane behaviour.
     """
     f = generate_random_parametrization(f)
-    learner = learner_factory(f)
-    control = learner_factory(f)
+    learner = learner_type(f, **learner_kwargs)
+    control = learner_type(f, **learner_kwargs)
 
     N = random.randint(10, 30)
     control.choose_points(N)
@@ -179,13 +128,13 @@ def test_adding_existing_data_is_idempotent(learner_factory, f):
     assert set(pls) == set(cpls)
 
 
-@learners
-def test_adding_non_chosen_data(learner_factory, f):
+@run_with(Learner1D, Learner2D, AverageLearner)
+def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     """Adding data for a point that was not returned by 'choose_points'."""
     # XXX: learner, control and bounds are not defined
     f = generate_random_parametrization(f)
-    learner = learner_factory(f)
-    control = learner_factory(f)
+    learner = learner_type(f, **learner_kwargs)
+    control = learner_type(f, **learner_kwargs)
 
     N = random.randint(10, 30)
     xs, _ = control.choose_points(N)
@@ -201,13 +150,13 @@ def test_adding_non_chosen_data(learner_factory, f):
     assert set(pls) == set(cpls)
 
 
-@learners
-def test_point_adding_order_is_irrelevant(learner_factory, f):
+@run_with(Learner1D, Learner2D, AverageLearner)
+def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     """The order of calls to 'add_points' between calls to
        'choose_points' is arbitrary."""
     f = generate_random_parametrization(f)
-    learner = learner_factory(f)
-    control = learner_factory(f)
+    learner = learner_type(f, **learner_kwargs)
+    control = learner_type(f, **learner_kwargs)
 
     N = random.randint(10, 30)
     control.choose_points(N)
@@ -228,11 +177,11 @@ def test_point_adding_order_is_irrelevant(learner_factory, f):
     assert set(pls) == set(cpls)
 
 
-@learners
-def test_expected_loss_improvement_is_less_than_total_loss(learner_factory, f):
+@run_with(Learner1D, Learner2D, AverageLearner)
+def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, learner_kwargs):
     """The estimated loss improvement can never be greater than the total loss."""
     f = generate_random_parametrization(f)
-    learner = learner_factory(f)
+    learner = learner_type(f, **learner_kwargs)
     N = random.randint(50, 100)
     xs, loss_improvements = learner.choose_points(N)
 
@@ -250,8 +199,8 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_factory, f):
 
 
 @pytest.mark.xfail
-@bounded_learners
-def test_learner_subdomain(learner_type, f, bounds):
+@run_with(Learner1D, Learner2D)
+def test_learner_subdomain(learner_type, f, learner_kwargs):
     """Learners that never receive data outside of a subdomain should
        perform 'similarly' to learners defined on that subdomain only."""
     # XXX: need the concept of a "subdomain"
@@ -259,8 +208,8 @@ def test_learner_subdomain(learner_type, f, bounds):
 
 
 @pytest.mark.xfail
-@bounded_learners
-def test_learner_performance_is_invariant_under_scaling(learner_type, f, bounds):
+@run_with(Learner1D, Learner2D)
+def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner_kwargs):
     """Learners behave identically under transformations that leave
        the loss invariant.
 
@@ -272,8 +221,8 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, bounds)
 
 
 @pytest.mark.xfail
-@learners
-def test_convergence_for_arbitrary_ordering(learner_factory, f):
+@run_with(Learner1D, Learner2D)
+def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
     """Learners that are learning the same function should converge
     to the same result "eventually" if given the same data, regardless
     of the order in which that data is given.
