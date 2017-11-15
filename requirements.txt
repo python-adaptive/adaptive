@@ -1,6 +1,6 @@
 numpy
 scipy
-holoviews
+holoviews>=1.9.1
 ipython
 ipyparallel
 sortedcontainers

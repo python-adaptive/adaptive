@@ -312,7 +312,7 @@ class Learner2D(BaseLearner):
                 contours = contours.opts(style=dict(alpha=triangles_alpha))
 
         else:
-            plot = hv.Image(np.zeros((2,2)), bounds=lbrt) # XXX: Change to `[]` when https://github.com/ioam/holoviews/pull/2088 is merged
+            plot = hv.Image([], bounds=lbrt)
             contours = hv.Contours([])
 
         return plot * contours if triangles_alpha else plot
