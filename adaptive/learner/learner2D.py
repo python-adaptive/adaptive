@@ -12,11 +12,12 @@ from .utils import restore
 # Learner2D and helper functions.
 
 def deviations(ip):
+    values = ip.values / (ip.values.ptp() or 1)
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
-        ip.tri, ip.values, tol=1e-6)
+        ip.tri, values, tol=1e-6)
 
     p = ip.tri.points[ip.tri.vertices]
-    vs = ip.values[ip.tri.vertices]
+    vs = values[ip.tri.vertices]
     gs = gradients[ip.tri.vertices]
 
     def deviation(p, v, g):
@@ -36,13 +37,12 @@ def areas(ip):
     p = ip.tri.points[ip.tri.vertices]
     q = p[:, :-1, :] - p[:, -1, None, :]
     areas = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0]) / 2
-    areas = np.sqrt(areas)
     return areas
 
 
 def _default_loss_per_triangle(ip):
     devs = deviations(ip)
-    area_per_triangle = areas(ip)
+    area_per_triangle = np.sqrt(areas(ip))
     losses = np.sum([dev * area_per_triangle for dev in devs], axis=0)
     return losses
 
