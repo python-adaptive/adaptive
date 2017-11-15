@@ -87,3 +87,11 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# MacOS files
+*.DS_Store
+
+# asv files
+benchmarks/html/
+benchmarks/results/
+.asv
