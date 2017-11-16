@@ -193,7 +193,8 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     M = random.randint(10, 30)
     pls = zip(*learner.choose_points(M))
     cpls = zip(*control.choose_points(M))
-    # Point ordering is not defined, so compare as sets
+    # Point ordering within a single call to 'choose_points'
+    # is not guaranteed to be the same by the API.
     assert set(pls) == set(cpls)
 
 
@@ -220,7 +221,8 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     M = random.randint(10, 30)
     pls = zip(*learner.choose_points(M))
     cpls = zip(*control.choose_points(M))
-    # Point ordering is not defined, so compare as sets
+    # Point ordering within a single call to 'choose_points'
+    # is not guaranteed to be the same by the API.
     assert set(pls) == set(cpls)
 
 
