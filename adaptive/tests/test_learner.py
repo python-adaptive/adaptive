@@ -201,10 +201,6 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
     N = random.randint(50, 100)
     xs, loss_improvements = learner.choose_points(N)
 
-    # no data -- loss is infinite
-    assert all(l == float('inf') for l in loss_improvements)
-    assert learner.loss() == float('inf')
-
     for x in xs:
         learner.add_point(x, f(x))
 
