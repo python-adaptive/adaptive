@@ -7,6 +7,7 @@ import functools as ft
 import random
 import math
 import numpy as np
+import scipy.spatial
 
 import pytest
 
@@ -87,8 +88,22 @@ def run_with(*learner_types):
     )
 
 
-@run_with(Learner1D, Learner2D)
-def test_uniform_sampling(learner_type, f, learner_kwargs):
+def choose_points_randomly(learner, rounds, points):
+    n_rounds = random.randrange(*rounds)
+    n_points = [random.randrange(*points) for _ in range(n_rounds)]
+
+    xs = []
+    ls = []
+    for n in n_points:
+        x, l = learner.choose_points(n)
+        xs.extend(x)
+        ls.extend(l)
+
+    return xs, ls
+
+
+@run_with(Learner1D)
+def test_uniform_sampling1D(learner_type, f, learner_kwargs):
     """Points are sampled uniformly if no data is provided.
 
     Non-uniform sampling implies that we think we know something about
@@ -97,20 +112,35 @@ def test_uniform_sampling(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
 
-    n_rounds = random.randrange(70, 100)
-    n_points = [random.randrange(10, 20) for _ in range(n_rounds)]
+    points, _ = choose_points_randomly(learner, (10, 20), (10, 20))
 
-    xs = []
-    for n in n_points:
-        x, _ = learner.choose_points(n)
-        xs.extend(x)
+    points.sort()
+    ivals = np.diff(sorted(points))
+    assert max(ivals) / min(ivals) < 2 + 1e-8
 
-    if learner_type is Learner1D:
-        xs.sort()
-        ivals = np.diff(sorted(xs))
-        assert max(ivals) / min(ivals) < 2 + 1e-8
-    else:
-        raise RuntimeError('No test for {}'.format(learner_type))
+
+@run_with(Learner2D)
+def test_uniform_sampling2D(learner_type, f, learner_kwargs):
+    """Points are sampled uniformly if no data is provided.
+
+    Non-uniform sampling implies that we think we know something about
+    the function, which we do not in the absence of data.
+    """
+    f = generate_random_parametrization(f)
+    learner = learner_type(f, **learner_kwargs)
+
+    points, _ = choose_points_randomly(learner, (70, 100), (10, 20))
+    tree = scipy.spatial.cKDTree(points)
+
+    # regular grid
+    n = math.sqrt(len(points))
+    xbounds, ybounds = learner_kwargs['bounds']
+    r = math.sqrt((ybounds[1] - ybounds[0]) / (xbounds[1] - xbounds[0]))
+    xs, dx = np.linspace(*xbounds, int(n / r), retstep=True)
+    ys, dy = np.linspace(*ybounds, int(n * r), retstep=True)
+
+    distances, neighbors = tree.query(list(it.product(xs, ys)), k=1)
+    assert max(distances) < math.sqrt(dx**2 + dy**2)
 
 
 @run_with(Learner1D, Learner2D)
