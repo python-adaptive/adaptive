@@ -243,7 +243,6 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
     assert sum(loss_improvements) < learner.loss()
 
 
-@pytest.mark.xfail
 @run_with(Learner1D, Learner2D)
 def test_learner_subdomain(learner_type, f, learner_kwargs):
     """Learners that never receive data outside of a subdomain should
@@ -252,7 +251,6 @@ def test_learner_subdomain(learner_type, f, learner_kwargs):
     raise NotImplementedError()
 
 
-@pytest.mark.xfail
 @run_with(Learner1D, Learner2D)
 def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner_kwargs):
     """Learners behave identically under transformations that leave
@@ -265,7 +263,6 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     raise NotImplementedError()
 
 
-@pytest.mark.xfail
 @run_with(Learner1D, Learner2D)
 def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
     """Learners that are learning the same function should converge
