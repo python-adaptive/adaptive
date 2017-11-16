@@ -1,4 +1,5 @@
 # Tools for adaptive parallel evaluation of functions
+[![asv](http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat)](https://gitlab.kwant-project.org/qt/adaptive/)
 
 ## Development
 

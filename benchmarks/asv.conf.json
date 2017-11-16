@@ -1,0 +1,25 @@
+{
+    "version": 1,
+    "project": "adaptive",
+    "project_url": "https://gitlab.kwant-project.org/qt/adaptive",
+    "repo": "..",
+    "dvcs": "git",
+    "environment_type": "conda",
+    "install_timeout": 600,
+    "show_commit_url": "https://gitlab.kwant-project.org/qt/adaptive/commit/",
+    "pythons": ["3.6"],
+    "conda_channels": ["conda-forge"],
+    "matrix": {
+        "numpy": ["1.13"],
+        "holoviews": ["1.9.1"],
+        "scipy": ["0.19.1"],
+        "ipyparallel": ["6.0.2"],
+        "sortedcontainers": ["1.5.7"],
+    },
+    "benchmark_dir": "benchmarks",
+    "env_dir": "env",
+    "results_dir": "results",
+    "html_dir": "html",
+    "hash_length": 8,
+    "wheel_cache_size": 2
+}
