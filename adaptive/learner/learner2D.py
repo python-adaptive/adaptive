@@ -108,10 +108,8 @@ class Learner2D(BaseLearner):
 
     def __init__(self, function, bounds, loss_per_triangle=None):
         self.ndim = len(bounds)
-        self.loss_per_triangle = loss_per_triangle or _default_loss_per_triangle
         self._vdim = None
-        if self.ndim != 2:
-            raise ValueError("Only 2-D sampling supported.")
+        self.loss_per_triangle = loss_per_triangle or _default_loss_per_triangle
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
         self._points = np.zeros([100, self.ndim])
         self._values = np.zeros([100, self.vdim], dtype=float)
@@ -122,9 +120,11 @@ class Learner2D(BaseLearner):
         xy_scale = np.ptp(self.bounds, axis=1)
 
         def scale(points):
+            points = np.asarray(points)
             return (points - xy_mean) / xy_scale
 
         def unscale(points):
+            points = np.asarray(points)
             return points * xy_scale + xy_mean
 
         self.scale = scale
@@ -166,6 +166,11 @@ class Learner2D(BaseLearner):
     def n_real(self):
         return self.n - len(self._interp)
 
+    @property
+    def bounds_are_done(self):
+        return not any((p in self._interp or p in self._stack)
+                       for p in self._bounds_points)
+
     def ip(self):
         points = self.scale(self.points)
         return interpolate.LinearNDInterpolator(points, self.values)
@@ -177,16 +182,10 @@ class Learner2D(BaseLearner):
         # Interpolate the unfinished points
         if self._interp:
             n_interp = list(self._interp.values())
-            bounds_are_done = not any(p in self._interp
-                                      for p in self._bounds_points)
-            if bounds_are_done:
+            if self.bounds_are_done:
                 values[n_interp] = self.ip()(points[n_interp])
             else:
-                # It is important not to return exact zeros because
-                # otherwise the algo will try to add the same point
-                # to the stack each time.
-                values[n_interp] = np.random.rand(
-                    len(n_interp), self.vdim) * 1e-15
+                values[n_interp] = np.zeros((len(n_interp), self.vdim))
 
         return interpolate.LinearNDInterpolator(points, values)
 
@@ -216,25 +215,20 @@ class Learner2D(BaseLearner):
 
         self._points[n] = point
 
-        try:
-            self._values[n] = value
-        except ValueError:
+        if self._vdim is None and hasattr(value, '__len__'):
             self._vdim = len(value)
             self._values = np.resize(self._values, (nmax, self.vdim))
-            self._values[n] = value
+
+        self._values[n] = value
 
         self._stack.pop(point, None)
 
-    def _fill_stack(self, stack_till=None):
-        if stack_till is None:
-            stack_till = 1
-
+    def _fill_stack(self, stack_till=1):
         if self.values_combined.shape[0] < self.ndim + 1:
             raise ValueError("too few points...")
 
         # Interpolate
         ip = self.ip_combined()
-        tri = ip.tri
 
         losses = self.loss_per_triangle(ip)
 
@@ -249,53 +243,42 @@ class Learner2D(BaseLearner):
             return False
 
         for j, _ in enumerate(losses):
-            # Estimate point of maximum curvature inside the simplex
             jsimplex = np.argmax(losses)
-            p = tri.points[tri.vertices[jsimplex]]
-            point_new = self.unscale(p.mean(axis=-2))
-
-            # XXX: not sure whether this is necessary it was there
-            # originally.
+            point_new = ip.tri.points[ip.tri.vertices[jsimplex]]
+            point_new = self.unscale(point_new.mean(axis=-2))
             point_new = np.clip(point_new, *zip(*self.bounds))
 
             # Check if it is really new
             if point_exists(point_new):
-                losses[jsimplex] = 0
+                losses[jsimplex] = -np.inf
                 continue
 
-            # Add to stack
             self._stack[tuple(point_new)] = losses[jsimplex]
 
             if len(self._stack) >= stack_till:
                 break
             else:
-                losses[jsimplex] = 0
+                losses[jsimplex] = -np.inf
 
     def _split_stack(self, n=None):
         points, loss_improvements = zip(*reversed(self._stack.items()))
         return points[:n], loss_improvements[:n]
 
     def _choose_and_add_points(self, n):
-        if n <= len(self._stack):
-            points, loss_improvements = self._split_stack(n)
-            self.add_data(points, itertools.repeat(None))
-        else:
-            points = []
-            loss_improvements = []
-            n_left = n
-            while n_left > 0:
-                # The while loop is needed because `stack_till` could be larger
-                # than the number of triangles between the points. Therefore
-                # it could fill up till a length smaller than `stack_till`.
-                no_bounds_in_stack = not any(p in self._stack
-                                             for p in self._bounds_points)
-                if no_bounds_in_stack:
-                    self._fill_stack(stack_till=n_left)
-                new_points, new_loss_improvements = self._split_stack(n_left)
-                points += new_points
-                loss_improvements += new_loss_improvements
-                self.add_data(new_points, itertools.repeat(None))
-                n_left -= len(new_points)
+        points = []
+        loss_improvements = []
+        n_left = n
+        while n_left > 0:
+            # The while loop is needed because `stack_till` could be larger
+            # than the number of triangles between the points. Therefore
+            # it could fill up till a length smaller than `stack_till`.
+            if not any(p in self._stack for p in self._bounds_points):
+                self._fill_stack(stack_till=n_left)
+            new_points, new_loss_improvements = self._split_stack(n_left)
+            points += new_points
+            loss_improvements += new_loss_improvements
+            self.add_data(new_points, itertools.repeat(None))
+            n_left -= len(new_points)
 
         return points, loss_improvements
 
@@ -307,10 +290,7 @@ class Learner2D(BaseLearner):
             return self._choose_and_add_points(n)
 
     def loss(self, real=True):
-        n = self.n_real if real else self.n
-        bounds_are_not_done = any(p in self._interp
-                                  for p in self._bounds_points)
-        if n <= 4 or bounds_are_not_done:
+        if not self.bounds_are_done:
             return np.inf
         ip = self.ip() if real else self.ip_combined()
         losses = self.loss_per_triangle(ip)
