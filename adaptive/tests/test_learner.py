@@ -259,8 +259,36 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     This is a statement that the learner makes decisions based solely
     on the loss function.
     """
-    # XXX: neew the concept of "scaling"
-    raise NotImplementedError()
+    # for now we just scale X and Y by random factors
+    f = generate_random_parametrization(f)
+
+    control_kwargs = dict(learner_kwargs)
+    control = learner_type(f, **control_kwargs)
+
+    xscale = 1000 * random.random()
+    yscale = 1000 * random.random()
+
+    l_kwargs = dict(learner_kwargs)
+    l_kwargs['bounds'] = xscale * np.array(l_kwargs['bounds'])
+    learner = learner_type(lambda x: yscale * f(x),
+                           **l_kwargs)
+
+    nrounds = random.randrange(50, 100)
+    npoints = [random.randrange(1, 10) for _ in range(nrounds)]
+
+    control_points = []
+    for n in npoints:
+        cxs, _ = control.choose_points(n)
+        xs, _ = learner.choose_points(n)
+        # Point ordering within a single call to 'choose_points'
+        # is not guaranteed to be the same by the API.
+        # Also, points will only be equal up to a tolerance, due to rounding
+        should_be = sorted(cxs)
+        to_check = np.array(sorted(xs)) / xscale
+        assert np.allclose(should_be, to_check)
+
+        control.add_data(cxs, [control.function(x) for x in cxs])
+        learner.add_data(xs, [learner.function(x) for x in xs])
 
 
 @run_with(Learner1D, Learner2D)
