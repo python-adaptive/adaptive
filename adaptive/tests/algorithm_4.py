@@ -2,6 +2,7 @@
 # Copyright 2017 Christoph Groth
 
 import warnings
+import functools
 from fractions import Fraction as Frac
 from collections import defaultdict
 import numpy as np
@@ -412,10 +413,23 @@ def algorithm_4 (f, a, b, tol):
 
 ################ Tests ################
 
+def silence_warnings(f):
+
+    @functools.wraps(f)
+    def _(*args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return f(*args, **kwargs)
+
+    return _
+
+
+@silence_warnings
 def f0(x):
     return x * np.sin(1/x) * np.sqrt(abs(1 - x))
 
 
+@silence_warnings
 def f7(x):
     return x**-0.5
 
@@ -431,10 +445,12 @@ def f21(x):
     return y
 
 
+@silence_warnings
 def f63(x):
     return abs(x - 0.987654321)**-0.45
 
 
+@silence_warnings
 def fdiv(x):
     return abs(x - 0.987654321)**-1.1
 
