@@ -243,11 +243,12 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
     assert sum(loss_improvements) < learner.loss()
 
 
+@pytest.mark.xfail
 @run_with(Learner1D, Learner2D)
 def test_learner_subdomain(learner_type, f, learner_kwargs):
     """Learners that never receive data outside of a subdomain should
        perform 'similarly' to learners defined on that subdomain only."""
-    # XXX: need the concept of a "subdomain"
+    # XXX: not sure how to implement this. How do we measure "performance"?
     raise NotImplementedError()
 
 
@@ -291,10 +292,13 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
         learner.add_data(xs, [learner.function(x) for x in xs])
 
 
+@pytest.mark.xfail
 @run_with(Learner1D, Learner2D)
 def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
     """Learners that are learning the same function should converge
     to the same result "eventually" if given the same data, regardless
     of the order in which that data is given.
     """
+    # XXX: not sure how to implement this. Can we say anything at all about
+    #      the scaling of the loss with the number of points?
     raise NotImplementedError()
