@@ -3,7 +3,9 @@
 import numpy as np
 import pytest
 from ..learner import IntegratorLearner
+from ..learner.integrator_learner import DivergentIntegralError
 from .algorithm_4 import algorithm_4, f0, f7, f21, f24, f63, fdiv
+from .algorithm_4 import DivergentIntegralError as A4DivergentIntegralError
 
 
 def run_integrator_learner(f, a, b, tol, nr_points):
@@ -61,12 +63,10 @@ def test_machine_precision2():
 def test_divergence():
     """This function should raise a DivergentIntegralError."""
     f, a, b, tol = fdiv, 0, 1, 1e-6
-    try:
+    with pytest.raises(A4DivergentIntegralError) as e:
         igral, err, nr_points, ivals = algorithm_4(f, a, b, tol)
-    except Exception:
-        print('The integral is diverging.')
 
-    try:
+    nr_points = e.value.nr_points
+
+    with pytest.raises(DivergentIntegralError):
         learner = run_integrator_learner(f, a, b, tol, nr_points)
-    except Exception:
-        print('The integral is diverging.')
