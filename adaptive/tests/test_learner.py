@@ -82,7 +82,7 @@ def gaussian(n):
 def run_with(*learner_types):
     return pytest.mark.parametrize(
         'learner_type, f, learner_kwargs',
-        [(l, f, k)
+        [(l, f, dict(k))
          for l in learner_types
          for f, k in learner_function_combos[l]]
     )
