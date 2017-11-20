@@ -284,7 +284,7 @@ class Learner2D(BaseLearner):
             # it could fill up till a length smaller than `stack_till`.
             if not any(p in self._stack for p in self._bounds_points):
                 self._fill_stack(stack_till=n_left)
-            new_points, new_loss_improvements = self._split_stack(n_left)
+            new_points, new_loss_improvements = self._split_stack(max(n_left, 10))
             points += new_points
             loss_improvements += new_loss_improvements
             self.add_data(new_points, itertools.repeat(None))
