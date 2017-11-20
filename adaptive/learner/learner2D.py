@@ -222,9 +222,12 @@ class Learner2D(BaseLearner):
 
         self._points[n] = point
 
-        if self._vdim is None and hasattr(value, '__len__'):
+        try:
+            self._values[n] = value
+        except ValueError:
             self._vdim = len(value)
             self._values = np.resize(self._values, (nmax, self.vdim))
+            self._values[n] = value
 
         self._values[n] = value
 
