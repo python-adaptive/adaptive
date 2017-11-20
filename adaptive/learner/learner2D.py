@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import collections
+from copy import deepcopy
 import itertools
 import math
 
@@ -149,10 +150,10 @@ class Learner2D(BaseLearner):
         self._vdim = None
         self.loss_per_triangle = loss_per_triangle or _default_loss_per_triangle
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
-        self._points = np.zeros([100, self.ndim])
-        self._values = np.zeros([100, self.vdim], dtype=float)
+        self.data = collections.OrderedDict()
+        self.data_combined = collections.OrderedDict()
         self._stack = collections.OrderedDict()
-        self._interp = {}
+        self._interp = set()
 
         xy_mean = np.mean(self.bounds, axis=1)
         xy_scale = np.ptp(self.bounds, axis=1)
@@ -168,43 +169,40 @@ class Learner2D(BaseLearner):
         self.scale = scale
         self.unscale = unscale
 
-        # Keeps track till which index _points and _values are filled
-        self.n = 0
-
         self._bounds_points = list(itertools.product(*bounds))
-
-        # Add the loss improvement to the bounds in the stack
         self._stack.update({p: np.inf for p in self._bounds_points})
-
         self.function = function
-
         self._ip = self._ip_combined = None
 
     @property
     def vdim(self):
-        return 1 if self._vdim is None else self._vdim
+        if self._vdim is None and self.data:
+            try:
+                value = next(iter(self.data.values()))
+                self._vdim = len(value)
+            except TypeError:
+                self._vdim = 1
+        return self._vdim if self._vdim is not None else 1
 
     @property
     def points_combined(self):
-        return self._points[:self.n]
+        return np.array(list(self.data_combined.keys()))
 
     @property
     def values_combined(self):
-        return self._values[:self.n]
+        return np.array(list(self.data_combined.values()))
 
     @property
     def points(self):
-        return np.delete(self.points_combined,
-                         list(self._interp.values()), axis=0)
+        return np.array(list(self.data.keys()))
 
     @property
     def values(self):
-        return np.delete(self.values_combined,
-                         list(self._interp.values()), axis=0)
+        return np.array(list(self.data.values()))
 
     @property
-    def n_real(self):
-        return self.n - len(self._interp)
+    def bounds_are_done(self):
+        return not any(p in self._interp for p in self._bounds_points)
 
     @property
     def bounds_are_done(self):
@@ -224,48 +222,29 @@ class Learner2D(BaseLearner):
 
             # Interpolate the unfinished points
             if self._interp:
-                n_interp = list(self._interp.values())
+                points_interp = list(self._interp)
                 if self.bounds_are_done:
-                    values[n_interp] = self.ip()(points[n_interp])
+                    values_interp = self.ip()(self.scale(points_interp))
                 else:
-                    values[n_interp] = np.zeros((len(n_interp), self.vdim))
+                    values_interp = np.zeros((len(points_interp), self.vdim))
 
-            self._ip_combined = interpolate.LinearNDInterpolator(points, values)
+                for point, value in zip(points_interp, values_interp):
+                    self.data_combined[point] = value
 
+            points_combined = self.scale(self.points_combined)
+            self._ip_combined = interpolate.LinearNDInterpolator(points_combined,
+                                                                 self.values_combined)
         return self._ip_combined
 
     def add_point(self, point, value):
-        nmax = self.values_combined.shape[0]
-        if self.n >= nmax:
-            self._values = np.resize(self._values, [2*nmax + 10, self.vdim])
-            self._points = np.resize(self._points, [2*nmax + 10, self.ndim])
-
         point = tuple(point)
+        self.data_combined[point] = value
 
-        # When the point is not evaluated yet, add an entry to self._interp
-        # that saves the point and index.
         if value is None:
-            self._interp[point] = self.n
-            old_point = False
+            self._interp.add(point)
         else:
-            old_point = point in self._interp
-
-        # If the point is new add it a new value to _points and _values,
-        # otherwise get the index of the value that is being replaced.
-        if old_point:
-            n = self._interp.pop(point)
-        else:
-            n = self.n
-            self.n += 1
-
-        self._points[n] = point
-
-        try:
-            self._values[n] = value
-        except ValueError:
-            self._vdim = len(value)
-            self._values = np.resize(self._values, (nmax, self.vdim))
-            self._values[n] = value
+            self.data[point] = value
+            self._interp.discard(point)
 
         self._stack.pop(point, None)
 
@@ -273,7 +252,7 @@ class Learner2D(BaseLearner):
         self._ip = self._ip_combined = None
 
     def _fill_stack(self, stack_till=1):
-        if self.values_combined.shape[0] < self.ndim + 1:
+        if len(self.data_combined) < self.ndim + 1:
             raise ValueError("too few points...")
 
         # Interpolate
@@ -281,28 +260,13 @@ class Learner2D(BaseLearner):
 
         losses = self.loss_per_triangle(ip)
 
-        def point_exists(p):
-            eps = np.finfo(float).eps * self.points_combined.ptp() * 100
-            if abs(p - self.points_combined).sum(axis=1).min() < eps:
-                return True
-            if self._stack:
-                _stack_points, _ = self._split_stack()
-                if abs(p - np.asarray(_stack_points)).sum(axis=1).min() < eps:
-                    return True
-            return False
-
         for j, _ in enumerate(losses):
             jsimplex = np.argmax(losses)
             triangle = ip.tri.points[ip.tri.vertices[jsimplex]]
             point_new = choose_point_in_triangle(triangle, max_badness=5)
-            point_new = np.clip(self.unscale(point_new), *zip(*self.bounds))
+            point_new = tuple(self.unscale(point_new))
 
-            # Check if it is really new
-            if point_exists(point_new):
-                losses[jsimplex] = -np.inf
-                continue
-
-            self._stack[tuple(point_new)] = losses[jsimplex]
+            self._stack[point_new] = losses[jsimplex]
 
             if len(self._stack) >= stack_till:
                 break
@@ -346,10 +310,8 @@ class Learner2D(BaseLearner):
         return losses.max()
 
     def remove_unfinished(self):
-        self._points = self.points.copy()
-        self._values = self.values.copy()
-        self.n -= len(self._interp)
-        self._interp = {}
+        self.data_combined = deepcopy(self.data)
+        self._interp = set()
 
     def plot(self, n_x=201, n_y=201, triangles_alpha=0):
         if self.vdim > 1:
@@ -357,7 +319,7 @@ class Learner2D(BaseLearner):
                                  '3D surface plots in bokeh.')
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
-        if self.n_real >= 4:
+        if len(self.data) >= 4:
             x = np.linspace(-0.5, 0.5, n_x)
             y = np.linspace(-0.5, 0.5, n_y)
             ip = self.ip()
