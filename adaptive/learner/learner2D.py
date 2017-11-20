@@ -140,6 +140,8 @@ class Learner2D(BaseLearner):
 
         self.function = function
 
+        self._ip = self._ip_combined = None
+
     @property
     def vdim(self):
         return 1 if self._vdim is None else self._vdim
@@ -172,22 +174,27 @@ class Learner2D(BaseLearner):
                        for p in self._bounds_points)
 
     def ip(self):
-        points = self.scale(self.points)
-        return interpolate.LinearNDInterpolator(points, self.values)
+        if self._ip is None:
+            points = self.scale(self.points)
+            self._ip = interpolate.LinearNDInterpolator(points, self.values)
+        return self._ip
 
     def ip_combined(self):
-        points = self.scale(self.points_combined)
-        values = self.values_combined
+        if self._ip_combined is None:
+            points = self.scale(self.points_combined)
+            values = self.values_combined
 
-        # Interpolate the unfinished points
-        if self._interp:
-            n_interp = list(self._interp.values())
-            if self.bounds_are_done:
-                values[n_interp] = self.ip()(points[n_interp])
-            else:
-                values[n_interp] = np.zeros((len(n_interp), self.vdim))
+            # Interpolate the unfinished points
+            if self._interp:
+                n_interp = list(self._interp.values())
+                if self.bounds_are_done:
+                    values[n_interp] = self.ip()(points[n_interp])
+                else:
+                    values[n_interp] = np.zeros((len(n_interp), self.vdim))
 
-        return interpolate.LinearNDInterpolator(points, values)
+            self._ip_combined = interpolate.LinearNDInterpolator(points, values)
+
+        return self._ip_combined
 
     def add_point(self, point, value):
         nmax = self.values_combined.shape[0]
@@ -222,6 +229,9 @@ class Learner2D(BaseLearner):
         self._values[n] = value
 
         self._stack.pop(point, None)
+
+        # Reset the in LinearNDInterpolator objects
+        self._ip = self._ip_combined = None
 
     def _fill_stack(self, stack_till=1):
         if self.values_combined.shape[0] < self.ndim + 1:
