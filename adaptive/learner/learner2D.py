@@ -229,8 +229,6 @@ class Learner2D(BaseLearner):
             self._values = np.resize(self._values, (nmax, self.vdim))
             self._values[n] = value
 
-        self._values[n] = value
-
         self._stack.pop(point, None)
 
         # Reset the in LinearNDInterpolator objects
