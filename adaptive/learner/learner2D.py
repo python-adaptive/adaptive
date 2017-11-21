@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import collections
 import itertools
+import math
 
 import holoviews as hv
 import numpy as np
@@ -46,6 +47,43 @@ def _default_loss_per_triangle(ip):
     area_per_triangle = np.sqrt(areas(ip))
     losses = np.sum([dev * area_per_triangle for dev in devs], axis=0)
     return losses
+
+
+def choose_point_in_triangle(triangle, max_badness):
+    """Choose a new point in inside a triangle.
+
+    If the ratio of the longest edge of the triangle squared
+    over the area is bigger than the `max_badness` the new point
+    is chosen on the middle of the longest edge. Otherwise
+    a point in the center of the triangle is chosen. The badness
+    is 1 for a equilateral triangle.
+
+    Parameters
+    ----------
+    triangle : numpy array
+        The coordinates of a triangle with shape (3, 2)
+    max_badness : int
+        The badness at which the point is either chosen on a edge or
+        in the middle.
+
+    Returns
+    -------
+    point : numpy array
+        The x and y coordinate of the suggested new point.
+    """
+    a, b, c = triangle
+    area = 0.5 * np.cross(b - a, c - a)
+    triangle_roll = np.roll(triangle, 1, axis=0)
+    edge_lengths = np.linalg.norm(triangle - triangle_roll, axis=1)
+    i = edge_lengths.argmax()
+
+    # We multiply by sqrt(3) / 4 such that a equilateral triangle has badness=1
+    badness = (edge_lengths[i]**2 / area) * (math.sqrt(3) / 4)
+    if badness > max_badness:
+        point = (triangle_roll[i] + triangle[i]) / 2
+    else:
+        point = triangle.mean(axis=0)
+    return point
 
 
 class Learner2D(BaseLearner):
@@ -255,9 +293,9 @@ class Learner2D(BaseLearner):
 
         for j, _ in enumerate(losses):
             jsimplex = np.argmax(losses)
-            point_new = ip.tri.points[ip.tri.vertices[jsimplex]]
-            point_new = self.unscale(point_new.mean(axis=-2))
-            point_new = np.clip(point_new, *zip(*self.bounds))
+            triangle = ip.tri.points[ip.tri.vertices[jsimplex]]
+            point_new = choose_point_in_triangle(triangle, max_badness=5)
+            point_new = np.clip(self.unscale(point_new), *zip(*self.bounds))
 
             # Check if it is really new
             if point_exists(point_new):
@@ -323,7 +361,7 @@ class Learner2D(BaseLearner):
             x = np.linspace(-0.5, 0.5, n_x)
             y = np.linspace(-0.5, 0.5, n_y)
             ip = self.ip()
-            z = ip(x[:, None], y[None, :])
+            z = ip(x[:, None], y[None, :]).squeeze()
             plot = hv.Image(np.rot90(z), bounds=lbrt)
 
             if triangles_alpha:
