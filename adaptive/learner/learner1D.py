@@ -27,7 +27,7 @@ def _default_loss_per_interval(interval, scale, function_values):
         loss = dx
     else:
         dy = (y_right - y_left) / y_scale
-        if hasattr(dy, '__len__') and len(y) > 1:
+        if hasattr(dy, '__len__') and len(dy) > 1:
             loss = np.hypot(dx, dy).max()
         else:
             loss = math.hypot(dx, dy)
