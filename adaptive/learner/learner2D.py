@@ -13,7 +13,7 @@ from .base_learner import BaseLearner
 # Learner2D and helper functions.
 
 def deviations(ip):
-    values = ip.values / (ip.values.ptp() or 1)
+    values = ip.values / (ip.values.ptp(axis=0).max() or 1)
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
         ip.tri, values, tol=1e-6)
 
