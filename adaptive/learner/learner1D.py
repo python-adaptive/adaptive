@@ -27,9 +27,10 @@ def _default_loss_per_interval(interval, scale, function_values):
         loss = dx
     else:
         dy = (y_right - y_left) / y_scale
-        if hasattr(dy, '__len__') and len(dy) > 1:
+        try:
+            _ = len(dy)
             loss = np.hypot(dx, dy).max()
-        else:
+        except TypeError:
             loss = math.hypot(dx, dy)
     return loss
 
@@ -156,7 +157,10 @@ class Learner1D(BaseLearner):
                 pass
 
             if self._vdim is None:
-                self._vdim = len(y) if hasattr(y, '__len__') else 1
+                try:
+                    self._vdim = len(y)
+                except TypeError:
+                    self._vdim = 1
 
         else:
             # The keys of data_interp are the unknown points
