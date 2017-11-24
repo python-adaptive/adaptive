@@ -192,6 +192,21 @@ class Learner2D(BaseLearner):
         return not any((p in self._interp or p in self._stack)
                        for p in self._bounds_points)
 
+    def data_combined(self):
+        # Interpolate the unfinished points
+        data_combined = {**self.data}
+        if self._interp:
+            points_interp = list(self._interp)
+            if self.bounds_are_done:
+                values_interp = self.ip()(self.scale(points_interp))
+            else:
+                values_interp = np.zeros((len(points_interp), self.vdim))
+
+            for point, value in zip(points_interp, values_interp):
+                data_combined[point] = value
+
+        return data_combined
+
     def ip(self):
         if self._ip is None:
             points = self.scale(list(self.data.keys()))
@@ -201,20 +216,9 @@ class Learner2D(BaseLearner):
 
     def ip_combined(self):
         if self._ip_combined is None:
-            # Interpolate the unfinished points
-            data_combined = {**self.data}
-            if self._interp:
-                points_interp = list(self._interp)
-                if self.bounds_are_done:
-                    values_interp = self.ip()(self.scale(points_interp))
-                else:
-                    values_interp = np.zeros((len(points_interp), self.vdim))
-
-                for point, value in zip(points_interp, values_interp):
-                    data_combined[point] = value
-
-            points = self.scale(list(data_combined.keys))
-            values = list(data_combined.keys())
+            data_combined = self.data_combined()
+            points = self.scale(list(data_combined.keys()))
+            values = list(data_combined.values())
             self._ip_combined = interpolate.LinearNDInterpolator(points,
                                                                  values)
         return self._ip_combined
