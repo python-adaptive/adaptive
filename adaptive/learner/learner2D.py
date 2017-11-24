@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import collections
-from copy import deepcopy
+from copy import copy, deepcopy
 import itertools
 import math
 
@@ -217,9 +217,6 @@ class Learner2D(BaseLearner):
 
     def ip_combined(self):
         if self._ip_combined is None:
-            points = self.scale(self.points_combined)
-            values = self.values_combined
-
             # Interpolate the unfinished points
             if self._interp:
                 points_interp = list(self._interp)
@@ -231,9 +228,10 @@ class Learner2D(BaseLearner):
                 for point, value in zip(points_interp, values_interp):
                     self.data_combined[point] = value
 
-            points_combined = self.scale(self.points_combined)
-            self._ip_combined = interpolate.LinearNDInterpolator(points_combined,
-                                                                 self.values_combined)
+            points = self.scale(self.points_combined)
+            values = self.values_combined
+            self._ip_combined = interpolate.LinearNDInterpolator(points,
+                                                                 values)
         return self._ip_combined
 
     def add_point(self, point, value):
@@ -288,8 +286,9 @@ class Learner2D(BaseLearner):
         else:
             return [], []
 
-    def _choose_and_add_points(self, n):
+    def choose_points(self, n, add_data=True):
         n_left = n
+        old_stack = copy(self._stack)
         points, loss_improvements = self._split_stack(n_left)
         self.add_data(points, itertools.repeat(None))
         n_left -= len(points)
@@ -299,19 +298,22 @@ class Learner2D(BaseLearner):
             # than the number of triangles between the points. Therefore
             # it could fill up till a length smaller than `stack_till`.
             new_points, new_loss_improvements = self._fill_stack(stack_till=max(n_left, 10))
-            points += new_points
-            loss_improvements += new_loss_improvements
             n_left -= len(new_points)
             self.add_data(new_points, itertools.repeat(None))
 
-        return points[:n], loss_improvements[:n]
+            points += new_points
+            loss_improvements += new_loss_improvements
 
-    def choose_points(self, n, add_data=True):
-        if not add_data:
-            with restore(self):
-                return self._choose_and_add_points(n)
+        if add_data:
+            for point, loss_improvement in zip(points[n:], loss_improvements[n:]):
+                self._stack[point] = loss_improvement
         else:
-            return self._choose_and_add_points(n)
+            self._stack = old_stack
+            for point in points:
+                self.data_combined.pop(point)
+                self._interp.remove(point)
+
+        return points[:n], loss_improvements[:n]
 
     def loss(self, real=True):
         if not self.bounds_are_done:
