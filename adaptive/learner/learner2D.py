@@ -151,7 +151,6 @@ class Learner2D(BaseLearner):
         self.loss_per_triangle = loss_per_triangle or _default_loss_per_triangle
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
         self.data = collections.OrderedDict()
-        self.data_combined = collections.OrderedDict()
         self._stack = collections.OrderedDict()
         self._interp = set()
 
@@ -185,22 +184,6 @@ class Learner2D(BaseLearner):
         return self._vdim if self._vdim is not None else 1
 
     @property
-    def points_combined(self):
-        return np.array(list(self.data_combined.keys()))
-
-    @property
-    def values_combined(self):
-        return np.array(list(self.data_combined.values()))
-
-    @property
-    def points(self):
-        return np.array(list(self.data.keys()))
-
-    @property
-    def values(self):
-        return np.array(list(self.data.values()))
-
-    @property
     def bounds_are_done(self):
         return not any(p in self._interp for p in self._bounds_points)
 
@@ -211,13 +194,15 @@ class Learner2D(BaseLearner):
 
     def ip(self):
         if self._ip is None:
-            points = self.scale(self.points)
-            self._ip = interpolate.LinearNDInterpolator(points, self.values)
+            points = self.scale(list(self.data.keys()))
+            values = list(self.data.values())
+            self._ip = interpolate.LinearNDInterpolator(points, values)
         return self._ip
 
     def ip_combined(self):
         if self._ip_combined is None:
             # Interpolate the unfinished points
+            data_combined = {**self.data}
             if self._interp:
                 points_interp = list(self._interp)
                 if self.bounds_are_done:
@@ -226,17 +211,16 @@ class Learner2D(BaseLearner):
                     values_interp = np.zeros((len(points_interp), self.vdim))
 
                 for point, value in zip(points_interp, values_interp):
-                    self.data_combined[point] = value
+                    data_combined[point] = value
 
-            points = self.scale(self.points_combined)
-            values = self.values_combined
+            points = self.scale(list(data_combined.keys))
+            values = list(data_combined.keys())
             self._ip_combined = interpolate.LinearNDInterpolator(points,
                                                                  values)
         return self._ip_combined
 
     def add_point(self, point, value):
         point = tuple(point)
-        self.data_combined[point] = value
 
         if value is None:
             self._interp.add(point)
@@ -250,7 +234,7 @@ class Learner2D(BaseLearner):
         self._ip = self._ip_combined = None
 
     def _fill_stack(self, stack_till=1):
-        if len(self.data_combined) < self.ndim + 1:
+        if len(self.data) + len(self._interp) < self.ndim + 1:
             raise ValueError("too few points...")
 
         # Interpolate
@@ -310,7 +294,6 @@ class Learner2D(BaseLearner):
         else:
             self._stack = old_stack
             for point in points:
-                self.data_combined.pop(point)
                 self._interp.remove(point)
 
         return points[:n], loss_improvements[:n]
@@ -323,7 +306,6 @@ class Learner2D(BaseLearner):
         return losses.max()
 
     def remove_unfinished(self):
-        self.data_combined = deepcopy(self.data)
         self._interp = set()
 
     def plot(self, n_x=201, n_y=201, triangles_alpha=0):
