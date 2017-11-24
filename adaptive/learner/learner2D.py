@@ -260,40 +260,51 @@ class Learner2D(BaseLearner):
 
         losses = self.loss_per_triangle(ip)
 
+        points_new = []
+        losses_new = []
         for j, _ in enumerate(losses):
             jsimplex = np.argmax(losses)
             triangle = ip.tri.points[ip.tri.vertices[jsimplex]]
             point_new = choose_point_in_triangle(triangle, max_badness=5)
             point_new = tuple(self.unscale(point_new))
+            loss_new = losses[jsimplex]
 
-            self._stack[point_new] = losses[jsimplex]
+            points_new.append(point_new)
+            losses_new.append(loss_new)
+
+            self._stack[point_new] = loss_new
 
             if len(self._stack) >= stack_till:
                 break
             else:
                 losses[jsimplex] = -np.inf
 
+        return points_new, losses_new
+
     def _split_stack(self, n=None):
-        points, loss_improvements = zip(*reversed(self._stack.items()))
-        return points[:n], loss_improvements[:n]
+        if self._stack:
+            points, loss_improvements = zip(*reversed(self._stack.items()))
+            return list(points[:n]), list(loss_improvements[:n])
+        else:
+            return [], []
 
     def _choose_and_add_points(self, n):
-        points = []
-        loss_improvements = []
         n_left = n
+        points, loss_improvements = self._split_stack(n_left)
+        self.add_data(points, itertools.repeat(None))
+        n_left -= len(points)
+
         while n_left > 0:
             # The while loop is needed because `stack_till` could be larger
             # than the number of triangles between the points. Therefore
             # it could fill up till a length smaller than `stack_till`.
-            if not any(p in self._stack for p in self._bounds_points):
-                self._fill_stack(stack_till=max(n_left, 10))
-            new_points, new_loss_improvements = self._split_stack(n_left)
+            new_points, new_loss_improvements = self._fill_stack(stack_till=max(n_left, 10))
             points += new_points
             loss_improvements += new_loss_improvements
-            self.add_data(new_points, itertools.repeat(None))
             n_left -= len(new_points)
+            self.add_data(new_points, itertools.repeat(None))
 
-        return points, loss_improvements
+        return points[:n], loss_improvements[:n]
 
     def choose_points(self, n, add_data=True):
         if not add_data:
