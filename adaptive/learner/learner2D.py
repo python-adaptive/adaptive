@@ -322,8 +322,8 @@ class Learner2D(BaseLearner):
             # than the number of triangles between the points. Therefore
             # it could fill up till a length smaller than `stack_till`.
             if not any(p in self._stack for p in self._bounds_points):
-                self._fill_stack(stack_till=n_left)
-            new_points, new_loss_improvements = self._split_stack(max(n_left, 10))
+                self._fill_stack(stack_till=max(n_left, 10))
+            new_points, new_loss_improvements = self._split_stack(n_left)
             points += new_points
             loss_improvements += new_loss_improvements
             self.add_data(new_points, itertools.repeat(None))
