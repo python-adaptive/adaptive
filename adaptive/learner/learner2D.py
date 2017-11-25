@@ -173,6 +173,8 @@ class Learner2D(BaseLearner):
         self.function = function
         self._ip = self._ip_combined = None
 
+        self.stack_size = 10
+
     @property
     def vdim(self):
         if self._vdim is None and self.data:
@@ -182,10 +184,6 @@ class Learner2D(BaseLearner):
             except TypeError:
                 self._vdim = 1
         return self._vdim if self._vdim is not None else 1
-
-    @property
-    def bounds_are_done(self):
-        return not any(p in self._interp for p in self._bounds_points)
 
     @property
     def bounds_are_done(self):
@@ -228,14 +226,13 @@ class Learner2D(BaseLearner):
 
         if value is None:
             self._interp.add(point)
+            self._ip_combined = None
         else:
             self.data[point] = value
             self._interp.discard(point)
+            self._ip = None
 
         self._stack.pop(point, None)
-
-        # Reset the in LinearNDInterpolator objects
-        self._ip = self._ip_combined = None
 
     def _fill_stack(self, stack_till=1):
         if len(self.data) + len(self._interp) < self.ndim + 1:
@@ -276,7 +273,6 @@ class Learner2D(BaseLearner):
 
     def choose_points(self, n, add_data=True):
         n_left = n
-        old_stack = copy(self._stack)
         points, loss_improvements = self._split_stack(n_left)
         self.add_data(points, itertools.repeat(None))
         n_left -= len(points)
@@ -285,18 +281,19 @@ class Learner2D(BaseLearner):
             # The while loop is needed because `stack_till` could be larger
             # than the number of triangles between the points. Therefore
             # it could fill up till a length smaller than `stack_till`.
-            new_points, new_loss_improvements = self._fill_stack(stack_till=max(n_left, 10))
+            new_points, new_loss_improvements = self._fill_stack(
+                stack_till=max(n_left, self.stack_size))
             n_left -= len(new_points)
             self.add_data(new_points, itertools.repeat(None))
 
             points += new_points
             loss_improvements += new_loss_improvements
 
-        if add_data:
-            for point, loss_improvement in zip(points[n:], loss_improvements[n:]):
-                self._stack[point] = loss_improvement
-        else:
-            self._stack = old_stack
+        for i, point in enumerate(points):
+            if i >= n or not add_data:
+                self._stack[point] = loss_improvements[i]
+
+        if not add_data:
             for point in points:
                 self._interp.remove(point)
 
