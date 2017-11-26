@@ -108,14 +108,18 @@ class Learner2D(BaseLearner):
 
     Attributes
     ----------
-    points_combined
-        Sample points so far including the unknown interpolated ones.
-    values_combined
-        Sampled values so far including the unknown interpolated ones.
-    points
-        Sample points so far with real results.
-    values
-        Sampled values so far with real results.
+    data : dict
+        Sampled points and values.
+    stack_size : int
+        The number to which the stack is filled each time
+        _fill_stack is called. Set it to 1 to recalculate
+        the best points at each call to `choose_points`.
+
+    Methods
+    -------
+    data_combined : dict
+        Sampled points and values so far including
+        the unknown interpolated ones.
 
     Notes
     -----
@@ -274,8 +278,8 @@ class Learner2D(BaseLearner):
     def choose_points(self, n, add_data=True):
         n_left = n
         points, loss_improvements = self._split_stack(n_left)
-        self.add_data(points, itertools.repeat(None))
         n_left -= len(points)
+        self.add_data(points, itertools.repeat(None))
 
         while n_left > 0:
             # The while loop is needed because `stack_till` could be larger
