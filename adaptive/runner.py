@@ -2,6 +2,7 @@
 import asyncio
 import concurrent.futures as concurrent
 
+import distributed
 import ipyparallel
 
 
@@ -126,9 +127,11 @@ def ensure_async_executor(executor, ioloop):
         pass
     elif isinstance(executor, ipyparallel.Client):
         executor = executor.executor()
+    elif isinstance(executor, distributed.Client):
+        executor = executor.get_executor()
     else:
-        raise TypeError('Only concurrent.futures.Executors or ipyparallel '
-                        'clients can be used.')
+        raise TypeError('Only concurrent.futures.Executors, distributed.Client,'
+                        ' or ipyparallel clients can be used.')
 
     return _AsyncExecutor(executor, ioloop)
 
@@ -158,7 +161,7 @@ class SequentialExecutor(concurrent.Executor):
 class _AsyncExecutor:
 
     def __init__(self, executor, ioloop):
-        assert isinstance(executor, concurrent.Executor)
+        assert isinstance(executor, (concurrent.Executor, distributed.Client))
         self.executor = executor
         self.ioloop = ioloop
 
@@ -178,6 +181,9 @@ class _AsyncExecutor:
             return ex._max_workers  # not public API!
         elif isinstance(ex, SequentialExecutor):
             return 1
+        elif isinstance(ex, distributed.cfexecutor.ClientExecutor):
+            # XXX: check if not sum(n for n in ex._client.ncores().values())
+            return len(ex._client.ncores())
         else:
             raise TypeError('Cannot get number of cores for {}'
                             .format(ex.__class__))
