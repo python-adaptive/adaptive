@@ -269,19 +269,16 @@ class Learner2D(BaseLearner):
 
         return points_new, losses_new
 
-    def _split_stack(self, n=None):
-        if self._stack:
-            points, loss_improvements = zip(*reversed(self._stack.items()))
-            return list(points[:n]), list(loss_improvements[:n])
-        else:
-            return [], []
 
     def choose_points(self, n, add_data=True):
-        n_left = n
-        points, loss_improvements = self._split_stack(n_left)
-        n_left -= len(points)
-        # Even if add_data is False we add the point such that
-        # _fill_stack will return new points, later we remove these points.
+        # Even if add_data is False we add the point such that _fill_stack
+        # will return new points, later we remove these points if needed.
+        points, loss_improvements = [], []
+        for i, (point, loss_improvement) in enumerate(self._stack.items()):
+            if i < n:
+                points.append(point)
+                loss_improvements.append(loss_improvement)
+        n_left = n - len(points)
         self.add_data(points, itertools.repeat(None))
 
         while n_left > 0:
