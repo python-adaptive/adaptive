@@ -130,8 +130,8 @@ def ensure_async_executor(executor, ioloop):
     elif isinstance(executor, distributed.Client):
         executor = executor.get_executor()
     else:
-        raise TypeError('Only concurrent.futures.Executors, distributed.Client,'
-                        ' or ipyparallel clients can be used.')
+        raise TypeError('Only concurrent.futures.Executor, distributed.Client,'
+                        ' or ipyparallel.Client can be used.')
 
     return _AsyncExecutor(executor, ioloop)
 
