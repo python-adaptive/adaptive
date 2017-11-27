@@ -111,8 +111,8 @@ class Learner2D(BaseLearner):
     data : dict
         Sampled points and values.
     stack_size : int
-        The number to which the stack is filled each time
-        _fill_stack is called. Set it to 1 to recalculate
+        The number to which the stack (cache with new points) is filled
+        each time choose_points is called. Set it to 1 to recalculate
         the best points at each call to `choose_points`.
 
     Methods
