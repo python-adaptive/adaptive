@@ -111,9 +111,8 @@ class Learner2D(BaseLearner):
     data : dict
         Sampled points and values.
     stack_size : int
-        The number to which the stack (cache with new points) is filled
-        each time choose_points is called. Set it to 1 to recalculate
-        the best points at each call to `choose_points`.
+        The size of the new candidate points stack. Set it to 1
+        to recalculate the best points at each call to `choose_points`.
 
     Methods
     -------
@@ -196,12 +195,14 @@ class Learner2D(BaseLearner):
 
     def data_combined(self):
         # Interpolate the unfinished points
-        data_combined = {**self.data}
+        data_combined = copy(self.data)
         if self._interp:
             points_interp = list(self._interp)
             if self.bounds_are_done:
                 values_interp = self.ip()(self.scale(points_interp))
             else:
+                # Without the bounds the interpolation cannot be done properly,
+                # so we just set everything to zero.
                 values_interp = np.zeros((len(points_interp), self.vdim))
 
             for point, value in zip(points_interp, values_interp):
@@ -279,6 +280,8 @@ class Learner2D(BaseLearner):
         n_left = n
         points, loss_improvements = self._split_stack(n_left)
         n_left -= len(points)
+        # Even if add_data is False we add the point such that
+        # _fill_stack will return new points, later we remove these points.
         self.add_data(points, itertools.repeat(None))
 
         while n_left > 0:
