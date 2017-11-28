@@ -2,7 +2,6 @@
 # Copyright 2017 Christoph Groth
 
 import warnings
-import functools
 from fractions import Fraction as Frac
 from collections import defaultdict
 import numpy as np
@@ -140,9 +139,12 @@ def calc_bdef(ns):
 
 # Nodes and Newton polynomials.
 n = (5, 9, 17, 33)
-xi = [-np.cos(np.arange(n[j])/(n[j]-1) * np.pi) for j in range(4)]
-# Make `xi` perfectly anti-symmetric, important for splitting the intervals
-xi = [(row - row[::-1]) / 2 for row in xi]
+xi = [-np.cos(np.pi / (n[j] - 1) * np.arange(n[j])) for j in range(4)]
+# Set central rule points precisely to zero.  This does not really
+# matter in practice, but is useful for tests.
+for l in xi:
+    l[len(l) // 2] = 0.0
+
 b_def = calc_bdef(n)
 
 
@@ -161,6 +163,11 @@ Vcond = list(map(cond, V))
 
 # shift matrix
 T_lr = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
+
+# If the relative difference between two consecutive approximations is
+# lower than this value, the error estimate is considered reliable.
+# See section 6.2 of Pedro Gonnet's thesis.
+hint = 0.1
 
 # compute the integral
 w = np.sqrt(0.5)                # legendre
@@ -215,33 +222,22 @@ class DivergentIntegralError(ValueError):
 
 
 class _Interval:
-    __slots__ = ['a', 'b', 'c', 'c_old', 'fx', 'igral', 'err', 'tol',
-                 'depth', 'rdepth', 'ndiv']
+    __slots__ = ['a', 'b', 'c', 'fx', 'igral', 'err', 'depth', 'rdepth', 'ndiv']
 
     @classmethod
-    def make_first(cls, f, a, b, tol):
-        points = (a+b)/2 + (b-a) * xi[3] / 2
+    def make_first(cls, f, a, b, depth=2):
+        points = (a+b)/2 + (b-a) * xi[depth] / 2
         fx = f(points)
-        nans = _zero_nans(fx)
         ival = _Interval()
         ival.c = np.zeros((4, n[3]))
-        ival.c[3] = V_inv[3] @ fx
-        ival.c[2, :n[2]] = V_inv[2] @ fx[:n[3]:2]
-        fx[nans] = np.nan
+        ival.c[depth, :n[depth]] = _calc_coeffs(fx, depth)
         ival.fx = fx
-        ival.c_old = np.zeros(fx.shape)
         ival.a = a
         ival.b = b
-        ival.igral = (b-a) * w * ival.c[3, 0]
-        c_diff = norm(ival.c[3] - ival.c[2])
-        ival.err = (b-a) * c_diff
-        if c_diff / norm(ival.c[3]) > 0.1:
-            ival.err = max( ival.err , (b-a) * norm(ival.c[3]) )
-        ival.tol = tol
-        ival.depth = 3
+        ival.depth = depth
         ival.ndiv = 0
         ival.rdepth = 1
-        return ival, points
+        return ival, len(points)
 
     def split(self, f, ndiv_max=20):
         a = self.a
@@ -258,7 +254,6 @@ class _Interval:
             ivals.append(ival)
             ival.a = aa
             ival.b = bb
-            ival.tol = self.tol / np.sqrt(2)
             ival.depth = 0
             ival.rdepth = self.rdepth + 1
             ival.c = np.zeros((4, n[3]))
@@ -271,8 +266,8 @@ class _Interval:
             ival.c[0, :n[0]] = c_new = _calc_coeffs(fx, 0)
             ival.fx = fx
 
-            ival.c_old = T @ self.c[self.depth]
-            c_diff = norm(ival.c[0] - ival.c_old)
+            c_old = T @ self.c[self.depth]
+            c_diff = norm(ival.c[0] - c_old)
             ival.err = (bb - aa) * c_diff
             ival.igral = (bb - aa) * ival.c[0, 0] * w
             ival.ndiv = (self.ndiv
@@ -299,7 +294,7 @@ class _Interval:
         self.err = (b-a) * c_diff
         self.igral = (b-a) * w * c_new[0]
         nc = norm(c_new)
-        split = nc > 0 and c_diff / nc > 0.1
+        split = nc > 0 and c_diff / nc > hint
 
         return points, split, n[depth] - n[depth - 1]
 
@@ -333,24 +328,16 @@ def algorithm_4 (f, a, b, tol):
         Mathematical Software, 37 (3), art. no. 26, 2008.
     """
 
-    # compute the first interval
-    ival, points = _Interval.make_first(f, a, b, tol)
-    ivals = [ival]
+    # initialize the first interval
+    ival, nr_points = _Interval.make_first(f, a, b)
 
-    # init some globals
-    igral = ival.igral
-    err = ival.err
+    ivals = [ival]
     igral_final = 0
     err_final = 0
     i_max = 0
-    nr_points = n[3]
-
-    # do we even need to go this way?
-    if err < igral * tol:
-        return igral, err, nr_points
 
     # main loop
-    for _ in range(int(1e9)):
+    while True:
         if ivals[i_max].depth == 3:
             split = True
         else:
@@ -413,23 +400,10 @@ def algorithm_4 (f, a, b, tol):
 
 ################ Tests ################
 
-def silence_warnings(f):
-
-    @functools.wraps(f)
-    def _(*args, **kwargs):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            return f(*args, **kwargs)
-
-    return _
-
-
-@silence_warnings
 def f0(x):
     return x * np.sin(1/x) * np.sqrt(abs(1 - x))
 
 
-@silence_warnings
 def f7(x):
     return x**-0.5
 
@@ -445,14 +419,23 @@ def f21(x):
     return y
 
 
-@silence_warnings
-def f63(x):
-    return abs(x - 0.987654321)**-0.45
+def f63(x, u, e):
+    return abs(x-u)**e
 
 
-@silence_warnings
+def F63(x, u, e):
+    return (x-u) * abs(x-u)**e / (e+1)
+
+
 def fdiv(x):
     return abs(x - 0.987654321)**-1.1
+
+
+def f_one_with_nan(x):
+    x = np.asarray(x)
+    result = np.ones(x.shape)
+    result[x == 0] = np.inf
+    return result
 
 
 def test_legendre():
@@ -533,10 +516,10 @@ def test_integration():
     assert_allclose(err, 0.00011848806384952786, 1e-10)
     assert nr_points == 191
 
-    igral, err, nr_points = algorithm_4(f63, 0, 1, 1e-10)
-    assert_allclose(igral, 1.967971650560763, 1e-15)
-    assert_allclose(err, 2.9049859499240667e-09, 1e-7)
-    assert nr_points == 2715
+    igral, err, nr_points = algorithm_4(f_one_with_nan, -1, 1, 1e-12)
+    assert_allclose(igral, 2, 1e-15)
+    assert_allclose(err, 2.4237853822937613e-15, 1e-7)
+    assert nr_points == 33
 
     try:
         igral, err, nr_points = algorithm_4(fdiv, 0, 1, 1e-6)
@@ -548,6 +531,42 @@ def test_integration():
     np.seterr(**old_settings)
 
 
+def test_analytic(n=200):
+    def f(x):
+        return f63(x, u, e)
+
+    def F(x):
+        return F63(x, u, e)
+
+    old_settings = np.seterr(all='ignore')
+
+    np.random.seed(123)
+    params = np.empty((n, 2))
+    params[:, 0] = np.random.random_sample(n)
+    params[:, 1] = np.linspace(-0.5, -1.5, n)
+
+    false_negatives = 0
+    false_positives = 0
+
+    for u, e in params:
+        try:
+            igral, err, nr_points = algorithm_4(f, 0, 1, 1e-3)
+        except DivergentIntegralError:
+            assert e < -0.8
+            false_negatives += e > -1
+        else:
+            if e <= -1:
+                false_positives += 1
+            else:
+                igral_exact = F(1) - F(0)
+                assert e < -0.8 or abs(igral - igral_exact) < err
+
+    assert false_negatives < 0.05 * n
+    assert false_positives < 0.05 * n
+
+    np.seterr(**old_settings)
+
+
 if __name__ == '__main__':
     test_legendre()
     test_scalar_product()
@@ -555,3 +574,4 @@ if __name__ == '__main__':
     test_b_def()
     test_downdate()
     test_integration()
+    test_analytic()
