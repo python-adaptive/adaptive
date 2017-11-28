@@ -117,7 +117,7 @@ class Interval:
         self.done_points = SortedDict()
         self.a = a
         self.b = b
-        self.c = np.zeros((len(ns), ns[-1]))
+        self.c = np.zeros((4, ns[3]))
         self.est_err = np.inf
         self.discard = False
         self.igral = None
@@ -129,8 +129,6 @@ class Interval:
         ival.rdepth = 1
         ival.parent = None
         ival.depth = depth
-        ival.c = np.zeros((4, n[3]))
-        ival.c[depth, :n[depth]] = _calc_coeffs(fx, depth)
         ival.err = np.inf
         return ival, ival.points(ival.depth)
 
@@ -182,12 +180,8 @@ class Interval:
 
     def split(self):
         points = self.points(self.depth)
-
-        a = self.a
-        b = self.b
         m = points[len(points) // 2]
-
-        ivals = [Interval(a, m), Interval(m, b)]
+        ivals = [Interval(self.a, m), Interval(m, self.b)]
         self.children = ivals
 
         for ival in ivals:
@@ -203,9 +197,7 @@ class Interval:
         """Calculate the integral contribution and error from this interval,
         and update the estimated error of all ancestor intervals."""
         force_split = False
-        if self.parent is None:
-            self.process_make_first()
-        elif self.rdepth > self.parent.rdepth:
+        if self.parent is not None and self.rdepth > self.parent.rdepth:
             self.process_split()
         else:
             force_split = self.process_refine()
@@ -232,24 +224,6 @@ class Interval:
             force_split = False
 
         return force_split, remove
-
-    def process_make_first(self):
-        fx = np.array(self.done_points.values())
-        nans = _zero_nans(fx)
-
-        self.c[3] = V_inv[3] @ fx
-        self.c[2, :ns[2]] = V_inv[2] @ fx[:ns[3]:2]
-        fx[nans] = np.nan
-        self.fx = fx
-
-        c_diff = norm(self.c[self.depth] - self.c[2])
-
-        a, b = self.a, self.b
-        self.err = (b - a) * c_diff
-        self.igral = (b - a) * self.c[self.depth, 0] / sqrt(2)
-
-        if c_diff / norm(self.c[3]) > 0.1:
-            self.err = max(self.err, (b-a) * norm(self.c[3]))
 
     def process_split(self, ndiv_max=20):
         fx = np.array(self.done_points.values())
@@ -343,7 +317,7 @@ class IntegratorLearner(BaseLearner):
             The absolute error associated with `self.igral`.
 
         Methods
-        ------- 
+        -------
         done : bool
             Returns whether the `tol` has been reached.
         plot : hv.Scatter
@@ -353,14 +327,14 @@ class IntegratorLearner(BaseLearner):
         self.bounds = bounds
         self.tol = tol
         self.priority_split = []
-        self.ivals = SortedSet([], key=attrgetter('err'))
         self.done_points = {}
         self.not_done_points = set()
         self._stack = []
         self._err_final = 0
         self._igral_final = 0
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
-        ival, points = Interval.make_first(*self.bounds, self.tol)
+        ival, points = Interval.make_first(*self.bounds)
+        self.ivals = SortedSet([ival], key=attrgetter('err'))
         self._update_ival(ival, points)
         self.first_ival = ival
         self._complete_branches = []
