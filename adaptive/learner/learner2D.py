@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import collections
+from collections import OrderedDict
 from copy import copy, deepcopy
 import itertools
 import math
@@ -153,8 +153,8 @@ class Learner2D(BaseLearner):
         self._vdim = None
         self.loss_per_triangle = loss_per_triangle or _default_loss_per_triangle
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
-        self.data = collections.OrderedDict()
-        self._stack = collections.OrderedDict()
+        self.data = OrderedDict()
+        self._stack = OrderedDict()
         self._interp = set()
 
         xy_mean = np.mean(self.bounds, axis=1)
@@ -274,10 +274,9 @@ class Learner2D(BaseLearner):
         # Even if add_data is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
         points, loss_improvements = [], []
-        for i, (point, loss_improvement) in enumerate(self._stack.items()):
-            if i < n:
-                points.append(point)
-                loss_improvements.append(loss_improvement)
+        for point, loss_improvement in self._stack.items():
+            points.append(point)
+            loss_improvements.append(loss_improvement)
         n_left = n - len(points)
         self.add_data(points, itertools.repeat(None))
 
@@ -287,19 +286,17 @@ class Learner2D(BaseLearner):
             # it could fill up till a length smaller than `stack_till`.
             new_points, new_loss_improvements = self._fill_stack(
                 stack_till=max(n_left, self.stack_size))
+            self.add_data(new_points[:n_left], itertools.repeat(None))
             n_left -= len(new_points)
-            self.add_data(new_points, itertools.repeat(None))
 
             points += new_points
             loss_improvements += new_loss_improvements
 
-        for i, point in enumerate(points):
-            if i >= n or not add_data:
-                self._stack[point] = loss_improvements[i]
-
         if not add_data:
-            for point in points:
-                self._interp.remove(point)
+            self._stack = OrderedDict(zip(points[:self.stack_size],
+                                          loss_improvements))
+            for point in points[:n]:
+                self._interp.discard(point)
 
         return points[:n], loss_improvements[:n]
 
