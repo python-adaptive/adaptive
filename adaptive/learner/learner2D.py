@@ -110,7 +110,7 @@ class Learner2D(BaseLearner):
     ----------
     data : dict
         Sampled points and values.
-    stack_size : int
+    stack_size : int, default 10
         The size of the new candidate points stack. Set it to 1
         to recalculate the best points at each call to `choose_points`.
 
