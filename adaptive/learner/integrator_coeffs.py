@@ -152,6 +152,11 @@ Vcond = list(map(np.linalg.cond, V))
 # shift matrix
 T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
 
+# If the relative difference between two consecutive approximations is
+# lower than this value, the error estimate is considered reliable.
+# See section 6.2 of Pedro Gonnet's thesis.
+hint = 0.1
+
 # set-up the downdate matrix
 k = np.arange(ns[3])
 alpha = np.sqrt((k+1)**2 / (2*k+1) / (2*k+3))

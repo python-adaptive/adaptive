@@ -13,7 +13,7 @@ from scipy.linalg import norm
 from sortedcontainers import SortedDict, SortedSet
 
 from .base_learner import BaseLearner
-from .integrator_coeffs import (b_def, T_left, T_right, ns,
+from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
                                 xi, V_inv, Vcond, alpha, gamma)
 
 
@@ -70,8 +70,6 @@ class Interval:
         The left and right boundary of the interval.
     c : numpy array of shape (4, 33)
         Coefficients of the fit.
-    c_old : numpy array of shape `len(fx)`
-        Coefficients of the fit.
     depth : int
         The level of refinement, `depth=0` means that it has 5 (the minimal number of) points and
         `depth=3` means it has 33 (the maximal number of) points.
@@ -81,8 +79,6 @@ class Interval:
         The integral value of the interval.
     err : float
         The error associated with the integral value.
-    tol : float
-        The relative tolerance that needs to be reached in the precision of the integral.
     rdepth : int
         The number of splits that the interval has gone through, starting at 1.
     ndiv : int
@@ -113,9 +109,8 @@ class Interval:
 
     """
 
-    __slots__ = ['a', 'b', 'c', 'c_old', 'depth', 'fx', 'igral', 'err', 'tol',
-                 'rdepth', 'ndiv', 'parent', 'children', 'done_points',
-                 'est_err', 'discard']
+    __slots__ = ['a', 'b', 'c', 'depth', 'fx', 'igral', 'err', 'rdepth',
+                 'ndiv', 'parent', 'children', 'done_points', 'est_err', 'discard']
 
     def __init__(self, a, b):
         self.children = []
@@ -128,14 +123,14 @@ class Interval:
         self.igral = None
 
     @classmethod
-    def make_first(cls, a, b, tol):
+    def make_first(cls, a, b, depth=2):
         ival = Interval(a, b)
-        ival.tol = tol
         ival.ndiv = 0
         ival.rdepth = 1
         ival.parent = None
-        ival.depth = 3
-        ival.c_old = np.zeros(ns[ival.depth])
+        ival.depth = depth
+        ival.c = np.zeros((4, n[3]))
+        ival.c[depth, :n[depth]] = _calc_coeffs(fx, depth)
         ival.err = np.inf
         return ival, ival.points(ival.depth)
 
@@ -175,11 +170,9 @@ class Interval:
 
     def refine(self):
         ival = Interval(self.a, self.b)
-        ival.tol = self.tol
         ival.rdepth = self.rdepth
         ival.ndiv = self.ndiv
         ival.c = self.c.copy()
-        ival.c_old = self.c_old.copy()
         ival.parent = self
         self.children = [ival]
         ival.err = self.err
@@ -199,8 +192,6 @@ class Interval:
 
         for ival in ivals:
             ival.depth = 0
-            ival.tol = self.tol / sqrt(2)
-            ival.c_old = self.c_old.copy()
             ival.rdepth = self.rdepth + 1
             ival.parent = self
             ival.ndiv = self.ndiv
@@ -251,7 +242,6 @@ class Interval:
         fx[nans] = np.nan
         self.fx = fx
 
-        self.c_old = np.zeros(fx.shape)
         c_diff = norm(self.c[self.depth] - self.c[2])
 
         a, b = self.a, self.b
@@ -267,8 +257,8 @@ class Interval:
         self.fx = fx
 
         parent = self.parent
-        self.c_old = self.T @ parent.c[parent.depth]
-        c_diff = norm(self.c[self.depth] - self.c_old)
+        c_old = self.T @ parent.c[parent.depth]
+        c_diff = norm(self.c[self.depth] - c_old)
 
         a, b = self.a, self.b
         self.err = (b - a) * c_diff
@@ -292,7 +282,7 @@ class Interval:
         self.err = (b - a) * c_diff
         self.igral = (b - a) * c_new[0] / sqrt(2)
         nc = norm(c_new)
-        force_split = nc > 0 and c_diff / nc > 0.1
+        force_split = nc > 0 and c_diff / nc > hint
         return force_split
 
     def __repr__(self):
