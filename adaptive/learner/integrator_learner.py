@@ -90,9 +90,6 @@ class Interval:
         The intervals resulting from a split or refinement.
     done_points : dict
         A dictionary with the x-values and y-values: `{x1: y1, x2: y2 ...}`.
-    est_err : float
-        The sum of the errors of the children, if one of the children is not ready yet,
-        the error is infinity.
     discard : bool
         If True, the interval and it's children are not participating in the
         determination of the total integral anymore because its parent had a
@@ -103,14 +100,16 @@ class Interval:
         that the integral value has been calculated, see `self.done`.
     done : bool
         The integral and the error for the interval has been calculated.
-    branch_complete : bool
-        The interval can be used to determine the total integral, however if its children are
-        also `branch_complete`, they should be used.
-
+    done_leaves : set or None
+        Leaves used for the error and the integral estimation of this
+        interval. None means that this information was already propagated to
+        the ancestors of this interval.
     """
 
-    __slots__ = ['a', 'b', 'c', 'depth', 'fx', 'igral', 'err', 'rdepth',
-                 'ndiv', 'parent', 'children', 'done_points', 'est_err', 'discard']
+    __slots__ = [
+        'a', 'b', 'c', 'depth', 'fx', 'igral', 'err', 'rdepth',
+        'ndiv', 'parent', 'children', 'done_points', 'discard', 'done_leaves',
+    ]
 
     def __init__(self, a, b):
         self.children = []
@@ -118,9 +117,9 @@ class Interval:
         self.a = a
         self.b = b
         self.c = np.zeros((4, ns[3]))
-        self.est_err = np.inf
         self.discard = False
         self.igral = None
+        self.done_leaves = set()
 
     @classmethod
     def make_first(cls, a, b, depth=2):
@@ -141,13 +140,6 @@ class Interval:
     def done(self):
         """The interval is complete and has the intergral calculated."""
         return hasattr(self, 'fx') and self.complete
-
-    @property
-    def branch_complete(self):
-        if not self.children and self.complete:
-            return True
-        else:
-            return np.isfinite(sum(i.est_err for i in self.children))
 
     @property
     def T(self):
@@ -195,25 +187,39 @@ class Interval:
 
     def complete_process(self):
         """Calculate the integral contribution and error from this interval,
-        and update the estimated error of all ancestor intervals."""
+        and update the done leaves of all ancestor intervals."""
         force_split = False
         if self.parent is not None and self.rdepth > self.parent.rdepth:
             self.process_split()
         else:
             force_split = self.process_refine()
 
-        # Set the estimated error
-        if np.isinf(self.est_err):
-            self.est_err = self.err
+        if self.done_leaves is not None and not len(self.done_leaves):
+            # This interval contributes to the integral estimate.
+            self.done_leaves = {self}
+
+        # Use this interval in the integral estimates of the ancestors while
+        # possible.
         ival = self.parent
+        old_leaves = set()
         while ival is not None:
-            # update the error estimates on all ancestor intervals
-            children_err = sum(i.est_err for i in ival.children)
-            if np.isfinite(children_err):
-                ival.est_err = children_err
-                ival = ival.parent
-            else:
+            unused_children = [child for child in ival.children
+                               if child.done_leaves is not None]
+
+            if not all(len(child.done_leaves) for child in unused_children):
                 break
+
+            if ival.done_leaves is None:
+                ival.done_leaves = set()
+            old_leaves.add(ival)
+            for child in ival.children:
+                if child.done_leaves is None:
+                    continue
+                ival.done_leaves |= child.done_leaves
+                child.done_leaves = None
+            ival.done_leaves -= old_leaves
+            ival = ival.parent
+
 
         # Check whether the point spacing is smaller than machine precision
         # and pop the interval with the largest error and do not split
@@ -266,7 +272,6 @@ class Interval:
             'rdepth={}'.format(self.rdepth),
             'err={:.5E}'.format(self.err),
             'igral={:.5E}'.format(self.igral if self.igral else 0),
-            'est_err={:.5E}'.format(self.est_err),
             'discard={}'.format(self.discard),
         ]
         return ' '.join(lst)
@@ -458,58 +463,20 @@ class IntegratorLearner(BaseLearner):
 
         return self._stack
 
-    @staticmethod
-    def deepest_complete_branches(ival):
-        """Finds the deepest complete set of intervals starting from `ival`."""
-        complete_branches = []
-        def _find_deepest(ival):
-            children_err = (sum(i.est_err for i in ival.children)
-                            if ival.children else np.inf)
-            if np.isfinite(ival.est_err) and np.isinf(children_err):
-                complete_branches.append(ival)
-            else:
-                for i in ival.children:
-                    _find_deepest(i)
-        _find_deepest(ival)
-        return complete_branches
-
-    @property
-    def complete_branches(self):
-        if not self.first_ival.done:
-            return []
-
-        if not self._complete_branches:
-            self._complete_branches.append(self.first_ival)
-
-        complete_branches = []
-        for ival in self._complete_branches:
-            if ival.discard:
-                complete_branches = self.deepest_complete_branches(self.first_ival)
-                break
-            if not ival.children:
-                # If the interval has no children, than is already is the deepest
-                # complete branch.
-                complete_branches.append(ival)
-            else:
-                complete_branches.extend(self.deepest_complete_branches(ival))
-        self._complete_branches = complete_branches
-        return self._complete_branches
-
     @property
     def nr_points(self):
         return len(self.done_points)
 
     @property
     def igral(self):
-        return sum(i.igral for i in self.complete_branches)
+        return sum(i.igral for i in self.first_ival.done_leaves)
 
     @property
     def err(self):
-        complete_branches = self.complete_branches
-        if not complete_branches:
-            return np.inf
+        if self.first_ival.done_leaves:
+            return sum(i.err for i in self.first_ival.done_leaves)
         else:
-            return sum(i.err for i in complete_branches)
+            return np.inf
 
     def done(self):
         err = self.err
