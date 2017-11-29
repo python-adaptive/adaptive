@@ -207,7 +207,7 @@ class _Interval:
             c_diff = self.calc_igral_and_err(self.T[:, :ns[parent.depth]] @ parent.c)
             self.c00 = self.c[0]
 
-            self.ndiv = parent.ndiv + (self.c00 > 2 * parent.c00)
+            self.ndiv = (parent.ndiv + (parent.c00 and self.c00 / parent.c00 > 2))
             if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
                 raise DivergentIntegralError(self)
 
@@ -216,7 +216,7 @@ class _Interval:
             # Refine
             c_diff = self.calc_igral_and_err(self.c)
             force_split = c_diff > hint * norm(self.c)
-        
+
         if self.done_leaves is not None and not len(self.done_leaves):
             # This interval contributes to the integral estimate.
             self.done_leaves = {self}

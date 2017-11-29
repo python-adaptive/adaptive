@@ -84,7 +84,7 @@ def test_machine_precision():
 
 
 def test_machine_precision2():
-    f, a, b, tol = [partial(f63, u=0.987654321, e=0.45), 0, 1, 1e-10]
+    f, a, b, tol = [partial(f63, alpha=0.987654321, beta=0.45), 0, 1, 1e-10]
     igral, err, nr_points, ivals = algorithm_4(f, a, b, tol)
 
     learner = run_integrator_learner(f, a, b, tol, nr_points)
