@@ -113,7 +113,7 @@ class Interval:
 
     def __init__(self, a, b):
         self.children = []
-        self.done_points = SortedDict()
+        self.done_points = {}
         self.a = a
         self.b = b
         self.c = np.zeros((4, ns[3]))
