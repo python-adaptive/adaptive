@@ -256,25 +256,6 @@ class Interval:
         ]
         return ' '.join(lst)
 
-    def equal(self, other, *, verbose=False):
-        """Note: Implementing __eq__ breaks SortedContainers in some way."""
-        if not self.complete:
-            if verbose:
-                print('Interval {} is not complete.'.format(self))
-            return False
-
-        slots = set(self.__slots__).intersection(other.__slots__)
-        same_slots = []
-        for s in slots:
-            a = getattr(self, s)
-            b = getattr(other, s)
-            is_equal = np.allclose(a, b, rtol=0, atol=eps, equal_nan=True)
-            if verbose and not is_equal:
-                print('self.{} - other.{} = {}'.format(s, s, a - b))
-            same_slots.append(is_equal)
-
-        return all(same_slots)
-
 
 class IntegratorLearner(BaseLearner):
 
@@ -469,18 +450,6 @@ class IntegratorLearner(BaseLearner):
 
     def loss(self, real=True):
         return abs(abs(self.igral) * self.tol - self.err)
-
-    def equal(self, other, *, verbose=False):
-        """Note: `other` is a list of ivals."""
-        if len(self.ivals) != len(other):
-            if verbose:
-                print('len(self.ivals)={} != len(other)={}'.format(
-                    len(self.ivals), len(other)))
-            return False
-
-        ivals = [sorted(i, key=attrgetter('a')) for i in [self.ivals, other]]
-        return all(ival.equal(other_ival, verbose=verbose)
-                   for ival, other_ival in zip(*ivals))
 
     def plot(self):
         return hv.Scatter(self.done_points)
