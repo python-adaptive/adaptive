@@ -73,8 +73,9 @@ class _Interval:
     c : numpy array of shape (4, 33)
         Coefficients of the fit.
     depth : int
-        The level of refinement, `depth=0` means that it has 5 (the minimal number of) points and
-        `depth=3` means it has 33 (the maximal number of) points.
+        The level of refinement, `depth=0` means that it has 5 (the minimal
+        number of) points and `depth=3` means it has 33 (the maximal number
+        of) points.
     fx : numpy array of size `(5, 9, 17, 33)[self.depth]`.
         The function values at the points `self.points(self.depth)`.
     igral : float
@@ -86,8 +87,8 @@ class _Interval:
     ndiv : int
         A number that is used to determine whether the interval is divergent.
     parent : Interval
-        The parent interval. If the interval resulted from a refinement, it has one parent. If
-        it resulted from a split, it has two parents.
+        The parent interval. If the interval resulted from a refinement, it has
+        one parent. If it resulted from a split, it has two parents.
     children : list of `Interval`s
         The intervals resulting from a split or refinement.
     done_points : dict
@@ -95,11 +96,12 @@ class _Interval:
     discard : bool
         If True, the interval and it's children are not participating in the
         determination of the total integral anymore because its parent had a
-        refinement when the data of the interval was not known, and later it appears
-        that this interval has to be split.
+        refinement when the data of the interval was not known, and later it
+        appears that this interval has to be split.
     complete : bool
-        All the function values in the interval are known. This does not necessarily mean
-        that the integral value has been calculated, see `self.done`.
+        All the function values in the interval are known. This does not
+        necessarily mean that the integral value has been calculated,
+        see `self.done`.
     done : bool
         The integral and the error for the interval has been calculated.
     done_leaves : set or None
@@ -130,7 +132,7 @@ class _Interval:
         ival.ndiv = 0
         ival.parent = None
         ival.err = np.inf
-        return ival, ival.points()
+        return ival
 
     @property
     def complete(self):
@@ -196,7 +198,8 @@ class _Interval:
     def complete_process(self):
         """Calculate the integral contribution and error from this interval,
         and update the done leaves of all ancestor intervals."""
-        self.fx = np.array([self.done_points[k] for k in sorted(self.done_points)])
+        fx = [self.done_points[k] for k in sorted(self.done_points)]
+        self.fx = np.array(fx)
 
         if self.parent is None:
             self.c = _calc_coeffs(self.fx, self.depth)
@@ -204,7 +207,8 @@ class _Interval:
         elif self.rdepth > self.parent.rdepth:
             # Split
             parent = self.parent
-            c_diff = self.calc_igral_and_err(self.T[:, :ns[parent.depth]] @ parent.c)
+            c_old = self.T[:, :ns[parent.depth]] @ parent.c
+            c_diff = self.calc_igral_and_err(c_old)
             self.c00 = self.c[0]
 
             self.ndiv = (parent.ndiv + (parent.c00 and self.c00 / parent.c00 > 2))
@@ -259,7 +263,7 @@ class _Interval:
             'depth={}'.format(self.depth),
             'rdepth={}'.format(self.rdepth),
             'err={:.5E}'.format(self.err),
-            'igral={:.5E}'.format(self.igral if hasattr(self, 'igral') else 0),
+            'igral={:.5E}'.format(self.igral if hasattr(self, 'igral') else None),
             'discard={}'.format(self.discard),
         ]
         return ' '.join(lst)
@@ -276,12 +280,12 @@ class IntegratorLearner(BaseLearner):
         bounds : pair of reals
             The bounds of the interval on which to learn 'function'.
         tol : float
-            Relative tolerance of the error to the integral, this means that the
-            learner is done when: `tol > err / abs(igral)`.
+            Relative tolerance of the error to the integral, this means that
+            the learner is done when: `tol > err / abs(igral)`.
 
         Attributes
         ----------
-        complete_branches : list of intervals
+        first_ival.done_leaves : set of intervals
             The intervals that can be used in the determination of the integral.
         nr_points : int
             The total number of evaluated points.
@@ -308,10 +312,9 @@ class IntegratorLearner(BaseLearner):
         self._igral_excess = 0
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
         self.ivals = SortedSet([], key=attrgetter('err'))
-        ival, points = _Interval.make_first(*self.bounds)
+        ival = _Interval.make_first(*self.bounds)
         self._update_ival(ival)
         self.first_ival = ival
-        self._complete_branches = []
 
     def add_point(self, point, value):
         if point not in self.x_mapping:
@@ -353,7 +356,7 @@ class IntegratorLearner(BaseLearner):
         # Add the new interval to the err sorted set
         self.ivals.add(ival)
 
-    def set_discard(self, ival):
+    def discard_children(self, ival):
         def _discard(ival):
             ival.discard = True
             self.ivals.discard(ival)
@@ -363,7 +366,8 @@ class IntegratorLearner(BaseLearner):
                     self._stack.remove(point)
             for child in ival.children:
                 _discard(child)
-        _discard(ival)
+        for child in ival.children:
+            _discard(child)
 
     def choose_points(self, n):
         points, loss_improvements = self.pop_from_stack(n)
@@ -395,11 +399,10 @@ class IntegratorLearner(BaseLearner):
             ival = self.priority_split.pop()
             force_split = True
             if ival.children:
-                # If the interval already has children (which is the result of an
-                # earlier refinement when the data of the interval wasn't known
-                # yet,) then discard the children and propagate it down.
-                for child in ival.children:
-                    self.set_discard(child)
+                # If the interval already has children (which is the result of
+                # an earlier refinement when the data of the interval wasn't
+                # known yet,) then discard the children and propagate it down.
+                self.discard_children(ival)
         else:
             ival = self.ivals[-1]
             force_split = False
@@ -421,11 +424,11 @@ class IntegratorLearner(BaseLearner):
                 for ival_new in ivals_new:
                     self._update_ival(ival_new)
             else:
-                # Refine
                 ival_new = ival.refine()
                 self._update_ival(ival_new)
 
-        # Remove the smallest element if number of intervals is larger than max_ivals
+        # Remove the interval with the smallest error
+        # if number of intervals is larger than max_ivals
         if len(self.ivals) > max_ivals:
             self.ivals.pop(0)
 
