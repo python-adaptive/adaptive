@@ -109,7 +109,7 @@ class _Interval:
     """
 
     __slots__ = [
-        'a', 'b', 'c', 'depth', 'igral', 'err', 'rdepth',
+        'a', 'b', 'c', 'c00', 'depth', 'igral', 'err', 'fx', 'rdepth',
         'ndiv', 'parent', 'children', 'done_points', 'discard', 'done_leaves',
     ]
 
@@ -121,7 +121,7 @@ class _Interval:
         self.depth = depth
         self.rdepth = rdepth
         self.discard = False
-        self.c = np.zeros((4, ns[3]))
+        self.c00 = 0.0
         self.done_leaves = set()
 
     @classmethod
@@ -165,6 +165,8 @@ class _Interval:
         ival.parent = self
         ival.ndiv = self.ndiv
         ival.err = self.err
+        ival.c00 = self.c00
+        ival.c = self.c.copy()
         return ival
 
     def split(self):
@@ -173,7 +175,6 @@ class _Interval:
         ivals = [_Interval(self.a, m, 0, self.rdepth + 1),
                  _Interval(m, self.b, 0, self.rdepth + 1)]
         self.children = ivals
-
         for ival in ivals:
             ival.parent = self
             ival.ndiv = self.ndiv
@@ -181,35 +182,40 @@ class _Interval:
 
         return ivals
 
+    def calc_igral_and_err(self, c_old):
+        self.c = c_new = _calc_coeffs(self.fx, self.depth)
+        c_diff = np.zeros(max(len(c_old), len(c_new)))
+        c_diff[:len(c_old)] = c_old
+        c_diff[:len(c_new)] -= c_new
+        c_diff = norm(c_diff)
+        w = self.b - self.a
+        self.igral = w * c_new[0] / sqrt(2)
+        self.err = w * c_diff
+        return c_diff
+
     def complete_process(self):
         """Calculate the integral contribution and error from this interval,
         and update the done leaves of all ancestor intervals."""
-        fx = np.array([self.done_points[k] for k in sorted(self.done_points)])
-        self.c[self.depth, :ns[self.depth]] = _calc_coeffs(fx, self.depth)
-        size = self.b - self.a
-        self.igral = size * self.c[self.depth, 0] / sqrt(2)
+        self.fx = np.array([self.done_points[k] for k in sorted(self.done_points)])
 
-        if self.parent is not None and self.rdepth > self.parent.rdepth:
-            # Refine
+        if self.parent is None:
+            self.c = _calc_coeffs(self.fx, self.depth)
+            return False, False
+        elif self.rdepth > self.parent.rdepth:
+            # Split
             parent = self.parent
-            c_old = self.T @ parent.c[parent.depth]
-            c_diff = norm(self.c[0] - c_old)
+            c_diff = self.calc_igral_and_err(self.T[:, :ns[parent.depth]] @ parent.c)
+            self.c00 = self.c[0]
 
-            self.ndiv = (parent.ndiv
-                         + (abs(parent.c[0, 0]) > 0
-                            and self.c[0, 0] / parent.c[0, 0] > 2))
-
+            self.ndiv = parent.ndiv + (self.c00 > 2 * parent.c00)
             if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
                 raise DivergentIntegralError(self)
 
             force_split = False
         else:
-            # Split
-            c_diff = norm(self.c[self.depth - 1] - self.c[self.depth])  # c_old - c
-            c_new = self.c[self.depth, :ns[self.depth]]
-            force_split = c_diff > hint * norm(c_new)
-
-        self.err = size * c_diff  # np.hypot(c_diff, size / ns[self.depth])
+            # Refine
+            c_diff = self.calc_igral_and_err(self.c)
+            force_split = c_diff > hint * norm(self.c)
         
         if self.done_leaves is not None and not len(self.done_leaves):
             # This interval contributes to the integral estimate.

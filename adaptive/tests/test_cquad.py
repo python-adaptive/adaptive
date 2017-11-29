@@ -9,6 +9,7 @@ from ..learner.integrator_learner import DivergentIntegralError
 from .algorithm_4 import algorithm_4, f0, f7, f21, f24, f63, fdiv
 from .algorithm_4 import DivergentIntegralError as A4DivergentIntegralError
 
+eps = np.spacing(1)
 
 def run_integrator_learner(f, a, b, tol, nr_points):
     learner = IntegratorLearner(f, bounds=(a, b), tol=tol)
