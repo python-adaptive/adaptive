@@ -139,11 +139,9 @@ def calc_bdef(ns):
 
 # Nodes and Newton polynomials.
 n = (5, 9, 17, 33)
-xi = [-np.cos(np.pi / (n[j] - 1) * np.arange(n[j])) for j in range(4)]
-# Set central rule points precisely to zero.  This does not really
-# matter in practice, but is useful for tests.
-for l in xi:
-    l[len(l) // 2] = 0.0
+xi = [-np.cos(np.arange(n[j])/(n[j]-1) * np.pi) for j in range(4)]
+# Make `xi` perfectly anti-symmetric, important for splitting the intervals
+xi = [(row - row[::-1]) / 2 for row in xi]
 
 b_def = calc_bdef(n)
 
