@@ -10,7 +10,7 @@ from operator import attrgetter
 import holoviews as hv
 import numpy as np
 from scipy.linalg import norm
-from sortedcontainers import SortedDict, SortedSet
+from sortedcontainers import SortedSet
 
 from .base_learner import BaseLearner
 from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
@@ -111,24 +111,24 @@ class Interval:
         'ndiv', 'parent', 'children', 'done_points', 'discard', 'done_leaves',
     ]
 
-    def __init__(self, a, b):
+    def __init__(self, a, b, depth, rdepth):
         self.children = []
         self.done_points = {}
         self.a = a
         self.b = b
-        self.c = np.zeros((4, ns[3]))
+        self.depth = depth
+        self.rdepth = rdepth
         self.discard = False
+        self.c = np.zeros((4, ns[3]))
         self.done_leaves = set()
 
     @classmethod
     def make_first(cls, a, b, depth=2):
-        ival = Interval(a, b)
+        ival = Interval(a, b, depth, rdepth=1)
         ival.ndiv = 0
-        ival.rdepth = 1
         ival.parent = None
-        ival.depth = depth
         ival.err = np.inf
-        return ival, ival.points(ival.depth)
+        return ival, ival.points()
 
     @property
     def complete(self):
@@ -152,59 +152,35 @@ class Interval:
         assert left != right
         return T_left if left else T_right
 
-    def points(self, depth):
+    def points(self):
         a = self.a
         b = self.b
-        return (a+b)/2 + (b-a)*xi[depth]/2
+        return (a + b) / 2 + (b - a) * xi[self.depth] / 2
 
     def refine(self):
-        ival = Interval(self.a, self.b)
+        ival = Interval(self.a, self.b, self.depth+1, self.rdepth)
         self.children = [ival]
         ival.parent = self
-        ival.rdepth = self.rdepth
         ival.ndiv = self.ndiv
-        ival.c = self.c.copy()
         ival.err = self.err
-        ival.depth = self.depth + 1
-        points = ival.points(ival.depth)
+        points = ival.points()
         return ival, points
 
     def split(self):
-        points = self.points(self.depth)
+        points = self.points()
         m = points[len(points) // 2]
-        ivals = [Interval(self.a, m), Interval(m, self.b)]
+        ivals = [Interval(self.a, m, 0, self.rdepth + 1),
+                 Interval(m, self.b, 0, self.rdepth + 1)]
         self.children = ivals
 
         for ival in ivals:
-            ival.depth = 0
-            ival.rdepth = self.rdepth + 1
             ival.parent = self
             ival.ndiv = self.ndiv
             ival.err = self.err / sqrt(2)
 
         return ivals
 
-    def c_diff_split(self, ndiv_max=20):
-        parent = self.parent
-        c_old = self.T @ parent.c[parent.depth]
-        c_diff = norm(self.c[0] - c_old)
-
-        self.ndiv = (parent.ndiv
-                     + (abs(parent.c[0, 0]) > 0
-                        and self.c[0, 0] / parent.c[0, 0] > 2))
-
-        if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
-            raise DivergentIntegralError(self)
-
-        return c_diff, False
-
-    def c_diff_refine(self):
-        c_diff = norm(self.c[self.depth - 1] - self.c[self.depth])  # c_old - c
-        c_new = self.c[self.depth, :ns[self.depth]]
-        force_split = c_diff > hint * norm(c_new)
-        return c_diff, force_split
-
-    def complete_process(self):
+    def complete_process(self, ndiv_max=20):
         """Calculate the integral contribution and error from this interval,
         and update the done leaves of all ancestor intervals."""
         fx = np.array([self.done_points[k] for k in sorted(self.done_points)])
@@ -213,11 +189,26 @@ class Interval:
         self.igral = size * self.c[self.depth, 0] / sqrt(2)
 
         if self.parent is not None and self.rdepth > self.parent.rdepth:
-            c_diff, force_split = self.c_diff_split()
-        else:
-            c_diff, force_split = self.c_diff_refine()
+            # Refine
+            parent = self.parent
+            c_old = self.T @ parent.c[parent.depth]
+            c_diff = norm(self.c[0] - c_old)
 
-        self.err = size * c_diff
+            self.ndiv = (parent.ndiv
+                         + (abs(parent.c[0, 0]) > 0
+                            and self.c[0, 0] / parent.c[0, 0] > 2))
+
+            if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
+                raise DivergentIntegralError(self)
+
+            force_split = False
+        else:
+            # Split
+            c_diff = norm(self.c[self.depth - 1] - self.c[self.depth])  # c_old - c
+            c_new = self.c[self.depth, :ns[self.depth]]
+            force_split = c_diff > hint * norm(c_new)
+
+        self.err = size * c_diff  # np.hypot(c_diff, size / ns[self.depth])
         
         if self.done_leaves is not None and not len(self.done_leaves):
             # This interval contributes to the integral estimate.
@@ -261,7 +252,7 @@ class Interval:
             'depth={}'.format(self.depth),
             'rdepth={}'.format(self.rdepth),
             'err={:.5E}'.format(self.err),
-            'igral={:.5E}'.format(self.igral if self.igral else 0),
+            # 'igral={:.5E}'.format(self.igral if self.igral else 0),
             'discard={}'.format(self.discard),
         ]
         return ' '.join(lst)
@@ -432,7 +423,7 @@ class IntegratorLearner(BaseLearner):
 
         # If the interval points are smaller than machine precision, then
         # don't continue with splitting or refining.
-        points = ival.points(ival.depth)
+        points = ival.points()
         reached_machine_tol = points[1] <= points[0] or points[-1] <= points[-2]
 
         if (not ival.discard) and (not reached_machine_tol):
@@ -440,7 +431,7 @@ class IntegratorLearner(BaseLearner):
                 # Always split when depth is maximal or if refining didn't help
                 ivals_new = ival.split()
                 for ival_new in ivals_new:
-                    points = ival_new.points(depth=0)
+                    points = ival_new.points()
                     self._update_ival(ival_new, points)
             else:
                 # Refine
