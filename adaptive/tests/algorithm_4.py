@@ -154,21 +154,21 @@ def calc_V(xi, n):
         V[i] *= np.sqrt(i + 0.5)
     return np.array(V).T
 
-# compute the coefficients
+# Compute the Vandermonde-like matrix and its inverse.
 V = [calc_V(*args) for args in zip(xi, n)]
 V_inv = list(map(inv, V))
 Vcond = list(map(cond, V))
 
-# shift matrix
+# Compute the shift matrices.
 T_lr = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
 
 # If the relative difference between two consecutive approximations is
 # lower than this value, the error estimate is considered reliable.
 # See section 6.2 of Pedro Gonnet's thesis.
 hint = 0.1
-
-# compute the integral
-w = np.sqrt(0.5)                # legendre
+ndiv_max = 20
+max_ivals = 200
+sqrt_one_half = np.sqrt(0.5)
 
 
 k = np.arange(n[3])
@@ -176,6 +176,7 @@ alpha = np.sqrt((k+1)**2 / (2*k+1) / (2*k+3))
 gamma = np.concatenate([[0, 0], np.sqrt(k[2:]**2 / (4*k[2:]**2-1))])
 
 def _downdate(c, nans, depth):
+    # This is algorithm 5 from the thesis of Pedro Gonnet.
     b = b_def[depth].copy()
     m = n[depth] - 1
     for i in nans:
@@ -220,78 +221,80 @@ class DivergentIntegralError(ValueError):
 
 
 class _Interval:
-    __slots__ = ['a', 'b', 'c', 'fx', 'igral', 'err', 'depth', 'rdepth', 'ndiv']
+    __slots__ = ['a', 'b', 'c', 'fx', 'igral', 'err', 'depth', 'rdepth', 'ndiv',
+                 'c00']
+
+    def __init__(self, a, b, depth, rdepth):
+        self.a = a
+        self.b = b
+        self.depth = depth
+        self.rdepth = rdepth
+
+    def points(self):
+        a = self.a
+        b = self.b
+        return (a + b) / 2 + (b - a) * xi[self.depth] / 2
 
     @classmethod
     def make_first(cls, f, a, b, depth=2):
-        points = (a+b)/2 + (b-a) * xi[depth] / 2
-        fx = f(points)
-        ival = _Interval()
-        ival.c = np.zeros((4, n[3]))
-        ival.c[depth, :n[depth]] = _calc_coeffs(fx, depth)
+        ival = _Interval(a, b, depth, 1)
+        fx = f(ival.points())
+        ival.c = _calc_coeffs(fx, depth)
+        ival.c00 = 0.0
         ival.fx = fx
-        ival.a = a
-        ival.b = b
-        ival.depth = depth
         ival.ndiv = 0
         ival.rdepth = 1
-        return ival, len(points)
+        return ival, n[depth]
 
-    def split(self, f, ndiv_max=20):
-        a = self.a
-        b = self.b
-        m = (a + b) / 2
-        f_center = self.fx[(len(self.fx)-1)//2]
+    def calc_igral_and_err(self, c_old):
+        self.c = c_new = _calc_coeffs(self.fx, self.depth)
+        c_diff = np.zeros(max(len(c_old), len(c_new)))
+        c_diff[:len(c_old)] = c_old
+        c_diff[:len(c_new)] -= c_new
+        c_diff = norm(c_diff)
+        w = self.b - self.a
+        self.igral = w * c_new[0] * sqrt_one_half
+        self.err = w * c_diff
+        return c_diff
 
-        ivals = []
-        nr_points = 0
-        for aa, bb, f_left, f_right, T in [
-                (a, m, self.fx[0], f_center, T_lr[0]),
-                (m, b, f_center, self.fx[-1], T_lr[1])]:
-            ival = _Interval()
-            ivals.append(ival)
-            ival.a = aa
-            ival.b = bb
-            ival.depth = 0
-            ival.rdepth = self.rdepth + 1
-            ival.c = np.zeros((4, n[3]))
-            fx = np.concatenate(
-                ([f_left],
-                 f((aa + bb) / 2 + (bb - aa) * xi[0][1:-1] / 2),
-                 [f_right]))
-            nr_points += n[0] - 2
+    def split(self, f):
+        m = (self.a + self.b) / 2
+        f_center = self.fx[(len(self.fx) - 1) // 2]
 
-            ival.c[0, :n[0]] = c_new = _calc_coeffs(fx, 0)
+        rdepth = self.rdepth + 1
+        ivals = [_Interval(self.a, m, 0, rdepth),
+                 _Interval(m, self.b, 0, rdepth)]
+        points = np.concatenate([ival.points()[1:-1] for ival in ivals])
+        nr_points = len(points)
+        fxs = np.empty((2, n[0]))
+        fxs[:, 0] = self.fx[0], f_center
+        fxs[:, -1] = f_center, self.fx[-1]
+        fxs[:, 1:-1] = f(points).reshape((2, -1))
+
+        for ival, fx, T in zip(ivals, fxs, T_lr):
             ival.fx = fx
+            ival.calc_igral_and_err(T[:, :self.c.shape[0]] @ self.c)
 
-            c_old = T @ self.c[self.depth]
-            c_diff = norm(ival.c[0] - c_old)
-            ival.err = (bb - aa) * c_diff
-            ival.igral = (bb - aa) * ival.c[0, 0] * w
-            ival.ndiv = (self.ndiv
-                         + (abs(self.c[0, 0]) > 0
-                            and ival.c[0, 0] / self.c[0, 0] > 2))
+            ival.c00 = ival.c[0]
+            ival.ndiv = (self.ndiv + (self.c00 and ival.c00 / self.c00 > 2))
             if ival.ndiv > ndiv_max and 2*ival.ndiv > ival.rdepth:
-                return (aa, bb, bb-aa), nr_points
+                # Signal a divergent integral.
+                return (ival.a, ival.b, ival.b - ival.a), nr_points
 
         return ivals, nr_points
 
     def refine(self, f):
         """Increase degree of interval."""
         self.depth = depth = self.depth + 1
-        a = self.a
-        b = self.b
-        points = (a+b)/2 + (b-a)*xi[depth]/2
+        points = self.points()
         fx = np.empty(n[depth])
         fx[0:n[depth]:2] = self.fx
         fx[1:n[depth]-1:2] = f(points[1:n[depth]-1:2])
-        fx = fx[:n[depth]]
-        self.c[depth, :n[depth]] = c_new = _calc_coeffs(fx, depth)
         self.fx = fx
-        c_diff = norm(self.c[depth - 1] - self.c[depth])
-        self.err = (b-a) * c_diff
-        self.igral = (b-a) * w * c_new[0]
-        nc = norm(c_new)
+
+        c_diff = self.calc_igral_and_err(self.c)
+
+        nc = norm(self.c)
         split = nc > 0 and c_diff / nc > hint
 
         return points, split, n[depth] - n[depth - 1]
@@ -326,15 +329,13 @@ def algorithm_4 (f, a, b, tol):
         Mathematical Software, 37 (3), art. no. 26, 2008.
     """
 
-    # initialize the first interval
     ival, nr_points = _Interval.make_first(f, a, b)
 
     ivals = [ival]
-    igral_final = 0
-    err_final = 0
+    igral_excess = 0
+    err_excess = 0
     i_max = 0
 
-    # main loop
     while True:
         if ivals[i_max].depth == 3:
             split = True
@@ -342,13 +343,14 @@ def algorithm_4 (f, a, b, tol):
             points, split, nr_points_inc = ivals[i_max].refine(f)
             nr_points += nr_points_inc
 
-        # can we safely ignore this interval?
         if (points[1] <= points[0]
             or points[-1] <= points[-2]
             or ivals[i_max].err < (abs(ivals[i_max].igral) * eps
                                    * Vcond[ivals[i_max].depth])):
-            err_final += ivals[i_max].err
-            igral_final += ivals[i_max].igral
+            # The interval is too small, remove it while remembering the excess
+            # integral and error.
+            err_excess += ivals[i_max].err
+            igral_excess += ivals[i_max].igral
             ivals[i_max] = ivals[-1]
             ivals.pop()
         elif split:
@@ -363,11 +365,11 @@ def algorithm_4 (f, a, b, tol):
             ivals.extend(result)
             ivals[i_max] = ivals.pop()
 
-        # compute the running err and new max
+        # Compute the total error and new max.
         i_max = 0
         i_min = 0
-        err = err_final
-        igral = igral_final
+        err = err_excess
+        igral = igral_excess
         for i in range(len(ivals)):
             if ivals[i].err > ivals[i_max].err:
                 i_max = i
@@ -376,24 +378,22 @@ def algorithm_4 (f, a, b, tol):
             err += ivals[i].err
             igral += ivals[i].igral
 
-        # nuke smallest element if stack is larger than 200
-        if len(ivals) > 200:
-            err_final += ivals[i_min].err
-            igral_final += ivals[i_min].igral
+        # If there are too many intervals, remove the one with smallest
+        # contribution to the error.
+        if len(ivals) > max_ivals:
+            err_excess += ivals[i_min].err
+            igral_excess += ivals[i_min].igral
             ivals[i_min] = ivals[-1]
             ivals.pop()
             if i_max == len(ivals):
                 i_max = i_min
 
-        # get up and leave?
         if (err == 0
             or err < abs(igral) * tol
-            or (err_final > abs(igral) * tol
-                and err - err_final < abs(igral) * tol)
+            or (err_excess > abs(igral) * tol
+                and err - err_excess < abs(igral) * tol)
             or not ivals):
-            break
-
-    return igral, err, nr_points, ivals
+            return igral, err, nr_points
 
 
 ################ Tests ################
@@ -417,16 +417,16 @@ def f21(x):
     return y
 
 
-def f63(x, u, e):
-    return abs(x-u)**e
+def f63(x, alpha, beta):
+    return abs(x - beta) ** alpha
 
 
-def F63(x, u, e):
-    return (x-u) * abs(x-u)**e / (e+1)
+def F63(x, alpha, beta):
+    return (x - beta) * abs(x - beta) ** alpha / (alpha + 1)
 
 
 def fdiv(x):
-    return abs(x - 0.987654321)**-1.1
+    return abs(x - 0.987654321) ** -1.1
 
 
 def f_one_with_nan(x):
@@ -531,33 +531,33 @@ def test_integration():
 
 def test_analytic(n=200):
     def f(x):
-        return f63(x, u, e)
+        return f63(x, alpha, beta)
 
     def F(x):
-        return F63(x, u, e)
+        return F63(x, alpha, beta)
 
     old_settings = np.seterr(all='ignore')
 
     np.random.seed(123)
     params = np.empty((n, 2))
-    params[:, 0] = np.random.random_sample(n)
-    params[:, 1] = np.linspace(-0.5, -1.5, n)
+    params[:, 0] = np.linspace(-0.5, -1.5, n)
+    params[:, 1] = np.random.random_sample(n)
 
     false_negatives = 0
     false_positives = 0
 
-    for u, e in params:
+    for alpha, beta in params:
         try:
             igral, err, nr_points = algorithm_4(f, 0, 1, 1e-3)
         except DivergentIntegralError:
-            assert e < -0.8
-            false_negatives += e > -1
+            assert alpha < -0.8
+            false_negatives += alpha > -1
         else:
-            if e <= -1:
+            if alpha <= -1:
                 false_positives += 1
             else:
                 igral_exact = F(1) - F(0)
-                assert e < -0.8 or abs(igral - igral_exact) < err
+                assert alpha < -0.8 or abs(igral - igral_exact) < err
 
     assert false_negatives < 0.05 * n
     assert false_positives < 0.05 * n
