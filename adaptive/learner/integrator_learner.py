@@ -107,7 +107,7 @@ class Interval:
     """
 
     __slots__ = [
-        'a', 'b', 'c', 'depth', 'fx', 'igral', 'err', 'rdepth',
+        'a', 'b', 'c', 'depth', 'igral', 'err', 'rdepth',
         'ndiv', 'parent', 'children', 'done_points', 'discard', 'done_leaves',
     ]
 
@@ -118,7 +118,6 @@ class Interval:
         self.b = b
         self.c = np.zeros((4, ns[3]))
         self.discard = False
-        self.igral = None
         self.done_leaves = set()
 
     @classmethod
@@ -139,7 +138,7 @@ class Interval:
     @property
     def done(self):
         """The interval is complete and has the intergral calculated."""
-        return hasattr(self, 'fx') and self.complete
+        return hasattr(self, 'igral') and self.complete
 
     @property
     def T(self):
@@ -160,11 +159,11 @@ class Interval:
 
     def refine(self):
         ival = Interval(self.a, self.b)
+        self.children = [ival]
+        ival.parent = self
         ival.rdepth = self.rdepth
         ival.ndiv = self.ndiv
         ival.c = self.c.copy()
-        ival.parent = self
-        self.children = [ival]
         ival.err = self.err
         ival.depth = self.depth + 1
         points = ival.points(ival.depth)
@@ -220,7 +219,6 @@ class Interval:
             ival.done_leaves -= old_leaves
             ival = ival.parent
 
-
         # Check whether the point spacing is smaller than machine precision
         # and pop the interval with the largest error and do not split
         remove = self.err < (abs(self.igral) * eps * Vcond[self.depth])
@@ -232,17 +230,16 @@ class Interval:
         return force_split, remove
 
     def process_split(self, ndiv_max=20):
-        fx = np.array(self.done_points.values())
-        self.c[self.depth, :ns[self.depth]] = c_new = _calc_coeffs(fx, self.depth)
-        self.fx = fx
+        fx = np.array([self.done_points[k] for k in sorted(self.done_points)])
+        self.c[0, :ns[0]] = _calc_coeffs(fx, 0)
 
         parent = self.parent
         c_old = self.T @ parent.c[parent.depth]
-        c_diff = norm(self.c[self.depth] - c_old)
+        c_diff = norm(self.c[0] - c_old)
 
-        a, b = self.a, self.b
-        self.err = (b - a) * c_diff
-        self.igral = (b - a) * self.c[self.depth, 0] / sqrt(2)
+        ival_size = self.b - self.a
+        self.err = ival_size * c_diff
+        self.igral = ival_size * self.c[0, 0] / sqrt(2)
 
         self.ndiv = (parent.ndiv
                      + (abs(parent.c[0, 0]) > 0
@@ -252,15 +249,15 @@ class Interval:
             raise DivergentIntegralError(self)
 
     def process_refine(self):
-        fx = np.array(self.done_points.values())
+        fx = np.array([self.done_points[k] for k in sorted(self.done_points)])
         self.c[self.depth, :ns[self.depth]] = c_new = _calc_coeffs(fx, self.depth)
-        self.fx = fx
 
         c_diff = norm(self.c[self.depth - 1] - self.c[self.depth])
 
-        a, b = self.a, self.b
-        self.err = (b - a) * c_diff
-        self.igral = (b - a) * c_new[0] / sqrt(2)
+        ival_size = self.b - self.a
+        self.err = ival_size * c_diff
+        self.igral = ival_size * c_new[0] / sqrt(2)
+
         nc = norm(c_new)
         force_split = nc > 0 and c_diff / nc > hint
         return force_split
