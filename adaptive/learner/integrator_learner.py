@@ -14,6 +14,7 @@ from sortedcontainers import SortedSet
 
 from .base_learner import BaseLearner
 from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
+                                ndiv_max, max_ivals,
                                 xi, V_inv, Vcond, alpha, gamma)
 
 
@@ -21,6 +22,7 @@ eps = np.spacing(1)
 
 
 def _downdate(c, nans, depth):
+    # This is algorithm 5 from the thesis of Pedro Gonnet.
     b = b_def[depth].copy()
     m = ns[depth] - 1
     for i in nans:
@@ -61,7 +63,7 @@ class DivergentIntegralError(ValueError):
     pass
 
 
-class Interval:
+class _Interval:
 
     """
     Attributes
@@ -124,7 +126,7 @@ class Interval:
 
     @classmethod
     def make_first(cls, a, b, depth=2):
-        ival = Interval(a, b, depth, rdepth=1)
+        ival = _Interval(a, b, depth, rdepth=1)
         ival.ndiv = 0
         ival.parent = None
         ival.err = np.inf
@@ -158,18 +160,18 @@ class Interval:
         return (a + b) / 2 + (b - a) * xi[self.depth] / 2
 
     def refine(self):
-        ival = Interval(self.a, self.b, self.depth+1, self.rdepth)
+        ival = _Interval(self.a, self.b, self.depth+1, self.rdepth)
         self.children = [ival]
         ival.parent = self
         ival.ndiv = self.ndiv
         ival.err = self.err
-        return ival, ival.points()
+        return ival
 
     def split(self):
         points = self.points()
         m = points[len(points) // 2]
-        ivals = [Interval(self.a, m, 0, self.rdepth + 1),
-                 Interval(m, self.b, 0, self.rdepth + 1)]
+        ivals = [_Interval(self.a, m, 0, self.rdepth + 1),
+                 _Interval(m, self.b, 0, self.rdepth + 1)]
         self.children = ivals
 
         for ival in ivals:
@@ -179,7 +181,7 @@ class Interval:
 
         return ivals
 
-    def complete_process(self, ndiv_max=20):
+    def complete_process(self):
         """Calculate the integral contribution and error from this interval,
         and update the done leaves of all ancestor intervals."""
         fx = np.array([self.done_points[k] for k in sorted(self.done_points)])
@@ -296,12 +298,12 @@ class IntegratorLearner(BaseLearner):
         self.done_points = {}
         self.not_done_points = set()
         self._stack = []
-        self._err_final = 0
-        self._igral_final = 0
+        self._err_excess = 0
+        self._igral_excess = 0
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
-        ival, points = Interval.make_first(*self.bounds)
-        self.ivals = SortedSet([ival], key=attrgetter('err'))
-        self._update_ival(ival, points)
+        self.ivals = SortedSet([], key=attrgetter('err'))
+        ival, points = _Interval.make_first(*self.bounds)
+        self._update_ival(ival)
         self.first_ival = ival
         self._complete_branches = []
 
@@ -321,8 +323,8 @@ class IntegratorLearner(BaseLearner):
                 self.ivals.discard(ival)
                 force_split, remove = ival.complete_process()
                 if remove:
-                    self._err_final += ival.err
-                    self._igral_final += ival.igral
+                    self._err_excess += ival.err
+                    self._igral_excess += ival.igral
                 elif in_ivals:
                     self.ivals.add(ival)
 
@@ -331,9 +333,9 @@ class IntegratorLearner(BaseLearner):
                     # this ival will be split.
                     self.priority_split.append(ival)
 
-    def _update_ival(self, ival, points):
+    def _update_ival(self, ival):
         assert not ival.discard
-        for x in points:
+        for x in ival.points():
             # Update the mappings
             self.x_mapping[x].add(ival)
             if x in self.done_points:
@@ -411,15 +413,14 @@ class IntegratorLearner(BaseLearner):
                 # Always split when depth is maximal or if refining didn't help
                 ivals_new = ival.split()
                 for ival_new in ivals_new:
-                    points = ival_new.points()
-                    self._update_ival(ival_new, points)
+                    self._update_ival(ival_new)
             else:
                 # Refine
-                ival_new, points = ival.refine()
-                self._update_ival(ival_new, points)
+                ival_new = ival.refine()
+                self._update_ival(ival_new)
 
-        # Remove the smallest element if number of intervals is larger than 1000
-        if len(self.ivals) > 1000:
+        # Remove the smallest element if number of intervals is larger than max_ivals
+        if len(self.ivals) > max_ivals:
             self.ivals.pop(0)
 
         return self._stack
@@ -444,8 +445,8 @@ class IntegratorLearner(BaseLearner):
         igral = self.igral
         return (err == 0
                 or err < abs(igral) * self.tol
-                or (self._err_final > abs(igral) * self.tol
-                    and err - self._err_final < abs(igral) * self.tol)
+                or (self._err_excess > abs(igral) * self.tol
+                    and err - self._err_excess < abs(igral) * self.tol)
                 or not self.ivals)
 
     def loss(self, real=True):
