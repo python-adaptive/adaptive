@@ -184,15 +184,41 @@ class Interval:
 
         return ivals
 
+    def c_diff_split(self, ndiv_max=20):
+        parent = self.parent
+        c_old = self.T @ parent.c[parent.depth]
+        c_diff = norm(self.c[0] - c_old)
+
+        self.ndiv = (parent.ndiv
+                     + (abs(parent.c[0, 0]) > 0
+                        and self.c[0, 0] / parent.c[0, 0] > 2))
+
+        if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
+            raise DivergentIntegralError(self)
+
+        return c_diff, False
+
+    def c_diff_refine(self):
+        c_diff = norm(self.c[self.depth - 1] - self.c[self.depth])  # c_old - c
+        c_new = self.c[self.depth, :ns[self.depth]]
+        force_split = c_diff > hint * norm(c_new)
+        return c_diff, force_split
+
     def complete_process(self):
         """Calculate the integral contribution and error from this interval,
         and update the done leaves of all ancestor intervals."""
-        force_split = False
-        if self.parent is not None and self.rdepth > self.parent.rdepth:
-            self.process_split()
-        else:
-            force_split = self.process_refine()
+        fx = np.array([self.done_points[k] for k in sorted(self.done_points)])
+        self.c[self.depth, :ns[self.depth]] = _calc_coeffs(fx, self.depth)
+        size = self.b - self.a
+        self.igral = size * self.c[self.depth, 0] / sqrt(2)
 
+        if self.parent is not None and self.rdepth > self.parent.rdepth:
+            c_diff, force_split = self.c_diff_split()
+        else:
+            c_diff, force_split = self.c_diff_refine()
+
+        self.err = size * c_diff
+        
         if self.done_leaves is not None and not len(self.done_leaves):
             # This interval contributes to the integral estimate.
             self.done_leaves = {self}
@@ -228,39 +254,6 @@ class Interval:
             force_split = False
 
         return force_split, remove
-
-    def process_split(self, ndiv_max=20):
-        fx = np.array([self.done_points[k] for k in sorted(self.done_points)])
-        self.c[0, :ns[0]] = _calc_coeffs(fx, 0)
-
-        parent = self.parent
-        c_old = self.T @ parent.c[parent.depth]
-        c_diff = norm(self.c[0] - c_old)
-
-        ival_size = self.b - self.a
-        self.err = ival_size * c_diff
-        self.igral = ival_size * self.c[0, 0] / sqrt(2)
-
-        self.ndiv = (parent.ndiv
-                     + (abs(parent.c[0, 0]) > 0
-                        and self.c[0, 0] / parent.c[0, 0] > 2))
-
-        if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
-            raise DivergentIntegralError(self)
-
-    def process_refine(self):
-        fx = np.array([self.done_points[k] for k in sorted(self.done_points)])
-        self.c[self.depth, :ns[self.depth]] = c_new = _calc_coeffs(fx, self.depth)
-
-        c_diff = norm(self.c[self.depth - 1] - self.c[self.depth])
-
-        ival_size = self.b - self.a
-        self.err = ival_size * c_diff
-        self.igral = ival_size * c_new[0] / sqrt(2)
-
-        nc = norm(c_new)
-        force_split = nc > 0 and c_diff / nc > hint
-        return force_split
 
     def __repr__(self):
         lst = [
