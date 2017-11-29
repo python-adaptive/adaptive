@@ -138,7 +138,7 @@ class Interval:
     @property
     def done(self):
         """The interval is complete and has the intergral calculated."""
-        return hasattr(self, 'igral') and self.complete
+        return hasattr(self, 'igral')
 
     @property
     def T(self):
@@ -163,8 +163,7 @@ class Interval:
         ival.parent = self
         ival.ndiv = self.ndiv
         ival.err = self.err
-        points = ival.points()
-        return ival, points
+        return ival, ival.points()
 
     def split(self):
         points = self.points()
@@ -252,7 +251,7 @@ class Interval:
             'depth={}'.format(self.depth),
             'rdepth={}'.format(self.rdepth),
             'err={:.5E}'.format(self.err),
-            # 'igral={:.5E}'.format(self.igral if self.igral else 0),
+            'igral={:.5E}'.format(self.igral if hasattr(self, 'igral') else 0),
             'discard={}'.format(self.discard),
         ]
         return ' '.join(lst)
