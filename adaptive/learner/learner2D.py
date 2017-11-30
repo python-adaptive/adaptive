@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
-from copy import copy, deepcopy
+from copy import copy
 import itertools
 import math
 
