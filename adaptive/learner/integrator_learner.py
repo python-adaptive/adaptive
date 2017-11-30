@@ -7,7 +7,6 @@ from collections import defaultdict
 from math import sqrt
 from operator import attrgetter
 
-import holoviews as hv
 import numpy as np
 from scipy.linalg import norm
 from sortedcontainers import SortedSet
@@ -463,4 +462,5 @@ class IntegratorLearner(BaseLearner):
         return abs(abs(self.igral) * self.tol - self.err)
 
     def plot(self):
+        import holoviews as hv
         return hv.Scatter(self.done_points)

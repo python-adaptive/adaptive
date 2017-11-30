@@ -2,7 +2,6 @@
 import itertools
 from math import sqrt
 
-import holoviews as hv
 import numpy as np
 
 from .base_learner import BaseLearner
@@ -79,6 +78,7 @@ class AverageLearner(BaseLearner):
         pass
 
     def plot(self):
+        import holoviews as hv
         vals = [v for v in self.data.values() if v is not None]
         if not vals:
             return hv.Histogram([[], []])

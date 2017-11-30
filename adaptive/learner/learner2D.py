@@ -4,12 +4,10 @@ from copy import copy, deepcopy
 import itertools
 import math
 
-import holoviews as hv
 import numpy as np
 from scipy import interpolate
 
 from .base_learner import BaseLearner
-from .utils import restore
 
 
 # Learner2D and helper functions.
@@ -309,6 +307,7 @@ class Learner2D(BaseLearner):
         self._interp = set()
 
     def plot(self, n_x=201, n_y=201, triangles_alpha=0):
+        import holoviews as hv
         if self.vdim > 1:
             raise NotImplemented('holoviews currently does not support',
                                  '3D surface plots in bokeh.')

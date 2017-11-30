@@ -4,7 +4,6 @@ import heapq
 import itertools
 import math
 
-import holoviews as hv
 import numpy as np
 import sortedcontainers
 import scipy.interpolate
@@ -274,6 +273,7 @@ class Learner1D(BaseLearner):
         return data_interp
 
     def plot(self):
+        import holoviews as hv
         if not self.data:
             return hv.Scatter([]) * hv.Path([])
 

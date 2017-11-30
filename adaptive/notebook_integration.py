@@ -3,7 +3,6 @@ import asyncio
 
 from IPython import get_ipython
 from ipykernel.eventloops import register_integration
-import holoviews as hv
 
 
 # IPython event loop integraion
@@ -37,6 +36,7 @@ def _loop_asyncio(kernel):
 
 
 def notebook_extension():
+    import holoviews as hv
     get_ipython().magic('gui asyncio')
     return hv.notebook_extension('bokeh')
 
