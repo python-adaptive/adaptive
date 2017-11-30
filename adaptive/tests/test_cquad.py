@@ -147,3 +147,16 @@ def test_adding_points_and_skip_one_point():
             learner2.add_point(x, learner2.function(x))
 
     np.testing.assert_almost_equal(learner.igral, learner2.igral)
+
+
+def test_add_points_in_random_order():
+    import scipy.integrate
+    import random
+    learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
+    xs, _ = learner.choose_points(10000)
+    random.shuffle(xs)
+    for x in xs:
+        learner.add_point(x, f24(x))
+
+    # This should at least be the case
+    assert abs(learner.igral - scipy.integrate.quad(f24, 0, 3)[0]) < 0.1
