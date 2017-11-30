@@ -98,7 +98,7 @@ class _Interval:
         determination of the total integral anymore because its parent had a
         refinement when the data of the interval was not known, and later it
         appears that this interval has to be split.
-    complete : bool
+    refinement_complete : bool
         All the function values in the interval are known. This does not
         necessarily mean that the integral value has been calculated,
         see `self.done`.
@@ -135,14 +135,9 @@ class _Interval:
         return ival
 
     @property
-    def complete(self):
+    def refinement_complete(self):
         """The interval has all the y-values to calculate the intergral."""
         return len(self.done_points) == ns[self.depth]
-
-    @property
-    def done(self):
-        """The interval is complete and has the intergral calculated."""
-        return hasattr(self, 'igral')
 
     @property
     def T(self):
@@ -331,7 +326,9 @@ class IntegratorLearner(BaseLearner):
         ivals = self.x_mapping[point]
         for ival in ivals:
             ival.done_points[point] = value
-            if ival.complete and not ival.done and not ival.discard:
+            if (ival.refinement_complete
+                and not hasattr(self, 'igral')
+                and not ival.discard):
                 in_ivals = ival in self.ivals
                 self.ivals.discard(ival)
                 force_split, remove = ival.complete_process()
@@ -444,12 +441,12 @@ class IntegratorLearner(BaseLearner):
 
     @property
     def igral(self):
-        return sum(i.igral for i in self.first_ival.done_leaves)
+        return sum(i.igral for i in self.approximating_intervals)
 
     @property
     def err(self):
-        if self.first_ival.done_leaves:
-            return sum(i.err for i in self.first_ival.done_leaves)
+        if self.approximating_intervals:
+            return sum(i.err for i in self.approximating_intervals)
         else:
             return np.inf
 
