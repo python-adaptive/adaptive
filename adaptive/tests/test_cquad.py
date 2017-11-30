@@ -118,3 +118,19 @@ def test_choosing_and_adding_multiple_points_at_once():
     xs, _ = learner.choose_points(33)
     for x in xs:
         learner.add_point(x, learner.function(x))
+
+
+def test_adding_points_and_skip_one_point():
+    learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
+    xs, _ = learner.choose_points(17)
+    not_x = xs[1]
+    
+    for x in xs:
+        if x != not_x:
+            learner.add_point(x, learner.function(x))
+    
+    for i in range(1000):
+        xs, _ = learner.choose_points(1)
+        for x in xs:
+            if x != not_x:
+                learner.add_point(x, learner.function(x))
