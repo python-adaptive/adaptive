@@ -203,7 +203,8 @@ class _Interval:
         else:
             # Split
             parent = self.parent
-            c_old = self.T[:, :ns[parent.depth]] @ parent.c
+            c = parent.c if hasattr(parent, 'c') else np.zeros(33, dtype=float)
+            c_old = self.T[:, :ns[parent.depth]] @ c
             c_diff = self.calc_igral_and_err(c_old, depth)
             self.c00 = self.c[0]
 
