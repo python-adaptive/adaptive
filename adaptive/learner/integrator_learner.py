@@ -316,8 +316,13 @@ class IntegratorLearner(BaseLearner):
         for ival in ivals:
             force_split = False
             ival.done_points[point] = value
-            from_depth = ival.depth_complete + 1 if ival.depth_complete is not None else ival.depth
-            for depth in range(from_depth, ival.depth+1):
+
+            if ival.depth_complete is None:
+                depths = [ival.depth]
+            else:
+                depths = range(ival.depth_complete+1, ival.depth+1)
+            
+            for depth in depths:
                 if ival.refinement_complete(depth):
                     in_ivals = ival in self.ivals
                     self.ivals.discard(ival)
