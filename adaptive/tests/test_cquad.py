@@ -103,3 +103,18 @@ def test_divergence():
 
     with pytest.raises(DivergentIntegralError):
         learner = run_integrator_learner(f, a, b, tol, nr_points)
+
+
+def test_choosing_and_adding_points_one_by_one():
+    learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
+    for _ in range(1000):
+        xs, _ = learner.choose_points(1)
+        for x in xs:
+            learner.add_point(x, learner.function(x))
+
+
+def test_choosing_and_adding_multiple_points_at_once():        
+    learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
+    xs, _ = learner.choose_points(33)
+    for x in xs:
+        learner.add_point(x, learner.function(x))
