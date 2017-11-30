@@ -102,6 +102,10 @@ class _Interval:
         Leaves used for the error and the integral estimation of this
         interval. None means that this information was already propagated to
         the ancestors of this interval.
+    depth_complete : int or None
+        The level of refinement at which the interval has the integral value
+        evaluated. If None there is no level at which the integral value is
+        known yet.
     """
 
     __slots__ = [
