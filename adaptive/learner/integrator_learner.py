@@ -285,7 +285,7 @@ class IntegratorLearner(BaseLearner):
 
         Attributes
         ----------
-        first_ival.done_leaves : set of intervals
+        approximating_intervals : set of intervals
             The intervals that can be used in the determination of the integral.
         nr_points : int
             The total number of evaluated points.
@@ -315,6 +315,10 @@ class IntegratorLearner(BaseLearner):
         ival = _Interval.make_first(*self.bounds)
         self._update_ival(ival)
         self.first_ival = ival
+
+    @property
+    def approximating_intervals(self):
+        return self.first_ival.done_leaves
 
     def add_point(self, point, value):
         if point not in self.x_mapping:
