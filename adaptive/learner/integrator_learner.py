@@ -91,10 +91,6 @@ class _Interval:
         The intervals resulting from a split.
     done_points : dict
         A dictionary with the x-values and y-values: `{x1: y1, x2: y2 ...}`.
-    refinement_complete : bool
-        All the function values in the interval are known. This does not
-        necessarily mean that the integral value has been calculated,
-        see `self.done`.
     done : bool
         The integral and the error for the interval has been calculated.
     done_leaves : set or None
@@ -105,6 +101,12 @@ class _Interval:
         The level of refinement at which the interval has the integral value
         evaluated. If None there is no level at which the integral value is
         known yet.
+
+    Methods
+    -------
+    refinement_complete : depth, optional
+        If true, all the function values in the interval are known at `depth`.
+        By default the depth is the depth of the interval.
     """
 
     __slots__ = [
