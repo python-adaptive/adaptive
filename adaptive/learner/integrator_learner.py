@@ -148,6 +148,8 @@ class _Interval:
 
     def refinement_complete(self, depth):
         """The interval has all the y-values to calculate the intergral."""
+        if len(self.done_points) < ns[depth]:
+            return False
         return all(p in self.done_points for p in self.points(depth))
 
     def points(self, depth=None):
