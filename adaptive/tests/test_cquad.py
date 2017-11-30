@@ -123,14 +123,27 @@ def test_choosing_and_adding_multiple_points_at_once():
 def test_adding_points_and_skip_one_point():
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
     xs, _ = learner.choose_points(17)
-    not_x = xs[1]
+    skip_x = xs[1]
 
     for x in xs:
-        if x != not_x:
+        if x != skip_x:
             learner.add_point(x, learner.function(x))
 
     for i in range(1000):
         xs, _ = learner.choose_points(1)
         for x in xs:
-            if x != not_x:
+            if x != skip_x:
                 learner.add_point(x, learner.function(x))
+
+    # Now add the point that was skipped
+    learner.add_point(skip_x, learner.function(skip_x))
+
+    # Create a learner with the same number of points, which should
+    # give an identical igral value.
+    learner2 = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
+    for i in range(1017):
+        xs, _ = learner2.choose_points(1)
+        for x in xs:
+            learner2.add_point(x, learner2.function(x))
+
+    np.testing.assert_almost_equal(learner.igral, learner2.igral)
