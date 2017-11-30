@@ -290,7 +290,7 @@ class IntegratorLearner(BaseLearner):
         self.tol = tol
         self.priority_split = []
         self.done_points = {}
-        self.not_done_points = set()
+        self.pending_points = set()
         self._stack = []
         self._err_excess = 0
         self._igral_excess = 0
@@ -309,7 +309,7 @@ class IntegratorLearner(BaseLearner):
             raise ValueError("Point {} doesn't belong to any interval"
                              .format(point))
         self.done_points[point] = value
-        self.not_done_points.discard(point)
+        self.pending_points.discard(point)
 
         # Select the intervals that have this point
         ivals = self.x_mapping[point]
@@ -344,8 +344,8 @@ class IntegratorLearner(BaseLearner):
             self.x_mapping[x].add(ival)
             if x in self.done_points:
                 self.add_point(x, self.done_points[x])
-            elif x not in self.not_done_points:
-                self.not_done_points.add(x)
+            elif x not in self.pending_points:
+                self.pending_points.add(x)
                 self._stack.append(x)
 
         # Add the new interval to the err sorted set
