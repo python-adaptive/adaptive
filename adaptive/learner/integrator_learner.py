@@ -85,11 +85,10 @@ class _Interval:
         The number of splits that the interval has gone through, starting at 1.
     ndiv : int
         A number that is used to determine whether the interval is divergent.
-    parent : Interval
-        The parent interval. If the interval resulted from a refinement, it has
-        one parent. If it resulted from a split, it has two parents.
-    children : list of `Interval`s
-        The intervals resulting from a split or refinement.
+    parent : _Interval
+        The parent interval.
+    children : list of `_Interval`s
+        The intervals resulting from a split.
     done_points : dict
         A dictionary with the x-values and y-values: `{x1: y1, x2: y2 ...}`.
     refinement_complete : bool
