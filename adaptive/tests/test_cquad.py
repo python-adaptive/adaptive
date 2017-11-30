@@ -21,7 +21,7 @@ def run_integrator_learner(f, a, b, tol, nr_points):
 
 def equal_ival(ival, other, *, verbose=False):
     """Note: Implementing __eq__ breaks SortedContainers in some way."""
-    if not ival.complete:
+    if ival.depth_complete is None:
         if verbose:
             print('Interval {} is not complete.'.format(ival))
         return False
