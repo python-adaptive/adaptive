@@ -177,6 +177,10 @@ class Learner2D(BaseLearner):
         self.stack_size = 10
 
     @property
+    def n(self):
+        return len(self.data)
+
+    @property
     def vdim(self):
         if self._vdim is None and self.data:
             try:
