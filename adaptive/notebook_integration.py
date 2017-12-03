@@ -36,14 +36,15 @@ def _loop_asyncio(kernel):
 
 
 def notebook_extension():
-    import holoviews as hv
+    import holoviews
     get_ipython().magic('gui asyncio')
-    return hv.notebook_extension('bokeh')
+    return holoviews.notebook_extension('bokeh')
 
 
 # Plotting
 
 def live_plot(runner, *, plotter=None, update_interval=2):
+    import holoviews as hv
 
     def plot_generator():
         while True:
