@@ -133,15 +133,31 @@ class Learner1D(BaseLearner):
             neighbors.get(x_upper, [None, None])[0] = x
 
     def update_scale(self, x, y):
+        """Update the scale with which the x and y-values are scaled.
+
+        For a learner where the function returns a single scalar the scale
+        is determined by the peak-to-peak value of the x and y-values.
+
+        When the function returns a vector the learners y-scale is set by
+        the level with the the largest peak-to-peak value.
+         """
         self._bbox[0][0] = min(self._bbox[0][0], x)
         self._bbox[0][1] = max(self._bbox[0][1], x)
+        self._scale[0] = self._bbox[0][1] - self._bbox[0][0]
         if y is not None:
-            y1, y2 = (min(y), max(y)) if self.vdim > 1 else (y, y)
-            self._bbox[1][0] = min(self._bbox[1][0], y1)
-            self._bbox[1][1] = max(self._bbox[1][1], y2)
-
-        self._scale = [self._bbox[0][1] - self._bbox[0][0],
-                       self._bbox[1][1] - self._bbox[1][0]]
+            if self.vdim > 1:
+                try:
+                    y_min = np.min([self._bbox[1][0], y], axis=0)
+                    y_max = np.max([self._bbox[1][1], y], axis=0)
+                except ValueError:
+                    # Happens when `_bbox[1]` is a float and `y` a vector.
+                    y_min = y_max = y
+                self._bbox[1] = [y_min, y_max]
+                self._scale[1] = np.max(y_max - y_min)
+            else:
+                self._bbox[1][0] = min(self._bbox[1][0], y)
+                self._bbox[1][1] = max(self._bbox[1][1], y)
+                self._scale[1] = self._bbox[0][1] - self._bbox[0][0]
 
     def add_point(self, x, y):
         real = y is not None
