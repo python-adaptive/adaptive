@@ -328,15 +328,14 @@ class Learner2D(BaseLearner):
 
             x = y = np.linspace(-0.5, 0.5, n)
             z = ip(x[:, None], y[None, :]).squeeze()
-            plot = hv.Image(np.rot90(z), bounds=lbrt)
 
-            if tri_alpha:
-                tri_points = self.unscale(ip.tri.points[ip.tri.vertices])
-                contours = hv.Contours([p for p in tri_points])
-                contours = contours.opts(style=dict(alpha=tri_alpha))
-
+            image = hv.Image(np.rot90(z), bounds=lbrt).opts(style=dict(cmap='viridis'))
+            tris = hv.TriMesh((ip.tri.simplices, self.unscale(ip.tri.points)))
+            opts = dict(node_alpha=0, lw=0.1, edge_fill_color='w',
+                        edge_line_alpha=tri_alpha)
+            tris = tris.opts(style=opts)
+            plot = image * (tris if tri_alpha else hv.TriMesh([]))
         else:
-            plot = hv.Image([], bounds=lbrt)
-            contours = hv.Contours([])
+            plot = hv.Image([]) * hv.TriMesh([])
 
-        return plot * contours if tri_alpha else plot
+        return plot
