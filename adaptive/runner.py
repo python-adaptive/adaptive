@@ -42,6 +42,11 @@ class Runner:
     def __init__(self, learner, executor=None, goal=None, *,
                  log=False, ioloop=None, shutdown_executor=True):
         self.ioloop = ioloop if ioloop else asyncio.get_event_loop()
+
+        if in_ipynb() and not self.ioloop.is_running():
+            raise RuntimeError('Run adaptive.notebook_extension() to use '
+                               'the Runner in a Jupyter notebook.')
+
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
         self.shutdown_executor = shutdown_executor or (executor is None)
@@ -187,3 +192,10 @@ class _AsyncExecutor:
         else:
             raise TypeError('Cannot get number of cores for {}'
                             .format(ex.__class__))
+
+
+def in_ipynb():
+    try:
+        return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+    except NameError:
+        return False
