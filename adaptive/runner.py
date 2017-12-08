@@ -161,7 +161,7 @@ class SequentialExecutor(concurrent.Executor):
 class _AsyncExecutor:
 
     def __init__(self, executor, ioloop):
-        assert isinstance(executor, (concurrent.Executor, distributed.Client))
+        assert isinstance(executor, concurrent.Executor)
         self.executor = executor
         self.ioloop = ioloop
 
