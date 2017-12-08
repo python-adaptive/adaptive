@@ -99,6 +99,10 @@ class Learner1D(BaseLearner):
     def data_combined(self):
         return {**self.data, **self.data_interp}
 
+    @property
+    def n(self):
+        return len(self.data)
+
     def loss(self, real=True):
         losses = self.losses if real else self.losses_combined
         if len(losses) == 0:
