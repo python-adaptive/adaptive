@@ -161,7 +161,7 @@ class Learner1D(BaseLearner):
             else:
                 self._bbox[1][0] = min(self._bbox[1][0], y)
                 self._bbox[1][1] = max(self._bbox[1][1], y)
-                self._scale[1] = self._bbox[0][1] - self._bbox[0][0]
+                self._scale[1] = self._bbox[1][1] - self._bbox[1][0]
 
     def add_point(self, x, y):
         real = y is not None
