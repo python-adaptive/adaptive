@@ -53,10 +53,10 @@ def notebook_extension():
 
 # Plotting
 
-active_plotting_tasks = dict()
+active_plotting_task = None
 
 
-def live_plot(runner, *, plotter=None, update_interval=2, name=None):
+def live_plot(runner, *, plotter=None, update_interval=2):
     try:
         import holoviews as hv
     except ModuleNotFoundError:
@@ -73,9 +73,6 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     dm = hv.DynamicMap(plot_generator(),
                        streams=[hv.streams.Stream.define('Next')()])
 
-    # Generate task name if not provided
-    if not name:
-        name = '_'
 
     # Could have used dm.periodic in the following, but this would either spin
     # off a thread (and learner is not threadsafe) or block the kernel.
@@ -87,13 +84,12 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
                 await asyncio.sleep(update_interval)
             dm.event()  # fire off one last update before we die
         finally:
-            active_plotting_tasks.pop(name, None)
+            global active_plotting_task
+            if active_plotting_task is asyncio.Task.current_task():
+                active_plotting_task = None
 
-    task = asyncio.get_event_loop().create_task(updater())
-
-    if name in active_plotting_tasks:
-        active_plotting_tasks[name].cancel()
-
-    active_plotting_tasks[name] = task
+    if active_plotting_task:
+        active_plotting_task.cancel()
+    active_plotting_task = asyncio.get_event_loop().create_task(updater())
 
     return dm

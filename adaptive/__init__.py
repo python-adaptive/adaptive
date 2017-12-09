@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from .notebook_integration import (notebook_extension, live_plot,
-                                   active_plotting_tasks)
+                                   active_plotting_task)
 
 from . import learner
 from . import runner
