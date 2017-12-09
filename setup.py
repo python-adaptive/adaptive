@@ -4,8 +4,8 @@
 from setuptools import setup
 
 
-with open('requirements.txt') as f:
-    requirements = f.readlines()
+install_requires = ['scipy', 'ipython', 'sortedcontainers']
+extras_require = {'recommended': ['holoviews>=1.9.1', 'ipyparallel', 'distributed']}
 
 setup(
     name='adaptive',
@@ -24,5 +24,6 @@ setup(
     ],
     packages=['adaptive',
               'adaptive.learner'],
-    install_requires=requirements,
+    install_requires=install_requires,
+    extras_require=extras_require,
 )
