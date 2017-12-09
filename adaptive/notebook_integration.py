@@ -65,7 +65,6 @@ def live_plot(runner, *, plotter=None, update_interval=2):
             await asyncio.sleep(update_interval)
         dm.event()  # fire off one last update before we die
 
-    # Fire and forget -- the task will die anyway once the runner has finished.
     task = asyncio.get_event_loop().create_task(updater())
 
     if not hasattr(runner, 'live_plotters'):
