@@ -2,8 +2,17 @@
 import asyncio
 import concurrent.futures as concurrent
 
-import distributed
-import ipyparallel
+try:
+    import ipyparallel
+    with_ipyparallel = True
+except ModuleNotFoundError:
+    with_ipyparallel = False
+
+try:
+    import distributed
+    with_distributed = True
+except ModuleNotFoundError:
+    with_distributed = False
 
 
 class Runner:
@@ -130,12 +139,12 @@ def ensure_async_executor(executor, ioloop):
         executor = concurrent.ProcessPoolExecutor()
     elif isinstance(executor, concurrent.Executor):
         pass
-    elif isinstance(executor, ipyparallel.Client):
+    elif with_ipyparallel and isinstance(executor, ipyparallel.Client):
         executor = executor.executor()
-    elif isinstance(executor, distributed.Client):
+    elif with_distributed and isinstance(executor, distributed.Client):
         executor = executor.get_executor()
     else:
-        raise TypeError('Only concurrent.futures.Executor, distributed.Client,'
+        raise TypeError('Only a concurrent.futures.Executor, distributed.Client,'
                         ' or ipyparallel.Client can be used.')
 
     return _AsyncExecutor(executor, ioloop)
@@ -179,14 +188,14 @@ class _AsyncExecutor:
     @property
     def ncores(self):
         ex = self.executor
-        if isinstance(ex, ipyparallel.client.view.ViewExecutor):
+        if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
             return len(ex.view)
         elif isinstance(ex, (concurrent.ProcessPoolExecutor,
                              concurrent.ThreadPoolExecutor)):
             return ex._max_workers  # not public API!
         elif isinstance(ex, SequentialExecutor):
             return 1
-        elif isinstance(ex, distributed.cfexecutor.ClientExecutor):
+        elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
             # XXX: check if not sum(n for n in ex._client.ncores().values())
             return len(ex._client.ncores())
         else:
