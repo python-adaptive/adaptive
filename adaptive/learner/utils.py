@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from contextlib import contextmanager
 
+
 @contextmanager
 def restore(*learners):
     states = [learner.__getstate__() for learner in learners]
