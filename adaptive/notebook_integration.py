@@ -55,10 +55,6 @@ def notebook_extension():
 
 active_plotting_tasks = dict()
 
-# Incremented by 'live_plot' on every successful plot creation;
-# used to name plots that are not given an explicit name.
-_last_plot_id = 0
-
 
 def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     try:
@@ -78,10 +74,8 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
                        streams=[hv.streams.Stream.define('Next')()])
 
     # Generate task name if not provided
-    global _last_plot_id
     if not name:
-        name = f'plot_{_last_plot_id}'
-    _last_plot_id += 1
+        name = '_'
 
     # Could have used dm.periodic in the following, but this would either spin
     # off a thread (and learner is not threadsafe) or block the kernel.
@@ -96,6 +90,9 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
             active_plotting_tasks.pop(name, None)
 
     task = asyncio.get_event_loop().create_task(updater())
+
+    if name in active_plotting_tasks:
+        active_plotting_tasks[name].cancel()
 
     active_plotting_tasks[name] = task
 
