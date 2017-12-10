@@ -53,10 +53,10 @@ def notebook_extension():
 
 # Plotting
 
-active_plotting_task = None
+active_plotting_tasks = dict()
 
 
-def live_plot(runner, *, plotter=None, update_interval=2):
+def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     try:
         import holoviews as hv
     except ModuleNotFoundError:
@@ -84,12 +84,13 @@ def live_plot(runner, *, plotter=None, update_interval=2):
                 await asyncio.sleep(update_interval)
             dm.event()  # fire off one last update before we die
         finally:
-            global active_plotting_task
-            if active_plotting_task is asyncio.Task.current_task():
-                active_plotting_task = None
+            if active_plotting_tasks[name] is asyncio.Task.current_task():
+                active_plotting_tasks.pop(name, None)
 
-    if active_plotting_task:
-        active_plotting_task.cancel()
-    active_plotting_task = asyncio.get_event_loop().create_task(updater())
+    global active_plotting_tasks
+    if name in active_plotting_tasks:
+        active_plotting_tasks[name].cancel()
+
+    active_plotting_tasks[name] = asyncio.get_event_loop().create_task(updater())
 
     return dm
