@@ -53,6 +53,9 @@ def notebook_extension():
 
 # Plotting
 
+active_plotting_task = None
+
+
 def live_plot(runner, *, plotter=None, update_interval=2):
     try:
         import holoviews as hv
@@ -70,19 +73,23 @@ def live_plot(runner, *, plotter=None, update_interval=2):
     dm = hv.DynamicMap(plot_generator(),
                        streams=[hv.streams.Stream.define('Next')()])
 
+
     # Could have used dm.periodic in the following, but this would either spin
     # off a thread (and learner is not threadsafe) or block the kernel.
 
     async def updater():
-        while not runner.task.done():
-            dm.event()
-            await asyncio.sleep(update_interval)
-        dm.event()  # fire off one last update before we die
+        try:
+            while not runner.task.done():
+                dm.event()
+                await asyncio.sleep(update_interval)
+            dm.event()  # fire off one last update before we die
+        finally:
+            global active_plotting_task
+            if active_plotting_task is asyncio.Task.current_task():
+                active_plotting_task = None
 
-    task = asyncio.get_event_loop().create_task(updater())
+    if active_plotting_task:
+        active_plotting_task.cancel()
+    active_plotting_task = asyncio.get_event_loop().create_task(updater())
 
-    if not hasattr(runner, 'live_plotters'):
-        runner.live_plotters = []
-
-    runner.live_plotters.append(task)
     return dm
