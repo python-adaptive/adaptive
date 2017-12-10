@@ -57,6 +57,26 @@ active_plotting_tasks = dict()
 
 
 def live_plot(runner, *, plotter=None, update_interval=2, name=None):
+    """Live plotting of the learner's data.
+
+    Parameters
+    ----------
+    runner : Runner
+    plotter : function
+        A function that takes the learner as a argument and returns a
+        holoviews object. By default learner.plot() will be called.
+    update_interval : int
+        Number of second between the updates of the plot.
+    name : hasable
+        Name for the `live_plot` task in `adaptive.active_plotting_tasks`.
+        By default the name is `None` and if another task with the same name
+        already exists that other live_plot is canceled.
+
+    Returns
+    -------
+    dm : holoviews.DynamicMap
+        The plot that automatically updates every update_interval.
+    """
     try:
         import holoviews as hv
     except ModuleNotFoundError:
