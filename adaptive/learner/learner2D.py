@@ -323,7 +323,7 @@ class Learner2D(BaseLearner):
 
             if n is None:
                 # Calculate how many grid points are needed.
-                # factor from A=√3/4a² (equilateral triangle)
+                # factor from A=√3/4 * a² (equilateral triangle)
                 n = int(0.658 / sqrt(areas(ip).min()))
                 n = max(n, 10)
 
