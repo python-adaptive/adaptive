@@ -173,6 +173,7 @@ class Learner2D(BaseLearner):
         self._stack.update({p: np.inf for p in self._bounds_points})
         self.function = function
         self._ip = self._ip_combined = None
+        self._loss = np.inf
 
         self.stack_size = 10
 
@@ -305,7 +306,8 @@ class Learner2D(BaseLearner):
             return np.inf
         ip = self.ip() if real else self.ip_combined()
         losses = self.loss_per_triangle(ip)
-        return losses.max()
+        self._loss = losses.max()
+        return self._loss
 
     def remove_unfinished(self):
         self._interp = set()
