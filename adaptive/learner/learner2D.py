@@ -275,8 +275,8 @@ class Learner2D(BaseLearner):
     def choose_points(self, n, add_data=True):
         # Even if add_data is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
-        points = list(self._stack.keys())
-        loss_improvements = list(self._stack.values())
+        points = list(self._stack.keys())[:n]
+        loss_improvements = list(self._stack.values())[:n]
         n_left = n - len(points)
         self.add_data(points, itertools.repeat(None))
 
