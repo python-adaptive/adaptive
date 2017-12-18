@@ -2,7 +2,7 @@
 from collections import OrderedDict
 from copy import copy
 import itertools
-import math
+from math import sqrt
 
 import numpy as np
 from scipy import interpolate
@@ -77,7 +77,7 @@ def choose_point_in_triangle(triangle, max_badness):
     i = edge_lengths.argmax()
 
     # We multiply by sqrt(3) / 4 such that a equilateral triangle has badness=1
-    badness = (edge_lengths[i]**2 / area) * (math.sqrt(3) / 4)
+    badness = (edge_lengths[i]**2 / area) * (sqrt(3) / 4)
     if badness > max_badness:
         point = (triangle_roll[i] + triangle[i]) / 2
     else:
@@ -310,7 +310,7 @@ class Learner2D(BaseLearner):
     def remove_unfinished(self):
         self._interp = set()
 
-    def plot(self, n_x=201, n_y=201, tri_alpha=0):
+    def plot(self, n=None, tri_alpha=0):
         import holoviews as hv
         if self.vdim > 1:
             raise NotImplemented('holoviews currently does not support',
@@ -318,9 +318,14 @@ class Learner2D(BaseLearner):
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
         if len(self.data) >= 4:
-            x = np.linspace(-0.5, 0.5, n_x)
-            y = np.linspace(-0.5, 0.5, n_y)
             ip = self.ip()
+
+            if n is None:
+                # Calculate how many grid points are needed.
+                # factor from A=√3/4a² (equilateral triangle)
+                n = int(0.658 / sqrt(areas(ip).min()))
+
+            x = y = np.linspace(-0.5, 0.5, n)
             z = ip(x[:, None], y[None, :]).squeeze()
             plot = hv.Image(np.rot90(z), bounds=lbrt)
 
