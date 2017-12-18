@@ -337,7 +337,8 @@ class Learner2D(BaseLearner):
             im = hv.Image([], bounds=lbrt)
             tris = hv.TriMesh([])
 
-        tri_opts = dict(line_width=0.5, alpha=tri_alpha)
         im_opts = dict(cmap='viridis')
+        tri_opts = dict(line_width=0.5, alpha=tri_alpha)
+        no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
 
-        return im.opts(style=im_opts) * tris.edgepaths.opts(style=tri_opts)
+        return im.opts(style=im_opts) * tris.edgepaths.opts(style=tri_opts, **no_hover)
