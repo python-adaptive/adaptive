@@ -317,6 +317,7 @@ class Learner2D(BaseLearner):
                                  '3D surface plots in bokeh.')
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
+
         if len(self.data) >= 4:
             ip = self.ip()
 
@@ -329,13 +330,14 @@ class Learner2D(BaseLearner):
             x = y = np.linspace(-0.5, 0.5, n)
             z = ip(x[:, None], y[None, :]).squeeze()
 
-            image = hv.Image(np.rot90(z), bounds=lbrt).opts(style=dict(cmap='viridis'))
-            tris = hv.TriMesh((ip.tri.simplices, self.unscale(ip.tri.points)))
-            opts = dict(node_alpha=0, lw=0.1, edge_fill_color='w',
-                        edge_line_alpha=tri_alpha)
-            tris = tris.opts(style=opts)
-            plot = image * (tris if tri_alpha else hv.TriMesh([]))
+            im = hv.Image(np.rot90(z), bounds=lbrt)
+            tris = (hv.TriMesh((ip.tri.simplices, self.unscale(ip.tri.points)))
+                    if tri_alpha else hv.TriMesh([]))
         else:
-            plot = hv.Image([]) * hv.TriMesh([])
+            im = hv.Image([], bounds=lbrt)
+            tris = hv.TriMesh([])
 
-        return plot
+        tri_opts = dict(line_width=0.5, alpha=tri_alpha)
+        im_opts = dict(cmap='viridis')
+
+        return im.opts(style=im_opts) * tris.edgepaths.opts(style=tri_opts)
