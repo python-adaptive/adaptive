@@ -310,7 +310,7 @@ class Learner2D(BaseLearner):
     def remove_unfinished(self):
         self._interp = set()
 
-    def plot(self, n_x=201, n_y=201, triangles_alpha=0):
+    def plot(self, n_x=201, n_y=201, tri_alpha=0):
         import holoviews as hv
         if self.vdim > 1:
             raise NotImplemented('holoviews currently does not support',
@@ -324,13 +324,13 @@ class Learner2D(BaseLearner):
             z = ip(x[:, None], y[None, :]).squeeze()
             plot = hv.Image(np.rot90(z), bounds=lbrt)
 
-            if triangles_alpha:
+            if tri_alpha:
                 tri_points = self.unscale(ip.tri.points[ip.tri.vertices])
                 contours = hv.Contours([p for p in tri_points])
-                contours = contours.opts(style=dict(alpha=triangles_alpha))
+                contours = contours.opts(style=dict(alpha=tri_alpha))
 
         else:
             plot = hv.Image([], bounds=lbrt)
             contours = hv.Contours([])
 
-        return plot * contours if triangles_alpha else plot
+        return plot * contours if tri_alpha else plot
