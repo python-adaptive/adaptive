@@ -5,9 +5,6 @@ import numpy as np
 import scipy.linalg
 
 
-eps = np.spacing(1)
-
-
 def legendre(n):
     """Return the first n Legendre polynomials.
 
@@ -140,6 +137,9 @@ def calc_V(x, n):
     for i in range(n):
         V[i] *= np.sqrt(i + 0.5)
     return np.array(V).T
+
+
+eps = np.spacing(1)
 
 # the nodes and Newton polynomials
 ns = (5, 9, 17, 33)

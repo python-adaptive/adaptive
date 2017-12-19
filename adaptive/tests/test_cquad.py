@@ -11,6 +11,7 @@ from .algorithm_4 import DivergentIntegralError as A4DivergentIntegralError
 
 eps = np.spacing(1)
 
+
 def run_integrator_learner(f, a, b, tol, nr_points):
     learner = IntegratorLearner(f, bounds=(a, b), tol=tol)
     for _ in range(nr_points):
@@ -38,6 +39,7 @@ def equal_ival(ival, other, *, verbose=False):
 
     return all(same_slots)
 
+
 def equal_ivals(ivals, other, *, verbose=False):
     """Note: `other` is a list of ivals."""
     if len(ivals) != len(other):
@@ -49,6 +51,7 @@ def equal_ivals(ivals, other, *, verbose=False):
     ivals = [sorted(i, key=attrgetter('a')) for i in [ivals, other]]
     return all(equal_ival(ival, other_ival, verbose=verbose)
                for ival, other_ival in zip(*ivals))
+
 
 def same_ivals(f, a, b, tol):
         igral, err, nr_points, ivals = algorithm_4(f, a, b, tol)

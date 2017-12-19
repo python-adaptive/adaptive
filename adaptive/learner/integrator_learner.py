@@ -13,11 +13,8 @@ from sortedcontainers import SortedSet
 
 from .base_learner import BaseLearner
 from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
-                                ndiv_max, max_ivals, min_sep,
+                                ndiv_max, max_ivals, min_sep, eps,
                                 xi, V_inv, Vcond, alpha, gamma)
-
-
-eps = np.spacing(1)
 
 
 def _downdate(c, nans, depth):
