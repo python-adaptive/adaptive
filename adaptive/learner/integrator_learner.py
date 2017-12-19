@@ -192,16 +192,17 @@ class _Interval:
 
         fx = [self.done_points[k] for k in self.points(depth)]
         self.fx = np.array(fx)
+        first_process = self.parent is None and depth == 2
+        if depth and not first_process:
+            # Store for usage in refine
+            c_old = self.c
+        self.c = _calc_coeffs(self.fx, depth)
 
-        if self.parent is None and depth == 2:
-            self.c = _calc_coeffs(self.fx, depth)
+        if first_process:
             return False, False
         elif depth:
             # Refine
-            c_old = self.c
-            self.c = _calc_coeffs(self.fx, depth)
             c_diff = self.calc_err(c_old)
-            self.calc_igral()
             force_split = c_diff > hint * norm(self.c)
         else:
             # Split
@@ -217,9 +218,7 @@ class _Interval:
             c = parent.c if hasattr(parent, 'c') else np.zeros(33, dtype=float)
 
             c_old = self.T[:, :ns[parent.depth_complete]] @ c
-            self.c = _calc_coeffs(self.fx, depth)
             self.calc_err(c_old)
-            self.calc_igral()
             self.c00 = self.c[0]
 
             self.ndiv = parent.ndiv + (parent.c00 and self.c00 / parent.c00 > 2)
@@ -228,12 +227,14 @@ class _Interval:
 
             force_split = False
 
+        self.calc_igral()
+
         if self.done_leaves is not None and not len(self.done_leaves):
             # This interval contributes to the integral estimate.
             self.done_leaves = {self}
 
-            # Use this interval in the integral estimates of the ancestors while
-            # possible.
+            # Use this interval in the integral estimates of the ancestors
+            # while possible.
             ival = self.parent
             old_leaves = set()
             while ival is not None:
@@ -249,7 +250,7 @@ class _Interval:
                 for child in ival.children:
                     if child.done_leaves is None:
                         continue
-                    ival.done_leaves |= child.done_leaves
+                    ival.done_leaves.update(child.done_leaves)
                     child.done_leaves = None
                 ival.done_leaves -= old_leaves
                 ival = ival.parent
