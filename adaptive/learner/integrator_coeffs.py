@@ -4,6 +4,10 @@ from collections import defaultdict
 import numpy as np
 import scipy.linalg
 
+
+eps = np.spacing(1)
+
+
 def legendre(n):
     """Return the first n Legendre polynomials.
 
@@ -147,7 +151,7 @@ xi = [(row - row[::-1]) / 2 for row in xi]
 # Compute the Vandermonde-like matrix and its inverse.
 V = [calc_V(x, n) for x, n in zip(xi, ns)]
 V_inv = list(map(scipy.linalg.inv, V))
-Vcond = list(map(np.linalg.cond, V))
+Vcond = [scipy.linalg.norm(a, 2) * scipy.linalg.norm(b, 2) for a, b in zip(V, V_inv)]
 
 # Compute the shift matrices.
 T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
@@ -156,6 +160,13 @@ T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
 # lower than this value, the error estimate is considered reliable.
 # See section 6.2 of Pedro Gonnet's thesis.
 hint = 0.1
+
+# Smallest acceptable relative difference of points in a rule.  This was chosen
+# such that no artifacts are apparent in plots of (i, log(a_i)), where a_i is
+# the sequence of estimates of the integral value of an interval and all its
+# ancestors..
+min_sep = 16 * eps
+
 ndiv_max = 20
 max_ivals = 200
 

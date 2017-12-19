@@ -13,7 +13,7 @@ from sortedcontainers import SortedSet
 
 from .base_learner import BaseLearner
 from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
-                                ndiv_max, max_ivals,
+                                ndiv_max, max_ivals, min_sep,
                                 xi, V_inv, Vcond, alpha, gamma)
 
 
@@ -400,7 +400,9 @@ class IntegratorLearner(BaseLearner):
         # If the interval points are smaller than machine precision, then
         # don't continue with splitting or refining.
         points = ival.points()
-        reached_machine_tol = points[1] <= points[0] or points[-1] <= points[-2]
+
+        reached_machine_tol = (points[1] - points[0] < points[0] * min_sep or
+                               points[-1] - points[-2] < points[-2] * min_sep)
 
         if not reached_machine_tol:
             if ival.depth == 3 or force_split:
