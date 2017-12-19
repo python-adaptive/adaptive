@@ -197,14 +197,21 @@ class _Interval:
             return False, False
         elif self.depth_complete:
             # Refine
-            c_diff = self.calc_igral_and_err(self.c, depth)
+            c_diff = self.calc_igral_and_err(self.c, self.depth_complete)
             force_split = c_diff > hint * norm(self.c)
         else:
             # Split
             parent = self.parent
+            N_up = 1
+            while parent.parent is not None and parent.depth_complete is None:
+                parent = parent.parent
+                N_up += 1
+
             c = parent.c if hasattr(parent, 'c') else np.zeros(33, dtype=float)
-            c_old = self.T[:, :ns[parent.depth]] @ c
+
+            c_old = self.T[:, :ns[parent.depth_complete]] @ c
             c_diff = self.calc_igral_and_err(c_old, depth)
+            self.err /= N_up**2
             self.c00 = self.c[0]
 
             self.ndiv = parent.ndiv + (parent.c00 and self.c00 / parent.c00 > 2)
