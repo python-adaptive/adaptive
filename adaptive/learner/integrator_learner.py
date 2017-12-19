@@ -224,27 +224,27 @@ class _Interval:
             # This interval contributes to the integral estimate.
             self.done_leaves = {self}
 
-        # Use this interval in the integral estimates of the ancestors while
-        # possible.
-        ival = self.parent
-        old_leaves = set()
-        while ival is not None:
-            unused_children = [child for child in ival.children
-                               if child.done_leaves is not None]
+            # Use this interval in the integral estimates of the ancestors while
+            # possible.
+            ival = self.parent
+            old_leaves = set()
+            while ival is not None:
+                unused_children = [child for child in ival.children
+                                   if child.done_leaves is not None]
 
-            if not all(len(child.done_leaves) for child in unused_children):
-                break
+                if not all(len(child.done_leaves) for child in unused_children):
+                    break
 
-            if ival.done_leaves is None:
-                ival.done_leaves = set()
-            old_leaves.add(ival)
-            for child in ival.children:
-                if child.done_leaves is None:
-                    continue
-                ival.done_leaves |= child.done_leaves
-                child.done_leaves = None
-            ival.done_leaves -= old_leaves
-            ival = ival.parent
+                if ival.done_leaves is None:
+                    ival.done_leaves = set()
+                old_leaves.add(ival)
+                for child in ival.children:
+                    if child.done_leaves is None:
+                        continue
+                    ival.done_leaves |= child.done_leaves
+                    child.done_leaves = None
+                ival.done_leaves -= old_leaves
+                ival = ival.parent
 
         # Check whether the point spacing is smaller than machine precision
         # and pop the interval with the largest error and do not split
