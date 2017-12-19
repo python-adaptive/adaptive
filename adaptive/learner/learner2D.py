@@ -272,7 +272,6 @@ class Learner2D(BaseLearner):
 
         return points_new, losses_new
 
-
     def choose_points(self, n, add_data=True):
         # Even if add_data is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
