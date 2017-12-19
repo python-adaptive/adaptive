@@ -192,13 +192,15 @@ class _Interval:
 
         fx = [self.done_points[k] for k in self.points(depth)]
         self.fx = np.array(fx)
-        self.c = _calc_coeffs(self.fx, depth)
 
         if self.parent is None and depth == 2:
+            self.c = _calc_coeffs(self.fx, depth)
             return False, False
         elif depth:
             # Refine
-            c_diff = self.calc_err(self.c)
+            c_old = self.c
+            self.c = _calc_coeffs(self.fx, depth)
+            c_diff = self.calc_err(c_old)
             self.calc_igral()
             force_split = c_diff > hint * norm(self.c)
         else:
@@ -215,7 +217,8 @@ class _Interval:
             c = parent.c if hasattr(parent, 'c') else np.zeros(33, dtype=float)
 
             c_old = self.T[:, :ns[parent.depth_complete]] @ c
-            c_diff = self.calc_err(c_old)
+            self.c = _calc_coeffs(self.fx, depth)
+            self.calc_err(c_old)
             self.calc_igral()
             self.c00 = self.c[0]
 
