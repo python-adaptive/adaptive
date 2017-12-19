@@ -30,7 +30,7 @@ def _downdate(c, nans, depth):
         b[m] = (b[m] + xii * b[m + 1]) / alpha[m - 1]
         for j in range(m - 1, 0, -1):
             b[j] = ((b[j] + xii * b[j + 1] - gamma[j + 1] * b[j + 2])
-                    / alpha[j - 1])
+                     / alpha[j - 1])
         b = b[1:]
 
         c[:m] -= c[m] / b[m] * b[:m]
@@ -210,7 +210,7 @@ class _Interval:
             c_diff = self.calc_igral_and_err(c_old, depth)
             self.c00 = self.c[0]
 
-            self.ndiv = (parent.ndiv + (parent.c00 and self.c00 / parent.c00 > 2))
+            self.ndiv = parent.ndiv + (parent.c00 and self.c00 / parent.c00 > 2)
             if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
                 raise DivergentIntegralError(self)
 
