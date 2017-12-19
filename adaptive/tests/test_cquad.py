@@ -163,3 +163,21 @@ def test_add_points_in_random_order():
 
     # This should at least be the case
     assert abs(learner.igral - scipy.integrate.quad(f24, 0, 3)[0]) < 0.1
+
+
+def test_approximating_intervals():
+    import random
+    learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
+
+    xs, _ = learner.choose_points(33)
+    for x in xs:
+        learner.add_point(x, f24(x))
+
+    xs, _ = learner.choose_points(10000)
+    random.shuffle(xs)
+    for x in xs:
+        learner.add_point(x, f24(x))
+
+    ivals = sorted(learner.approximating_intervals, key=lambda l: l.a)
+    for i in range(len(ivals)-1):
+        assert ivals[i].b == ivals[i+1].a, (ivals[i], ivals[i+1])
