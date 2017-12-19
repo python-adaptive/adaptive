@@ -336,6 +336,11 @@ class IntegratorLearner(BaseLearner):
                     self.ivals.discard(ival)
                     force_split, remove = ival.complete_process(depth)
                     if remove:
+                        # Remove the interval (while remembering the excess
+                        # integral and error), since it is either too narrow,
+                        # or the estimated relative error is already at the
+                        # limit of numerical accuracy and cannot be reduced
+                        # further.
                         self._err_excess += ival.err
                         self._igral_excess += ival.igral
                     elif in_ivals:
