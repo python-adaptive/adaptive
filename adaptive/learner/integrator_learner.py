@@ -173,16 +173,15 @@ class _Interval:
 
         return ivals
 
-    def calc_igral(self):
-        self.igral = (self.b - self.a) * self.c[0] / sqrt(2)
-
-    def calc_err(self, c_old):
-        c_new = self.c
+    def calc_igral_and_err(self, c_old, depth):
+        self.c = c_new = _calc_coeffs(self.fx, depth)
         c_diff = np.zeros(max(len(c_old), len(c_new)))
         c_diff[:len(c_old)] = c_old
         c_diff[:len(c_new)] -= c_new
         c_diff = norm(c_diff)
-        self.err = (self.b - self.a) * c_diff
+        w = self.b - self.a
+        self.igral = w * c_new[0] / sqrt(2)
+        self.err = w * c_diff
         return c_diff
 
     def complete_process(self, depth):
@@ -192,14 +191,13 @@ class _Interval:
 
         fx = [self.done_points[k] for k in self.points(depth)]
         self.fx = np.array(fx)
-        self.c = _calc_coeffs(self.fx, depth)
 
-        if self.parent is None and self.depth_complete == 2:
+        if self.parent is None and depth == 2:
+            self.c = _calc_coeffs(self.fx, depth)
             return False, False
-        elif self.depth_complete:
+        elif depth:
             # Refine
-            c_diff = self.calc_err(self.c)
-            self.calc_igral()
+            c_diff = self.calc_igral_and_err(self.c, depth)
             force_split = c_diff > hint * norm(self.c)
         else:
             # Split
@@ -212,9 +210,8 @@ class _Interval:
             c = parent.c if hasattr(parent, 'c') else np.zeros(33, dtype=float)
 
             c_old = self.T[:, :ns[parent.depth_complete]] @ c
-            c_diff = self.calc_err(c_old, depth)
+            c_diff = self.calc_igral_and_err(c_old, depth)
             self.err /= N_up**2
-            self.calc_igral()
             self.c00 = self.c[0]
 
             self.ndiv = parent.ndiv + (parent.c00 and self.c00 / parent.c00 > 2)
