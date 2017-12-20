@@ -152,26 +152,37 @@ def test_adding_points_and_skip_one_point():
     np.testing.assert_almost_equal(learner.igral, learner2.igral)
 
 
-def test_add_points_in_random_order():
+def test_add_points_in_random_order(first_add_33=False):
     import scipy.integrate
     import random
-    learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
-    xs, _ = learner.choose_points(10000)
-    random.shuffle(xs)
-    for x in xs:
-        learner.add_point(x, f24(x))
+    learners = [IntegratorLearner(f, bounds=(0, 3), tol=1e-10)
+                for f, a, b in [[f0, 0, 3],
+                                [f7, 0, 1],
+                                [f21, 0, 1],
+                                [f24, 0, 3]]]
 
-    # This should at least be the case
-    assert abs(learner.igral - scipy.integrate.quad(f24, 0, 3)[0]) < 0.1
+    for learner in learners:
+        if first_add_33:
+            xs, _ = learner.choose_points(33)
+            for x in xs:
+                learner.add_point(x, learner.function(x))
+
+        xs, _ = learner.choose_points(10000)
+        random.shuffle(xs)
+        for x in xs:
+            learner.add_point(x, learner.function(x))
+        # This should at least be the case
+        scipy_igral = scipy.integrate.quad(learner.function, *learner.bounds)[0]
+        assert abs(learner.igral - scipy_igral) < 0.01, learner.function
+
+
+def test_add_points_in_random_order2():
+    test_add_points_in_random_order(first_add_33=True)
 
 
 def test_approximating_intervals():
     import random
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
-
-    xs, _ = learner.choose_points(33)
-    for x in xs:
-        learner.add_point(x, f24(x))
 
     xs, _ = learner.choose_points(10000)
     random.shuffle(xs)
