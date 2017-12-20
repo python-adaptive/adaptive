@@ -237,9 +237,11 @@ class _Interval:
             if parent.depth_complete is None:
                 # Cannot reliably estimate the error, reverting to the heuristic
                 N_up = 1
-                while parent.parent is not None and parent.depth_complete is None:
-                    parent = parent.parent
+                while parent.depth_complete is None:
                     N_up += 1
+                    if parent.parent is None:
+                        break
+                    parent = parent.parent
                 self.err = parent.err / 2**N_up
             else:
                 self.calc_err_recursively()
