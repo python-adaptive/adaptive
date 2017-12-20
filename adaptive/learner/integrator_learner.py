@@ -27,12 +27,13 @@ def _downdate(c, nans, depth):
         b[m] = (b[m] + xii * b[m + 1]) / alpha[m - 1]
         for j in range(m - 1, 0, -1):
             b[j] = ((b[j] + xii * b[j + 1] - gamma[j + 1] * b[j + 2])
-                     / alpha[j - 1])
+                    / alpha[j - 1])
         b = b[1:]
 
         c[:m] -= c[m] / b[m] * b[:m]
         c[m] = 0
         m -= 1
+    return c
 
 
 def _zero_nans(fx):
@@ -51,7 +52,7 @@ def _calc_coeffs(fx, depth):
     c_new = V_inv[depth] @ fx
     if nans:
         fx[nans] = np.nan
-        _downdate(c_new, nans, depth)
+        c_new = _downdate(c_new, nans, depth)
     return c_new
 
 
