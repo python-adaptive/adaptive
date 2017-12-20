@@ -186,6 +186,32 @@ class _Interval:
         self.err = (self.b - self.a) * c_diff
         return c_diff
 
+    def calc_err_recursively(self):
+        c_old = self.T[:, :ns[self.parent.depth_complete]] @ self.parent.c
+        self.calc_err(c_old)
+        for child in self.children:
+            if child.depth_complete == 0:
+                child.calc_err_recursively()
+
+    def calc_ndiv(self):
+        div = (self.parent.c00 and self.c00 / self.parent.c00 > 2)
+        self.ndiv = self.parent.ndiv + div
+
+        if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
+            raise DivergentIntegralError
+
+        if div:
+            for child in self.children:
+                child.calc_ndiv_recursively()
+
+    def calc_ndiv_recursively(self):
+        self.ndiv += 1
+        if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
+            raise DivergentIntegralError
+
+        for child in self.children:
+            child.calc_ndiv_recursively()
+
     def complete_process(self, depth):
         """Calculate the integral contribution and error from this interval,
         and update the done leaves of all ancestor intervals."""
@@ -215,16 +241,13 @@ class _Interval:
                     parent = parent.parent
                     N_up += 1
                 self.err = parent.err / 2**N_up
+            else:
+                self.calc_err_recursively()
 
-            c = parent.c if hasattr(parent, 'c') else np.zeros(33, dtype=float)
-
-            c_old = self.T[:, :ns[parent.depth_complete]] @ c
-            self.calc_err(c_old)
             self.c00 = self.c[0]
-
-            self.ndiv = parent.ndiv + (parent.c00 and self.c00 / parent.c00 > 2)
-            if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
-                raise DivergentIntegralError(self)
+            self.calc_ndiv()
+            # for child in self.children:
+            #     child.calc_ndiv()
 
             force_split = False
 
