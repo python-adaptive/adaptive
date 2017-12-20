@@ -35,10 +35,19 @@ def _downdate(c, nans, depth):
         m -= 1
 
 
+def _zero_nans(fx):
+    """Caution: this function modifies fx."""
+    nans = []
+    for i in range(len(fx)):
+        if not np.isfinite(fx[i]):
+            nans.append(i)
+            fx[i] = 0.0
+    return nans
+
+
 def _calc_coeffs(fx, depth):
     """Caution: this function modifies fx."""
-    nans = np.where(~np.isfinite(fx))[0]
-    fx[nans] = 0.0
+    nans = _zero_nans(fx)
     c_new = V_inv[depth] @ fx
     if nans:
         fx[nans] = np.nan
