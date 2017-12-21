@@ -155,25 +155,26 @@ def test_adding_points_and_skip_one_point():
 def test_add_points_in_random_order(first_add_33=False):
     import scipy.integrate
     import random
-    learners = [IntegratorLearner(f, bounds=(0, 3), tol=1e-10)
-                for f, a, b in [[f0, 0, 3],
-                                [f7, 0, 1],
-                                [f21, 0, 1],
-                                [f24, 0, 3]]]
 
-    for learner in learners:
+    for f, a, b in ([f0, 0, 3],
+                    [f21, 0, 1],
+                    [f24, 0, 3],
+                    [f7, 0, 1],
+                    ):
+        learner = IntegratorLearner(f, bounds=(a, b), tol=1e-10)
         if first_add_33:
             xs, _ = learner.choose_points(33)
             for x in xs:
-                learner.add_point(x, learner.function(x))
+                learner.add_point(x, f(x))
 
         xs, _ = learner.choose_points(10000)
         random.shuffle(xs)
         for x in xs:
-            learner.add_point(x, learner.function(x))
+            learner.add_point(x, f(x))
         # This should at least be the case
-        scipy_igral = scipy.integrate.quad(learner.function, *learner.bounds)[0]
-        assert abs(learner.igral - scipy_igral) < 0.01, learner.function
+        scipy_igral = scipy.integrate.quad(f, a, b)[0]
+        scipy_igral = algorithm_4(f, a, b, tol=1e-10)[0]
+        assert abs(learner.igral - scipy_igral) < 0.01, f
 
 
 def test_add_points_in_random_order2():
