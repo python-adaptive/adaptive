@@ -202,15 +202,15 @@ class _Interval:
 
         if div:
             for child in self.children:
-                child.calc_ndiv_recursively()
+                child.update_ndiv_recursively()
 
-    def calc_ndiv_recursively(self):
+    def update_ndiv_recursively(self):
         self.ndiv += 1
         if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
             raise DivergentIntegralError
 
         for child in self.children:
-            child.calc_ndiv_recursively()
+            child.update_ndiv_recursively()
 
     def complete_process(self, depth):
         """Calculate the integral contribution and error from this interval,
