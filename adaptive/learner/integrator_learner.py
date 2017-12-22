@@ -177,6 +177,14 @@ class _Interval:
     def calc_igral(self):
         self.igral = (self.b - self.a) * self.c[0] / sqrt(2)
 
+    def update_heuristic_err(self, value):
+        self.err = value
+        for child in self.children:
+            if child.depth_complete or (child.depth_complete == 0
+                                        and self.depth_complete is not None):
+                continue
+            child.update_heuristic_err(value / 2)
+
     def calc_err(self, c_old):
         c_new = self.c
         c_diff = np.zeros(max(len(c_old), len(c_new)))
@@ -184,14 +192,10 @@ class _Interval:
         c_diff[:len(c_new)] -= c_new
         c_diff = norm(c_diff)
         self.err = (self.b - self.a) * c_diff
-        return c_diff
-
-    def calc_err_recursively(self):
-        c_old = self.T[:, :ns[self.parent.depth_complete]] @ self.parent.c
-        self.calc_err(c_old)
         for child in self.children:
-            if child.depth_complete == 0:
-                child.calc_err_recursively()
+            if child.depth_complete is None:
+                child.update_heuristic_err(self.err / 2)
+        return c_diff
 
     def calc_ndiv(self):
         div = (self.parent.c00 and self.c00 / self.parent.c00 > 2)
@@ -233,23 +237,19 @@ class _Interval:
             force_split = c_diff > hint * norm(self.c)
         else:
             # Split
-            parent = self.parent
-            if parent.depth_complete is None:
-                # Cannot reliably estimate the error, reverting to the heuristic
-                N_up = 1
-                while parent.depth_complete is None:
-                    N_up += 1
-                    if parent.parent is None:
-                        break
-                    parent = parent.parent
-                self.err = parent.err / 2**N_up
-            else:
-                self.calc_err_recursively()
-
             self.c00 = self.c[0]
-            self.calc_ndiv()
-            # for child in self.children:
-            #     child.calc_ndiv()
+
+            if self.parent.depth_complete:
+                c_old = self.T[:, :ns[self.parent.depth_complete]] @ self.parent.c
+                self.calc_err(c_old)
+                self.calc_ndiv()
+
+            for child in self.children:
+                if child.depth_complete is not None:
+                    child.calc_ndiv()
+                if child.depth_complete == 0:
+                    c_old = child.T[:, :ns[self.depth_complete]] @ self.c
+                    child.calc_err(c_old)
 
             force_split = False
 
