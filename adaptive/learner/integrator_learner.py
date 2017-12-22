@@ -195,7 +195,7 @@ class _Interval:
 
     def calc_ndiv(self):
         div = (self.parent.c00 and self.c00 / self.parent.c00 > 2)
-        self.ndiv = self.parent.ndiv + div
+        self.ndiv += div
 
         if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
             raise DivergentIntegralError
