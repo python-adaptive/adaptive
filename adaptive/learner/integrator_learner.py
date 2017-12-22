@@ -124,11 +124,12 @@ class _Interval:
         self.depth_complete = None
 
     @classmethod
-    def make_first(cls, a, b, depth=2):
+    def make_first(cls, a, b, depth=3):
         ival = _Interval(a, b, depth, rdepth=1)
         ival.ndiv = 0
         ival.parent = None
         ival.err = np.inf
+        ival.c = np.zeros(33, dtype=float)
         return ival
 
     @property
@@ -223,16 +224,17 @@ class _Interval:
         fx = [self.done_points[k] for k in self.points(depth)]
         self.fx = np.array(fx)
         force_split = False  # This may change when refining
-        first_process = self.parent is None and depth == 2
-        if depth and not first_process:
+
+        if depth:
             # Store for usage in refine
             c_old = self.c
+
         self.c = _calc_coeffs(self.fx, depth)
 
-        if first_process:
+        if self.parent is None and depth == 3:
             self.c00 = self.c[0]
-            return False, False
-        elif depth:
+
+        if depth:
             # Refine
             c_diff = self.calc_err(c_old)
             force_split = c_diff > hint * norm(self.c)
@@ -361,7 +363,7 @@ class IntegratorLearner(BaseLearner):
             ival.done_points[point] = value
 
             if ival.depth_complete is None:
-                from_depth = 2 if ival.parent is None else 0
+                from_depth = 3 if ival.parent is None else 0
             else:
                 from_depth = ival.depth_complete + 1
 
