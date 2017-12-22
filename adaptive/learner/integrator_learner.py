@@ -222,6 +222,7 @@ class _Interval:
 
         fx = [self.done_points[k] for k in self.points(depth)]
         self.fx = np.array(fx)
+        force_split = False  # This may change when refining
         first_process = self.parent is None and depth == 2
         if depth and not first_process:
             # Store for usage in refine
@@ -250,8 +251,6 @@ class _Interval:
                 if child.depth_complete == 0:
                     c_old = child.T[:, :ns[self.depth_complete]] @ self.c
                     child.calc_err(c_old)
-
-            force_split = False
 
         self.calc_igral()
 
@@ -284,8 +283,6 @@ class _Interval:
         # Check whether the point spacing is smaller than machine precision
         # and pop the interval with the largest error and do not split
         remove = self.err < (abs(self.igral) * eps * Vcond[depth])
-        if remove:
-            force_split = False
 
         return force_split, remove
 
@@ -361,7 +358,6 @@ class IntegratorLearner(BaseLearner):
         # Select the intervals that have this point
         ivals = self.x_mapping[point]
         for ival in ivals:
-            force_split = False
             ival.done_points[point] = value
 
             if ival.depth_complete is None:
@@ -374,6 +370,7 @@ class IntegratorLearner(BaseLearner):
                     in_ivals = ival in self.ivals
                     self.ivals.discard(ival)
                     force_split, remove = ival.complete_process(depth)
+
                     if remove:
                         # Remove the interval (while remembering the excess
                         # integral and error), since it is either too narrow,
@@ -382,13 +379,12 @@ class IntegratorLearner(BaseLearner):
                         # further.
                         self._err_excess += ival.err
                         self._igral_excess += ival.igral
+                    elif force_split and not ival.children:
+                        # If it already has children it's already split
+                        self.priority_split.append(ival)
                     elif in_ivals:
+                        assert not ival.children
                         self.ivals.add(ival)
-
-            if force_split:
-                # Make sure that at the next execution of _fill_stack(),
-                # this ival will be split.
-                self.priority_split.append(ival)
 
     def _update_ival(self, ival):
         for x in ival.points():
@@ -429,13 +425,9 @@ class IntegratorLearner(BaseLearner):
     def _fill_stack(self):
         # XXX: to-do if all the ivals have err=inf, take the interval
         # with the lowest rdepth and no children.
-        if self.priority_split:
-            ival = self.priority_split.pop()
-            force_split = True
-        else:
-            ival = self.ivals[-1]
-            force_split = False
-            assert not ival.children
+        force_split = bool(self.priority_split)
+        ival = self.ivals[-1] if not force_split else self.priority_split.pop()
+        assert not ival.children, force_split
 
         # Remove the interval from the err sorted set because we're going to
         # split or refine this interval
