@@ -12,6 +12,14 @@ from .algorithm_4 import DivergentIntegralError as A4DivergentIntegralError
 eps = np.spacing(1)
 
 
+def rolling_shuffle(nums, size):
+    for i in range(len(nums) - size):
+        x = nums[i:i+size+1]
+        random.shuffle(x)
+        nums[i:i+size+1] = x
+    return nums
+
+
 def run_integrator_learner(f, a, b, tol, nr_points):
     learner = IntegratorLearner(f, bounds=(a, b), tol=tol)
     for _ in range(nr_points):
@@ -153,6 +161,7 @@ def test_adding_points_and_skip_one_point():
 
 
 def test_add_points_in_random_order(first_add_33=False):
+    from operator import attrgetter
     import scipy.integrate
     import random
 
@@ -161,24 +170,38 @@ def test_add_points_in_random_order(first_add_33=False):
                     [f24, 0, 3],
                     [f7, 0, 1],
                     ):
-        learner = IntegratorLearner(f, bounds=(a, b), tol=1e-10)
-        if first_add_33:
-            xs, _ = learner.choose_points(33)
+        learners = []
+        for shuffle in [True, False]:
+            l = IntegratorLearner(f, bounds=(a, b), tol=1e-10)
+
+            xs, _ = l.choose_points(33)
             for x in xs:
-                learner.add_point(x, f(x))
+                l.add_point(x, f(x))
 
-        xs, _ = learner.choose_points(10000)
-        random.shuffle(xs)
-        for x in xs:
-            learner.add_point(x, f(x))
-        # This should at least be the case
-        scipy_igral = scipy.integrate.quad(f, a, b)[0]
-        scipy_igral = algorithm_4(f, a, b, tol=1e-10)[0]
-        assert abs(learner.igral - scipy_igral) < 0.01, f
+            xs, _ = l.choose_points(10000)
+            if shuffle:
+                random.shuffle(xs)
+            for x in xs:
+                l.add_point(x, f(x))
+            learners.append(l)
 
+        # Test whether approximating_intervals gives a complete set of intervals
+        for l in learners:
+            ivals = sorted(l.approximating_intervals, key=lambda l: l.a)
+            for i in range(len(ivals)-1):
+                assert ivals[i].b == ivals[i+1].a, (ivals[i], ivals[i+1])
 
-def test_add_points_in_random_order2():
-    test_add_points_in_random_order(first_add_33=True)
+        # Test whether approximating_intervals is the same for random order of adding the point
+        ivals = [sorted(ival, key=attrgetter('a')) for ival in
+                 [l.approximating_intervals for l in learners]]
+        assert all(ival.a == other_ival.a for ival, other_ival in zip(*ivals))
+
+        # Test whether the igral is identical
+        assert np.allclose(learners[0].igral, learners[1].igral), f
+
+        # Compare if the errors are in line with the sequential case
+        igral = algorithm_4(f, a, b, tol=1e-10)
+        assert all((l.err > abs(l.igral-igral[0])) for l in learners)
 
 
 def test_approximating_intervals():
