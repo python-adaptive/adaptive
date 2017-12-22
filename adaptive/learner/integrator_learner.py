@@ -120,7 +120,6 @@ class _Interval:
         self.b = b
         self.depth = depth
         self.rdepth = rdepth
-        self.c00 = 0.0
         self.done_leaves = set()
         self.depth_complete = None
 
@@ -170,7 +169,7 @@ class _Interval:
         for ival in ivals:
             ival.parent = self
             ival.ndiv = self.ndiv
-            ival.err = self.err / sqrt(2)
+            ival.err = self.err / 2
 
         return ivals
 
@@ -230,6 +229,7 @@ class _Interval:
         self.c = _calc_coeffs(self.fx, depth)
 
         if first_process:
+            self.c00 = self.c[0]
             return False, False
         elif depth:
             # Refine
