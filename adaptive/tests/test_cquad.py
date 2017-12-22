@@ -160,7 +160,7 @@ def test_adding_points_and_skip_one_point():
     np.testing.assert_almost_equal(learner.igral, learner2.igral)
 
 
-def test_add_points_in_random_order():
+def test_add_points_in_random_order(first_add_33=False):
     from operator import attrgetter
     import scipy.integrate
     import random
@@ -173,6 +173,11 @@ def test_add_points_in_random_order():
         learners = []
         for shuffle in [True, False]:
             l = IntegratorLearner(f, bounds=(a, b), tol=1e-10)
+
+            if first_add_33:
+                xs, _ = l.choose_points(33)
+                for x in xs:
+                    l.add_point(x, f(x))
 
             xs, _ = l.choose_points(10000)
             if shuffle:
@@ -201,6 +206,10 @@ def test_add_points_in_random_order():
         # Compare if the errors are in line with the sequential case
         igral = algorithm_4(f, a, b, tol=1e-10)
         assert all((l.err > abs(l.igral-igral[0])) for l in learners)
+
+
+def test_add_points_in_random_order_first_add_33():
+    test_add_points_in_random_order(first_add_33=True)
 
 
 def test_approximating_intervals():
