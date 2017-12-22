@@ -126,7 +126,7 @@ def test_choosing_and_adding_points_one_by_one():
 
 def test_choosing_and_adding_multiple_points_at_once():
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
-    xs, _ = learner.choose_points(33)
+    xs, _ = learner.choose_points(100)
     for x in xs:
         learner.add_point(x, learner.function(x))
 
@@ -160,7 +160,7 @@ def test_adding_points_and_skip_one_point():
     np.testing.assert_almost_equal(learner.igral, learner2.igral)
 
 
-def test_add_points_in_random_order(first_add_33=False):
+def test_add_points_in_random_order():
     from operator import attrgetter
     import scipy.integrate
     import random
@@ -173,10 +173,6 @@ def test_add_points_in_random_order(first_add_33=False):
         learners = []
         for shuffle in [True, False]:
             l = IntegratorLearner(f, bounds=(a, b), tol=1e-10)
-
-            xs, _ = l.choose_points(33)
-            for x in xs:
-                l.add_point(x, f(x))
 
             xs, _ = l.choose_points(10000)
             if shuffle:
