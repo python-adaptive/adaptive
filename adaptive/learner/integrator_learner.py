@@ -445,8 +445,8 @@ class IntegratorLearner(BaseLearner):
         # don't continue with splitting or refining.
         points = ival.points()
 
-        reached_machine_tol = (points[1] - points[0] < points[0] * min_sep or
-                               points[-1] - points[-2] < points[-2] * min_sep)
+        reached_machine_tol = (points[1] - points[0] < points[0] * min_sep
+                               or points[-1] - points[-2] < points[-2] * min_sep)
 
         if not reached_machine_tol:
             if ival.depth == 3 or force_split:
