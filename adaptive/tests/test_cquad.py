@@ -184,6 +184,7 @@ def test_add_points_in_random_order(first_add_33=False):
                 random.shuffle(xs)
             for x in xs:
                 l.add_point(x, f(x))
+
             learners.append(l)
 
         # Test whether approximating_intervals gives a complete set of intervals
@@ -200,13 +201,19 @@ def test_add_points_in_random_order(first_add_33=False):
         # Test whether the igral is identical
         assert np.allclose(learners[0].igral, learners[1].igral), f
 
-        # Check whether the errors are finite
-        assert all(np.isfinite(l.err) for l in learners)
-
         # Compare if the errors are in line with the sequential case
         igral = algorithm_4(f, a, b, tol=1e-10)
         assert all((l.err > abs(l.igral-igral[0])) for l in learners)
 
+        # Check that the errors are finite
+        for l in learners:
+            if not np.isfinite(l.err):
+                # Check that if adding new points removes the l.err == np.inf
+                xs, _ = l.choose_points(200)
+                for x in xs:
+                    l.add_point(x, f(x))
+
+            assert np.isfinite(l.err)
 
 def test_add_points_in_random_order_first_add_33():
     test_add_points_in_random_order(first_add_33=True)
