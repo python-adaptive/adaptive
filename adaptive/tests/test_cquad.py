@@ -195,6 +195,9 @@ def test_add_points_in_random_order():
         # Test whether the igral is identical
         assert np.allclose(learners[0].igral, learners[1].igral), f
 
+        # Check whether the errors are finite
+        assert all(np.isfinite(l.err) for l in learners)
+
         # Compare if the errors are in line with the sequential case
         igral = algorithm_4(f, a, b, tol=1e-10)
         assert all((l.err > abs(l.igral-igral[0])) for l in learners)
