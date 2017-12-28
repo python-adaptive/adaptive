@@ -110,7 +110,7 @@ class _Interval:
     __slots__ = [
         'a', 'b', 'c', 'c00', 'depth', 'igral', 'err', 'fx', 'rdepth',
         'ndiv', 'parent', 'children', 'done_points', 'done_leaves',
-        'depth_complete'
+        'depth_complete', 'removed',
     ]
 
     def __init__(self, a, b, depth, rdepth):
@@ -122,6 +122,7 @@ class _Interval:
         self.rdepth = rdepth
         self.done_leaves = set()
         self.depth_complete = None
+        self.removed = False
 
     @classmethod
     def make_first(cls, a, b, depth=3):
@@ -338,8 +339,6 @@ class IntegratorLearner(BaseLearner):
         self.done_points = {}
         self.pending_points = set()
         self._stack = []
-        self._err_excess = 0
-        self._igral_excess = 0
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
         self.ivals = set()
         ival = _Interval.make_first(*self.bounds)
@@ -377,17 +376,22 @@ class IntegratorLearner(BaseLearner):
                         # or the estimated relative error is already at the
                         # limit of numerical accuracy and cannot be reduced
                         # further.
-                        # XXX: what if this interval already has children?
-                        # we would need to neglect the contribution of those
-                        # ivals as well.
-                        if not ival.children:
-                            self._err_excess += ival.err
-                            self._igral_excess += ival.igral
-                        self.ivals.discard(ival)
+                        self.propagate_removed(ival)
+
                     elif force_split and not ival.children:
                         # If it already has children it has already been split
                         assert ival in self.ivals
                         self.priority_split.append(ival)
+
+    def propagate_removed(self, ival):
+        def _propagate_removed_down(ival):
+            ival.removed = True
+            self.ivals.discard(ival)
+
+            for child in ival.children:
+                _propagate_removed_down(child)
+
+        _propagate_removed_down(ival)
 
     def add_ival(self, ival):
         for x in ival.points():
@@ -474,10 +478,11 @@ class IntegratorLearner(BaseLearner):
     def done(self):
         err = self.err
         igral = self.igral
+        err_excess = sum(i.err for i in self.approximating_intervals
+                         if i.removed)
         return (err == 0
                 or err < abs(igral) * self.tol
-                or (self._err_excess > abs(igral) * self.tol
-                    and err - self._err_excess < abs(igral) * self.tol)
+                or (err - err_excess < abs(igral) * self.tol < err_excess)
                 or not self.ivals)
 
     def loss(self, real=True):
