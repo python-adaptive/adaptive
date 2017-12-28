@@ -363,7 +363,7 @@ class IntegratorLearner(BaseLearner):
             ival.done_points[point] = value
 
             if ival.depth_complete is None:
-                from_depth = 3 if ival.parent is None else 0
+                from_depth = 0 if ival.parent is not None else 3
             else:
                 from_depth = ival.depth_complete + 1
 
@@ -379,8 +379,14 @@ class IntegratorLearner(BaseLearner):
                         # or the estimated relative error is already at the
                         # limit of numerical accuracy and cannot be reduced
                         # further.
-                        self._err_excess += ival.err
-                        self._igral_excess += ival.igral
+                        # XXX: what if this interval already has children?
+                        # we would need to neglect the contribution of those
+                        # ivals as well.
+                        if not ival.children:
+                            self._err_excess += ival.err
+                            self._igral_excess += ival.igral
+
+                        self.ivals.discard(ival)  # Should be remove?
                     elif force_split and not ival.children:
                         # If it already has children it's already split
                         self.priority_split.append(ival)
@@ -439,10 +445,10 @@ class IntegratorLearner(BaseLearner):
         # don't continue with splitting or refining.
         points = ival.points()
 
-        reached_machine_tol = (points[1] - points[0] < points[0] * min_sep
-                               or points[-1] - points[-2] < points[-2] * min_sep)
-
-        if not reached_machine_tol:
+        if (points[1] - points[0] < points[0] * min_sep
+            or points[-1] - points[-2] < points[-2] * min_sep):
+            self.ivals.remove(ival)
+        else:
             if ival.depth == 3 or force_split:
                 # Always split when depth is maximal or if refining didn't help
                 ivals_new = ival.split()
