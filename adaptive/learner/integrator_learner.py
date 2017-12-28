@@ -234,6 +234,8 @@ class _Interval:
         if self.parent is None and depth == 3:
             self.c00 = self.c[0]
 
+        self.calc_igral()
+
         if depth:
             # Refine
             c_diff = self.calc_err(c_old)
@@ -253,8 +255,6 @@ class _Interval:
                 if child.depth_complete == 0:
                     c_old = child.T[:, :ns[self.depth_complete]] @ self.c
                     child.calc_err(c_old)
-
-        self.calc_igral()
 
         if self.done_leaves is not None and not len(self.done_leaves):
             # This interval contributes to the integral estimate.
@@ -341,9 +341,9 @@ class IntegratorLearner(BaseLearner):
         self._err_excess = 0
         self._igral_excess = 0
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
-        self.ivals = SortedSet([], key=attrgetter('err'))
+        self.ivals = set()
         ival = _Interval.make_first(*self.bounds)
-        self._update_ival(ival)
+        self.add_ival(ival)
         self.first_ival = ival
 
     @property
@@ -369,8 +369,6 @@ class IntegratorLearner(BaseLearner):
 
             for depth in range(from_depth, ival.depth + 1):
                 if ival.refinement_complete(depth):
-                    in_ivals = ival in self.ivals
-                    self.ivals.discard(ival)
                     force_split, remove = ival.complete_process(depth)
 
                     if remove:
@@ -385,16 +383,13 @@ class IntegratorLearner(BaseLearner):
                         if not ival.children:
                             self._err_excess += ival.err
                             self._igral_excess += ival.igral
-
-                        self.ivals.discard(ival)  # Should be remove?
+                        self.ivals.discard(ival)
                     elif force_split and not ival.children:
-                        # If it already has children it's already split
+                        # If it already has children it has already been split
+                        assert ival in self.ivals
                         self.priority_split.append(ival)
-                    elif in_ivals:
-                        assert not ival.children
-                        self.ivals.add(ival)
 
-    def _update_ival(self, ival):
+    def add_ival(self, ival):
         for x in ival.points():
             # Update the mappings
             self.x_mapping[x].add(ival)
@@ -403,8 +398,6 @@ class IntegratorLearner(BaseLearner):
             elif x not in self.pending_points:
                 self.pending_points.add(x)
                 self._stack.append(x)
-
-        # Add the new interval to the err sorted set
         self.ivals.add(ival)
 
     def choose_points(self, n):
@@ -434,12 +427,12 @@ class IntegratorLearner(BaseLearner):
         # XXX: to-do if all the ivals have err=inf, take the interval
         # with the lowest rdepth and no children.
         force_split = bool(self.priority_split)
-        ival = self.ivals[-1] if not force_split else self.priority_split.pop()
-        assert not ival.children, force_split
+        if force_split:
+            ival = self.priority_split.pop()
+        else:
+            ival = max(self.ivals, key=attrgetter('err'))
 
-        # Remove the interval from the err sorted set because we're going to
-        # split or refine this interval
-        self.ivals.discard(ival)
+        assert not ival.children
 
         # If the interval points are smaller than machine precision, then
         # don't continue with splitting or refining.
@@ -448,20 +441,18 @@ class IntegratorLearner(BaseLearner):
         if (points[1] - points[0] < points[0] * min_sep
             or points[-1] - points[-2] < points[-2] * min_sep):
             self.ivals.remove(ival)
+        elif ival.depth == 3 or force_split:
+            # Always split when depth is maximal or if refining didn't help
+            self.ivals.remove(ival)
+            for ival in ival.split():
+                self.add_ival(ival)
         else:
-            if ival.depth == 3 or force_split:
-                # Always split when depth is maximal or if refining didn't help
-                ivals_new = ival.split()
-                for ival_new in ivals_new:
-                    self._update_ival(ival_new)
-            else:
-                ival_new = ival.refine()
-                self._update_ival(ival_new)
+            self.add_ival(ival.refine())
 
         # Remove the interval with the smallest error
         # if number of intervals is larger than max_ivals
         if len(self.ivals) > max_ivals:
-            self.ivals.pop(0)
+            self.ivals.remove(min(self.ivals, key=attrgetter('err')))
 
         return self._stack
 

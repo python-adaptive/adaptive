@@ -187,9 +187,6 @@ def test_add_points_in_random_order(first_add_33=False):
 
             learners.append(l)
 
-        # Test if the SortedSet is really sorted
-        assert all((list(l.ivals) == sorted(l.ivals, key=attrgetter('err'))) for l in learners)
-
         # Test whether approximating_intervals gives a complete set of intervals
         for l in learners:
             ivals = sorted(l.approximating_intervals, key=lambda l: l.a)
