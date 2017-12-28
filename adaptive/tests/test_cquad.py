@@ -198,6 +198,10 @@ def test_add_points_in_random_order(first_add_33=False):
                  [l.approximating_intervals for l in learners]]
         assert all(ival.a == other_ival.a for ival, other_ival in zip(*ivals))
 
+        # Test if the approximating_intervals are the same
+        ivals = [set((i.a, i.b) for i in l.approximating_intervals) for l in learners]
+        assert ivals[0] == ivals[1]
+
         # Test whether the igral is identical
         assert np.allclose(learners[0].igral, learners[1].igral), f
 
