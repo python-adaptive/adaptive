@@ -6,6 +6,7 @@
 from collections import defaultdict
 from math import sqrt
 from operator import attrgetter
+import sys
 
 import numpy as np
 from scipy.linalg import norm
@@ -129,7 +130,7 @@ class _Interval:
         ival = _Interval(a, b, depth, rdepth=1)
         ival.ndiv = 0
         ival.parent = None
-        ival.err = np.inf
+        ival.err = sys.float_info.max  # needed because inf/2 == inf
         ival.c = np.zeros(33, dtype=float)
         return ival
 
@@ -473,9 +474,12 @@ class IntegratorLearner(BaseLearner):
     @property
     def err(self):
         if self.approximating_intervals:
-            return sum(i.err for i in self.approximating_intervals)
+            err = sum(i.err for i in self.approximating_intervals)
+            if err > sys.float_info.max:
+                err = np.inf
         else:
-            return np.inf
+            err = np.inf
+        return err
 
     def done(self):
         err = self.err
