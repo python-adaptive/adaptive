@@ -6,7 +6,6 @@ from fractions import Fraction as Frac
 from collections import defaultdict
 import numpy as np
 from numpy.testing import assert_allclose
-from numpy.linalg import cond
 from scipy.linalg import norm, inv
 
 
@@ -139,9 +138,11 @@ def calc_bdef(ns):
 
 # Nodes and Newton polynomials.
 n = (5, 9, 17, 33)
-xi = [-np.cos(np.arange(n[j])/(n[j]-1) * np.pi) for j in range(4)]
-# Make `xi` perfectly anti-symmetric, important for splitting the intervals
-xi = [(row - row[::-1]) / 2 for row in xi]
+xi = [-np.cos(np.pi / (n[j] - 1) * np.arange(n[j])) for j in range(4)]
+# Set central rule points precisely to zero.  This does not really
+# matter in practice, but is useful for tests.
+for l in xi:
+    l[len(l) // 2] = 0.0
 
 b_def = calc_bdef(n)
 
@@ -157,7 +158,7 @@ def calc_V(xi, n):
 # Compute the Vandermonde-like matrix and its inverse.
 V = [calc_V(*args) for args in zip(xi, n)]
 V_inv = list(map(inv, V))
-Vcond = list(map(cond, V))
+Vcond = [norm(a, 2) * norm(b, 2) for a, b in zip(V, V_inv)]
 
 # Compute the shift matrices.
 T_lr = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
@@ -166,6 +167,13 @@ T_lr = [V_inv[3] @ calc_V((xi[3] + a) / 2, n[3]) for a in [-1, 1]]
 # lower than this value, the error estimate is considered reliable.
 # See section 6.2 of Pedro Gonnet's thesis.
 hint = 0.1
+
+# Smallest acceptable relative difference of points in a rule.  This was chosen
+# such that no artifacts are apparent in plots of (i, log(a_i)), where a_i is
+# the sequence of estimates of the integral value of an interval and all its
+# ancestors..
+min_sep = 16 * eps
+
 ndiv_max = 20
 max_ivals = 200
 sqrt_one_half = np.sqrt(0.5)
@@ -243,7 +251,6 @@ class _Interval:
         ival.c00 = 0.0
         ival.fx = fx
         ival.ndiv = 0
-        ival.rdepth = 1
         return ival, n[depth]
 
     def calc_igral_and_err(self, c_old):
@@ -291,16 +298,11 @@ class _Interval:
         fx[0:n[depth]:2] = self.fx
         fx[1:n[depth]-1:2] = f(points[1:n[depth]-1:2])
         self.fx = fx
-
-        c_diff = self.calc_igral_and_err(self.c)
-
-        nc = norm(self.c)
-        split = nc > 0 and c_diff / nc > hint
-
+        split = self.calc_igral_and_err(self.c) > hint * norm(self.c)
         return points, split, n[depth] - n[depth - 1]
 
 
-def algorithm_4 (f, a, b, tol, N_loops=int(1e9)):
+def algorithm_4 (f, a, b, tol):
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
     algorithm uses Clenshaw-Curtis quadrature rules of increasing
     degree in each interval and bisects the interval if either the
@@ -336,19 +338,21 @@ def algorithm_4 (f, a, b, tol, N_loops=int(1e9)):
     err_excess = 0
     i_max = 0
 
-    for _ in range(N_loops):
+    while True:
         if ivals[i_max].depth == 3:
             split = True
         else:
             points, split, nr_points_inc = ivals[i_max].refine(f)
             nr_points += nr_points_inc
 
-        if (points[1] <= points[0]
-            or points[-1] <= points[-2]
+        if (points[1] - points[0] < points[0] * min_sep
+            or points[-1] - points[-2] < points[-2] * min_sep
             or ivals[i_max].err < (abs(ivals[i_max].igral) * eps
                                    * Vcond[ivals[i_max].depth])):
-            # The interval is too small, remove it while remembering the excess
-            # integral and error.
+            # Remove the interval (while remembering the excess integral and
+            # error), since it is either too narrow, or the estimated relative
+            # error is already at the limit of numerical accuracy and cannot be
+            # reduced further.
             err_excess += ivals[i_max].err
             igral_excess += ivals[i_max].igral
             ivals[i_max] = ivals[-1]
@@ -357,11 +361,10 @@ def algorithm_4 (f, a, b, tol, N_loops=int(1e9)):
             result, nr_points_inc = ivals[i_max].split(f)
             nr_points += nr_points_inc
             if isinstance(result, tuple):
-                igral = np.sign(igral) * np.inf
                 raise DivergentIntegralError(
                     'Possibly divergent integral in the interval'
                     ' [{}, {}]! (h={})'.format(*result),
-                    igral, err, nr_points)
+                    ivals[i_max].igral * np.inf, None, nr_points)
             ivals.extend(result)
             ivals[i_max] = ivals.pop()
 
@@ -393,8 +396,7 @@ def algorithm_4 (f, a, b, tol, N_loops=int(1e9)):
             or (err_excess > abs(igral) * tol
                 and err - err_excess < abs(igral) * tol)
             or not ivals):
-            return igral, err, nr_points, ivals
-    return igral, err, nr_points, ivals
+            return igral, err, nr_points
 
 
 ################ Tests ################
@@ -524,7 +526,7 @@ def test_integration():
         igral, err, nr_points = algorithm_4(fdiv, 0, 1, 1e-6)
     except DivergentIntegralError as e:
         assert e.igral == np.inf
-        assert_allclose(e.err, 284.56192231467958, 1e-10)
+        assert e.err is None
         assert e.nr_points == 431
 
     np.seterr(**old_settings)
@@ -558,7 +560,7 @@ def test_analytic(n=200):
                 false_positives += 1
             else:
                 igral_exact = F(1) - F(0)
-                assert alpha < -0.8 or abs(igral - igral_exact) < err
+                assert alpha < -0.7 or abs(igral - igral_exact) < err
 
     assert false_negatives < 0.05 * n
     assert false_positives < 0.05 * n
