@@ -180,6 +180,10 @@ class _Interval:
         self.igral = (self.b - self.a) * self.c[0] / sqrt(2)
 
     def update_heuristic_err(self, value):
+        """Sets the error of an interval using a heuristic (half the error of
+        the parent) when the actual error cannot be calculated due to its
+        parents not being finished yet. This error is propagated down to its
+        children."""
         self.err = value
         for child in self.children:
             if child.depth_complete or (child.depth_complete == 0
