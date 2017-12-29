@@ -162,7 +162,6 @@ def test_adding_points_and_skip_one_point():
 
 def test_add_points_in_random_order(first_add_33=False):
     from operator import attrgetter
-    import scipy.integrate
     import random
 
     for f, a, b in ([f0, 0, 3],
@@ -171,6 +170,7 @@ def test_add_points_in_random_order(first_add_33=False):
                     [f7, 0, 1],
                     ):
         learners = []
+
         for shuffle in [True, False]:
             l = IntegratorLearner(f, bounds=(a, b), tol=1e-10)
 
@@ -180,6 +180,7 @@ def test_add_points_in_random_order(first_add_33=False):
                     l.add_point(x, f(x))
 
             xs, _ = l.choose_points(10000)
+
             if shuffle:
                 random.shuffle(xs)
             for x in xs:
@@ -193,33 +194,28 @@ def test_add_points_in_random_order(first_add_33=False):
         # Test whether approximating_intervals gives a complete set of intervals
         for l in learners:
             ivals = sorted(l.approximating_intervals, key=lambda l: l.a)
-            for i in range(len(ivals)-1):
-                assert ivals[i].b == ivals[i+1].a, (ivals[i], ivals[i+1])
+            for i in range(len(ivals) - 1):
+                assert ivals[i].b == ivals[i + 1].a, (ivals[i], ivals[i + 1])
 
-        # Test whether approximating_intervals is the same for random order of adding the point
+        # Test if approximating_intervals is the same for random order of adding the point
         ivals = [sorted(ival, key=attrgetter('a')) for ival in
                  [l.approximating_intervals for l in learners]]
         assert all(ival.a == other_ival.a for ival, other_ival in zip(*ivals))
 
         # Test if the approximating_intervals are the same
-        ivals = [set((i.a, i.b) for i in l.approximating_intervals) for l in learners]
+        ivals = [set((i.a, i.b) for i in l.approximating_intervals)
+                 for l in learners]
         assert ivals[0] == ivals[1]
 
         # Test whether the igral is identical
         assert np.allclose(learners[0].igral, learners[1].igral), f
 
         # Compare if the errors are in line with the sequential case
-        igral = algorithm_4(f, a, b, tol=1e-10)
-        assert all((l.err > abs(l.igral-igral[0])) for l in learners)
+        igral = algorithm_4(f, a, b, tol=1e-10)[0]
+        assert all((l.err > abs(l.igral - igral)) for l in learners)
 
         # Check that the errors are finite
         for l in learners:
-            if not np.isfinite(l.err):
-                # Check that if adding new points removes the l.err == np.inf
-                xs, _ = l.choose_points(200)
-                for x in xs:
-                    l.add_point(x, f(x))
-
             assert np.isfinite(l.err)
 
 
@@ -237,5 +233,5 @@ def test_approximating_intervals():
         learner.add_point(x, f24(x))
 
     ivals = sorted(learner.approximating_intervals, key=lambda l: l.a)
-    for i in range(len(ivals)-1):
-        assert ivals[i].b == ivals[i+1].a, (ivals[i], ivals[i+1])
+    for i in range(len(ivals) - 1):
+        assert ivals[i].b == ivals[i + 1].a, (ivals[i], ivals[i + 1])
