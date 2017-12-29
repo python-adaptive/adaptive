@@ -281,6 +281,8 @@ class _Interval:
                     ival.done_leaves.update(child.done_leaves)
                     child.done_leaves = None
                 ival.done_leaves -= old_leaves
+                for i in ival.done_leaves:
+                    assert np.isfinite(i.err)
                 ival = ival.parent
 
         # Check whether the point spacing is smaller than machine precision
