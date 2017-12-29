@@ -126,12 +126,11 @@ class _Interval:
         self.removed = False
 
     @classmethod
-    def make_first(cls, a, b, depth=3):
+    def make_first(cls, a, b, depth=2):
         ival = _Interval(a, b, depth, rdepth=1)
         ival.ndiv = 0
         ival.parent = None
         ival.err = sys.float_info.max  # needed because inf/2 == inf
-        ival.c = np.zeros(33, dtype=float)
         return ival
 
     @property
@@ -231,14 +230,17 @@ class _Interval:
         self.fx = np.array(fx)
         force_split = False  # This may change when refining
 
-        if depth:
+        first_ival = self.parent is None and depth == 2
+
+        if depth and not first_ival:
             # Store for usage in refine
             c_old = self.c
 
         self.c = _calc_coeffs(self.fx, depth)
 
-        if self.parent is None and depth == 3:
+        if first_ival:
             self.c00 = self.c[0]
+            return False, False
 
         self.calc_igral()
 
@@ -369,7 +371,7 @@ class IntegratorLearner(BaseLearner):
             ival.done_points[point] = value
 
             if ival.depth_complete is None:
-                from_depth = 0 if ival.parent is not None else 3
+                from_depth = 0 if ival.parent is not None else 2
             else:
                 from_depth = ival.depth_complete + 1
 
