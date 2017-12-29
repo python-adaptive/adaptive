@@ -437,7 +437,7 @@ class IntegratorLearner(BaseLearner):
         if force_split:
             ival = self.priority_split.pop()
         else:
-            ival = max(self.ivals, key=attrgetter('err'))
+            ival = max(self.ivals, key=lambda x: (x.err, x.a))
 
         assert not ival.children
 
@@ -459,7 +459,7 @@ class IntegratorLearner(BaseLearner):
         # Remove the interval with the smallest error
         # if number of intervals is larger than max_ivals
         if len(self.ivals) > max_ivals:
-            self.ivals.remove(min(self.ivals, key=attrgetter('err')))
+            self.ivals.remove(min(self.ivals, key=lambda x: (x.err, x.a)))
 
         return self._stack
 
