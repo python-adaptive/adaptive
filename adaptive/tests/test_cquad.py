@@ -187,6 +187,9 @@ def test_add_points_in_random_order(first_add_33=False):
 
             learners.append(l)
 
+        # Check whether the points of the learners are identical
+        assert set(learners[0].done_points) == set(learners[1].done_points)
+
         # Test whether approximating_intervals gives a complete set of intervals
         for l in learners:
             ivals = sorted(l.approximating_intervals, key=lambda l: l.a)
