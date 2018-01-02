@@ -290,8 +290,6 @@ class _Interval:
                 ival.done_leaves -= old_leaves
                 ival = ival.parent
 
-        # Check whether the point spacing is smaller than machine precision
-        # and pop the interval with the largest error and do not split
         remove = self.err < (abs(self.igral) * eps * Vcond[depth])
 
         return force_split, remove
