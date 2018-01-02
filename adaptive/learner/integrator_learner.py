@@ -252,7 +252,7 @@ class _Interval:
             # Split
             self.c00 = self.c[0]
 
-            if self.parent.depth_complete:
+            if self.parent.depth_complete is not None:
                 c_old = self.T[:, :ns[self.parent.depth_complete]] @ self.parent.c
                 self.calc_err(c_old)
                 self.calc_ndiv()
