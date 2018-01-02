@@ -163,7 +163,7 @@ def test_adding_points_and_skip_one_point():
 def test_add_points_in_random_order(first_add_33=False):
     from operator import attrgetter
     import random
-
+    tol = 1e-10
     for f, a, b in ([f0, 0, 3],
                     [f21, 0, 1],
                     [f24, 0, 3],
@@ -172,7 +172,7 @@ def test_add_points_in_random_order(first_add_33=False):
         learners = []
 
         for shuffle in [True, False]:
-            l = IntegratorLearner(f, bounds=(a, b), tol=1e-10)
+            l = IntegratorLearner(f, bounds=(a, b), tol=tol)
 
             if first_add_33:
                 xs, _ = l.choose_points(33)
@@ -211,8 +211,8 @@ def test_add_points_in_random_order(first_add_33=False):
         assert np.allclose(learners[0].igral, learners[1].igral), f
 
         # Compare if the errors are in line with the sequential case
-        igral = algorithm_4(f, a, b, tol=1e-10)[0]
-        assert all((l.err > abs(l.igral - igral)) for l in learners)
+        igral = algorithm_4(f, a, b, tol=tol)[0]
+        assert all((l.err + tol >= abs(l.igral - igral)) for l in learners)
 
         # Check that the errors are finite
         for l in learners:
