@@ -239,7 +239,7 @@ class _Interval:
         self.c = _calc_coeffs(self.fx, depth)
 
         if first_ival:
-            self.c00 = self.c[0]
+            self.c00 = 0.0
             return False, False
 
         self.calc_igral()
