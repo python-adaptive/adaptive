@@ -224,6 +224,7 @@ class _Interval:
     def complete_process(self, depth):
         """Calculate the integral contribution and error from this interval,
         and update the done leaves of all ancestor intervals."""
+        assert self.depth_complete is None or self.depth_complete == depth - 1
         self.depth_complete = depth
 
         fx = [self.done_points[k] for k in self.points(depth)]
