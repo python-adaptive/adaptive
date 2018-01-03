@@ -14,8 +14,8 @@ from sortedcontainers import SortedSet
 
 from .base_learner import BaseLearner
 from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
-                                ndiv_max, max_ivals, min_sep, eps,
-                                xi, V_inv, Vcond, alpha, gamma)
+                                ndiv_max, min_sep, eps, xi, V_inv,
+                                Vcond, alpha, gamma)
 
 
 def _downdate(c, nans, depth):
@@ -330,6 +330,10 @@ class IntegratorLearner(BaseLearner):
             The integral value in `self.bounds`.
         err : float
             The absolute error associated with `self.igral`.
+        max_ivals : int, default 1000
+            Maximum number of intervals that can be present in the calculation
+            of the integral. If this amount exceeds max_ivals, the interval
+            with the smallest error will be discarded.
 
         Methods
         -------
@@ -341,6 +345,7 @@ class IntegratorLearner(BaseLearner):
         self.function = function
         self.bounds = bounds
         self.tol = tol
+        self.max_ivals = 1000
         self.priority_split = []
         self.done_points = {}
         self.pending_points = set()
@@ -461,7 +466,7 @@ class IntegratorLearner(BaseLearner):
 
         # Remove the interval with the smallest error
         # if number of intervals is larger than max_ivals
-        if len(self.ivals) > max_ivals:
+        if len(self.ivals) > self.max_ivals:
             self.ivals.remove(min(self.ivals, key=lambda x: (x.err, x.a)))
 
         return self._stack

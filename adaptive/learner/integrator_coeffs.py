@@ -168,7 +168,6 @@ hint = 0.1
 min_sep = 16 * eps
 
 ndiv_max = 20
-max_ivals = 200
 
 # set-up the downdate matrix
 k = np.arange(ns[3])
