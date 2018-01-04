@@ -211,8 +211,8 @@ def test_add_points_in_random_order(first_add_33=False):
         assert np.allclose(learners[0].igral, learners[1].igral), f
 
         # Compare if the errors are in line with the sequential case
-        igral = algorithm_4(f, a, b, tol=tol)[0]
-        assert all((l.err + tol >= abs(l.igral - igral)) for l in learners)
+        igral, err, *_ = algorithm_4(f, a, b, tol=tol)
+        assert all((l.err + err >= abs(l.igral - igral)) for l in learners)
 
         # Check that the errors are finite
         for l in learners:
@@ -235,3 +235,24 @@ def test_approximating_intervals():
     ivals = sorted(learner.approximating_intervals, key=lambda l: l.a)
     for i in range(len(ivals) - 1):
         assert ivals[i].b == ivals[i + 1].a, (ivals[i], ivals[i + 1])
+
+
+def test_removed_choose_mutiple_points_at_once():
+    with pytest.raises(ValueError):
+        # This test should raise because integrating np.exp should be done
+        # after the 33th point
+        learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
+        xs, _ = learner.choose_points(33+6)
+        for x in xs:
+            learner.add_point(x, learner.function(x))
+
+
+def test_removed_choose_points_one_by_one():
+    with pytest.raises(ValueError):
+        # This test should raise because integrating np.exp should be done
+        # after the 33th point
+        learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
+        for _ in range(33+6):
+            xs, _ = learner.choose_points(1)
+            for x in xs:
+                learner.add_point(x, learner.function(x))
