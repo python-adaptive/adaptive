@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 from ..learner import IntegratorLearner
 from ..learner.integrator_learner import DivergentIntegralError
+from ..learner.integrator_coeffs import ns
 from .algorithm_4 import algorithm_4, f0, f7, f21, f24, f63, fdiv
 from .algorithm_4 import DivergentIntegralError as A4DivergentIntegralError
 
@@ -239,7 +240,8 @@ def test_approximating_intervals():
 
 def test_removed_choose_mutiple_points_at_once():
     learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
-    xs, _ = learner.choose_points(33+6)
+    n = ns[-1] + 2 * (ns[0] - 2)  # first + two children (33+6=39)
+    xs, _ = learner.choose_points(n)
     for x in xs:
         learner.add_point(x, learner.function(x))
     assert list(learner.approximating_intervals)[0] == learner.first_ival
@@ -250,7 +252,8 @@ def test_removed_choose_points_one_by_one():
         # This test should raise because integrating np.exp should be done
         # after the 33th point
         learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
-        for _ in range(33+6):
+        n = ns[-1] + 2 * (ns[0] - 2)  # first + two children (33+6=39)
+        for _ in range(n):
             xs, _ = learner.choose_points(1)
             for x in xs:
                 learner.add_point(x, learner.function(x))
