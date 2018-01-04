@@ -420,7 +420,10 @@ class IntegratorLearner(BaseLearner):
         n_left = n - len(points)
         while n_left > 0:
             assert n_left >= 0
-            self._fill_stack()
+            try:
+                self._fill_stack()
+            except ValueError:
+                raise RuntimeError("No way to improve the integral estimate.")
             new_points, new_loss_improvements = self.pop_from_stack(n_left)
             points += new_points
             loss_improvements += new_loss_improvements

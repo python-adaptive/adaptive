@@ -238,7 +238,7 @@ def test_approximating_intervals():
 
 
 def test_removed_choose_mutiple_points_at_once():
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         # This test should raise because integrating np.exp should be done
         # after the 33th point
         learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
@@ -248,7 +248,7 @@ def test_removed_choose_mutiple_points_at_once():
 
 
 def test_removed_choose_points_one_by_one():
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         # This test should raise because integrating np.exp should be done
         # after the 33th point
         learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
