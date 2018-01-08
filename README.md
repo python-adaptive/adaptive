@@ -1,4 +1,4 @@
-# <img src="https://gitlab.kwant-project.org/uploads/-/system/personal_snippet/11/51e76315d21adc5b072fab8a242ea99a/logo.png" alt="adaptive logo" height="40px" align="left"/> adaptive
+# ![][logo] adaptive
 
 [![](https://gitlab.kwant-project.org/qt/adaptive/badges/master/build.svg)](https://gitlab.kwant-project.org/qt/adaptive/pipelines)
 [![asv](http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat)](https://gitlab.kwant-project.org/qt/adaptive/)
@@ -33,3 +33,5 @@ in the repository.
 
 
 For general discussion, we have a [chat channel](https://chat.quantumtinkerer.tudelft.nl/external/channels/adaptive). If you find any bugs or have any feature suggestions please file a GitLab [issue](https://gitlab.kwant-project.org/qt/adaptive/issues/new?issue) or submit a [merge request](https://gitlab.kwant-project.org/qt/adaptive/merge_requests).
+
+[logo]: /uploads/d20444093920a4a0499e165b5061d952/logo.png "adaptive logo"
