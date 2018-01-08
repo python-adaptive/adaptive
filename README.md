@@ -5,9 +5,9 @@
 
 **Tools for adaptive parallel evaluation of functions.**
 
-Adaptive is an [open-source](https://gitlab.kwant-project.org/qt/adaptive/blob/master/LICENSE) Python library designed to make adaptive parallel function evaluation simple. With adaptive, you can adaptively sample functions by only supplying (in general) a function and its bounds, and run it on a cluster in a few lines of code. Since `adaptive` knows the problem it is solving, it can plot the data for you (even live as the data returns) without any boilerplate. 
+Adaptive is an [open-source](LICENSE) Python library designed to make adaptive parallel function evaluation simple. With adaptive, you can adaptively sample functions by only supplying (in general) a function and its bounds, and run it on a cluster in a few lines of code. Since `adaptive` knows the problem it is solving, it can plot the data for you (even live as the data returns) without any boilerplate. 
 
-Check out the Adaptive [example notebook `learner.ipynb`](https://gitlab.kwant-project.org/qt/adaptive/blob/github_mirror/learner.ipynb) (or run it [live on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb)) to see examples of how to use `adaptive`.
+Check out the Adaptive [example notebook `learner.ipynb`](learner.ipynb) (or run it [live on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb)) to see examples of how to use `adaptive`.
 
 
 **WARNING: `adaptive` is still in an early alpha development stage**
