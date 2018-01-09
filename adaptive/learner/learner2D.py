@@ -324,6 +324,7 @@ class Learner2D(BaseLearner):
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4a² (equilateral triangle)
                 n = int(0.658 / sqrt(areas(ip).min()))
+                n = max(n, 10)
 
             x = y = np.linspace(-0.5, 0.5, n)
             z = ip(x[:, None], y[None, :]).squeeze()
