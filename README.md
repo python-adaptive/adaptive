@@ -18,7 +18,7 @@ Check out the Adaptive [example notebook `learner.ipynb`](learner.ipynb) (or run
 Adaptive works with Python 3.5 and higher on Linux, Windows, or Mac, and provides optional extensions for working with the Jupyter/IPython Notebook.
 
 The recommended way to install adaptive is using `pip`:
-```
+```bash
 pip install https://gitlab.kwant-project.org/qt/adaptive/repository/master/archive.zip
 ```
 
@@ -27,7 +27,7 @@ pip install https://gitlab.kwant-project.org/qt/adaptive/repository/master/archi
 
 In order to not pollute the history with the output of the notebooks, please setup the git filter by executing
 
-```
+```bash
 git config filter.nbclearoutput.clean "jupyter nbconvert --to notebook --ClearOutputPreprocessor.enabled=True --ClearOutputPreprocessor.remove_metadata_fields='[\"deletable\", \"editable\", \"collapsed\", \"scrolled\"]' --stdin --stdout"
 ```
 in the repository.
