@@ -2,6 +2,7 @@
 
 [![](https://gitlab.kwant-project.org/qt/adaptive/badges/master/build.svg)](https://gitlab.kwant-project.org/qt/adaptive/pipelines)
 [![asv](http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat)](https://gitlab.kwant-project.org/qt/adaptive/)
+[![coverage report](https://gitlab.kwant-project.org/qt/adaptive/badges/master/coverage.svg)](https://gitlab.kwant-project.org/qt/adaptive/commits/master)
 
 **Tools for adaptive parallel evaluation of functions.**
 
