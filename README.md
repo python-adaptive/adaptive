@@ -17,7 +17,7 @@ Check out the Adaptive [example notebook `learner.ipynb`](learner.ipynb) (or run
 ## Installation
 Adaptive works with Python 3.5 and higher on Linux, Windows, or Mac, and provides optional extensions for working with the Jupyter/IPython Notebook.
 
-The recommended way to install adaptive is using the pip:
+The recommended way to install adaptive is using `pip`:
 ```
 pip install https://gitlab.kwant-project.org/qt/adaptive/repository/master/archive.zip
 ```
