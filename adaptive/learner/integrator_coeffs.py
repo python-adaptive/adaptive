@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Copyright 2017 Christoph Groth
+# Copyright 2017 `adaptive` authors
+
 from fractions import Fraction
 from collections import defaultdict
 import numpy as np
