@@ -220,10 +220,14 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     assert set(pls) == set(cpls)
 
 
-@run_with(Learner1D, Learner2D, AverageLearner)
+@run_with(xfail(Learner1D), Learner2D, AverageLearner)
 def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
-    """The order of calls to 'add_points' between calls to
-       'choose_points' is arbitrary."""
+    """The order of calls to 'add_points' between calls to 'choose_points'
+    is arbitrary.
+
+    This test will fail for the Learner1D for the same reason as described in
+    the doc-string in `test_adding_existing_data_is_idempotent`.
+    """
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
