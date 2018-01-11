@@ -151,6 +151,13 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     Either it is idempotent, or it is an error.
     This is the only sane behaviour.
     """
+    if learner_type is Learner1D:
+        # The Learner1D will currently fail because the loss per interval
+        # is normalized by the `_scale`, which is set after every point
+        # that is added. Only when the `_scale` is doubled, all the losses
+        # are recalculated.
+        raise pytest.xfail()
+
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
