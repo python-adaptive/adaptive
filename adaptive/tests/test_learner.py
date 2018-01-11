@@ -271,7 +271,13 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
     M = random.randint(50, 100)
     _, loss_improvements = learner.choose_points(M)
 
-    assert sum(loss_improvements) < learner.loss()
+    if learner_type is Learner2D:
+        assert (sum(loss_improvements)
+                < sum(learner.loss_per_triangle(learner.ip())))
+    elif learner_type is Learner1D:
+        assert sum(loss_improvements) < sum(learner.losses.values())
+    elif learner_type is AverageLearner:
+        assert sum(loss_improvements) < learner.loss()
 
 
 @pytest.mark.xfail
