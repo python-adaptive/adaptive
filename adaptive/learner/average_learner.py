@@ -48,7 +48,6 @@ class AverageLearner(BaseLearner):
         self.data[n] = value
         if value is None:
             self.n_requested += 1
-            return
         else:
             self.n += 1
             self.sum_f += value
