@@ -170,10 +170,7 @@ class Learner1D(BaseLearner):
             # Add point to the real data dict and pop from the unfinished
             # data_interp dict.
             self.data[x] = y
-            try:
-                del self.data_interp[x]
-            except KeyError:
-                pass
+            self.data_interp.pop(x, None)
 
             if self._vdim is None:
                 try:
