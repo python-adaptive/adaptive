@@ -193,6 +193,12 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
 
+    if learner_type is Learner2D:
+        # If the stack_size is bigger then the number of points added,
+        # choose_points will return a point from the _stack.
+        learner.stack_size = 1
+        control.stack_size = 1
+
     N = random.randint(10, 30)
     xs, _ = control.choose_points(N)
 
