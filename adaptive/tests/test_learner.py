@@ -49,6 +49,10 @@ def learn_with(learner_type, **init_kwargs):
     return _
 
 
+def xfail(learner):
+    return pytest.mark.xfail, learner
+
+
 # All parameters except the first must be annotated with a callable that
 # returns a random value for that parameter.
 
@@ -78,14 +82,20 @@ def gaussian(n):
 
 # Decorators for tests.
 
-
 def run_with(*learner_types):
-    return pytest.mark.parametrize(
-        'learner_type, f, learner_kwargs',
-        [(l, f, dict(k))
-         for l in learner_types
-         for f, k in learner_function_combos[l]]
-    )
+    pars = []
+    for l in learner_types:
+        is_xfail = isinstance(l, tuple)
+        if is_xfail:
+            xfail, l = l
+        for f, k in learner_function_combos[l]:
+            # Check if learner was marked with our `xfail` decorator
+            # XXX: doesn't work when feeding kwargs to xfail.
+            if is_xfail:
+                pars.append(pytest.param(l, f, dict(k), marks=[pytest.mark.xfail]))
+            else:
+                pars.append((l, f, dict(k)))
+    return pytest.mark.parametrize('learner_type, f, learner_kwargs', pars)
 
 
 def choose_points_randomly(learner, rounds, points):
@@ -144,20 +154,13 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
     assert max(distances) < math.sqrt(dx**2 + dy**2)
 
 
-@run_with(Learner1D, Learner2D)
+@run_with(xfail(Learner1D), Learner2D)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
 
     Either it is idempotent, or it is an error.
     This is the only sane behaviour.
     """
-    if learner_type is Learner1D:
-        # The Learner1D will currently fail because the loss per interval
-        # is normalized by the `_scale`, which is set after every point
-        # that is added. Only when the `_scale` is doubled, all the losses
-        # are recalculated.
-        raise pytest.xfail()
-
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
