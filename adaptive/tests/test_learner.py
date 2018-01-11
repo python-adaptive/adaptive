@@ -160,6 +160,12 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
 
     Either it is idempotent, or it is an error.
     This is the only sane behaviour.
+
+    This test will fail for the Learner1D because the losses are normalized by
+    _scale which is updated after every point. After one iteration of adding
+    points, the _scale could be different from what it was when calculating
+    the losses of the intervals. Readding the points a second time means
+    that the losses are now all normalized by the correct _scale.
     """
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
