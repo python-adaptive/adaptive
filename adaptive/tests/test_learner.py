@@ -208,9 +208,10 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     N = random.randint(10, 30)
     xs, _ = control.choose_points(N)
 
-    for x in xs:
-        control.add_point(x, f(x))
-        learner.add_point(x, f(x))
+    ys = [f(x) for x in xs]
+    for x, y in zip(xs, ys):
+        control.add_point(x, y)
+        learner.add_point(x, y)
 
     M = random.randint(10, 30)
     pls = zip(*learner.choose_points(M))
