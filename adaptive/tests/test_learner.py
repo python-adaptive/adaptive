@@ -58,8 +58,8 @@ def xfail(learner):
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
-def linear(x, m: uniform(0, 10)):
-    return m * x
+def quadratic(x, m: uniform(0, 10), b: uniform(0, 1)):
+    return m * x**2 + b
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
@@ -323,7 +323,8 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
         learner.add_data(xs, [learner.function(x) for x in xs])
 
         # Check whether the points returned are the same
-        assert np.allclose(np.array(xs) / xscale, cxs)
+        xs_unscaled = np.array(xs) / xscale
+        assert np.allclose(xs_unscaled, cxs)
 
     # Check if the losses are close
     assert abs(learner.loss() - control.loss()) / learner.loss() < 1e-11
