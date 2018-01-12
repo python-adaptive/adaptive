@@ -255,7 +255,9 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     cpls = zip(*control.choose_points(M))
     # Point ordering within a single call to 'choose_points'
     # is not guaranteed to be the same by the API.
-    assert set(pls) == set(cpls)
+    # We compare the sorted points instead of set, because the points
+    # should only be identical up to machine precision.
+    np.testing.assert_almost_equal(sorted(pls), sorted(cpls))
 
 
 @run_with(Learner1D, Learner2D, AverageLearner)
