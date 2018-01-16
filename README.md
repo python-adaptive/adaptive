@@ -3,6 +3,7 @@
 [![pipeline status](https://gitlab.kwant-project.org/qt/adaptive/badges/master/pipeline.svg)](https://gitlab.kwant-project.org/qt/adaptive/pipelines)
 [![asv](http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat)](benchmarks)
 [![coverage report](https://gitlab.kwant-project.org/qt/adaptive/badges/master/coverage.svg)](https://gitlab.kwant-project.org/qt/adaptive/commits/master)
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb)
 
 **Tools for adaptive parallel evaluation of functions.**
 
