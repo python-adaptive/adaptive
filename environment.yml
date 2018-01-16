@@ -1,0 +1,14 @@
+name: adaptive
+
+channels:
+- conda-forge
+
+dependencies:
+  - python=3.6
+  - sortedcontainers
+  - scipy
+  - holoviews
+  - ipyparallel
+  - distributed
+  - pip:
+    - git+https://github.com/python-adaptive/adaptive
