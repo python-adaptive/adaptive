@@ -43,6 +43,11 @@ for [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.
 and [`distributed`](https://distributed.readthedocs.io/en/latest/).
 
 
+## Examples
+<img src="https://user-images.githubusercontent.com/6897215/35219603-a5a70e34-ff73-11e7-9a38-90749939a4a8.gif" width='20%'> </img>
+<img src="https://user-images.githubusercontent.com/6897215/35219611-ac8b2122-ff73-11e7-9332-adffab64a8ce.gif" width='40%'> </img>
+
+
 ## Installation
 `adaptive` works with Python 3.5 and higher on Linux, Windows, or Mac, and provides optional extensions for working with the Jupyter/IPython Notebook.
 
