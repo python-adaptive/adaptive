@@ -70,4 +70,4 @@ We would like to give credits to the following people:
 
 For general discussion, we have a [chat channel](https://chat.quantumtinkerer.tudelft.nl/external/channels/adaptive). If you find any bugs or have any feature suggestions please file a GitLab [issue](https://gitlab.kwant-project.org/qt/adaptive/issues/new?issue) or submit a [merge request](https://gitlab.kwant-project.org/qt/adaptive/merge_requests).
 
-[logo]: /uploads/d20444093920a4a0499e165b5061d952/logo.png "adaptive logo"
+[logo]: https://gitlab.kwant-project.org/qt/adaptive/uploads/d20444093920a4a0499e165b5061d952/logo.png "adaptive logo"
