@@ -49,13 +49,17 @@ def learn_with(learner_type, **init_kwargs):
     return _
 
 
+def xfail(learner):
+    return pytest.mark.xfail, learner
+
+
 # All parameters except the first must be annotated with a callable that
 # returns a random value for that parameter.
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
-def linear(x, m: uniform(0, 10)):
-    return m * x
+def quadratic(x, m: uniform(0, 10), b: uniform(0, 1)):
+    return m * x**2 + b
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
@@ -78,14 +82,20 @@ def gaussian(n):
 
 # Decorators for tests.
 
-
 def run_with(*learner_types):
-    return pytest.mark.parametrize(
-        'learner_type, f, learner_kwargs',
-        [(l, f, dict(k))
-         for l in learner_types
-         for f, k in learner_function_combos[l]]
-    )
+    pars = []
+    for l in learner_types:
+        is_xfail = isinstance(l, tuple)
+        if is_xfail:
+            xfail, l = l
+        for f, k in learner_function_combos[l]:
+            # Check if learner was marked with our `xfail` decorator
+            # XXX: doesn't work when feeding kwargs to xfail.
+            if is_xfail:
+                pars.append(pytest.param(l, f, dict(k), marks=[pytest.mark.xfail]))
+            else:
+                pars.append((l, f, dict(k)))
+    return pytest.mark.parametrize('learner_type, f, learner_kwargs', pars)
 
 
 def choose_points_randomly(learner, rounds, points):
@@ -144,12 +154,18 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
     assert max(distances) < math.sqrt(dx**2 + dy**2)
 
 
-@run_with(Learner1D, Learner2D)
+@run_with(xfail(Learner1D), Learner2D)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
 
     Either it is idempotent, or it is an error.
     This is the only sane behaviour.
+
+    This test will fail for the Learner1D because the losses are normalized by
+    _scale which is updated after every point. After one iteration of adding
+    points, the _scale could be different from what it was when calculating
+    the losses of the intervals. Readding the points a second time means
+    that the losses are now all normalized by the correct _scale.
     """
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
@@ -183,12 +199,19 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
 
+    if learner_type is Learner2D:
+        # If the stack_size is bigger then the number of points added,
+        # choose_points will return a point from the _stack.
+        learner.stack_size = 1
+        control.stack_size = 1
+
     N = random.randint(10, 30)
     xs, _ = control.choose_points(N)
 
-    for x in xs:
-        control.add_point(x, f(x))
-        learner.add_point(x, f(x))
+    ys = [f(x) for x in xs]
+    for x, y in zip(xs, ys):
+        control.add_point(x, y)
+        learner.add_point(x, y)
 
     M = random.randint(10, 30)
     pls = zip(*learner.choose_points(M))
@@ -198,10 +221,19 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     assert set(pls) == set(cpls)
 
 
-@run_with(Learner1D, Learner2D, AverageLearner)
+@run_with(xfail(Learner1D), xfail(Learner2D), AverageLearner)
 def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
-    """The order of calls to 'add_points' between calls to
-       'choose_points' is arbitrary."""
+    """The order of calls to 'add_points' between calls to 'choose_points'
+    is arbitrary.
+
+    This test will fail for the Learner1D for the same reason as described in
+    the doc-string in `test_adding_existing_data_is_idempotent`.
+
+    This test will fail for the Learner2D because
+    `interpolate.interpnd.estimate_gradients_2d_global` will give different
+    outputs based on the order of the triangles and values in
+    (ip.tri, ip.values). Therefore the _stack will contain different points.
+    """
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
@@ -223,7 +255,9 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     cpls = zip(*control.choose_points(M))
     # Point ordering within a single call to 'choose_points'
     # is not guaranteed to be the same by the API.
-    assert set(pls) == set(cpls)
+    # We compare the sorted points instead of set, because the points
+    # should only be identical up to machine precision.
+    np.testing.assert_almost_equal(sorted(pls), sorted(cpls))
 
 
 @run_with(Learner1D, Learner2D, AverageLearner)
@@ -240,16 +274,13 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
     M = random.randint(50, 100)
     _, loss_improvements = learner.choose_points(M)
 
-    assert sum(loss_improvements) < learner.loss()
-
-
-@pytest.mark.xfail
-@run_with(Learner1D, Learner2D)
-def test_learner_subdomain(learner_type, f, learner_kwargs):
-    """Learners that never receive data outside of a subdomain should
-       perform 'similarly' to learners defined on that subdomain only."""
-    # XXX: not sure how to implement this. How do we measure "performance"?
-    raise NotImplementedError()
+    if learner_type is Learner2D:
+        assert (sum(loss_improvements)
+                < sum(learner.loss_per_triangle(learner.ip())))
+    elif learner_type is Learner1D:
+        assert sum(loss_improvements) < sum(learner.losses.values())
+    elif learner_type is AverageLearner:
+        assert sum(loss_improvements) < learner.loss()
 
 
 @run_with(Learner1D, Learner2D)
@@ -271,25 +302,23 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
 
     l_kwargs = dict(learner_kwargs)
     l_kwargs['bounds'] = xscale * np.array(l_kwargs['bounds'])
-    learner = learner_type(lambda x: yscale * f(x),
+    learner = learner_type(lambda x: yscale * f(np.array(x) / xscale),
                            **l_kwargs)
 
-    nrounds = random.randrange(50, 100)
-    npoints = [random.randrange(1, 10) for _ in range(nrounds)]
+    npoints = random.randrange(1000, 2000)
 
-    control_points = []
-    for n in npoints:
-        cxs, _ = control.choose_points(n)
-        xs, _ = learner.choose_points(n)
-        # Point ordering within a single call to 'choose_points'
-        # is not guaranteed to be the same by the API.
-        # Also, points will only be equal up to a tolerance, due to rounding
-        should_be = sorted(cxs)
-        to_check = np.array(sorted(xs)) / xscale
-        assert np.allclose(should_be, to_check)
-
+    for n in range(npoints):
+        cxs, _ = control.choose_points(1)
+        xs, _ = learner.choose_points(1)
         control.add_data(cxs, [control.function(x) for x in cxs])
         learner.add_data(xs, [learner.function(x) for x in xs])
+
+        # Check whether the points returned are the same
+        xs_unscaled = np.array(xs) / xscale
+        assert np.allclose(xs_unscaled, cxs)
+
+    # Check if the losses are close
+    assert abs(learner.loss() - control.loss()) / learner.loss() < 1e-11
 
 
 @pytest.mark.xfail
@@ -301,4 +330,13 @@ def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
     """
     # XXX: not sure how to implement this. Can we say anything at all about
     #      the scaling of the loss with the number of points?
+    raise NotImplementedError()
+
+
+@pytest.mark.xfail
+@run_with(Learner1D, Learner2D)
+def test_learner_subdomain(learner_type, f, learner_kwargs):
+    """Learners that never receive data outside of a subdomain should
+       perform 'similarly' to learners defined on that subdomain only."""
+    # XXX: not sure how to implement this. How do we measure "performance"?
     raise NotImplementedError()

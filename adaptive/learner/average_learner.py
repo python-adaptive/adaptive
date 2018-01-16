@@ -33,25 +33,33 @@ class AverageLearner(BaseLearner):
         self.atol = atol
         self.rtol = rtol
         self.n = 0
-        self.n_requested = 0
         self.sum_f = 0
         self.sum_f_sq = 0
 
+    @property
+    def n_requested(self):
+        return len(self.data)
+
     def choose_points(self, n, add_data=True):
         points = list(range(self.n_requested, self.n_requested + n))
-        loss_improvements = [self.loss()] * n
+        loss_improvements = [self.loss_improvement(n) / n] * n
         if add_data:
             self.add_data(points, itertools.repeat(None))
         return points, loss_improvements
 
     def add_point(self, n, value):
+        value_is_new = not (n in self.data and value == self.data[n])
+        if not value_is_new:
+            value_old = self.data[n]
         self.data[n] = value
-        if value is None:
-            self.n_requested += 1
-        else:
-            self.n += 1
+        if value is not None:
             self.sum_f += value
             self.sum_f_sq += value**2
+            if value_is_new:
+                self.n += 1
+            else:
+                self.sum_f -= value_old
+                self.sum_f_sq -= value_old**2
 
     @property
     def mean(self):
@@ -64,13 +72,23 @@ class AverageLearner(BaseLearner):
             return np.inf
         return sqrt((self.sum_f_sq - n * self.mean**2) / (n - 1))
 
-    def loss(self, real=True):
-        n = self.n
+    def loss(self, real=True, *, n=None):
+        if n is None:
+            n = self.n if real else self.n_requested
+        else:
+            n = n
         if n < 2:
             return np.inf
-        standard_error = self.std / sqrt(n if real else self.n_requested)
+        standard_error = self.std / sqrt(n)
         return max(standard_error / self.atol,
                    standard_error / abs(self.mean) / self.rtol)
+
+    def loss_improvement(self, n):
+        loss = self.loss()
+        if np.isfinite(loss):
+            return loss - self.loss(n=self.n + n)
+        else:
+            return np.inf
 
     def remove_unfinished(self):
         """Remove uncomputed data from the learner."""
