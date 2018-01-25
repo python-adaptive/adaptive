@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import concurrent.futures as concurrent
+import warnings
 
 try:
     import ipyparallel
@@ -53,8 +54,8 @@ class Runner:
         self.ioloop = ioloop if ioloop else asyncio.get_event_loop()
 
         if in_ipynb() and not self.ioloop.is_running():
-            raise RuntimeError('Run adaptive.notebook_extension() to use '
-                               'the Runner in a Jupyter notebook.')
+            warnings.warn('Run adaptive.notebook_extension() to use '
+                          'the Runner in a Jupyter notebook.')
 
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
