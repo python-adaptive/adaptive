@@ -4,7 +4,7 @@
 [![asv](http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat)](benchmarks)
 [![coverage report](https://gitlab.kwant-project.org/qt/adaptive/badges/master/coverage.svg)](https://gitlab.kwant-project.org/qt/adaptive/commits/master)
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb)
-[![Join the chat at https://gitter.im/python-adaptive/adaptive](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/python-adaptive/adaptive](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive)
 
 **Tools for adaptive parallel evaluation of functions.**
 
