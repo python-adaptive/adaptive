@@ -4,6 +4,7 @@
 [![asv](http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat)](benchmarks)
 [![coverage report](https://gitlab.kwant-project.org/qt/adaptive/badges/master/coverage.svg)](https://gitlab.kwant-project.org/qt/adaptive/commits/master)
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb)
+[![Join the chat at https://gitter.im/python-adaptive/adaptive](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 **Tools for adaptive parallel evaluation of functions.**
 
@@ -73,6 +74,6 @@ We would like to give credits to the following people:
 - Christoph Groth for his Python implementation of [`CQUAD`](https://gitlab.kwant-project.org/cwg/python-cquad) which served as basis for the [`IntegratorLearner`](adaptive/learner/integrator_learner.py).
 - Pauli Virtanen for his `AdaptiveTriSampling` script (no longer available online since SciPy Central went down) which served as inspiration for the [`Learner2D`](adaptive/learner/learner2D.py).
 
-For general discussion, we have a [chat channel](https://chat.quantumtinkerer.tudelft.nl/external/channels/adaptive). If you find any bugs or have any feature suggestions please file a GitLab [issue](https://gitlab.kwant-project.org/qt/adaptive/issues/new?issue) or submit a [merge request](https://gitlab.kwant-project.org/qt/adaptive/merge_requests).
+For general discussion, we have a [Gitter chat channel](https://gitter.im/python-adaptive/adaptive). If you find any bugs or have any feature suggestions please file a GitLab [issue](https://gitlab.kwant-project.org/qt/adaptive/issues/new?issue) or submit a [merge request](https://gitlab.kwant-project.org/qt/adaptive/merge_requests).
 
 [logo]: https://gitlab.kwant-project.org/qt/adaptive/uploads/d20444093920a4a0499e165b5061d952/logo.png "adaptive logo"
