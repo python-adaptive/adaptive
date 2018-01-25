@@ -1,5 +1,7 @@
 # ![][logo] adaptive
 
+[![Join the chat at https://gitter.im/python-adaptive/adaptive](https://badges.gitter.im/python-adaptive/adaptive.svg)](https://gitter.im/python-adaptive/adaptive?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![pipeline status](https://gitlab.kwant-project.org/qt/adaptive/badges/master/pipeline.svg)](https://gitlab.kwant-project.org/qt/adaptive/pipelines)
 [![asv](http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat)](benchmarks)
 [![coverage report](https://gitlab.kwant-project.org/qt/adaptive/badges/master/coverage.svg)](https://gitlab.kwant-project.org/qt/adaptive/commits/master)
