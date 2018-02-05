@@ -15,6 +15,12 @@ try:
 except ModuleNotFoundError:
     with_distributed = False
 
+try:
+    import uvloop
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+except ModuleNotFoundError:
+    pass
+
 
 class Runner:
     """Runs a learning algorithm in an executor.
