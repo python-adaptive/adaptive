@@ -364,6 +364,32 @@ class AsyncRunner(BaseRunner):
 Runner = AsyncRunner
 
 
+def simple(learner, goal):
+    """Run the learner until the goal is reached.
+
+    Requests a single point from the learner, evaluates
+    the function to be learned, and adds the point to the
+    learner, until the goal is reached, blocking the current
+    thread.
+
+    This function is useful for extracting error messages,
+    as the learner's function is evaluated in the same thread,
+    meaning that exceptions can simple be caught an inspected.
+
+    Parameters
+    ----------
+    learner : adaptive.BaseLearner
+    goal : callable
+        The end condition for the calculation. This function must take the
+        learner as its sole argument, and return True if we should stop.
+    """
+    while not goal(learner):
+        xs, _ = learner.choose_points(1)
+        for x in xs:
+            y = learner.function(x)
+            learner.add_point(x, y)
+
+
 def replay_log(learner, log):
     """Apply a sequence of method calls to a learner.
 
