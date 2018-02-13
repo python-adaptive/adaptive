@@ -43,8 +43,8 @@ def areas(ip):
 
 def _default_loss_per_triangle(ip):
     devs = deviations(ip)
-    area_per_triangle = np.sqrt(areas(ip))
-    losses = np.sum([dev * area_per_triangle for dev in devs], axis=0)
+    A = areas(ip)
+    losses = np.sum([dev * np.sqrt(A) + 0.1 * A for dev in devs], axis=0)
     return losses
 
 
