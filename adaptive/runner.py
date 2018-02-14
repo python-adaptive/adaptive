@@ -51,7 +51,8 @@ class Runner:
 
     def __init__(self, learner, executor=None, goal=None, *,
                  log=False, ioloop=None, shutdown_executor=True):
-        self.ioloop = ioloop if ioloop else asyncio.get_event_loop()
+
+        self.ioloop = ioloop or asyncio.get_event_loop()
 
         if in_ipynb() and not self.ioloop.is_running():
             warnings.warn('Run adaptive.notebook_extension() to use '
@@ -61,13 +62,13 @@ class Runner:
         # for calling 'shutdown'
         self.shutdown_executor = shutdown_executor or (executor is None)
         self.executor = ensure_async_executor(executor, self.ioloop)
+
         self.learner = learner
         self.log = [] if log else None
 
         if goal is None:
             def goal(_):
                 return False
-
         self.goal = goal
 
         coro = self._run()
