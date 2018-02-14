@@ -34,6 +34,9 @@ class Runner:
     goal : callable, optional
         The end condition for the calculation. This function must take the
         learner as its sole argument, and return True if we should stop.
+    ntasks : int, optional
+        The number of concurrent function evaluations. Defaults to the number
+        of cores available in `executor`.
     log : bool, default: False
         If True, record the method calls made to the learner by this runner
     ioloop : asyncio.AbstractEventLoop, optional
@@ -56,7 +59,8 @@ class Runner:
     """
 
     def __init__(self, learner, executor=None, goal=None, *,
-                 log=False, ioloop=None, shutdown_executor=True):
+                 ntasks=None, log=False, ioloop=None,
+                 shutdown_executor=True):
 
         self.ioloop = ioloop or asyncio.get_event_loop()
 
@@ -69,6 +73,7 @@ class Runner:
         self.shutdown_executor = shutdown_executor or (executor is None)
         self.executor = ensure_async_executor(executor, self.ioloop)
 
+        self.ntasks = ntasks or self.executor.ncores
         self.learner = learner
         self.log = [] if log else None
 
@@ -86,7 +91,7 @@ class Runner:
     async def _run(self):
         first_completed = asyncio.FIRST_COMPLETED
         xs = dict()
-        done = [None] * self.executor.ncores
+        done = [None] * self.ntasks
         do_log = self.log is not None
 
         if len(done) == 0:
