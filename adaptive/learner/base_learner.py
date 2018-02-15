@@ -76,6 +76,14 @@ class BaseLearner(metaclass=abc.ABCMeta):
         """
         pass
 
+    @property
+    def n(self):
+        """Return the number of evaluated points.
+
+        Learners *may* implement this method, but are not required to.
+        """
+        raise NotImplementedError()
+
     def __getstate__(self):
         return deepcopy(self.__dict__)
 
