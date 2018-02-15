@@ -242,6 +242,13 @@ class AsyncRunner(BaseRunner):
                           'the Runner in a Jupyter notebook.')
         self.task = self.ioloop.create_task(self._run())
 
+    def cancel(self):
+        """Cancel the runner.
+
+        This is equivalent to calling `runner.task.cancel()`.
+        """
+        self.task.cancel()
+
     async def _run(self):
         first_completed = asyncio.FIRST_COMPLETED
         xs = dict()
