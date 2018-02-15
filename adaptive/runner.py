@@ -240,11 +240,18 @@ class AsyncRunner(BaseRunner):
                                              self.executor,
                                              self.learner.function)
 
+        self.start_time = time.time()
+        self.end_time = None
+
         if in_ipynb() and not self.ioloop.is_running():
             warnings.warn('The runner has been scheduled, but no event loop is '
                           'running! Run adaptive.notebook_extension() to use '
                           'the Runner in a Jupyter notebook.')
         self.task = self.ioloop.create_task(self._run())
+
+    def elapsed_time(self):
+        end_time = self.end_time if self.task.done() else time.time()
+        return end_time - self.start_time
 
     def cancel(self):
         """Cancel the runner.
@@ -295,6 +302,7 @@ class AsyncRunner(BaseRunner):
                 await asyncio.wait(remaining)
             if self.shutdown_executor:
                 self.executor.shutdown(wait=False)
+            self.end_time = time.time()
 
 
 # Default runner
