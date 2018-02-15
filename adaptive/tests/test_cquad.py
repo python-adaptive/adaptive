@@ -21,9 +21,9 @@ def rolling_shuffle(nums, size):
     return nums
 
 
-def run_integrator_learner(f, a, b, tol, nr_points):
+def run_integrator_learner(f, a, b, tol, n):
     learner = IntegratorLearner(f, bounds=(a, b), tol=tol)
-    for _ in range(nr_points):
+    for _ in range(n):
         points, _ = learner.choose_points(1)
         learner.add_data(points, map(learner.function, points))
     return learner
@@ -63,9 +63,9 @@ def equal_ivals(ivals, other, *, verbose=False):
 
 
 def same_ivals(f, a, b, tol):
-        igral, err, nr_points, ivals = algorithm_4(f, a, b, tol)
+        igral, err, n, ivals = algorithm_4(f, a, b, tol)
 
-        learner = run_integrator_learner(f, a, b, tol, nr_points)
+        learner = run_integrator_learner(f, a, b, tol, n)
 
         # This will only show up if the test fails, anyway
         print('igral difference', learner.igral-igral,
@@ -85,9 +85,9 @@ def test_cquad():
 @pytest.mark.xfail
 def test_machine_precision():
     f, a, b, tol = [partial(f63, alpha=0.987654321, beta=0.45), 0, 1, 1e-10]
-    igral, err, nr_points, ivals = algorithm_4(f, a, b, tol)
+    igral, err, n, ivals = algorithm_4(f, a, b, tol)
 
-    learner = run_integrator_learner(f, a, b, tol, nr_points)
+    learner = run_integrator_learner(f, a, b, tol, n)
 
     print('igral difference', learner.igral-igral,
           'err difference', learner.err - err)
@@ -97,9 +97,9 @@ def test_machine_precision():
 
 def test_machine_precision2():
     f, a, b, tol = [partial(f63, alpha=0.987654321, beta=0.45), 0, 1, 1e-10]
-    igral, err, nr_points, ivals = algorithm_4(f, a, b, tol)
+    igral, err, n, ivals = algorithm_4(f, a, b, tol)
 
-    learner = run_integrator_learner(f, a, b, tol, nr_points)
+    learner = run_integrator_learner(f, a, b, tol, n)
 
     np.testing.assert_almost_equal(igral, learner.igral)
     np.testing.assert_almost_equal(err, learner.err)
@@ -109,12 +109,12 @@ def test_divergence():
     """This function should raise a DivergentIntegralError."""
     f, a, b, tol = fdiv, 0, 1, 1e-6
     with pytest.raises(A4DivergentIntegralError) as e:
-        igral, err, nr_points, ivals = algorithm_4(f, a, b, tol)
+        igral, err, n, ivals = algorithm_4(f, a, b, tol)
 
-    nr_points = e.value.nr_points
+    n = e.value.nr_points
 
     with pytest.raises(DivergentIntegralError):
-        run_integrator_learner(f, a, b, tol, nr_points)
+        run_integrator_learner(f, a, b, tol, n)
 
 
 def test_choosing_and_adding_points_one_by_one():

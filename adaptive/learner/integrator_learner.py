@@ -324,7 +324,7 @@ class IntegratorLearner(BaseLearner):
         ----------
         approximating_intervals : set of intervals
             The intervals that can be used in the determination of the integral.
-        nr_points : int
+        n : int
             The total number of evaluated points.
         igral : float
             The integral value in `self.bounds`.
@@ -475,7 +475,7 @@ class IntegratorLearner(BaseLearner):
         return self._stack
 
     @property
-    def nr_points(self):
+    def n(self):
         return len(self.done_points)
 
     @property
