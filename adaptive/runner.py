@@ -294,7 +294,7 @@ class AsyncRunner(BaseRunner):
                     fut.cancel()
                 await asyncio.wait(remaining)
             if self.shutdown_executor:
-                self.executor.shutdown()
+                self.executor.shutdown(wait=False)
 
 
 # Default runner
