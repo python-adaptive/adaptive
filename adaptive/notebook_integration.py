@@ -82,6 +82,8 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     except ModuleNotFoundError:
         raise RuntimeError('Plotting requires the holoviews Python package'
                            ' which is not installed.')
+    import ipywidgets
+    from IPython.display import display
 
     def plot_generator():
         while True:
@@ -112,5 +114,16 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
         active_plotting_tasks[name].cancel()
 
     active_plotting_tasks[name] = asyncio.get_event_loop().create_task(updater())
+
+    def cancel(_):
+        try:
+            active_plotting_tasks[name].cancel()
+        except KeyError:
+            pass
+
+    cancel_button = ipywidgets.Button(description='cancel live-plot',
+                                      layout=ipywidgets.Layout(width='150px'))
+    cancel_button.on_click(cancel)
+    display(cancel_button)
 
     return dm
