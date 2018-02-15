@@ -4,6 +4,8 @@ import functools
 import inspect
 import concurrent.futures as concurrent
 import warnings
+import time
+import datetime
 
 try:
     import ipyparallel
@@ -225,12 +227,13 @@ class AsyncRunner(BaseRunner):
 
         # When the learned function is 'async def', we run it
         # directly on the event loop, and not in the executor.
+        # The *whole point* of allowing learning of async functions is so that
+        # the user can have more fine-grained control over the parallelism.
         if inspect.iscoroutinefunction(learner.function):
-            if executor:  # what the user provided
-                raise RuntimeError('Executor is unused when learning '
-                                   'an async function')
+            if executor:  # user-provided argument
+                raise RuntimeError('Cannot use an executor when learning an '
+                                   'async function.')
             self.executor.shutdown()  # Make sure we don't shoot ourselves later
-
             self._submit = lambda x: self.ioloop.create_task(learner.function(x))
         else:
             self._submit = functools.partial(self.ioloop.run_in_executor,
@@ -238,7 +241,8 @@ class AsyncRunner(BaseRunner):
                                              self.learner.function)
 
         if in_ipynb() and not self.ioloop.is_running():
-            warnings.warn('Run adaptive.notebook_extension() to use '
+            warnings.warn('The runner has been scheduled, but no event loop is '
+                          'running! Run adaptive.notebook_extension() to use '
                           'the Runner in a Jupyter notebook.')
         self.task = self.ioloop.create_task(self._run())
 
