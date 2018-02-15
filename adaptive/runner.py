@@ -253,6 +253,74 @@ class AsyncRunner(BaseRunner):
         end_time = self.end_time if self.task.done() else time.time()
         return end_time - self.start_time
 
+    def status(self):
+        """Return the runner status as a string.
+
+        The possible statuses are: running, cancelled, failed, and finished.
+        """
+        try:
+            self.task.result()
+        except asyncio.CancelledError:
+            return 'cancelled'
+        except asyncio.InvalidStateError:
+            return 'running'
+        except Exception:
+            return 'failed'
+        else:
+            return 'finished'
+
+    def live_info(self, *, update_interval=0.5):
+        """Display live information about the runner.
+
+        Returns an interactive ipywidget that can be
+        visualized in a Jupyter notebook.
+        """
+        import ipywidgets as widgets
+        from IPython.display import display
+
+        status = widgets.HTML(value=self._info_html())
+
+        cancel = widgets.Button(description='cancel runner',
+                                layout=widgets.Layout(width='100px'))
+        cancel.on_click(lambda _: self.cancel())
+
+        async def update():
+            while not self.task.done():
+                await asyncio.sleep(update_interval)
+                status.value = self._info_html()
+            status.value = self._info_html()
+
+        self.ioloop.create_task(update())
+
+        hbox = widgets.HBox(
+            (status, cancel),
+            description='Runner stats',
+            layout=widgets.Layout(border='solid 1px',
+                                  width='200px',
+                                  align_items='center'),
+        )
+        return display(hbox)
+
+    def _info_html(self):
+        info = [
+            ('status', self.status()),
+            ('elapsed time', datetime.timedelta(seconds=self.elapsed_time())),
+        ]
+
+        try:
+            info.append(('# of points', self.learner.n))
+        except Exception:
+            pass
+
+        template = '<dt>{}</dt><dd>{}</dd>'
+        table = '\n'.join(template.format(k, v) for k, v in info)
+
+        return f'''
+            <dl>
+            {table}
+            </dl>
+        '''
+
     def cancel(self):
         """Cancel the runner.
 
