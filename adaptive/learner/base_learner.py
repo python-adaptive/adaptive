@@ -15,6 +15,9 @@ class BaseLearner(metaclass=abc.ABCMeta):
         'function' evaluated at certain points.
         The values can be 'None', which indicates that the point
         will be evaluated, but that we do not have the result yet.
+    n : int, optional
+        The number of evaluated points that have been added to the learner.
+        Subclasses do not *have* to implement this attribute.
 
     Subclasses may define a 'plot' method that takes no parameters
     and returns a holoviews plot.
@@ -75,14 +78,6 @@ class BaseLearner(metaclass=abc.ABCMeta):
             want to modify the state of the learner.
         """
         pass
-
-    @property
-    def n(self):
-        """Return the number of evaluated points.
-
-        Learners *may* implement this method, but are not required to.
-        """
-        raise NotImplementedError()
 
     def __getstate__(self):
         return deepcopy(self.__dict__)
