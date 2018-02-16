@@ -7,6 +7,6 @@ from . import runner
 
 from .learner import (Learner1D, Learner2D, AverageLearner,
                       BalancingLearner, DataSaver, IntegratorLearner)
-from .runner import Runner
+from .runner import Runner, BlockingRunner
 
 del notebook_integration  # to avoid confusion with `notebook_extension`
