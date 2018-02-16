@@ -173,6 +173,7 @@ class Learner2D(BaseLearner):
         self._stack.update({p: np.inf for p in self._bounds_points})
         self.function = function
         self._ip = self._ip_combined = None
+        self._loss = np.inf
 
         self.stack_size = 10
 
@@ -271,7 +272,6 @@ class Learner2D(BaseLearner):
 
         return points_new, losses_new
 
-
     def choose_points(self, n, add_data=True):
         # Even if add_data is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
@@ -305,7 +305,8 @@ class Learner2D(BaseLearner):
             return np.inf
         ip = self.ip() if real else self.ip_combined()
         losses = self.loss_per_triangle(ip)
-        return losses.max()
+        self._loss = losses.max()
+        return self._loss
 
     def remove_unfinished(self):
         self._interp = set()
@@ -317,26 +318,36 @@ class Learner2D(BaseLearner):
                                  '3D surface plots in bokeh.')
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
+
         if len(self.data) >= 4:
             ip = self.ip()
 
             if n is None:
                 # Calculate how many grid points are needed.
-                # factor from A=√3/4a² (equilateral triangle)
+                # factor from A=√3/4 * a² (equilateral triangle)
                 n = int(0.658 / sqrt(areas(ip).min()))
                 n = max(n, 10)
 
             x = y = np.linspace(-0.5, 0.5, n)
             z = ip(x[:, None], y[None, :]).squeeze()
-            plot = hv.Image(np.rot90(z), bounds=lbrt)
+
+            im = hv.Image(np.rot90(z), bounds=lbrt)
 
             if tri_alpha:
-                tri_points = self.unscale(ip.tri.points[ip.tri.vertices])
-                contours = hv.Contours([p for p in tri_points])
-                contours = contours.opts(style=dict(alpha=tri_alpha))
-
+                points = self.unscale(ip.tri.points[ip.tri.vertices])
+                points = np.pad(points[:, [0, 1, 2, 0], :],
+                                pad_width=((0, 0), (0, 1), (0, 0)),
+                                mode='constant',
+                                constant_values=np.nan).reshape(-1, 2)
+                tris = hv.EdgePaths([points])
+            else:
+                tris = hv.EdgePaths([])
         else:
-            plot = hv.Image([], bounds=lbrt)
-            contours = hv.Contours([])
+            im = hv.Image([], bounds=lbrt)
+            tris = hv.EdgePaths([])
 
-        return plot * contours if tri_alpha else plot
+        im_opts = dict(cmap='viridis')
+        tri_opts = dict(line_width=0.5, alpha=tri_alpha)
+        no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
+
+        return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
