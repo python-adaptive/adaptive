@@ -4,55 +4,41 @@ import datetime
 from pkg_resources import parse_version
 import warnings
 
-from IPython import get_ipython
-import ipykernel
-from ipykernel.eventloops import register_integration
 
-
-# IPython event loop integration
-
-if parse_version(ipykernel.__version__) < parse_version('4.7.0'):
-    # XXX: remove this function when we depend on ipykernel>=4.7.0
-    @register_integration('asyncio')
-    def _loop_asyncio(kernel):
-        """Start a kernel with asyncio event loop support.
-        Taken from https://github.com/ipython/ipykernel/blob/fa814da201bdebd5b16110597604f7dabafec58d/ipykernel/eventloops.py#L294"""
-        loop = asyncio.get_event_loop()
-
-        def kernel_handler():
-            loop.call_soon(kernel.do_one_iteration)
-            loop.call_later(kernel._poll_interval, kernel_handler)
-
-        loop.call_soon(kernel_handler)
-        # loop is already running (e.g. tornado 5), nothing left to do
-        if loop.is_running():
-            return
-        while True:
-            error = None
-            try:
-                loop.run_forever()
-            except KeyboardInterrupt:
-                continue
-            except Exception as e:
-                error = e
-            loop.run_until_complete(loop.shutdown_asyncgens())
-            loop.close()
-            if error is not None:
-                raise error
-            break
+_async_enabled = False
+_plotting_enabled = False
 
 
 def notebook_extension():
-    get_ipython().magic('gui asyncio')
+    if not in_ipynb():
+        raise RuntimeError('"adaptive.notebook_extension()" may only be run '
+                           'from a Jupyter notebook.')
+
+    global _plotting_enabled
+    _plotting_enabled = False
     try:
-        import holoviews as hv
-        return hv.notebook_extension('bokeh')
+        import ipywidgets
+        import holoviews
+        holoviews.notebook_extension('bokeh')
+        _plotting_enabled = True
     except ModuleNotFoundError:
-        warnings.warn("The holoviews package is not installed so plotting"
-                      "will not work.", RuntimeWarning)
+        warnings.warn("holoviews and ipywidgets are not installed; plotting "
+                      "is disabled.", RuntimeWarning)
+
+    global _async_enabled
+    get_ipython().magic('gui asyncio')
+    _async_enabled = True
 
 
-# Plotting
+def in_ipynb():
+    try:
+        # If we are running in IPython, then `get_ipython()` is always a global
+        return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+    except NameError:
+        return False
+
+
+# Fancy displays in the Jupyter notebook
 
 active_plotting_tasks = dict()
 
@@ -78,11 +64,11 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     dm : holoviews.DynamicMap
         The plot that automatically updates every update_interval.
     """
-    try:
-        import holoviews as hv
-    except ModuleNotFoundError:
-        raise RuntimeError('Plotting requires the holoviews Python package'
-                           ' which is not installed.')
+    if not _plotting_enabled:
+        raise RuntimeError("Live plotting is not enabled; did you run "
+                           "'adaptive.notebook_extension()'?")
+
+    import holoviews as hv
     import ipywidgets
     from IPython.display import display
 
@@ -136,6 +122,10 @@ def live_info(runner, *, update_interval=0.5):
     Returns an interactive ipywidget that can be
     visualized in a Jupyter notebook.
     """
+    if not _plotting_enabled:
+        raise RuntimeError("Live plotting is not enabled; did you run "
+                           "'adaptive.notebook_extension()'?")
+
     import ipywidgets
     from IPython.display import display
 

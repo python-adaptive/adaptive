@@ -6,7 +6,7 @@ import concurrent.futures as concurrent
 import warnings
 import time
 
-from .notebook_integration import live_plot, live_info
+from .notebook_integration import live_plot, live_info, in_ipynb
 
 try:
     import ipyparallel
@@ -245,9 +245,10 @@ class AsyncRunner(BaseRunner):
         self.end_time = None
 
         if in_ipynb() and not self.ioloop.is_running():
-            warnings.warn('The runner has been scheduled, but no event loop is '
-                          'running! Run adaptive.notebook_extension() to use '
-                          'the Runner in a Jupyter notebook.')
+            warnings.warn("The runner has been scheduled, but the asyncio "
+                          "event loop is not running! If you are "
+                          "in a Jupyter notebook, remember to run "
+                          "'adaptive.notebook_extension()'")
         self.task = self.ioloop.create_task(self._run())
 
     def elapsed_time(self):
@@ -298,10 +299,8 @@ class AsyncRunner(BaseRunner):
         dm : holoviews.DynamicMap
             The plot that automatically updates every update_interval.
         """
-        if not in_ipynb():
-            raise RuntimeError('You need to be in a Jupyter notebook to display '
-                              'the live plot.')
-        return live_plot(self, plotter=plotter, update_interval=update_interval,
+        return live_plot(self, plotter=plotter,
+                         update_interval=update_interval,
                          name=name)
 
     def live_info(self, *, update_interval=2):
@@ -310,9 +309,6 @@ class AsyncRunner(BaseRunner):
         Returns an interactive ipywidget that can be
         visualized in a Jupyter notebook.
         """
-        if not in_ipynb():
-            raise RuntimeError('You need to be in a Jupyter notebook to display '
-                               'the live info widget.')
         return live_info(self, update_interval=update_interval)
 
     async def _run(self):
@@ -454,10 +450,3 @@ def _get_ncores(ex):
     else:
         raise TypeError('Cannot get number of cores for {}'
                         .format(ex.__class__))
-
-
-def in_ipynb():
-    try:
-        return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
-    except NameError:
-        return False
