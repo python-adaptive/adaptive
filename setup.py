@@ -12,7 +12,7 @@ install_requires = [
     'jupyter_client>=5.2.2',  # because https://github.com/jupyter/jupyter_client/pull/314
 ]
 
-extras_require = {'recommended': ['holoviews>=1.10',
+extras_require = {'recommended': ['holoviews>=1.9.1',
                                   'ipyparallel',
                                   'distributed']}
 
