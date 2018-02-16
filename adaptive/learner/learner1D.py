@@ -100,7 +100,7 @@ class Learner1D(BaseLearner):
         return {**self.data, **self.data_interp}
 
     @property
-    def n(self):
+    def npoints(self):
         return len(self.data)
 
     def loss(self, real=True):
