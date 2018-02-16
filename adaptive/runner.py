@@ -5,7 +5,8 @@ import inspect
 import concurrent.futures as concurrent
 import warnings
 import time
-import datetime
+
+from .notebook_integration import live_plot, live_info
 
 try:
     import ipyparallel
@@ -269,64 +270,50 @@ class AsyncRunner(BaseRunner):
         else:
             return 'finished'
 
-    def live_info(self, *, update_interval=0.5):
-        """Display live information about the runner.
-
-        Returns an interactive ipywidget that can be
-        visualized in a Jupyter notebook.
-        """
-        import ipywidgets as widgets
-        from IPython.display import display
-
-        status = widgets.HTML(value=self._info_html())
-
-        cancel = widgets.Button(description='cancel runner',
-                                layout=widgets.Layout(width='100px'))
-        cancel.on_click(lambda _: self.cancel())
-
-        async def update():
-            while not self.task.done():
-                await asyncio.sleep(update_interval)
-                status.value = self._info_html()
-            status.value = self._info_html()
-
-        self.ioloop.create_task(update())
-
-        hbox = widgets.HBox(
-            (status, cancel),
-            description='Runner stats',
-            layout=widgets.Layout(border='solid 1px',
-                                  width='200px',
-                                  align_items='center'),
-        )
-        return display(hbox)
-
-    def _info_html(self):
-        info = [
-            ('status', self.status()),
-            ('elapsed time', datetime.timedelta(seconds=self.elapsed_time())),
-        ]
-
-        try:
-            info.append(('# of points', self.learner.n))
-        except Exception:
-            pass
-
-        template = '<dt>{}</dt><dd>{}</dd>'
-        table = '\n'.join(template.format(k, v) for k, v in info)
-
-        return f'''
-            <dl>
-            {table}
-            </dl>
-        '''
-
     def cancel(self):
         """Cancel the runner.
 
         This is equivalent to calling `runner.task.cancel()`.
         """
         self.task.cancel()
+
+    def live_plot(self, *, plotter=None, update_interval=2, name=None):
+        """Live plotting of the learner's data.
+
+        Parameters
+        ----------
+        runner : Runner
+        plotter : function
+            A function that takes the learner as a argument and returns a
+            holoviews object. By default learner.plot() will be called.
+        update_interval : int
+            Number of second between the updates of the plot.
+        name : hasable
+            Name for the `live_plot` task in `adaptive.active_plotting_tasks`.
+            By default the name is `None` and if another task with the same name
+            already exists that other live_plot is canceled.
+
+        Returns
+        -------
+        dm : holoviews.DynamicMap
+            The plot that automatically updates every update_interval.
+        """
+        if not in_ipynb():
+            raise RuntimeError('You need to be in a Jupyter notebook to display '
+                              'the live plot.')
+        return live_plot(self, plotter=plotter, update_interval=update_interval,
+                         name=name)
+
+    def live_info(self, *, update_interval=2):
+        """Display live information about the runner.
+
+        Returns an interactive ipywidget that can be
+        visualized in a Jupyter notebook.
+        """
+        if not in_ipynb():
+            raise RuntimeError('You need to be in a Jupyter notebook to display '
+                               'the live info widget.')
+        return live_info(self, update_interval=update_interval)
 
     async def _run(self):
         first_completed = asyncio.FIRST_COMPLETED

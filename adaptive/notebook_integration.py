@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import datetime
 from pkg_resources import parse_version
 import warnings
 
@@ -127,3 +128,57 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     display(cancel_button)
 
     return dm
+
+
+def live_info(runner, *, update_interval=0.5):
+    """Display live information about the runner.
+
+    Returns an interactive ipywidget that can be
+    visualized in a Jupyter notebook.
+    """
+    import ipywidgets as widgets
+    from IPython.display import display
+
+    status = widgets.HTML(value=_info_html(runner))
+
+    cancel = widgets.Button(description='cancel runner',
+                            layout=widgets.Layout(width='100px'))
+    cancel.on_click(lambda _: runner.cancel())
+
+    async def update():
+        while not runner.task.done():
+            await asyncio.sleep(update_interval)
+            status.value = _info_html(runner)
+        status.value = _info_html(runner)
+
+    runner.ioloop.create_task(update())
+
+    hbox = widgets.HBox(
+        (status, cancel),
+        description='Runner stats',
+        layout=widgets.Layout(border='solid 1px',
+                              width='200px',
+                              align_items='center'),
+    )
+    return display(hbox)
+
+
+def _info_html(runner):
+    info = [
+        ('status', runner.status()),
+        ('elapsed time', datetime.timedelta(seconds=runner.elapsed_time())),
+    ]
+
+    try:
+        info.append(('# of points', runner.learner.n))
+    except Exception:
+        pass
+
+    template = '<dt>{}</dt><dd>{}</dd>'
+    table = '\n'.join(template.format(k, v) for k, v in info)
+
+    return f'''
+        <dl>
+        {table}
+        </dl>
+    '''
