@@ -50,7 +50,7 @@ and [`distributed`](https://distributed.readthedocs.io/en/latest/).
 
 
 ## Installation
-`adaptive` works with Python 3.5 and higher on Linux, Windows, or Mac, and provides optional extensions for working with the Jupyter/IPython Notebook.
+`adaptive` works with Python 3.6 and higher on Linux, Windows, or Mac, and provides optional extensions for working with the Jupyter/IPython Notebook.
 
 The recommended way to install adaptive is using `pip`:
 ```bash
