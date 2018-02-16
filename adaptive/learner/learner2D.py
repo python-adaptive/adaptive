@@ -332,14 +332,22 @@ class Learner2D(BaseLearner):
             z = ip(x[:, None], y[None, :]).squeeze()
 
             im = hv.Image(np.rot90(z), bounds=lbrt)
-            tris = (hv.TriMesh((ip.tri.simplices, self.unscale(ip.tri.points)))
-                    if tri_alpha else hv.TriMesh([]))
+
+            if tri_alpha:
+                points = self.unscale(ip.tri.points[ip.tri.vertices])
+                points = np.pad(points[:, [0, 1, 2, 0], :],
+                                pad_width=((0, 0), (0, 1), (0, 0)),
+                                mode='constant',
+                                constant_values=np.nan).reshape(-1, 2)
+                tris = hv.EdgePaths([points])
+            else:
+                tris = hv.EdgePaths([])
         else:
             im = hv.Image([], bounds=lbrt)
-            tris = hv.TriMesh([])
+            tris = hv.EdgePaths([])
 
         im_opts = dict(cmap='viridis')
         tri_opts = dict(line_width=0.5, alpha=tri_alpha)
         no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
 
-        return im.opts(style=im_opts) * tris.edgepaths.opts(style=tri_opts, **no_hover)
+        return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
