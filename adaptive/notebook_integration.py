@@ -136,13 +136,13 @@ def live_info(runner, *, update_interval=0.5):
     Returns an interactive ipywidget that can be
     visualized in a Jupyter notebook.
     """
-    import ipywidgets as widgets
+    import ipywidgets
     from IPython.display import display
 
-    status = widgets.HTML(value=_info_html(runner))
+    status = ipywidgets.HTML(value=_info_html(runner))
 
-    cancel = widgets.Button(description='cancel runner',
-                            layout=widgets.Layout(width='100px'))
+    cancel = ipywidgets.Button(description='cancel runner',
+                            layout=ipywidgets.Layout(width='100px'))
     cancel.on_click(lambda _: runner.cancel())
 
     async def update():
@@ -153,10 +153,10 @@ def live_info(runner, *, update_interval=0.5):
 
     runner.ioloop.create_task(update())
 
-    hbox = widgets.HBox(
+    hbox = ipywidgets.HBox(
         (status, cancel),
         description='Runner stats',
-        layout=widgets.Layout(border='solid 1px',
+        layout=ipywidgets.Layout(border='solid 1px',
                               width='200px',
                               align_items='center'),
     )
