@@ -33,8 +33,7 @@ setup(
         'Intended Audience :: Science/Research',
         'Programming Language :: Python :: 3.6',
     ],
-    packages=['adaptive',
-              'adaptive.learner'],
+    packages=['adaptive'],
     install_requires=install_requires,
     extras_require=extras_require,
 )
