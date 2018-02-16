@@ -15,7 +15,7 @@ class BaseLearner(metaclass=abc.ABCMeta):
         'function' evaluated at certain points.
         The values can be 'None', which indicates that the point
         will be evaluated, but that we do not have the result yet.
-    n : int, optional
+    npoints : int, optional
         The number of evaluated points that have been added to the learner.
         Subclasses do not *have* to implement this attribute.
 

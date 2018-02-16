@@ -32,7 +32,7 @@ class AverageLearner(BaseLearner):
         self.function = function
         self.atol = atol
         self.rtol = rtol
-        self.n = 0
+        self.npoints = 0
         self.sum_f = 0
         self.sum_f_sq = 0
 
@@ -56,25 +56,25 @@ class AverageLearner(BaseLearner):
             self.sum_f += value
             self.sum_f_sq += value**2
             if value_is_new:
-                self.n += 1
+                self.npoints += 1
             else:
                 self.sum_f -= value_old
                 self.sum_f_sq -= value_old**2
 
     @property
     def mean(self):
-        return self.sum_f / self.n
+        return self.sum_f / self.npoints
 
     @property
     def std(self):
-        n = self.n
+        n = self.npoints
         if n < 2:
             return np.inf
         return sqrt((self.sum_f_sq - n * self.mean**2) / (n - 1))
 
     def loss(self, real=True, *, n=None):
         if n is None:
-            n = self.n if real else self.n_requested
+            n = self.npoints if real else self.n_requested
         else:
             n = n
         if n < 2:
@@ -86,7 +86,7 @@ class AverageLearner(BaseLearner):
     def loss_improvement(self, n):
         loss = self.loss()
         if np.isfinite(loss):
-            return loss - self.loss(n=self.n + n)
+            return loss - self.loss(n=self.npoints + n)
         else:
             return np.inf
 
@@ -99,6 +99,6 @@ class AverageLearner(BaseLearner):
         vals = [v for v in self.data.values() if v is not None]
         if not vals:
             return hv.Histogram([[], []])
-        num_bins = int(max(5, sqrt(self.n)))
+        num_bins = int(max(5, sqrt(self.npoints)))
         vals = hv.Points(vals)
         return hv.operation.histogram(vals, num_bins=num_bins, dimension=1)

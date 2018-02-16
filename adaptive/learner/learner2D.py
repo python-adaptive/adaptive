@@ -178,7 +178,7 @@ class Learner2D(BaseLearner):
         self.stack_size = 10
 
     @property
-    def n(self):
+    def npoints(self):
         return len(self.data)
 
     @property
