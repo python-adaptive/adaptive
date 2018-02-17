@@ -303,7 +303,7 @@ class AsyncRunner(BaseRunner):
                          update_interval=update_interval,
                          name=name)
 
-    def live_info(self, *, update_interval=2):
+    def live_info(self, *, update_interval=0.1):
         """Display live information about the runner.
 
         Returns an interactive ipywidget that can be
