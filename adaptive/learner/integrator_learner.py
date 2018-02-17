@@ -475,7 +475,7 @@ class IntegratorLearner(BaseLearner):
         return self._stack
 
     @property
-    def n(self):
+    def npoints(self):
         return len(self.done_points)
 
     @property
