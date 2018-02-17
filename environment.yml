@@ -10,5 +10,8 @@ dependencies:
   - holoviews
   - ipyparallel
   - distributed
+  - ipykernel>=4.8*
+  - jupyter_client>=5.2.2
+  - ipywidgets
   - pip:
     - git+https://github.com/python-adaptive/adaptive
