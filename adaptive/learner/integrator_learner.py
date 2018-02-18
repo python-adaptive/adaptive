@@ -507,4 +507,9 @@ class IntegratorLearner(BaseLearner):
 
     def plot(self):
         import holoviews as hv
-        return hv.Scatter(self.done_points)
+        ivals = sorted(self.ivals, key=attrgetter('a'))
+        if not self.done_points:
+            return hv.Path([])
+        xs, ys = zip(*[(x, y) for ival in ivals
+                       for x, y in sorted(ival.done_points.items())])
+        return hv.Path((xs, ys))
