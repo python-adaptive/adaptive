@@ -168,10 +168,6 @@ class BlockingRunner(BaseRunner):
 class AsyncRunner(BaseRunner):
     """Run a learner asynchronously in an executor using asyncio.
 
-    This runner assumes that
-
-
-
     Parameters
     ----------
     learner : adaptive.learner.BaseLearner
