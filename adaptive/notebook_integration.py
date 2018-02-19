@@ -80,6 +80,9 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     import ipywidgets
     from IPython.display import display
 
+    if name in active_plotting_tasks:
+        active_plotting_tasks[name].cancel()
+
     def plot_generator():
         while True:
             if not plotter:
@@ -89,7 +92,8 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
 
     dm = hv.DynamicMap(plot_generator(),
                        streams=[hv.streams.Stream.define('Next')()])
-
+    cancel_button = ipywidgets.Button(description='cancel live-plot',
+                                      layout=ipywidgets.Layout(width='150px'))
 
     # Could have used dm.periodic in the following, but this would either spin
     # off a thread (and learner is not threadsafe) or block the kernel.
@@ -103,12 +107,7 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
         finally:
             if active_plotting_tasks[name] is asyncio.Task.current_task():
                 active_plotting_tasks.pop(name, None)
-
-    global active_plotting_tasks
-    if name in active_plotting_tasks:
-        active_plotting_tasks[name].cancel()
-
-    active_plotting_tasks[name] = asyncio.get_event_loop().create_task(updater())
+            cancel_button.layout.display = 'none'  # remove cancel button
 
     def cancel(_):
         try:
@@ -116,11 +115,10 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
         except KeyError:
             pass
 
-    cancel_button = ipywidgets.Button(description='cancel live-plot',
-                                      layout=ipywidgets.Layout(width='150px'))
+    active_plotting_tasks[name] = runner.ioloop.create_task(updater())
     cancel_button.on_click(cancel)
-    display(cancel_button)
 
+    display(cancel_button)
     return dm
 
 
@@ -140,7 +138,7 @@ def live_info(runner, *, update_interval=0.5):
     status = ipywidgets.HTML(value=_info_html(runner))
 
     cancel = ipywidgets.Button(description='cancel runner',
-                            layout=ipywidgets.Layout(width='100px'))
+                               layout=ipywidgets.Layout(width='100px'))
     cancel.on_click(lambda _: runner.cancel())
 
     async def update():
@@ -148,17 +146,17 @@ def live_info(runner, *, update_interval=0.5):
             await asyncio.sleep(update_interval)
             status.value = _info_html(runner)
         status.value = _info_html(runner)
+        cancel.layout.display = 'none'
 
     runner.ioloop.create_task(update())
 
-    hbox = ipywidgets.HBox(
+    display(ipywidgets.HBox(
         (status, cancel),
         description='Runner stats',
         layout=ipywidgets.Layout(border='solid 1px',
                                  width='200px',
                                  align_items='center'),
-    )
-    return display(hbox)
+    ))
 
 
 def _info_html(runner):
