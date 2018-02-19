@@ -11,7 +11,7 @@ import scipy.interpolate
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
-def uniform_sampling_1d(interval, scale, function_values):
+def uniform_loss(interval, scale, function_values):
     """Loss function that samples the domain uniformly.
 
     Works with `~adaptive.Learner1D` only.
@@ -32,7 +32,7 @@ def uniform_sampling_1d(interval, scale, function_values):
     return dx
 
 
-def _default_loss_per_interval(interval, scale, function_values):
+def default_loss(interval, scale, function_values):
     """Calculate loss on a single interval
 
     Currently returns the rescaled length of the interval. If one of the
@@ -87,7 +87,7 @@ class Learner1D(BaseLearner):
 
     def __init__(self, function, bounds, loss_per_interval=None):
         self.function = function
-        self.loss_per_interval = loss_per_interval or _default_loss_per_interval
+        self.loss_per_interval = loss_per_interval or default_loss
 
         # A dict storing the loss function for each interval x_n.
         self.losses = {}

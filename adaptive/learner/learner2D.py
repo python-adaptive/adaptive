@@ -42,7 +42,7 @@ def areas(ip):
     return areas
 
 
-def uniform_sampling_2d(ip):
+def uniform_loss(ip):
     """Loss function that samples the domain uniformly.
 
     Works with `~adaptive.Learner2D` only.
@@ -86,7 +86,7 @@ def resolution_loss(ip, min_distance=0, max_distance=1):
     A = areas(ip)
     dev = np.sum(deviations(ip), axis=0)
     
-    # similar to the _default_loss_per_triangle
+    # similar to the default_loss
     loss = np.sqrt(A) * dev + A
     
     # Setting areas with a small area to zero such that they won't be chosen again
@@ -99,7 +99,7 @@ def resolution_loss(ip, min_distance=0, max_distance=1):
     return loss
 
 
-def _default_loss_per_triangle(ip):
+def default_loss(ip):
     dev = np.sum(deviations(ip), axis=0)
     A = areas(ip)
     losses = dev * np.sqrt(A) + 0.1 * A
@@ -207,7 +207,7 @@ class Learner2D(BaseLearner):
     def __init__(self, function, bounds, loss_per_triangle=None):
         self.ndim = len(bounds)
         self._vdim = None
-        self.loss_per_triangle = loss_per_triangle or _default_loss_per_triangle
+        self.loss_per_triangle = loss_per_triangle or default_loss
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
         self.data = OrderedDict()
         self._stack = OrderedDict()
