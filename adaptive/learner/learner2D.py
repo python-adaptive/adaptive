@@ -42,10 +42,67 @@ def areas(ip):
     return areas
 
 
-def _default_loss_per_triangle(ip):
-    devs = deviations(ip)
+def uniform_loss(ip):
+    """Loss function that samples the domain uniformly.
+
+    Works with `~adaptive.Learner2D` only.
+
+    Examples
+    --------
+    >>> def f(xy):
+    ...     x, y = xy
+    ...     return x**2 + y**2
+    >>>
+    >>> learner = adaptive.Learner2D(f,
+    ...                              bounds=[(-1, -1), (1, 1)],
+    ...                              loss_per_triangle=uniform_sampling_2d)
+    >>>
+    """
+    return np.sqrt(areas(ip))
+
+
+def resolution_loss(ip, min_distance=0, max_distance=1):
+    """Loss function that is similar to the default loss function, but you can
+    set the maximimum and minimum size of a triangle.
+
+    Works with `~adaptive.Learner2D` only.
+
+    The arguments `min_distance` and `max_distance` should be in between 0 and 1
+    because the total area is normalized to 1.
+
+    Examples
+    --------
+    >>> def f(xy):
+    ...     x, y = xy
+    ...     return x**2 + y**2
+    >>>
+    >>> from functools import partial
+    >>> loss = partial(resolution_loss, min_distance=0.01)
+    >>> learner = adaptive.Learner2D(f,
+    ...                              bounds=[(-1, -1), (1, 1)],
+    ...                              loss_per_triangle=loss)
+    >>>
+    """
     A = areas(ip)
-    losses = np.sum([dev * np.sqrt(A) + 0.1 * A for dev in devs], axis=0)
+    dev = np.sum(deviations(ip), axis=0)
+    
+    # similar to the default_loss
+    loss = np.sqrt(A) * dev + A
+    
+    # Setting areas with a small area to zero such that they won't be chosen again
+    loss[A < min_distance**2] = 0 
+    
+    # Setting triangles that have a size larger than max_distance to infinite loss
+    # such that these triangles will be picked
+    loss[A > max_distance**2] = np.inf
+
+    return loss
+
+
+def default_loss(ip):
+    dev = np.sum(deviations(ip), axis=0)
+    A = areas(ip)
+    losses = dev * np.sqrt(A) + 0.1 * A
     return losses
 
 
@@ -150,7 +207,7 @@ class Learner2D(BaseLearner):
     def __init__(self, function, bounds, loss_per_triangle=None):
         self.ndim = len(bounds)
         self._vdim = None
-        self.loss_per_triangle = loss_per_triangle or _default_loss_per_triangle
+        self.loss_per_triangle = loss_per_triangle or default_loss
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
         self.data = OrderedDict()
         self._stack = OrderedDict()
