@@ -100,9 +100,9 @@ def resolution_loss(ip, min_distance=0, max_distance=1):
 
 
 def _default_loss_per_triangle(ip):
-    devs = deviations(ip)
+    dev = np.sum(deviations(ip), axis=0)
     A = areas(ip)
-    losses = np.sum([dev * np.sqrt(A) + 0.1 * A for dev in devs], axis=0)
+    losses = dev * np.sqrt(A) + 0.1 * A
     return losses
 
 
