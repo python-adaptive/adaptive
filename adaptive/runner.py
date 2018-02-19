@@ -147,7 +147,14 @@ class BlockingRunner(BaseRunner):
                                           return_when=first_completed)
                 for fut in done:
                     x = xs.pop(fut)
-                    y = fut.result()
+                    try:
+                        y = fut.result()
+                    except Exception as e:
+                        raise RuntimeError(
+                            'An error occured while evaluating '
+                            f'"{self.learner.function.__name__}({x})". '
+                            'See the top traceback for details.'
+                        ) from e
                     if do_log:
                         self.log.append(('add_point', x, y))
                     self.learner.add_point(x, y)
@@ -334,7 +341,14 @@ class AsyncRunner(BaseRunner):
                                              loop=self.ioloop)
                 for fut in done:
                     x = xs.pop(fut)
-                    y = fut.result()
+                    try:
+                        y = fut.result()
+                    except Exception as e:
+                        raise RuntimeError(
+                            'An error occured while evaluating '
+                            f'"{self.learner.function.__name__}({x})". '
+                            'See the top traceback for details.'
+                        ) from e
                     if do_log:
                         self.log.append(('add_point', x, y))
                     self.learner.add_point(x, y)
