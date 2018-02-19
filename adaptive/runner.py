@@ -255,7 +255,14 @@ class AsyncRunner(BaseRunner):
                           "'adaptive.notebook_extension()'")
 
     def elapsed_time(self):
-        end_time = self.end_time if self.task.done() else time.time()
+        if self.task.done():
+            end_time = self.end_time
+            if end_time is None:
+                # task was cancelled before it began
+                assert self.task.cancelled()
+                return 0
+        else:
+            end_time = time.time()
         return end_time - self.start_time
 
     def status(self):
