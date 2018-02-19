@@ -444,7 +444,7 @@ def _get_ncores(ex):
         return ex._max_workers  # not public API!
     elif isinstance(ex, SequentialExecutor):
         return 1
-    elif with_distributed and isinstance(ex, distributed.executor.ClientExecutor):
+    elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
         # XXX: check if not sum(n for n in ex._client.ncores().values())
         return len(ex._client.ncores())
     else:
