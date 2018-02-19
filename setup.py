@@ -15,7 +15,7 @@ install_requires = [
 ]
 
 extras_require = {
-    'recommended': [
+    'notebook': [
         'ipython',
         'ipykernel>=4.8.0',  # because https://github.com/ipython/ipykernel/issues/274 and https://github.com/ipython/ipykernel/issues/263
         'jupyter_client>=5.2.2',  # because https://github.com/jupyter/jupyter_client/pull/314
@@ -29,7 +29,7 @@ extras_require = {
 
 setup(
     name='adaptive',
-    description='Adaptively sample mathematical functions',
+    description='Adaptive parallel sampling of mathematical functions',
     version='0.1a',
     url='https://gitlab.kwant-project.org/qt/adaptive',
     author='Adaptive authors',

@@ -6,7 +6,7 @@
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb)
 [![Join the chat at https://gitter.im/python-adaptive/adaptive](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive)
 
-**Tools for adaptive parallel evaluation of functions.**
+**Tools for adaptive parallel sampling of mathematical functions.**
 
 `adaptive` is an [open-source](LICENSE) Python library designed to make adaptive parallel function evaluation simple.
 With `adaptive` you just supply a function with its bounds, and it will be evaluated at the "best" points in parameter space.
@@ -19,7 +19,7 @@ Check out the `adaptive` [example notebook `learner.ipynb`](learner.ipynb) (or r
 
 
 ## Implemented algorithms
-The core concept in `adaptive` is that of a "learner". A "learner" samples
+The core concept in `adaptive` is that of a *learner*. A *learner* samples
 a function at the best places in its parameter space to get maximum
 "information" about the function. As it evaluates the function
 at more and more points in the parameter space, it gets a better idea of where
@@ -54,17 +54,31 @@ and [`distributed`](https://distributed.readthedocs.io/en/latest/).
 
 The recommended way to install adaptive is using `pip`:
 ```bash
-pip install https://gitlab.kwant-project.org/qt/adaptive/repository/master/archive.zip
+pip install adaptive[notebook]
 ```
+
+The `[notebook-extras]` above will also install the optional dependencies for running `adaptive` inside
+a Jupyter notebook.
 
 
 ## Development
+Clone the repository and run `setup.py develop` to add a link to the cloned repo into your
+Python path:
+```
+git clone git@github.com:python-adaptive/adaptive.git
+cd adaptive
+python3 setup.py develop
+```
+
+We highly recommend using a Conda environment or a virtualenv to manage the versions of your installed
+packages while working on `adaptive`.
 
 In order to not pollute the history with the output of the notebooks, please setup the git filter by executing
 
 ```bash
 git config filter.nbclearoutput.clean "jupyter nbconvert --to notebook --ClearOutputPreprocessor.enabled=True --ClearOutputPreprocessor.remove_metadata_fields='[\"deletable\", \"editable\", \"collapsed\", \"scrolled\"]' --stdin --stdout"
 ```
+
 in the repository.
 
 
