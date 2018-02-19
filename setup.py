@@ -20,8 +20,6 @@ extras_require = {
         'ipykernel>=4.8.0',  # because https://github.com/ipython/ipykernel/issues/274 and https://github.com/ipython/ipykernel/issues/263
         'jupyter_client>=5.2.2',  # because https://github.com/jupyter/jupyter_client/pull/314
         'holoviews>=1.9.1',
-        'ipyparallel',
-        'distributed',
         'ipywidgets',
     ],
 }
