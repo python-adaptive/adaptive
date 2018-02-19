@@ -42,6 +42,25 @@ def areas(ip):
     return areas
 
 
+def uniform_sampling_2d(ip):
+    """Loss function that samples the domain uniformly.
+
+    Works with `~adaptive.Learner2D` only.
+
+    Examples
+    --------
+    >>> def f(xy):
+    ...     x, y = xy
+    ...     return x**2 + y**2
+    >>>
+    >>> learner = adaptive.Learner2D(f,
+    ...                              bounds=[(-1, -1), (1, 1)],
+    ...                              loss_per_triangle=uniform_sampling_2d)
+    >>>
+    """
+    return np.sqrt(areas(ip))
+
+
 def _default_loss_per_triangle(ip):
     devs = deviations(ip)
     A = areas(ip)
