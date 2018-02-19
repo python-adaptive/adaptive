@@ -240,12 +240,12 @@ class AsyncRunner(BaseRunner):
         self.start_time = time.time()
         self.end_time = None
 
+        self.task = self.ioloop.create_task(self._run())
         if in_ipynb() and not self.ioloop.is_running():
             warnings.warn("The runner has been scheduled, but the asyncio "
                           "event loop is not running! If you are "
                           "in a Jupyter notebook, remember to run "
                           "'adaptive.notebook_extension()'")
-        self.task = self.ioloop.create_task(self._run())
 
     def elapsed_time(self):
         end_time = self.end_time if self.task.done() else time.time()
