@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import importlib
 import asyncio
 import datetime
 from pkg_resources import parse_version
@@ -28,6 +29,13 @@ def notebook_extension():
     global _async_enabled
     get_ipython().magic('gui asyncio')
     _async_enabled = True
+
+
+def ensure_holoviews():
+    try:
+        return importlib.import_module('holoviews')
+    except ModuleNotFounderror:
+        raise RuntimeError('holoviews is not installed; plotting is disabled.')
 
 
 def in_ipynb():

@@ -4,6 +4,7 @@ from math import sqrt
 
 import numpy as np
 
+from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
 class AverageLearner(BaseLearner):
@@ -95,7 +96,7 @@ class AverageLearner(BaseLearner):
         pass
 
     def plot(self):
-        import holoviews as hv
+        hv = ensure_holoviews()
         vals = [v for v in self.data.values() if v is not None]
         if not vals:
             return hv.Histogram([[], []])

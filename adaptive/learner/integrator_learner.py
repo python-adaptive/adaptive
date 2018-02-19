@@ -12,6 +12,7 @@ import numpy as np
 from scipy.linalg import norm
 from sortedcontainers import SortedSet
 
+from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
                                 ndiv_max, min_sep, eps, xi, V_inv,
@@ -506,7 +507,7 @@ class IntegratorLearner(BaseLearner):
         return abs(abs(self.igral) * self.tol - self.err)
 
     def plot(self):
-        import holoviews as hv
+        hv = ensure_holoviews()
         ivals = sorted(self.ivals, key=attrgetter('a'))
         if not self.done_points:
             return hv.Path([])

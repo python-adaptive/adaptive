@@ -7,6 +7,7 @@ from math import sqrt
 import numpy as np
 from scipy import interpolate
 
+from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
 
@@ -312,7 +313,7 @@ class Learner2D(BaseLearner):
         self._interp = set()
 
     def plot(self, n=None, tri_alpha=0):
-        import holoviews as hv
+        hv = ensure_holoviews()
         if self.vdim > 1:
             raise NotImplemented('holoviews currently does not support',
                                  '3D surface plots in bokeh.')

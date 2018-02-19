@@ -8,6 +8,7 @@ import numpy as np
 import sortedcontainers
 import scipy.interpolate
 
+from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
 
@@ -290,7 +291,7 @@ class Learner1D(BaseLearner):
         return data_interp
 
     def plot(self):
-        import holoviews as hv
+        hv = ensure_holoviews()
         if not self.data:
             return hv.Scatter([]) * hv.Path([])
 
