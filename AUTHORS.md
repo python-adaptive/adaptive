@@ -7,5 +7,6 @@ Below is a list of the main contributors to Adaptive:
 
 For a full list of contributors run
 
-    :::bash
-    git log --pretty=format:"%an" | sort | uniq
+```
+git log --pretty=format:"%an" | sort | uniq
+```
