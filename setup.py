@@ -73,7 +73,7 @@ setup(
     author='Adaptive authors',
     license='BSD',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'License :: OSI Approved :: BSD License',
         'Intended Audience :: Science/Research',
         'Programming Language :: Python :: 3.6',

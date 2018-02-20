@@ -15,7 +15,7 @@ With just a few lines of code you can evaluate functions on a computing cluster,
 Check out the `adaptive` [example notebook `learner.ipynb`](learner.ipynb) (or run it [live on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb)) to see examples of how to use `adaptive`.
 
 
-**WARNING: `adaptive` is still in an early alpha development stage**
+**WARNING: `adaptive` is still in a beta development stage**
 
 
 ## Implemented algorithms
