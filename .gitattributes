@@ -1,1 +1,2 @@
 *.ipynb filter=nbclearoutput
+adaptive/_adaptive_version.py export-subst
