@@ -59,6 +59,8 @@ extras_require = {
         'jupyter_client>=5.2.2',  # because https://github.com/jupyter/jupyter_client/pull/314
         'holoviews>=1.9.1',
         'ipywidgets',
+        'bokeh',
+        'matplotlib',
     ],
 }
 
