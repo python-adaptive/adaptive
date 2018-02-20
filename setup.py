@@ -4,7 +4,7 @@
 import os
 import sys
 import imp
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.sdist import sdist as sdist_orig
 from distutils.command.build import build as build_orig
 
@@ -76,7 +76,7 @@ setup(
         'Intended Audience :: Science/Research',
         'Programming Language :: Python :: 3.6',
     ],
-    packages=['adaptive'],
+    packages=find_packages('.'),
     install_requires=install_requires,
     extras_require=extras_require,
     cmdclass=dict(sdist=sdist, build=build),
