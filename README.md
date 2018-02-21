@@ -54,12 +54,17 @@ and [`distributed`](https://distributed.readthedocs.io/en/latest/).
 ## Installation
 `adaptive` works with Python 3.6 and higher on Linux, Windows, or Mac, and provides optional extensions for working with the Jupyter/IPython Notebook.
 
-The recommended way to install adaptive is using `pip`:
+The recommended way to install adaptive is using `conda`:
+```bash
+conda install adaptive
+```
+
+`adaptive` is also available on PyPI:
 ```bash
 pip install adaptive[notebook]
 ```
 
-The `[notebook-extras]` above will also install the optional dependencies for running `adaptive` inside
+The `[notebook]` above will also install the optional dependencies for running `adaptive` inside
 a Jupyter notebook.
 
 
