@@ -1,6 +1,9 @@
 import sys
 import subprocess
+from collections import namedtuple
 import os
+
+Version = namedtuple('Version', ('release', 'dev', 'labels'))
 
 # No public API
 __all__ = []
@@ -23,8 +26,27 @@ def get_version(version_file=STATIC_VERSION_FILE):
         if not version:
             version = get_version_from_git_archive(version_info)
         if not version:
-            version = "unknown"
-    return version
+            version = Version("unknown", None, None)
+        return semver_format(version)
+    else:
+        return version
+
+
+def semver_format(version_info):
+    release, dev, labels = version_info
+
+    version_parts = [release]
+    if dev:
+        if release.endswith('-dev'):
+            version_parts.append(dev)
+        else:
+            version_parts.append('-dev{}'.format(dev))
+
+    if labels:
+        version_parts.append('+')
+        version_parts.append(".".join(labels))
+
+    return "".join(version_parts)
 
 
 def get_version_from_git():
@@ -59,10 +81,10 @@ def get_version_from_git():
     description = p.communicate()[0].decode().strip('v').rstrip('\n')
 
     release, dev, git = description.rsplit('-', 2)
-    version = [release]
     labels = []
-    if dev != "0":
-        version.append(".dev{}".format(dev))
+    if dev == "0":
+        dev = None
+    else:
         labels.append(git)
 
     try:
@@ -73,17 +95,14 @@ def get_version_from_git():
         if p.wait() == 1:
             labels.append('dirty')
 
-    if labels:
-        version.append('+')
-        version.append(".".join(labels))
-
-    return "".join(version)
+    return Version(release, dev, labels)
 
 
 # TODO: change this logic when there is a git pretty-format
 #       that gives the same output as 'git describe'.
-#       Currently we return just the tag if a tagged version
-#       was archived, or 'unknown-g<git hash>' otherwise.
+#       Currently we can only tell the tag the current commit is
+#       pointing to, or its hash (with no version info)
+#       if it is not tagged.
 def get_version_from_git_archive(version_info):
     try:
         refnames = version_info['refnames']
@@ -97,13 +116,14 @@ def get_version_from_git_archive(version_info):
         # variables not expanded during 'git archive'
         return None
 
-    TAG = 'tag: v'
+    VTAG = 'tag: v'
     refs = set(r.strip() for r in refnames.split(","))
-    tags = set(r[len(TAG):] for r in refs if r.startswith(TAG))
-    if tags:
-        release, *_ = sorted(tags)  # prefer e.g. "2.0" over "2.0rc1"
-        return release
+    version_tags = set(r[len(VTAG):] for r in refs if r.startswith(VTAG))
+    if version_tags:
+        release, *_ = sorted(version_tags)  # prefer e.g. "2.0" over "2.0rc1"
+        return Version(release, dev=None, labels=None)
     else:
-        return f'unknown+g{git_hash}'
+        return Version('unknown', dev=None, labels=[f'g{git_hash}'])
+
 
 version = get_version()
