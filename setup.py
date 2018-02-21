@@ -3,7 +3,8 @@
 
 import os
 import sys
-import imp
+import importlib
+from importlib.util import module_from_spec, spec_from_file_location
 from setuptools import setup, find_packages
 from setuptools.command.sdist import sdist as sdist_orig
 from distutils.command.build import build as build_orig
@@ -14,10 +15,17 @@ if sys.version_info < (3, 6):
     sys.exit(1)
 
 
-# Load _version.py module without importing 'adaptive'
-_dont_write_bytecode = sys.dont_write_bytecode
-version = imp.load_source('version', 'adaptive/_version.py')
-sys.dont_write_bytecode = _dont_write_bytecode
+package_name = 'adaptive'
+
+# Load version.py module without importing 'adaptive'
+def load_version_module():
+    spec = spec_from_file_location('version',
+                                   '{}/version.py'.format(package_name))
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+version = load_version_module()
 
 
 def write_version(fname):
@@ -35,15 +43,14 @@ def write_version(fname):
 class build(build_orig):
     def run(self):
         super().run()
-        write_version(os.path.join(self.build_lib, 'adaptive',
+        write_version(os.path.join(self.build_lib, package_name,
                                    version.STATIC_VERSION_FILE))
 
 
 class sdist(sdist_orig):
-
     def make_release_tree(self, base_dir, files):
         super().make_release_tree(base_dir, files)
-        write_version(os.path.join(base_dir, 'adaptive',
+        write_version(os.path.join(base_dir, package_name,
                                    version.STATIC_VERSION_FILE))
 
 

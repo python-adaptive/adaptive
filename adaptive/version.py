@@ -8,7 +8,7 @@ __all__ = []
 package_root = os.path.dirname(os.path.realpath(__file__))
 distr_root = os.path.dirname(package_root)
 
-STATIC_VERSION_FILE = '_adaptive_version.py'
+STATIC_VERSION_FILE = '_static_version.py'
 
 version = None
 
