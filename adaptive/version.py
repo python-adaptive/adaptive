@@ -1,7 +1,10 @@
-import sys
-import subprocess
 from collections import namedtuple
 import os
+import subprocess
+import sys
+
+from distutils.command.build import build as build_orig
+from setuptools.command.sdist import sdist as sdist_orig
 
 Version = namedtuple('Version', ('release', 'dev', 'labels'))
 
@@ -9,11 +12,11 @@ Version = namedtuple('Version', ('release', 'dev', 'labels'))
 __all__ = []
 
 package_root = os.path.dirname(os.path.realpath(__file__))
+package_name = os.path.basename(package_root)
 distr_root = os.path.dirname(package_root)
 
 STATIC_VERSION_FILE = '_static_version.py'
 
-version = None
 
 def get_version(version_file=STATIC_VERSION_FILE):
     version_info = {}
@@ -127,3 +130,37 @@ def get_version_from_git_archive(version_info):
 
 
 version = get_version()
+
+# The following section defines a module global 'cmdclass',
+# which can be used from setup.py. The 'package_name' and
+# 'version' module globals are used (but not modified).
+
+def _write_version(fname):
+    # This could be a hard link, so try to delete it first.  Is there any way
+    # to do this atomically together with opening?
+    try:
+        os.remove(fname)
+    except OSError:
+        pass
+    with open(fname, 'w') as f:
+        f.write("# This file has been created by setup.py.\n"
+                "version = '{}'\n".format(version))
+
+
+class _build(build_orig):
+    def run(self):
+        super().run()
+        _write_version(os.path.join(self.build_lib, package_name,
+                                    STATIC_VERSION_FILE),
+                      version=version)
+
+
+class _sdist(sdist_orig):
+    def make_release_tree(self, base_dir, files):
+        super().make_release_tree(base_dir, files)
+        _write_version(os.path.join(base_dir, package_name,
+                                    STATIC_VERSION_FILE),
+                       version=version)
+
+
+cmdclass = dict(sdist=_sdist, build=_build)
