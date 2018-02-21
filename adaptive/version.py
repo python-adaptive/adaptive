@@ -1,7 +1,10 @@
-import sys
-import subprocess
 from collections import namedtuple
 import os
+import subprocess
+import sys
+
+from distutils.command.build import build as build_orig
+from setuptools.command.sdist import sdist as sdist_orig
 
 Version = namedtuple('Version', ('release', 'dev', 'labels'))
 
@@ -14,6 +17,21 @@ distr_root = os.path.dirname(package_root)
 STATIC_VERSION_FILE = '_static_version.py'
 
 version = None
+
+package_name = 'adaptive'
+
+
+def write_version(fname, version):
+    # This could be a hard link, so try to delete it first.  Is there any way
+    # to do this atomically together with opening?
+    try:
+        os.remove(fname)
+    except OSError:
+        pass
+    with open(fname, 'w') as f:
+        f.write("# This file has been created by setup.py.\n"
+                "version = '{}'\n".format(version))
+
 
 def get_version(version_file=STATIC_VERSION_FILE):
     version_info = {}
@@ -125,5 +143,23 @@ def get_version_from_git_archive(version_info):
     else:
         return Version('unknown', dev=None, labels=[f'g{git_hash}'])
 
+
+def cmdclass(version, package_name):
+
+    class build(build_orig):
+        def run(self):
+            super().run()
+            write_version(os.path.join(self.build_lib, package_name,
+                                       STATIC_VERSION_FILE),
+                          version=version)
+
+    class sdist(sdist_orig):
+        def make_release_tree(self, base_dir, files):
+            super().make_release_tree(base_dir, files)
+            write_version(os.path.join(base_dir, package_name,
+                                       STATIC_VERSION_FILE),
+                          version=version)
+
+    return dict(sdist=sdist, build=build)
 
 version = get_version()

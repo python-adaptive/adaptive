@@ -2,12 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
-import importlib
-from importlib.util import module_from_spec, spec_from_file_location
 from setuptools import setup, find_packages
-from setuptools.command.sdist import sdist as sdist_orig
-from distutils.command.build import build as build_orig
+import sys
 
 
 if sys.version_info < (3, 6):
@@ -15,44 +11,18 @@ if sys.version_info < (3, 6):
     sys.exit(1)
 
 
-package_name = 'adaptive'
-
 # Load version.py module without importing 'adaptive'
-def load_version_module():
+def load_version_module(package_name):
+    from importlib.util import module_from_spec, spec_from_file_location
     spec = spec_from_file_location('version',
                                    '{}/version.py'.format(package_name))
     module = module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
-version = load_version_module()
 
-
-def write_version(fname):
-    # This could be a hard link, so try to delete it first.  Is there any way
-    # to do this atomically together with opening?
-    try:
-        os.remove(fname)
-    except OSError:
-        pass
-    with open(fname, 'w') as f:
-        f.write("# This file has been created by setup.py.\n"
-                "version = '{}'\n".format(version.version))
-
-
-class build(build_orig):
-    def run(self):
-        super().run()
-        write_version(os.path.join(self.build_lib, package_name,
-                                   version.STATIC_VERSION_FILE))
-
-
-class sdist(sdist_orig):
-    def make_release_tree(self, base_dir, files):
-        super().make_release_tree(base_dir, files)
-        write_version(os.path.join(base_dir, package_name,
-                                   version.STATIC_VERSION_FILE))
-
+version = load_version_module('adaptive')
+cmdclass = version.cmdclass(version.version, 'adaptive')
 
 install_requires = [
     'scipy',
@@ -88,5 +58,5 @@ setup(
     packages=find_packages('.'),
     install_requires=install_requires,
     extras_require=extras_require,
-    cmdclass=dict(sdist=sdist, build=build),
+    cmdclass=cmdclass,
 )
