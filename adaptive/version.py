@@ -151,16 +151,14 @@ class _build(build_orig):
     def run(self):
         super().run()
         _write_version(os.path.join(self.build_lib, package_name,
-                                    STATIC_VERSION_FILE),
-                      version=version)
+                                    STATIC_VERSION_FILE))
 
 
 class _sdist(sdist_orig):
     def make_release_tree(self, base_dir, files):
         super().make_release_tree(base_dir, files)
         _write_version(os.path.join(base_dir, package_name,
-                                    STATIC_VERSION_FILE),
-                       version=version)
+                                    STATIC_VERSION_FILE))
 
 
 cmdclass = dict(sdist=_sdist, build=_build)
