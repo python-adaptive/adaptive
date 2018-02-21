@@ -1,5 +1,8 @@
 # ![][logo] adaptive
 
+[![PyPI](https://img.shields.io/pypi/v/adaptive.svg)](https://pypi.python.org/pypi/adaptive)
+[![Conda](https://anaconda.org/conda-forge/adaptive/badges/installer/conda.svg)](https://anaconda.org/conda-forge/adaptive)
+[![Downloads](https://anaconda.org/conda-forge/adaptive/badges/downloads.svg)](https://anaconda.org/conda-forge/adaptive)
 [![pipeline status](https://gitlab.kwant-project.org/qt/adaptive/badges/master/pipeline.svg)](https://gitlab.kwant-project.org/qt/adaptive/pipelines)
 [![asv](http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat)](benchmarks)
 [![coverage report](https://gitlab.kwant-project.org/qt/adaptive/badges/master/coverage.svg)](https://gitlab.kwant-project.org/qt/adaptive/commits/master)
