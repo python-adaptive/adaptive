@@ -12,21 +12,10 @@ Version = namedtuple('Version', ('release', 'dev', 'labels'))
 __all__ = []
 
 package_root = os.path.dirname(os.path.realpath(__file__))
+package_name = os.path.basename(package_root)
 distr_root = os.path.dirname(package_root)
 
 STATIC_VERSION_FILE = '_static_version.py'
-
-
-def write_version(fname, version):
-    # This could be a hard link, so try to delete it first.  Is there any way
-    # to do this atomically together with opening?
-    try:
-        os.remove(fname)
-    except OSError:
-        pass
-    with open(fname, 'w') as f:
-        f.write("# This file has been created by setup.py.\n"
-                "version = '{}'\n".format(version))
 
 
 def get_version(version_file=STATIC_VERSION_FILE):
@@ -140,20 +129,38 @@ def get_version_from_git_archive(version_info):
         return Version('unknown', dev=None, labels=[f'g{git_hash}'])
 
 
-def cmdclass(version, package_name):
+version = get_version()
 
-    class build(build_orig):
-        def run(self):
-            super().run()
-            write_version(os.path.join(self.build_lib, package_name,
-                                       STATIC_VERSION_FILE),
-                          version=version)
+# The following section defines a module global 'cmdclass',
+# which can be used from setup.py. The 'package_name' and
+# 'version' module globals are used (but not modified).
 
-    class sdist(sdist_orig):
-        def make_release_tree(self, base_dir, files):
-            super().make_release_tree(base_dir, files)
-            write_version(os.path.join(base_dir, package_name,
-                                       STATIC_VERSION_FILE),
-                          version=version)
+def _write_version(fname):
+    # This could be a hard link, so try to delete it first.  Is there any way
+    # to do this atomically together with opening?
+    try:
+        os.remove(fname)
+    except OSError:
+        pass
+    with open(fname, 'w') as f:
+        f.write("# This file has been created by setup.py.\n"
+                "version = '{}'\n".format(version))
 
-    return dict(sdist=sdist, build=build)
+
+class _build(build_orig):
+    def run(self):
+        super().run()
+        _write_version(os.path.join(self.build_lib, package_name,
+                                    STATIC_VERSION_FILE),
+                      version=version)
+
+
+class _sdist(sdist_orig):
+    def make_release_tree(self, base_dir, files):
+        super().make_release_tree(base_dir, files)
+        _write_version(os.path.join(base_dir, package_name,
+                                    STATIC_VERSION_FILE),
+                       version=version)
+
+
+cmdclass = dict(sdist=_sdist, build=_build)

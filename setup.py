@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
 from setuptools import setup, find_packages
 import sys
 
@@ -11,19 +10,19 @@ if sys.version_info < (3, 6):
     sys.exit(1)
 
 
-# Load version.py module without importing 'adaptive'
-def load_version_module(package_name):
+# Loads version.py module without importing the whole package.
+def get_version_and_cmdclass(package_name):
+    import os
     from importlib.util import module_from_spec, spec_from_file_location
     spec = spec_from_file_location('version',
-                                   '{}/version.py'.format(package_name))
+                                   os.path.join(package_name, 'version.py'))
     module = module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module
+    return module.version, module.cmdclass
 
 
-version_module = load_version_module('adaptive')
-version = version_module.get_version()
-cmdclass = version_module.cmdclass(version, 'adaptive')
+version, cmdclass = get_version_and_cmdclass('adaptive')
+
 
 install_requires = [
     'scipy',
