@@ -21,8 +21,9 @@ def load_version_module(package_name):
     return module
 
 
-version = load_version_module('adaptive')
-cmdclass = version.cmdclass(version.version, 'adaptive')
+version_module = load_version_module('adaptive')
+version = version_module.get_version()
+cmdclass = version_module.cmdclass(version, 'adaptive')
 
 install_requires = [
     'scipy',
@@ -45,7 +46,7 @@ extras_require = {
 setup(
     name='adaptive',
     description='Adaptive parallel sampling of mathematical functions',
-    version=version.version,
+    version=version,
     url='https://gitlab.kwant-project.org/qt/adaptive',
     author='Adaptive authors',
     license='BSD',

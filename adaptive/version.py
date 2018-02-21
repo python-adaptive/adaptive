@@ -16,10 +16,6 @@ distr_root = os.path.dirname(package_root)
 
 STATIC_VERSION_FILE = '_static_version.py'
 
-version = None
-
-package_name = 'adaptive'
-
 
 def write_version(fname, version):
     # This could be a hard link, so try to delete it first.  Is there any way
@@ -161,5 +157,3 @@ def cmdclass(version, package_name):
                           version=version)
 
     return dict(sdist=sdist, build=build)
-
-version = get_version()
