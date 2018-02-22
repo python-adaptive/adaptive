@@ -56,7 +56,7 @@ and [`distributed`](https://distributed.readthedocs.io/en/latest/).
 
 The recommended way to install adaptive is using `conda`:
 ```bash
-conda install adaptive
+conda install -c conda-forge adaptive
 ```
 
 `adaptive` is also available on PyPI:
