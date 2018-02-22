@@ -152,7 +152,7 @@ class BlockingRunner(BaseRunner):
                     except Exception as e:
                         raise RuntimeError(
                             'An error occured while evaluating '
-                            f'"{self.learner.function.__name__}({x})". '
+                            f'"learner.function({x})". '
                             'See the top traceback for details.'
                         ) from e
                     if do_log:
@@ -353,7 +353,7 @@ class AsyncRunner(BaseRunner):
                     except Exception as e:
                         raise RuntimeError(
                             'An error occured while evaluating '
-                            f'"{self.learner.function.__name__}({x})". '
+                            f'"learner.function({x})". '
                             'See the top traceback for details.'
                         ) from e
                     if do_log:
