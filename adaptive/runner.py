@@ -33,12 +33,20 @@ if os.name == 'nt':
         _default_executor = distributed.Client
         _default_executor_kwargs = {'address': distributed.LocalCluster()}
     else:
-        warnings.warn(
+        _windows_executor_msg = (
             "The default executor on Windows for 'adaptive.Runner' cannot "
             "be used because the package 'distributed' is not installed. "
             "Either install 'distributed' or explicitly specify an executor "
             "when using 'adaptive.Runner'."
         )
+
+        _default_executor_kwargs = {}
+
+        def _default_executor(*args, **kwargs):
+            raise RuntimeError(_windows_executor_msg)
+
+        warnings.warn(_windows_executor_msg)
+
 else:
     _default_executor = concurrent.ProcessPoolExecutor
     _default_executor_kwargs = {}
