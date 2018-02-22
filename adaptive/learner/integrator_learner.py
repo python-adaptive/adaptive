@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Copyright 2010 Pedro Gonnet
-# Copyright 2017 Christoph Groth
 # Copyright 2017 `adaptive` authors
 
 from collections import defaultdict
