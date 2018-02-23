@@ -92,7 +92,6 @@ in the repository.
 ## Credits
 We would like to give credits to the following people:
 - Pedro Gonnet for his implementation of [`CQUAD`](https://www.gnu.org/software/gsl/manual/html_node/CQUAD-doubly_002dadaptive-integration.html), "Algorithm 4" as described in "Increasing the Reliability of Adaptive Quadrature Using Explicit Interpolants", P. Gonnet, ACM Transactions on Mathematical Software, 37 (3), art. no. 26, 2010.
-- Christoph Groth for his Python implementation of [`CQUAD`](https://gitlab.kwant-project.org/cwg/python-cquad) which served as basis for the [`IntegratorLearner`](adaptive/learner/integrator_learner.py).
 - Pauli Virtanen for his `AdaptiveTriSampling` script (no longer available online since SciPy Central went down) which served as inspiration for the [`Learner2D`](adaptive/learner/learner2D.py).
 
 For general discussion, we have a [Gitter chat channel](https://gitter.im/python-adaptive/adaptive). If you find any bugs or have any feature suggestions please file a GitLab [issue](https://gitlab.kwant-project.org/qt/adaptive/issues/new?issue) or submit a [merge request](https://gitlab.kwant-project.org/qt/adaptive/merge_requests).
