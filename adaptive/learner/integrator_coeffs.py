@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2017 `adaptive` authors
+# Based on an adaptive quadrature algorithm by Pedro Gonnet
 
 from fractions import Fraction
 from collections import defaultdict

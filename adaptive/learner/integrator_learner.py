@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2010 Pedro Gonnet
-# Copyright 2017 `adaptive` authors
+# Based on an adaptive quadrature algorithm by Pedro Gonnet
 
 from collections import defaultdict
 from math import sqrt
