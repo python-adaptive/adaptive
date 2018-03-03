@@ -368,6 +368,9 @@ class Learner2D(BaseLearner):
 
     def remove_unfinished(self):
         self._interp = set()
+        for p in self._bounds_points:
+            if p not in self.data:
+                self._stack[p] = np.inf
 
     def plot(self, n=None, tri_alpha=0):
         hv = ensure_holoviews()
