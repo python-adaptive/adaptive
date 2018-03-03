@@ -23,7 +23,7 @@ def notebook_extension():
         holoviews.notebook_extension('bokeh')
         _plotting_enabled = True
     except ModuleNotFoundError:
-        warnings.warn("holoviews and ipywidgets are not installed; plotting "
+        warnings.warn("holoviews and (or) ipywidgets are not installed; plotting "
                       "is disabled.", RuntimeWarning)
 
     global _async_enabled
