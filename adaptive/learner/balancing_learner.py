@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+from collections import defaultdict
 import functools
 from operator import itemgetter
 
 from .base_learner import BaseLearner
+from ..notebook_integration import ensure_holoviews
 from .utils import restore
 
 
@@ -87,8 +89,56 @@ class BalancingLearner(BaseLearner):
             losses.append(loss)
         return max(losses)
 
-    def plot(self, index):
-        return self.learners[index].plot()
+    def plot(self, cdims=None, plotter=None):
+        """Returns a DynamicMap with sliders.
+
+        Parameters
+        ----------
+        cdims : sequence of dicts, or (keys, iterable of values), optional
+            Constant dimensions; the parameters that label the learners.
+            Example inputs that all give identical results:
+            - sequence of dicts:
+                >>> cdims = [{'A': True, 'B': 0},
+                             {'A': True, 'B': 1},
+                             {'A': False, 'B': 0},
+                             {'A': False, 'B': 1}]`
+            - tuple with (keys, iterable of values):
+                >>> cdims = (['A', 'B'], itertools.product([True, False], [0, 1]))
+                >>> cdims = (['A', 'B'], [(True, 0), (True, 1),
+                                          (False, 0), (False, 1)])
+        plotter : callable, optional
+            A function that takes the learner as a argument and returns a
+            holoviews object. By default learner.plot() will be called.
+        Returns
+        -------
+        dm : holoviews.DynamicMap object
+            A DynamicMap with sliders that are defined by 'cdims'.
+        """
+        hv = ensure_holoviews()
+
+        if cdims is None:
+            cdims = [{'i': i} for i in range(len(self.learners))]
+        elif not isinstance(cdims[0], dict):
+            # Normalize the format
+            keys, values_list = cdims
+            cdims = [dict(zip(keys, values)) for values in values_list]
+
+        mapping = {tuple(_cdims.values()): l for l, _cdims in zip(self.learners, cdims)}
+
+        d = defaultdict(list)
+        for _cdims in cdims:
+            for k, v in _cdims.items():
+                d[k].append(v)
+
+        def plot_function(*args):
+            try:
+                learner = mapping[tuple(args)]
+                return learner.plot() if plotter is None else plotter(learner)
+            except KeyError:
+                pass
+
+        dm = hv.DynamicMap(plot_function, kdims=list(d.keys()))
+        return dm.redim.values(**d)
 
     def remove_unfinished(self):
         """Remove uncomputed data from the learners."""
