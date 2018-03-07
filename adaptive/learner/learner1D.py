@@ -6,7 +6,6 @@ import math
 
 import numpy as np
 import sortedcontainers
-import scipy.interpolate
 
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
@@ -195,9 +194,27 @@ class Learner1D(BaseLearner):
 
             if self._vdim is None:
                 try:
-                    self._vdim = len(y)
+                    self._vdim = len(np.squeeze(y))
                 except TypeError:
                     self._vdim = 1
+
+            # Invalidate interpolated neighbors of new point
+            i = self.data.bisect_left(x)
+            if i == 0:
+                x_left = self.data.iloc[0]
+                for _x in self.data_interp:
+                    if _x < x_left:
+                        self.data_interp[_x] = None
+            elif i == len(self.data):
+                x_right = self.data.iloc[-1]
+                for _x in self.data_interp:
+                    if _x > x_right:
+                        self.data_interp[_x] = None
+            else:
+                x_left, x_right = self.data.iloc[i-1], self.data.iloc[i]
+                for _x in self.data_interp:
+                    if x_left < _x < x_right:
+                        self.data_interp[_x] = None
 
         else:
             # The keys of data_interp are the unknown points
@@ -212,8 +229,21 @@ class Learner1D(BaseLearner):
         self.update_scale(x, y)
 
         # Interpolate
-        if not real:
-            self.data_interp = self.interpolate()
+        for _x, _y in self.data_interp.items():
+            if _y is None:
+                if len(self.data) >=2:
+                    i = self.data.bisect_left(_x)
+                    if i == 0:
+                        i_left, i_right = (0, 1)
+                    elif i == len(self.data):
+                        i_left, i_right = (-2, -1)
+                    else:
+                        i_left, i_right = (i - 1, i)
+                    x_left, x_right = self.data.iloc[i_left], self.data.iloc[i_right]
+                    y_left, y_right = self.data[x_left], self.data[x_right]
+                    dx = x_right - x_left
+                    dy = y_right - y_left
+                    self.data_interp[_x] = (dy / dx) * (_x - x_left) + y_left
 
         # Update the losses
         self.update_losses(x, self.data_combined, self.neighbors_combined,
@@ -285,41 +315,16 @@ class Learner1D(BaseLearner):
 
         return points, loss_improvements
 
-    def interpolate(self, extra_points=None):
-        xs = list(self.data.keys())
-        ys = list(self.data.values())
-        xs_unfinished = list(self.data_interp.keys())
-
-        if extra_points is not None:
-            xs_unfinished += extra_points
-
-        if len(xs) < 2:
-            interp_ys = np.zeros(len(xs_unfinished))
-        else:
-            if self.vdim > 1:
-                ip = scipy.interpolate.interp1d(xs, np.transpose(ys),
-                                                assume_sorted=True,
-                                                bounds_error=False,
-                                                fill_value=0)
-                interp_ys = ip(xs_unfinished).T
-            else:
-                ys = np.array(ys).flatten()  # ys could be a list of arrays with shape (1,)
-                interp_ys = np.interp(xs_unfinished, xs, ys)
-
-        data_interp = {x: y for x, y in zip(xs_unfinished, interp_ys)}
-
-        return data_interp
-
     def plot(self):
         hv = ensure_holoviews()
         if not self.data:
             return hv.Scatter([]) * hv.Path([])
 
+        xs = list(self.data.keys())
+        ys = np.array(list(self.data.values())).squeeze()
         if not self.vdim > 1:
-            return hv.Scatter(self.data) * hv.Path([])
+            return hv.Scatter((xs, ys)) * hv.Path([])
         else:
-            xs = list(self.data.keys())
-            ys = list(self.data.values())
             return hv.Path((xs, ys)) * hv.Scatter([])
 
     def remove_unfinished(self):
