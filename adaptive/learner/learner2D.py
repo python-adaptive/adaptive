@@ -14,7 +14,11 @@ from .base_learner import BaseLearner
 # Learner2D and helper functions.
 
 def deviations(ip):
-    values = ip.values / (ip.values.ptp(axis=0).max() or 1)
+    values = ip.values
+    max_value = values.ptp(axis=0).max()
+    if max_value > 1e-16:
+        values = values / max_value
+
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
         ip.tri, values, tol=1e-6)
 
