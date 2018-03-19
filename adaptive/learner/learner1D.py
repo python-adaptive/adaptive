@@ -318,14 +318,20 @@ class Learner1D(BaseLearner):
     def plot(self):
         hv = ensure_holoviews()
         if not self.data:
-            return hv.Scatter([]) * hv.Path([])
-
-        xs = list(self.data.keys())
-        ys = np.array(list(self.data.values())).squeeze()
-        if not self.vdim > 1:
-            return hv.Scatter((xs, ys)) * hv.Path([])
+            p = hv.Scatter([]) * hv.Path([])
+        elif not self.vdim > 1:
+            p = hv.Scatter(self.data) * hv.Path([])
         else:
-            return hv.Path((xs, ys)) * hv.Scatter([])
+            xs = list(self.data.keys())
+            ys = list(self.data.values())
+            p = hv.Path((xs, ys)) * hv.Scatter([])
+
+        # Plot with 5% empty margins such that the boundary points are visible
+        margin = 0.05 * (self.bounds[1] - self.bounds[0])
+        plot_bounds = (self.bounds[0] - margin, self.bounds[1] + margin)
+
+        return p.redim(x=dict(range=plot_bounds))
+
 
     def remove_unfinished(self):
         self.data_interp = {}
