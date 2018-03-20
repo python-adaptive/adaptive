@@ -102,7 +102,7 @@ def resolution_loss(ip, min_distance=0, max_distance=1):
 def default_loss(ip):
     dev = np.sum(deviations(ip), axis=0)
     A = areas(ip)
-    losses = dev * np.sqrt(A) + 0.1 * A
+    losses = dev * np.sqrt(A) + 0.3 * A
     return losses
 
 
