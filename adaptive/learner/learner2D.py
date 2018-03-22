@@ -217,11 +217,11 @@ class Learner2D(BaseLearner):
         xy_scale = np.ptp(self.bounds, axis=1)
 
         def scale(points):
-            points = np.asarray(points)
+            points = np.asarray(points, dtype=float)
             return (points - xy_mean) / xy_scale
 
         def unscale(points):
-            points = np.asarray(points)
+            points = np.asarray(points, dtype=float)
             return points * xy_scale + xy_mean
 
         self.scale = scale
@@ -274,7 +274,7 @@ class Learner2D(BaseLearner):
     def ip(self):
         if self._ip is None:
             points = self.scale(list(self.data.keys()))
-            values = list(self.data.values())
+            values = np.array(list(self.data.values()), dtype=float)
             self._ip = interpolate.LinearNDInterpolator(points, values)
         return self._ip
 
@@ -282,7 +282,7 @@ class Learner2D(BaseLearner):
         if self._ip_combined is None:
             data_combined = self.data_combined()
             points = self.scale(list(data_combined.keys()))
-            values = list(data_combined.values())
+            values = np.array(list(data_combined.values()), dtype=float)
             self._ip_combined = interpolate.LinearNDInterpolator(points,
                                                                  values)
         return self._ip_combined
