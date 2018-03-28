@@ -71,7 +71,7 @@ class BaseRunner:
         of cores available in 'executor'.
     log : bool, default: False
         If True, record the method calls made to the learner by this runner
-    shutdown_executor : Bool, default: True
+    shutdown_executor : Bool, default: False
         If True, shutdown the executor when the runner has completed. If
         'executor' is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
@@ -87,7 +87,7 @@ class BaseRunner:
 
     def __init__(self, learner, goal, *,
                  executor=None, ntasks=None, log=False,
-                 shutdown_executor=True):
+                 shutdown_executor=False):
 
         self.executor = _ensure_executor(executor)
         self.goal = goal
