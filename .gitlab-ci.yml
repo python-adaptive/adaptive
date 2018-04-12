@@ -12,11 +12,11 @@ mirror repository:
   variables:
     REPO: "git@github.com:python-adaptive/adaptive.git"
   before_script:
-    - mkdir /root/.ssh && chmod 700 /root/.ssh
-    - ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
-    - echo "$DEPLOY_KEY" > /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa
+    - mkdir ~/.ssh && chmod 700 ~/.ssh
+    - ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+    - echo "$DEPLOY_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
   after_script:
-    - rm -rf /root/.ssh
+    - rm -rf ~/.ssh
   script:
     - ORIGIN_URL=$(git config --get remote.origin.url)
     - cd $(mktemp -d); git clone --bare $ORIGIN_URL .
