@@ -278,13 +278,14 @@ class Learner1D(BaseLearner):
             if bound not in self.data and bound not in self.data_interp:
                 points.append(bound)
 
-        # Ensure we return exactly 'n' points.
-        if points:
-            loss_improvements = [float('inf')] * n
-            if n <= 2:
-                points = points[:n]
-            else:
-                points = np.linspace(*self.bounds, n)
+        if len(points) == 2:
+            # First time
+            loss_improvements = [np.inf] * n
+            points = np.linspace(*self.bounds, n)
+        elif len(points) == 1:
+            # Second time, if we previously returned just self.bounds[0]
+            loss_improvements = [np.inf] * n
+            points = np.linspace(*self.bounds, n + 1)[1:]
         else:
             def xs(x, n):
                 if n == 1:
