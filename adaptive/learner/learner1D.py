@@ -130,14 +130,21 @@ class Learner1D(BaseLearner):
         else:
             return max(losses.values())
 
-    def update_losses(self, x, data, neighbors, losses):
+    def update_losses(self, x, data, neighbors, losses, real=True):
         x_lower, x_upper = neighbors[x]
-        if x_lower is not None:
-            losses[x_lower, x] = self.loss_per_interval((x_lower, x),
-                                                        self._scale, data)
-        if x_upper is not None:
-            losses[x, x_upper] = self.loss_per_interval((x, x_upper),
-                                                        self._scale, data)
+        if real:
+            if x_lower is not None:
+                losses[x_lower, x] = self.loss_per_interval((x_lower, x),
+                                                            self._scale, data)
+            if x_upper is not None:
+                losses[x, x_upper] = self.loss_per_interval((x, x_upper),
+                                                            self._scale, data)
+        else:
+            if x_lower is not None and x_upper is not None:
+                # assert losses[x_lower, x_upper] exists
+                losses[x_lower, x] = (x - x_lower) * losses[x_lower, x_upper] / (x_upper - x_lower)
+                losses[x, x_upper] = (x_upper - x) * losses[x_lower, x_upper] / (x_upper - x_lower)
+
         try:
             del losses[x_lower, x_upper]
         except KeyError:
@@ -185,7 +192,7 @@ class Learner1D(BaseLearner):
 
     def add_point(self, x, y):
         real = y is not None
-
+        
         if real:
             # Add point to the real data dict and pop from the unfinished
             # data_interp dict.
@@ -247,7 +254,7 @@ class Learner1D(BaseLearner):
 
         # Update the losses
         self.update_losses(x, self.data_combined, self.neighbors_combined,
-                           self.losses_combined)
+                           self.losses_combined, real)
         if real:
             self.update_losses(x, self.data, self.neighbors, self.losses)
 
