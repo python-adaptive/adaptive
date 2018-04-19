@@ -321,6 +321,30 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     assert abs(learner.loss() - control.loss()) / learner.loss() < 1e-11
 
 
+def test_learner1d_first_iteration():
+    """Edge cases where we ask for a few points at the start."""
+    learner = Learner1D(lambda x: None, (-1, 1))
+    points, loss_improvements = learner.choose_points(2)
+    assert set(points) == set([-1, 1])
+
+    learner = Learner1D(lambda x: None, (-1, 1))
+    points, loss_improvements = learner.choose_points(3)
+    assert set(points) == set([-1, 0, 1])
+
+    learner = Learner1D(lambda x: None, (-1, 1))
+    points, loss_improvements = learner.choose_points(1)
+    assert len(points) == 1 and points[0] in [-1, 1]
+    rest = set([-1, 0, 1]) - set(points)
+    points, loss_improvements = learner.choose_points(2)
+    assert set(points) == set(rest)
+
+    learner = Learner1D(lambda x: None, (-1, 1))
+    (point,), loss_improvements = learner.choose_points(1)
+    to_see = set([-1, 1]).remove(point)
+    points, loss_improvements = learner.choose_points(1)
+    assert set(points) == set(points)
+
+
 @pytest.mark.xfail
 @run_with(Learner1D, Learner2D)
 def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
