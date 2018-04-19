@@ -321,6 +321,34 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     assert abs(learner.loss() - control.loss()) / learner.loss() < 1e-11
 
 
+def _run_on_discontinuity(x_0, bounds):
+
+    def f(x):
+        return -1 if x < x_0 else +1
+
+    learner = Learner1D(f, bounds)
+    while learner.loss() > 0.1:
+        (x,), _ = learner.choose_points(1)
+        learner.add_point(x, learner.function(x))
+
+    return learner
+
+
+def test_termination_on_discontinuities():
+
+    learner = _run_on_discontinuity(0, (-1, 1))
+    smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
+    assert smallest_interval >= np.finfo(float).eps
+
+    learner = _run_on_discontinuity(1, (-2, 2))
+    smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
+    assert smallest_interval >= np.finfo(float).eps
+
+    learner = _run_on_discontinuity(0.5E3, (-1E3, 1E3))
+    smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
+    assert smallest_interval >= 0.5E3 * np.finfo(float).eps
+
+
 @pytest.mark.xfail
 @run_with(Learner1D, Learner2D)
 def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
