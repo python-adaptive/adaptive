@@ -339,10 +339,10 @@ def test_learner1d_first_iteration():
     assert set(points) == set(rest)
 
     learner = Learner1D(lambda x: None, (-1, 1))
-    (point,), loss_improvements = learner.choose_points(1)
-    to_see = set([-1, 1]).remove(point)
     points, loss_improvements = learner.choose_points(1)
-    assert set(points) == set(points)
+    to_see = set([-1, 1]) - set(points)
+    points, loss_improvements = learner.choose_points(1)
+    assert set(points) == set(to_see)
 
 
 @pytest.mark.xfail
