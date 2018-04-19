@@ -107,6 +107,9 @@ class Learner1D(BaseLearner):
         self._scale = [bounds[1] - bounds[0], 0]
         self._oldscale = deepcopy(self._scale)
 
+        # The precision in 'x' below which we set losses to 0.
+        self._dx_eps = max(np.abs(bounds)) * np.finfo(float).eps
+
         self.bounds = list(bounds)
 
         self._vdim = None
@@ -132,12 +135,19 @@ class Learner1D(BaseLearner):
 
     def update_losses(self, x, data, neighbors, losses):
         x_lower, x_upper = neighbors[x]
+
+        def _update(interval):
+            a, b = interval
+            if abs(a - b) > self._dx_eps:
+                losses[interval] = self.loss_per_interval(interval,
+                                                          self._scale, data)
+            else:
+                losses[interval] = 0
+
         if x_lower is not None:
-            losses[x_lower, x] = self.loss_per_interval((x_lower, x),
-                                                        self._scale, data)
+            _update((x_lower, x))
         if x_upper is not None:
-            losses[x, x_upper] = self.loss_per_interval((x, x_upper),
-                                                        self._scale, data)
+            _update((x, x_upper))
         try:
             del losses[x_lower, x_upper]
         except KeyError:
