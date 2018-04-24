@@ -10,6 +10,7 @@ import sortedcontainers
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
+
 def uniform_loss(interval, scale, function_values):
     """Loss function that samples the domain uniformly.
 
@@ -130,25 +131,55 @@ class Learner1D(BaseLearner):
         else:
             return max(losses.values())
 
-    def update_losses(self, x, data, neighbors, losses, real=True):
-        x_lower, x_upper = neighbors[x]
+    def update_losses(self, x, real=True):
         if real:
+            x_lower, x_upper = self.get_neighbors(x, self.neighbors)
             if x_lower is not None:
-                losses[x_lower, x] = self.loss_per_interval((x_lower, x),
-                                                            self._scale, data)
+                self.losses[x_lower, x] = self.loss_per_interval((x_lower, x),
+                                                                 self._scale, self.data)
+                start = self.neighbors_combined.bisect_right(x_lower)
+                end = self.neighbors_combined.bisect_left(x)
+                for i in range(start, end):
+                    a, b = self.neighbors_combined.iloc[i], self.neighbors_combined.iloc[i + 1]
+                    self.losses_combined[a, b] = (b - a) * self.losses[x_lower, x] / (x - x_lower)
+                if start == end:
+                    self.losses_combined[x_lower, x] = self.losses[x_lower, x]
+
             if x_upper is not None:
-                losses[x, x_upper] = self.loss_per_interval((x, x_upper),
-                                                            self._scale, data)
+                self.losses[x, x_upper] = self.loss_per_interval((x, x_upper),
+                                                                 self._scale, self.data)
+                start = self.neighbors_combined.bisect_right(x)
+                end = self.neighbors_combined.bisect_left(x_upper)
+                for i in range(start, end):
+                    a, b = self.neighbors_combined.iloc[i], self.neighbors_combined.iloc[i + 1]
+                    self.losses_combined[a, b] = (b - a) * self.losses[x, x_upper] / (x_upper - x)
+                if start == end:
+                    self.losses_combined[x, x_upper] = self.losses[x, x_upper]
+
+            try:
+                del self.losses[x_lower, x_upper]
+            except KeyError:
+                pass
         else:
+            x_lower, x_upper = self.get_neighbors(x, self.neighbors)
+            a, b = self.get_neighbors(x, self.neighbors_combined)
             if x_lower is not None and x_upper is not None:
                 # assert losses[x_lower, x_upper] exists
-                losses[x_lower, x] = (x - x_lower) * losses[x_lower, x_upper] / (x_upper - x_lower)
-                losses[x, x_upper] = (x_upper - x) * losses[x_lower, x_upper] / (x_upper - x_lower)
+                self.losses_combined[a, x] = (x - a) * self.losses[x_lower, x_upper] / (x_upper - x_lower)
+                self.losses_combined[x, b] = (b - x) * self.losses[x_lower, x_upper] / (x_upper - x_lower)
+            # else:
+            #     self.losses_combined[a, x] = float('inf')
+            #     self.losses_combined[x, b] = float('inf')
 
-        try:
-            del losses[x_lower, x_upper]
-        except KeyError:
-            pass
+            try:
+                del self.losses_combined[a, b]
+            except KeyError:
+                pass
+
+    def get_neighbors(self, x, neighbors):
+        if x in neighbors:
+            return neighbors[x]
+        return self.find_neighbors(x, neighbors)
 
     def find_neighbors(self, x, neighbors):
         pos = neighbors.bisect_left(x)
@@ -192,7 +223,7 @@ class Learner1D(BaseLearner):
 
     def add_point(self, x, y):
         real = y is not None
-        
+
         if real:
             # Add point to the real data dict and pop from the unfinished
             # data_interp dict.
@@ -235,37 +266,28 @@ class Learner1D(BaseLearner):
         # Update the scale
         self.update_scale(x, y)
 
-        # Interpolate
-        for _x, _y in self.data_interp.items():
-            if _y is None:
-                if len(self.data) >=2:
-                    i = self.data.bisect_left(_x)
-                    if i == 0:
-                        i_left, i_right = (0, 1)
-                    elif i == len(self.data):
-                        i_left, i_right = (-2, -1)
-                    else:
-                        i_left, i_right = (i - 1, i)
-                    x_left, x_right = self.data.iloc[i_left], self.data.iloc[i_right]
-                    y_left, y_right = self.data[x_left], self.data[x_right]
-                    dx = x_right - x_left
-                    dy = y_right - y_left
-                    self.data_interp[_x] = (dy / dx) * (_x - x_left) + y_left
-
         # Update the losses
-        self.update_losses(x, self.data_combined, self.neighbors_combined,
-                           self.losses_combined, real)
+        self.update_losses(x, real)
         if real:
-            self.update_losses(x, self.data, self.neighbors, self.losses)
+            self.update_losses(x)
 
-        # If the scale has doubled, recompute all losses.
-        if self._scale > self._oldscale * 2:
+        # If the scale has increased enough, recompute all losses.
+        if self._scale[1] > self._oldscale[1] * 1.1:
             self.losses = {xs: self.loss_per_interval(xs, self._scale, self.data)
                            for xs in self.losses}
-            self.losses_combined = {x: self.loss_per_interval(x, self._scale,
-                                                              self.data_combined)
-                                    for x in self.losses_combined}
-            self._oldscale = self._scale
+
+            def interpolated_loss(x):
+                x_lower, x_upper = self.get_neighbors((x[0] + x[1]) / 2, self.neighbors)
+                if x_lower is not None and x_upper is not None:
+                    return self.losses[x_lower, x_upper] / (x_upper - x_lower) * (x[1] - x[0])
+                return float('inf')
+
+            self.losses_combined = {
+                x: interpolated_loss(x)
+                for x in self.losses_combined
+            }
+            self._oldscale = deepcopy(self._scale)
+
 
     def choose_points(self, n, add_data=True):
         """Return n points that are expected to maximally reduce the loss."""
