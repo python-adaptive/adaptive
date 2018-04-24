@@ -167,9 +167,11 @@ class Learner1D(BaseLearner):
                 # assert losses[x_lower, x_upper] exists
                 self.losses_combined[a, x] = (x - a) * self.losses[x_lower, x_upper] / (x_upper - x_lower)
                 self.losses_combined[x, b] = (b - x) * self.losses[x_lower, x_upper] / (x_upper - x_lower)
-            # else:
-            #     self.losses_combined[a, x] = float('inf')
-            #     self.losses_combined[x, b] = float('inf')
+            else:
+                if a is not None:
+                    self.losses_combined[a, x] = float('inf')
+                if b is not None:
+                    self.losses_combined[x, b] = float('inf')
 
             try:
                 del self.losses_combined[a, b]
@@ -272,7 +274,7 @@ class Learner1D(BaseLearner):
             self.update_losses(x)
 
         # If the scale has increased enough, recompute all losses.
-        if self._scale[1] > self._oldscale[1] * 1.1:
+        if self._scale[1] > self._oldscale[1] * 1.25:
             self.losses = {xs: self.loss_per_interval(xs, self._scale, self.data)
                            for xs in self.losses}
 
