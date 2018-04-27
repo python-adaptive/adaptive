@@ -270,8 +270,6 @@ class Learner1D(BaseLearner):
 
         # Update the losses
         self.update_losses(x, real)
-        if real:
-            self.update_losses(x)
 
         # If the scale has increased enough, recompute all losses.
         if self._scale[1] > self._oldscale[1] * 2:
