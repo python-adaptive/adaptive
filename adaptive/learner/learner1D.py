@@ -131,30 +131,23 @@ class Learner1D(BaseLearner):
         else:
             return max(losses.values())
 
+    def update_interpolated_losses_in_interval(self, x_lower, x_upper):
+        if x_lower is not None and x_upper is not None:
+            self.losses[x_lower, x_upper] = self.loss_per_interval((x_lower, x_upper),
+                                                             self._scale, self.data)
+            start = self.neighbors_combined.bisect_right(x_lower)
+            end = self.neighbors_combined.bisect_left(x_upper)
+            for i in range(start, end):
+                a, b = self.neighbors_combined.iloc[i], self.neighbors_combined.iloc[i + 1]
+                self.losses_combined[a, b] = (b - a) * self.losses[x_lower, x_upper] / (x_upper - x_lower)
+            if start == end:
+                self.losses_combined[x_lower, x_upper] = self.losses[x_lower, x_upper]
+
     def update_losses(self, x, real=True):
         if real:
             x_lower, x_upper = self.get_neighbors(x, self.neighbors)
-            if x_lower is not None:
-                self.losses[x_lower, x] = self.loss_per_interval((x_lower, x),
-                                                                 self._scale, self.data)
-                start = self.neighbors_combined.bisect_right(x_lower)
-                end = self.neighbors_combined.bisect_left(x)
-                for i in range(start, end):
-                    a, b = self.neighbors_combined.iloc[i], self.neighbors_combined.iloc[i + 1]
-                    self.losses_combined[a, b] = (b - a) * self.losses[x_lower, x] / (x - x_lower)
-                if start == end:
-                    self.losses_combined[x_lower, x] = self.losses[x_lower, x]
-
-            if x_upper is not None:
-                self.losses[x, x_upper] = self.loss_per_interval((x, x_upper),
-                                                                 self._scale, self.data)
-                start = self.neighbors_combined.bisect_right(x)
-                end = self.neighbors_combined.bisect_left(x_upper)
-                for i in range(start, end):
-                    a, b = self.neighbors_combined.iloc[i], self.neighbors_combined.iloc[i + 1]
-                    self.losses_combined[a, b] = (b - a) * self.losses[x, x_upper] / (x_upper - x)
-                if start == end:
-                    self.losses_combined[x, x_upper] = self.losses[x, x_upper]
+            self.update_interpolated_losses_in_interval(x_lower, x)
+            self.update_interpolated_losses_in_interval(x, x_upper)
 
             try:
                 del self.losses[x_lower, x_upper]
