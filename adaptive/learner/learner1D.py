@@ -274,7 +274,7 @@ class Learner1D(BaseLearner):
             self.update_losses(x)
 
         # If the scale has increased enough, recompute all losses.
-        if self._scale[1] > self._oldscale[1] * 1.25:
+        if self._scale[1] > self._oldscale[1] * 2:
             self.losses = {xs: self.loss_per_interval(xs, self._scale, self.data)
                            for xs in self.losses}
 
