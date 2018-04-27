@@ -255,15 +255,15 @@ class Learner1D(BaseLearner):
             self.losses = {xs: self.loss_per_interval(xs, self._scale, self.data)
                            for xs in self.losses}
 
-            def interpolated_loss(x):
-                x_lower, x_upper = self.get_neighbors((x[0] + x[1]) / 2, self.neighbors)
+            def interpolated_loss(x_range):
+                x_lower, x_upper = self.get_neighbors((x_range[0] + x_range[1]) / 2, self.neighbors)
                 if x_lower is not None and x_upper is not None:
-                    return self.losses[x_lower, x_upper] / (x_upper - x_lower) * (x[1] - x[0])
+                    return self.losses[x_lower, x_upper] / (x_upper - x_lower) * (x_range[1] - x_range[0])
                 return float('inf')
 
             self.losses_combined = {
-                x: interpolated_loss(x)
-                for x in self.losses_combined
+                x_range: interpolated_loss(x_range)
+                for x_range in self.losses_combined
             }
             self._oldscale = deepcopy(self._scale)
 
