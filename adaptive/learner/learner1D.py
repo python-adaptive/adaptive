@@ -227,35 +227,14 @@ class Learner1D(BaseLearner):
         real = y is not None
 
         if real:
-            # Add point to the real data dict and pop from the unfinished
-            # data_interp dict.
+            # Add point to the real data dict
             self.data[x] = y
-            self.data_interp.pop(x, None)
 
             if self._vdim is None:
                 try:
                     self._vdim = len(np.squeeze(y))
                 except TypeError:
                     self._vdim = 1
-
-            # Invalidate interpolated neighbors of new point
-            i = self.data.bisect_left(x)
-            if i == 0:
-                x_left = self.data.iloc[0]
-                for _x in self.data_interp:
-                    if _x < x_left:
-                        self.data_interp[_x] = None
-            elif i == len(self.data):
-                x_right = self.data.iloc[-1]
-                for _x in self.data_interp:
-                    if _x > x_right:
-                        self.data_interp[_x] = None
-            else:
-                x_left, x_right = self.data.iloc[i-1], self.data.iloc[i]
-                for _x in self.data_interp:
-                    if x_left < _x < x_right:
-                        self.data_interp[_x] = None
-
         else:
             # The keys of data_interp are the unknown points
             self.data_interp[x] = None
