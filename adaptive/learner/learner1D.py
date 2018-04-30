@@ -267,7 +267,7 @@ class Learner1D(BaseLearner):
         self.update_losses(x, real)
 
         # If the scale has increased enough, recompute all losses.
-        if self._scale[1] > self._oldscale[1] * 1.1:
+        if self._scale[1] > self._oldscale[1] * 2:
 
             for interval in self.losses:
                 self.update_interpolated_losses_in_interval(*interval)
