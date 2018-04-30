@@ -108,6 +108,9 @@ class Learner1D(BaseLearner):
         self._scale = [bounds[1] - bounds[0], 0]
         self._oldscale = deepcopy(self._scale)
 
+        # The precision in 'x' below which we set losses to 0.
+        self._dx_eps = max(np.abs(bounds)) * np.finfo(float).eps
+
         self.bounds = list(bounds)
 
         self._vdim = None
@@ -131,10 +134,21 @@ class Learner1D(BaseLearner):
         else:
             return max(losses.values())
 
+    def _update_loss(self, interval):
+        value = self.loss_per_interval(interval, self._scale, self.data)
+        self.set_loss_if_interval_is_greater_than_dx_eps(interval, value, self.losses)
+
+    def set_loss_if_interval_is_greater_than_dx_eps(self, interval, value, losses):
+        a, b = interval
+        if abs(a - b) > self._dx_eps:
+            losses[interval] = value
+        else:
+            losses[interval] = 0
+
     def update_interpolated_losses_in_interval(self, x_lower, x_upper):
         if x_lower is not None and x_upper is not None:
-            self.losses[x_lower, x_upper] = self.loss_per_interval((x_lower, x_upper),
-                                                             self._scale, self.data)
+            self._update_loss((x_lower, x_upper))
+
             start = self.neighbors_combined.bisect_right(x_lower)
             end = self.neighbors_combined.bisect_left(x_upper)
             for i in range(start, end):
@@ -157,9 +171,15 @@ class Learner1D(BaseLearner):
             x_lower, x_upper = self.get_neighbors(x, self.neighbors)
             a, b = self.get_neighbors(x, self.neighbors_combined)
             if x_lower is not None and x_upper is not None:
-                # assert losses[x_lower, x_upper] exists
-                self.losses_combined[a, x] = (x - a) * self.losses[x_lower, x_upper] / (x_upper - x_lower)
-                self.losses_combined[x, b] = (b - x) * self.losses[x_lower, x_upper] / (x_upper - x_lower)
+                val = (x - a) * self.losses[x_lower, x_upper]\
+                      / (x_upper - x_lower)
+                self.set_loss_if_interval_is_greater_than_dx_eps((a, x),
+                                                    val, self.losses_combined)
+
+                val = (b - x) * self.losses[x_lower, x_upper] \
+                      / (x_upper - x_lower)
+                self.set_loss_if_interval_is_greater_than_dx_eps((x, b),
+                                                    val, self.losses_combined)
             else:
                 if a is not None:
                     self.losses_combined[a, x] = float('inf')
@@ -244,20 +264,11 @@ class Learner1D(BaseLearner):
         self.update_losses(x, real)
 
         # If the scale has increased enough, recompute all losses.
-        if self._scale[1] > self._oldscale[1] * 2:
-            self.losses = {xs: self.loss_per_interval(xs, self._scale, self.data)
-                           for xs in self.losses}
+        if self._scale[1] > self._oldscale[1] * 1.1:
 
-            def interpolated_loss(x_range):
-                x_lower, x_upper = self.get_neighbors((x_range[0] + x_range[1]) / 2, self.neighbors)
-                if x_lower is not None and x_upper is not None:
-                    return self.losses[x_lower, x_upper] / (x_upper - x_lower) * (x_range[1] - x_range[0])
-                return float('inf')
+            for interval in self.losses:
+                self.update_interpolated_losses_in_interval(*interval)
 
-            self.losses_combined = {
-                x_range: interpolated_loss(x_range)
-                for x_range in self.losses_combined
-            }
             self._oldscale = deepcopy(self._scale)
 
 
@@ -279,13 +290,14 @@ class Learner1D(BaseLearner):
             if bound not in self.data and bound not in self.data_interp:
                 points.append(bound)
 
-        # Ensure we return exactly 'n' points.
-        if points:
-            loss_improvements = [float('inf')] * n
-            if n <= 2:
-                points = points[:n]
-            else:
-                points = np.linspace(*self.bounds, n)
+        if len(points) == 2:
+            # First time
+            loss_improvements = [np.inf] * n
+            points = np.linspace(*self.bounds, n)
+        elif len(points) == 1:
+            # Second time, if we previously returned just self.bounds[0]
+            loss_improvements = [np.inf] * n
+            points = np.linspace(*self.bounds, n + 1)[1:]
         else:
             def xs(x, n):
                 if n == 1:
