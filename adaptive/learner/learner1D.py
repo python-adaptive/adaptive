@@ -94,7 +94,7 @@ class Learner1D(BaseLearner):
         self.losses_combined = {}
 
         self.data = sortedcontainers.SortedDict()
-        self.data_interp = {}
+        self.pending_points = set()
 
         # A dict {x_n: [x_{n-1}, x_{n+1}]} for quick checking of local
         # properties.
@@ -121,7 +121,8 @@ class Learner1D(BaseLearner):
 
     @property
     def data_combined(self):
-        return {**self.data, **self.data_interp}
+        pending_points_dict = dict.fromkeys(self.pending_points, None)
+        return {**self.data, **pending_points_dict}
 
     @property
     def npoints(self):
@@ -242,6 +243,8 @@ class Learner1D(BaseLearner):
         if real:
             # Add point to the real data dict
             self.data[x] = y
+            # remove from set of pending points
+            self.pending_points.discard(x)
 
             if self._vdim is None:
                 try:
@@ -249,8 +252,8 @@ class Learner1D(BaseLearner):
                 except TypeError:
                     self._vdim = 1
         else:
-            # The keys of data_interp are the unknown points
-            self.data_interp[x] = None
+            # The keys of pending_points are the unknown points
+            self.pending_points.add(x)
 
         # Update the neighbors
         self.update_neighbors(x, self.neighbors_combined)
@@ -287,7 +290,7 @@ class Learner1D(BaseLearner):
         # If the bounds have not been chosen yet, we choose them first.
         points = []
         for bound in self.bounds:
-            if bound not in self.data and bound not in self.data_interp:
+            if bound not in self.data and bound not in self.pending_points:
                 points.append(bound)
 
         if len(points) == 2:
@@ -347,6 +350,6 @@ class Learner1D(BaseLearner):
 
 
     def remove_unfinished(self):
-        self.data_interp = {}
+        self.pending_points = set()
         self.losses_combined = deepcopy(self.losses)
         self.neighbors_combined = deepcopy(self.neighbors)
