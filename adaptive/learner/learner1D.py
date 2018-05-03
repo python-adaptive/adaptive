@@ -149,11 +149,7 @@ class Learner1D(BaseLearner):
             x_lower, x_upper = self.get_neighbors(x, self.neighbors)
             self.update_interpolated_losses_in_interval(x_lower, x)
             self.update_interpolated_losses_in_interval(x, x_upper)
-
-            try:
-                del self.losses[x_lower, x_upper]
-            except KeyError:
-                pass
+            self.losses.pop((x_lower, x_upper), None)
         else:
             losses_combined = self.losses_combined
             x_lower, x_upper = self.get_neighbors(x, self.neighbors)
@@ -171,10 +167,7 @@ class Learner1D(BaseLearner):
                 if b is not None:
                     losses_combined[x, b] = float('inf')
 
-            try:
-                del losses_combined[a, b]
-            except KeyError:
-                pass
+            losses_combined.pop((a, b), None)
 
     def get_neighbors(self, x, neighbors):
         if x in neighbors:
