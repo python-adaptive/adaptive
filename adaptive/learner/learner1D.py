@@ -120,11 +120,6 @@ class Learner1D(BaseLearner):
         return 1 if self._vdim is None else self._vdim
 
     @property
-    def data_combined(self):
-        pending_points_dict = dict.fromkeys(self.pending_points, None)
-        return {**self.data, **pending_points_dict}
-
-    @property
     def npoints(self):
         return len(self.data)
 
@@ -134,7 +129,6 @@ class Learner1D(BaseLearner):
             return float('inf')
         else:
             return max(losses.values())
-
 
     def update_interpolated_losses_in_interval(self, x_lower, x_upper):
         if x_lower is not None and x_upper is not None:
@@ -149,7 +143,6 @@ class Learner1D(BaseLearner):
                 self.losses_combined[a, b] = (b - a) * self.losses[x_lower, x_upper] / dx
             if start == end:
                 self.losses_combined[x_lower, x_upper] = self.losses[x_lower, x_upper]
-
 
     def update_losses(self, x, real=True):
         if real:
