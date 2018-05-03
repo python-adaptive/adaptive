@@ -153,9 +153,9 @@ class Learner1D(BaseLearner):
         else:
             losses_combined = self.losses_combined
             x_lower, x_upper = self.get_neighbors(x, self.neighbors)
-            dx = x_upper - x_lower
             a, b = self.get_neighbors(x, self.neighbors_combined)
             if x_lower is not None and x_upper is not None:
+                dx = x_upper - x_lower
                 loss = self.losses[x_lower, x_upper]
                 losses_combined[a, x] = ((x - a) * loss / dx
                                          if abs(x - a) > self._dx_eps else 0)
