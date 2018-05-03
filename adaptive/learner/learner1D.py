@@ -135,28 +135,21 @@ class Learner1D(BaseLearner):
         else:
             return max(losses.values())
 
-    def _update_loss(self, interval):
-        value = self.loss_per_interval(interval, self._scale, self.data)
-        self.set_loss_if_interval_is_greater_than_dx_eps(interval, value, self.losses)
-
-    def set_loss_if_interval_is_greater_than_dx_eps(self, interval, value, losses):
-        a, b = interval
-        if abs(a - b) > self._dx_eps:
-            losses[interval] = value
-        else:
-            losses[interval] = 0
 
     def update_interpolated_losses_in_interval(self, x_lower, x_upper):
         if x_lower is not None and x_upper is not None:
-            self._update_loss((x_lower, x_upper))
+            dx = x_upper - x_lower
+            loss = self.loss_per_interval((x_lower, x_upper), self._scale, self.data)
+            self.losses[x_lower, x_upper] = loss if abs(dx) > self._dx_eps else 0
 
             start = self.neighbors_combined.bisect_right(x_lower)
             end = self.neighbors_combined.bisect_left(x_upper)
             for i in range(start, end):
                 a, b = self.neighbors_combined.iloc[i], self.neighbors_combined.iloc[i + 1]
-                self.losses_combined[a, b] = (b - a) * self.losses[x_lower, x_upper] / (x_upper - x_lower)
+                self.losses_combined[a, b] = (b - a) * self.losses[x_lower, x_upper] / dx
             if start == end:
                 self.losses_combined[x_lower, x_upper] = self.losses[x_lower, x_upper]
+
 
     def update_losses(self, x, real=True):
         if real:
@@ -169,26 +162,24 @@ class Learner1D(BaseLearner):
             except KeyError:
                 pass
         else:
+            losses_combined = self.losses_combined
             x_lower, x_upper = self.get_neighbors(x, self.neighbors)
+            dx = x_upper - x_lower
             a, b = self.get_neighbors(x, self.neighbors_combined)
             if x_lower is not None and x_upper is not None:
-                val = (x - a) * self.losses[x_lower, x_upper]\
-                      / (x_upper - x_lower)
-                self.set_loss_if_interval_is_greater_than_dx_eps((a, x),
-                                                    val, self.losses_combined)
-
-                val = (b - x) * self.losses[x_lower, x_upper] \
-                      / (x_upper - x_lower)
-                self.set_loss_if_interval_is_greater_than_dx_eps((x, b),
-                                                    val, self.losses_combined)
+                loss = self.losses[x_lower, x_upper]
+                losses_combined[a, x] = ((x - a) * loss / dx
+                                         if abs(x - a) > self._dx_eps else 0)
+                losses_combined[x, b] = ((b - x) * loss  / dx
+                                         if abs(b - x) > self._dx_eps else 0)
             else:
                 if a is not None:
-                    self.losses_combined[a, x] = float('inf')
+                    losses_combined[a, x] = float('inf')
                 if b is not None:
-                    self.losses_combined[x, b] = float('inf')
+                    losses_combined[x, b] = float('inf')
 
             try:
-                del self.losses_combined[a, b]
+                del losses_combined[a, b]
             except KeyError:
                 pass
 
