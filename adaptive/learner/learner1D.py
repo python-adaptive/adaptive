@@ -289,7 +289,7 @@ class Learner1D(BaseLearner):
             # Calculate how many points belong to each interval.
             x_scale = self._scale[0]
             qualities = [(-loss if not math.isinf(loss) else (x0 - x1) / x_scale, (x0, x1))
-                         for ((x0, x1), loss in self.losses_combined.items()]
+                         for ((x0, x1), loss) in self.losses_combined.items()]
             quals = [(loss, x_range, 1) for (x_range, loss) in qualities]
 
             heapq.heapify(quals)
