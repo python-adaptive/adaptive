@@ -286,11 +286,11 @@ class Learner1D(BaseLearner):
                     step = (x[1] - x[0]) / n
                     return [x[0] + step * i for i in range(1, n)]
 
-            qual = lambda loss, x_range: -loss if loss != np.inf else -(x_range[1] - x_range[0]) / self._scale[0]
-
             # Calculate how many points belong to each interval.
-            quals = [(qual(loss, x_range), x_range, 1) for (x_range, loss) in
-                     self.losses_combined.items()]
+            x_scale = self._scale[0]
+            qualities = [(-loss if not math.isinf(loss) else (x0 - x1) / x_scale, (x0, x1))
+                         for ((x0, x1), loss in self.losses_combined.items()]
+            quals = [(loss, x_range, 1) for (x_range, loss) in qualities]
 
             heapq.heapify(quals)
 
