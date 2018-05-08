@@ -10,6 +10,7 @@ import sortedcontainers
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
+
 def uniform_loss(interval, scale, function_values):
     """Loss function that samples the domain uniformly.
 
@@ -93,7 +94,7 @@ class Learner1D(BaseLearner):
         self.losses_combined = {}
 
         self.data = sortedcontainers.SortedDict()
-        self.data_interp = {}
+        self.pending_points = set()
 
         # A dict {x_n: [x_{n-1}, x_{n+1}]} for quick checking of local
         # properties.
@@ -119,10 +120,6 @@ class Learner1D(BaseLearner):
         return 1 if self._vdim is None else self._vdim
 
     @property
-    def data_combined(self):
-        return {**self.data, **self.data_interp}
-
-    @property
     def npoints(self):
         return len(self.data)
 
@@ -133,25 +130,49 @@ class Learner1D(BaseLearner):
         else:
             return max(losses.values())
 
-    def update_losses(self, x, data, neighbors, losses):
-        x_lower, x_upper = neighbors[x]
+    def update_interpolated_losses_in_interval(self, x_lower, x_upper):
+        if x_lower is not None and x_upper is not None:
+            dx = x_upper - x_lower
+            loss = self.loss_per_interval((x_lower, x_upper), self._scale, self.data)
+            self.losses[x_lower, x_upper] = loss if abs(dx) > self._dx_eps else 0
 
-        def _update(interval):
-            a, b = interval
-            if abs(a - b) > self._dx_eps:
-                losses[interval] = self.loss_per_interval(interval,
-                                                          self._scale, data)
+            start = self.neighbors_combined.bisect_right(x_lower)
+            end = self.neighbors_combined.bisect_left(x_upper)
+            for i in range(start, end):
+                a, b = self.neighbors_combined.iloc[i], self.neighbors_combined.iloc[i + 1]
+                self.losses_combined[a, b] = (b - a) * self.losses[x_lower, x_upper] / dx
+            if start == end:
+                self.losses_combined[x_lower, x_upper] = self.losses[x_lower, x_upper]
+
+    def update_losses(self, x, real=True):
+        if real:
+            x_lower, x_upper = self.get_neighbors(x, self.neighbors)
+            self.update_interpolated_losses_in_interval(x_lower, x)
+            self.update_interpolated_losses_in_interval(x, x_upper)
+            self.losses.pop((x_lower, x_upper), None)
+        else:
+            losses_combined = self.losses_combined
+            x_lower, x_upper = self.get_neighbors(x, self.neighbors)
+            a, b = self.get_neighbors(x, self.neighbors_combined)
+            if x_lower is not None and x_upper is not None:
+                dx = x_upper - x_lower
+                loss = self.losses[x_lower, x_upper]
+                losses_combined[a, x] = ((x - a) * loss / dx
+                                         if abs(x - a) > self._dx_eps else 0)
+                losses_combined[x, b] = ((b - x) * loss  / dx
+                                         if abs(b - x) > self._dx_eps else 0)
             else:
-                losses[interval] = 0
+                if a is not None:
+                    losses_combined[a, x] = float('inf')
+                if b is not None:
+                    losses_combined[x, b] = float('inf')
 
-        if x_lower is not None:
-            _update((x_lower, x))
-        if x_upper is not None:
-            _update((x, x_upper))
-        try:
-            del losses[x_lower, x_upper]
-        except KeyError:
-            pass
+            losses_combined.pop((a, b), None)
+
+    def get_neighbors(self, x, neighbors):
+        if x in neighbors:
+            return neighbors[x]
+        return self.find_neighbors(x, neighbors)
 
     def find_neighbors(self, x, neighbors):
         pos = neighbors.bisect_left(x)
@@ -197,38 +218,19 @@ class Learner1D(BaseLearner):
         real = y is not None
 
         if real:
-            # Add point to the real data dict and pop from the unfinished
-            # data_interp dict.
+            # Add point to the real data dict
             self.data[x] = y
-            self.data_interp.pop(x, None)
+            # remove from set of pending points
+            self.pending_points.discard(x)
 
             if self._vdim is None:
                 try:
                     self._vdim = len(np.squeeze(y))
                 except TypeError:
                     self._vdim = 1
-
-            # Invalidate interpolated neighbors of new point
-            i = self.data.bisect_left(x)
-            if i == 0:
-                x_left = self.data.iloc[0]
-                for _x in self.data_interp:
-                    if _x < x_left:
-                        self.data_interp[_x] = None
-            elif i == len(self.data):
-                x_right = self.data.iloc[-1]
-                for _x in self.data_interp:
-                    if _x > x_right:
-                        self.data_interp[_x] = None
-            else:
-                x_left, x_right = self.data.iloc[i-1], self.data.iloc[i]
-                for _x in self.data_interp:
-                    if x_left < _x < x_right:
-                        self.data_interp[_x] = None
-
         else:
-            # The keys of data_interp are the unknown points
-            self.data_interp[x] = None
+            # The keys of pending_points are the unknown points
+            self.pending_points.add(x)
 
         # Update the neighbors
         self.update_neighbors(x, self.neighbors_combined)
@@ -238,37 +240,17 @@ class Learner1D(BaseLearner):
         # Update the scale
         self.update_scale(x, y)
 
-        # Interpolate
-        for _x, _y in self.data_interp.items():
-            if _y is None:
-                if len(self.data) >=2:
-                    i = self.data.bisect_left(_x)
-                    if i == 0:
-                        i_left, i_right = (0, 1)
-                    elif i == len(self.data):
-                        i_left, i_right = (-2, -1)
-                    else:
-                        i_left, i_right = (i - 1, i)
-                    x_left, x_right = self.data.iloc[i_left], self.data.iloc[i_right]
-                    y_left, y_right = self.data[x_left], self.data[x_right]
-                    dx = x_right - x_left
-                    dy = y_right - y_left
-                    self.data_interp[_x] = (dy / dx) * (_x - x_left) + y_left
-
         # Update the losses
-        self.update_losses(x, self.data_combined, self.neighbors_combined,
-                           self.losses_combined)
-        if real:
-            self.update_losses(x, self.data, self.neighbors, self.losses)
+        self.update_losses(x, real)
 
-        # If the scale has doubled, recompute all losses.
-        if self._scale > self._oldscale * 2:
-            self.losses = {xs: self.loss_per_interval(xs, self._scale, self.data)
-                           for xs in self.losses}
-            self.losses_combined = {x: self.loss_per_interval(x, self._scale,
-                                                              self.data_combined)
-                                    for x in self.losses_combined}
-            self._oldscale = self._scale
+        # If the scale has increased enough, recompute all losses.
+        if self._scale[1] > self._oldscale[1] * 2:
+
+            for interval in self.losses:
+                self.update_interpolated_losses_in_interval(*interval)
+
+            self._oldscale = deepcopy(self._scale)
+
 
     def choose_points(self, n, add_data=True):
         """Return n points that are expected to maximally reduce the loss."""
@@ -285,7 +267,7 @@ class Learner1D(BaseLearner):
         # If the bounds have not been chosen yet, we choose them first.
         points = []
         for bound in self.bounds:
-            if bound not in self.data and bound not in self.data_interp:
+            if bound not in self.data and bound not in self.pending_points:
                 points.append(bound)
 
         if len(points) == 2:
@@ -305,8 +287,9 @@ class Learner1D(BaseLearner):
                     return [x[0] + step * i for i in range(1, n)]
 
             # Calculate how many points belong to each interval.
-            quals = [(-loss, x_range, 1) for (x_range, loss) in
-                     self.losses_combined.items()]
+            x_scale = self._scale[0]
+            quals = [(-loss if not math.isinf(loss) else (x0 - x1) / x_scale, (x0, x1), 1)
+                     for ((x0, x1), loss) in self.losses_combined.items()]
 
             heapq.heapify(quals)
 
@@ -345,6 +328,6 @@ class Learner1D(BaseLearner):
 
 
     def remove_unfinished(self):
-        self.data_interp = {}
+        self.pending_points = set()
         self.losses_combined = deepcopy(self.losses)
         self.neighbors_combined = deepcopy(self.neighbors)
