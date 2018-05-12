@@ -385,6 +385,33 @@ class Learner2D(BaseLearner):
                 self._stack[p] = np.inf
 
     def plot(self, n=None, tri_alpha=0):
+        """Plot the Learner2D's current state.
+
+        This plot function interpolates the data on a regular grid.
+        The gridspacing is evaluated by checking the size of the smallest
+        triangle.
+
+        Parameters
+        ----------
+        n : int
+            Number of points in x and y. If None (default) this number is
+            evaluated by looking at the size of the smallest triangle.
+        tri_alpha : float
+            The opacity (0 <= tri_alpha <= 1) of the triangles overlayed on
+            top of the image. By default the triangulation is not visible.
+
+        Returns
+        -------
+        plot : holoviews.Overlay or holoviews.HoloMap
+            A `holoviews.Overlay` of `holoviews.Image * holoviews.EdgePaths`.
+            If the `learner.function` returns a vector output, a
+            `holoviews.HoloMap` of the `holoviews.Overlay`s wil be returned.
+
+        Notes
+        -----
+        The plot object that is returned if `learner.function` returns a
+        vector *cannot* be used with the live_plotting functionality.
+        """
         hv = ensure_holoviews()
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
