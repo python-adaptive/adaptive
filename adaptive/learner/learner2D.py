@@ -259,7 +259,7 @@ class Learner2D(BaseLearner):
                 self._vdim = len(value)
             except TypeError:
                 self._vdim = 1
-        return self._vdim if self._vdim is not None else 1
+        return self._vdim or 1
 
     @property
     def bounds_are_done(self):
