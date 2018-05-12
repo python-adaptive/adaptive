@@ -386,9 +386,6 @@ class Learner2D(BaseLearner):
 
     def plot(self, n=None, tri_alpha=0):
         hv = ensure_holoviews()
-        if self.vdim > 1:
-            raise NotImplementedError('holoviews currently does not support',
-                                      '3D surface plots in bokeh.')
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
 
@@ -404,7 +401,12 @@ class Learner2D(BaseLearner):
             x = y = np.linspace(-0.5, 0.5, n)
             z = ip(x[:, None], y[None, :] * self.aspect_ratio).squeeze()
 
-            im = hv.Image(np.rot90(z), bounds=lbrt)
+            if self.vdim > 1:
+                ims = {i: hv.Image(np.rot90(z[:, :, i]), bounds=lbrt)
+                       for i in range(z.shape[-1])}
+                im = hv.HoloMap(ims)
+            else:
+                im = hv.Image(np.rot90(z), bounds=lbrt)
 
             if tri_alpha:
                 points = self._unscale(ip.tri.points[ip.tri.vertices])
