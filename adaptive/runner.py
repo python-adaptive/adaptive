@@ -162,11 +162,17 @@ class BlockingRunner(BaseRunner):
         try:
             while not self.goal(self.learner):
                 # Launch tasks to replace the ones that completed
-                # on the last iteration.
-                if do_log:
-                    self.log.append(('ask', len(done)))
+                # on the last iteration and check if new workers
+                # have started since the last iteration
+                ntasks_new = _get_ncores(self.executor)
+                n = len(done) + (ntasks_new - self.ntasks)
+                self.ntasks = ntasks_new
 
-                points, _ = self.learner.ask(len(done))
+                if do_log:
+                    self.log.append(('ask', n))
+
+                points, _ = self.learner.ask(n)
+
                 for x in points:
                     xs[self._submit(x)] = x
 
@@ -365,11 +371,16 @@ class AsyncRunner(BaseRunner):
         try:
             while not self.goal(self.learner):
                 # Launch tasks to replace the ones that completed
-                # on the last iteration.
-                if do_log:
-                    self.log.append(('ask', len(done)))
+                # on the last iteration and check if new workers
+                # have started since the last iteration
+                ntasks_new = _get_ncores(self.executor)
+                n = len(done) + (ntasks_new - self.ntasks)
+                self.ntasks = ntasks_new
 
-                points, _ = self.learner.ask(len(done))
+                if do_log:
+                    self.log.append(('ask', n))
+
+                points, _ = self.learner.ask(n)
                 for x in points:
                     xs[self._submit(x)] = x
 
