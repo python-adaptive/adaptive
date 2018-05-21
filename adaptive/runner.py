@@ -495,8 +495,7 @@ def _get_ncores(ex):
     elif isinstance(ex, SequentialExecutor):
         return 1
     elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
-        # XXX: check if not sum(n for n in ex._client.ncores().values())
-        return len(ex._client.ncores())
+        return sum(n for n in ex._client.ncores().values())
     else:
         raise TypeError('Cannot get number of cores for {}'
                         .format(ex.__class__))
