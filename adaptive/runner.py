@@ -92,7 +92,9 @@ class BaseRunner:
         self.executor = _ensure_executor(executor)
         self.goal = goal
 
+        self._ntasks_is_user_specified = bool(ntasks)
         self.ntasks = ntasks or _get_ncores(self.executor)
+            
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
         self.shutdown_executor = shutdown_executor or (executor is None)
@@ -164,9 +166,11 @@ class BlockingRunner(BaseRunner):
                 # Launch tasks to replace the ones that completed
                 # on the last iteration and check if new workers
                 # have started since the last iteration
-                ntasks_new = _get_ncores(self.executor)
-                n = len(done) + (ntasks_new - self.ntasks)
-                self.ntasks = ntasks_new
+                n = len(done)
+                if not self._ntasks_is_user_specified:
+                    ntasks_new = _get_ncores(self.executor)
+                    n += ntasks_new - self.ntasks
+                    self.ntasks = ntasks_new
 
                 if do_log:
                     self.log.append(('ask', n))
