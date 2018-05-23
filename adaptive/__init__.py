@@ -7,6 +7,12 @@ from . import runner
 
 from .learner import (Learner1D, Learner2D, AverageLearner,
                       BalancingLearner, DataSaver, IntegratorLearner)
+try:
+    # Only available if 'scikit-optimize' is installed
+    from .learner import SKOptLearner
+except ImportError:
+    pass
+
 from .runner import Runner, BlockingRunner
 from . import version
 
