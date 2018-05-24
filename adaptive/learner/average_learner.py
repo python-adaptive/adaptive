@@ -41,14 +41,14 @@ class AverageLearner(BaseLearner):
     def n_requested(self):
         return len(self.data)
 
-    def choose_points(self, n, add_data=True):
+    def ask(self, n, add_data=True):
         points = list(range(self.n_requested, self.n_requested + n))
         loss_improvements = [self.loss_improvement(n) / n] * n
         if add_data:
-            self.add_data(points, itertools.repeat(None))
+            self.tell(points, itertools.repeat(None))
         return points, loss_improvements
 
-    def add_point(self, n, value):
+    def _tell(self, n, value):
         value_is_new = not (n in self.data and value == self.data[n])
         if not value_is_new:
             value_old = self.data[n]

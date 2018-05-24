@@ -23,7 +23,7 @@ class BaseLearner(metaclass=abc.ABCMeta):
     and returns a holoviews plot.
     """
 
-    def add_data(self, xvalues, yvalues):
+    def tell(self, xvalues, yvalues):
         """Add data to the learner.
 
         Parameters
@@ -37,12 +37,12 @@ class BaseLearner(metaclass=abc.ABCMeta):
         """
         if all(isinstance(i, collections.Iterable) for i in [xvalues, yvalues]):
             for x, y in zip(xvalues, yvalues):
-                self.add_point(x, y)
+                self._tell(x, y)
         else:
-            self.add_point(xvalues, yvalues)
+            self._tell(xvalues, yvalues)
 
     @abc.abstractmethod
-    def add_point(self, x, y):
+    def _tell(self, x, y):
         """Add a single datapoint to the learner."""
         pass
 
@@ -64,7 +64,7 @@ class BaseLearner(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def choose_points(self, n, add_data=True):
+    def ask(self, n, add_data=True):
         """Choose the next 'n' points to evaluate.
 
         Parameters

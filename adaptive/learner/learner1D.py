@@ -214,7 +214,7 @@ class Learner1D(BaseLearner):
                 self._bbox[1][1] = max(self._bbox[1][1], y)
                 self._scale[1] = self._bbox[1][1] - self._bbox[1][0]
 
-    def add_point(self, x, y):
+    def _tell(self, x, y):
         real = y is not None
 
         if real:
@@ -252,7 +252,7 @@ class Learner1D(BaseLearner):
             self._oldscale = deepcopy(self._scale)
 
 
-    def choose_points(self, n, add_data=True):
+    def ask(self, n, add_data=True):
         """Return n points that are expected to maximally reduce the loss."""
         # Find out how to divide the n points over the intervals
         # by finding  positive integer n_i that minimize max(L_i / n_i) subject
@@ -305,7 +305,7 @@ class Learner1D(BaseLearner):
                                      for quality, x, n in quals))
 
         if add_data:
-            self.add_data(points, itertools.repeat(None))
+            self.tell(points, itertools.repeat(None))
 
         return points, loss_improvements
 

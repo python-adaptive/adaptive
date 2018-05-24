@@ -24,8 +24,8 @@ def rolling_shuffle(nums, size):
 def run_integrator_learner(f, a, b, tol, n):
     learner = IntegratorLearner(f, bounds=(a, b), tol=tol)
     for _ in range(n):
-        points, _ = learner.choose_points(1)
-        learner.add_data(points, map(learner.function, points))
+        points, _ = learner.ask(1)
+        learner.tell(points, map(learner.function, points))
     return learner
 
 
@@ -120,48 +120,48 @@ def test_divergence():
 def test_choosing_and_adding_points_one_by_one():
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
     for _ in range(1000):
-        xs, _ = learner.choose_points(1)
+        xs, _ = learner.ask(1)
         for x in xs:
-            learner.add_point(x, learner.function(x))
+            learner.tell(x, learner.function(x))
 
 
 def test_choosing_and_adding_multiple_points_at_once():
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
-    xs, _ = learner.choose_points(100)
+    xs, _ = learner.ask(100)
     for x in xs:
-        learner.add_point(x, learner.function(x))
+        learner.tell(x, learner.function(x))
 
 
 def test_adding_points_and_skip_one_point():
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
-    xs, _ = learner.choose_points(17)
+    xs, _ = learner.ask(17)
     skip_x = xs[1]
 
     for x in xs:
         if x != skip_x:
-            learner.add_point(x, learner.function(x))
+            learner.tell(x, learner.function(x))
 
     for i in range(1000):
-        xs, _ = learner.choose_points(1)
+        xs, _ = learner.ask(1)
         for x in xs:
             if x != skip_x:
-                learner.add_point(x, learner.function(x))
+                learner.tell(x, learner.function(x))
 
     # Now add the point that was skipped
-    learner.add_point(skip_x, learner.function(skip_x))
+    learner.tell(skip_x, learner.function(skip_x))
 
     # Create a learner with the same number of points, which should
     # give an identical igral value.
     learner2 = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
     for i in range(1017):
-        xs, _ = learner2.choose_points(1)
+        xs, _ = learner2.ask(1)
         for x in xs:
-            learner2.add_point(x, learner2.function(x))
+            learner2.tell(x, learner2.function(x))
 
     np.testing.assert_almost_equal(learner.igral, learner2.igral)
 
 
-def test_add_points_in_random_order(first_add_33=False):
+def test_tell_in_random_order(first_add_33=False):
     from operator import attrgetter
     import random
     tol = 1e-10
@@ -176,16 +176,16 @@ def test_add_points_in_random_order(first_add_33=False):
             l = IntegratorLearner(f, bounds=(a, b), tol=tol)
 
             if first_add_33:
-                xs, _ = l.choose_points(33)
+                xs, _ = l.ask(33)
                 for x in xs:
-                    l.add_point(x, f(x))
+                    l.tell(x, f(x))
 
-            xs, _ = l.choose_points(10000)
+            xs, _ = l.ask(10000)
 
             if shuffle:
                 random.shuffle(xs)
             for x in xs:
-                l.add_point(x, f(x))
+                l.tell(x, f(x))
 
             learners.append(l)
 
@@ -220,18 +220,18 @@ def test_add_points_in_random_order(first_add_33=False):
             assert np.isfinite(l.err)
 
 
-def test_add_points_in_random_order_first_add_33():
-    test_add_points_in_random_order(first_add_33=True)
+def test_tell_in_random_order_first_add_33():
+    test_tell_in_random_order(first_add_33=True)
 
 
 def test_approximating_intervals():
     import random
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
 
-    xs, _ = learner.choose_points(10000)
+    xs, _ = learner.ask(10000)
     random.shuffle(xs)
     for x in xs:
-        learner.add_point(x, f24(x))
+        learner.tell(x, f24(x))
 
     ivals = sorted(learner.approximating_intervals, key=lambda l: l.a)
     for i in range(len(ivals) - 1):
@@ -241,19 +241,19 @@ def test_approximating_intervals():
 def test_removed_choose_mutiple_points_at_once():
     learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
     n = ns[-1] + 2 * (ns[0] - 2)  # first + two children (33+6=39)
-    xs, _ = learner.choose_points(n)
+    xs, _ = learner.ask(n)
     for x in xs:
-        learner.add_point(x, learner.function(x))
+        learner.tell(x, learner.function(x))
     assert list(learner.approximating_intervals)[0] == learner.first_ival
 
 
-def test_removed_choose_points_one_by_one():
+def test_removed_ask_one_by_one():
     with pytest.raises(RuntimeError):
         # This test should raise because integrating np.exp should be done
         # after the 33th point
         learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
         n = ns[-1] + 2 * (ns[0] - 2)  # first + two children (33+6=39)
         for _ in range(n):
-            xs, _ = learner.choose_points(1)
+            xs, _ = learner.ask(1)
             for x in xs:
-                learner.add_point(x, learner.function(x))
+                learner.tell(x, learner.function(x))

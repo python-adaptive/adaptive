@@ -359,7 +359,7 @@ class IntegratorLearner(BaseLearner):
     def approximating_intervals(self):
         return self.first_ival.done_leaves
 
-    def add_point(self, point, value):
+    def _tell(self, point, value):
         if point not in self.x_mapping:
             raise ValueError("Point {} doesn't belong to any interval"
                              .format(point))
@@ -408,13 +408,13 @@ class IntegratorLearner(BaseLearner):
             # Update the mappings
             self.x_mapping[x].add(ival)
             if x in self.done_points:
-                self.add_point(x, self.done_points[x])
+                self.tell(x, self.done_points[x])
             elif x not in self.pending_points:
                 self.pending_points.add(x)
                 self._stack.append(x)
         self.ivals.add(ival)
 
-    def choose_points(self, n):
+    def ask(self, n):
         points, loss_improvements = self.pop_from_stack(n)
         n_left = n - len(points)
         while n_left > 0:

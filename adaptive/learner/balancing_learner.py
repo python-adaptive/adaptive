@@ -48,37 +48,37 @@ class BalancingLearner(BaseLearner):
             raise TypeError('A BalacingLearner can handle only one type'
                             'of learners.')
 
-    def _choose_and_add_points(self, n):
+    def _ask_and_tell(self, n):
         points = []
         for _ in range(n):
             loss_improvements = []
             pairs = []
             for index, learner in enumerate(self.learners):
                 if index not in self._points:
-                    self._points[index] = learner.choose_points(
+                    self._points[index] = learner.ask(
                         n=1, add_data=False)
                 point, loss_improvement = self._points[index]
                 loss_improvements.append(loss_improvement[0])
                 pairs.append((index, point[0]))
             x, _ = max(zip(pairs, loss_improvements), key=itemgetter(1))
             points.append(x)
-            self.add_point(x, None)
+            self.tell(x, None)
 
         return points, None
 
-    def choose_points(self, n, add_data=True):
+    def ask(self, n, add_data=True):
         """Chose points for learners."""
         if not add_data:
             with restore(*self.learners):
-                return self._choose_and_add_points(n)
+                return self._ask_and_tell(n)
         else:
-            return self._choose_and_add_points(n)
+            return self._ask_and_tell(n)
 
-    def add_point(self, x, y):
+    def _tell(self, x, y):
         index, x = x
         self._points.pop(index, None)
         self._loss.pop(index, None)
-        self.learners[index].add_point(x, y)
+        self.learners[index].tell(x, y)
 
     def loss(self, real=True):
         losses = []

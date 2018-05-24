@@ -98,14 +98,14 @@ def run_with(*learner_types):
     return pytest.mark.parametrize('learner_type, f, learner_kwargs', pars)
 
 
-def choose_points_randomly(learner, rounds, points):
+def ask_randomly(learner, rounds, points):
     n_rounds = random.randrange(*rounds)
     n_points = [random.randrange(*points) for _ in range(n_rounds)]
 
     xs = []
     ls = []
     for n in n_points:
-        x, l = learner.choose_points(n)
+        x, l = learner.ask(n)
         xs.extend(x)
         ls.extend(l)
 
@@ -122,7 +122,7 @@ def test_uniform_sampling1D(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
 
-    points, _ = choose_points_randomly(learner, (10, 20), (10, 20))
+    points, _ = ask_randomly(learner, (10, 20), (10, 20))
 
     points.sort()
     ivals = np.diff(sorted(points))
@@ -140,7 +140,7 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
 
-    points, _ = choose_points_randomly(learner, (70, 100), (10, 20))
+    points, _ = ask_randomly(learner, (70, 100), (10, 20))
     tree = scipy.spatial.cKDTree(points)
 
     # regular grid
@@ -172,28 +172,28 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     control = learner_type(f, **learner_kwargs)
 
     N = random.randint(10, 30)
-    control.choose_points(N)
-    xs, _ = learner.choose_points(N)
+    control.ask(N)
+    xs, _ = learner.ask(N)
     points = [(x, f(x)) for x in xs]
 
     for p in points:
-        control.add_point(*p)
-        learner.add_point(*p)
+        control.tell(*p)
+        learner.tell(*p)
 
     random.shuffle(points)
     for p in points:
-        learner.add_point(*p)
+        learner.tell(*p)
 
     M = random.randint(10, 30)
-    pls = zip(*learner.choose_points(M))
-    cpls = zip(*control.choose_points(M))
+    pls = zip(*learner.ask(M))
+    cpls = zip(*control.ask(M))
     # Point ordering is not defined, so compare as sets
     assert set(pls) == set(cpls)
 
 
 @run_with(Learner1D, Learner2D, AverageLearner)
 def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
-    """Adding data for a point that was not returned by 'choose_points'."""
+    """Adding data for a point that was not returned by 'ask'."""
     # XXX: learner, control and bounds are not defined
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
@@ -201,29 +201,29 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
 
     if learner_type is Learner2D:
         # If the stack_size is bigger then the number of points added,
-        # choose_points will return a point from the _stack.
+        # ask will return a point from the _stack.
         learner.stack_size = 1
         control.stack_size = 1
 
     N = random.randint(10, 30)
-    xs, _ = control.choose_points(N)
+    xs, _ = control.ask(N)
 
     ys = [f(x) for x in xs]
     for x, y in zip(xs, ys):
-        control.add_point(x, y)
-        learner.add_point(x, y)
+        control.tell(x, y)
+        learner.tell(x, y)
 
     M = random.randint(10, 30)
-    pls = zip(*learner.choose_points(M))
-    cpls = zip(*control.choose_points(M))
-    # Point ordering within a single call to 'choose_points'
+    pls = zip(*learner.ask(M))
+    cpls = zip(*control.ask(M))
+    # Point ordering within a single call to 'ask'
     # is not guaranteed to be the same by the API.
     assert set(pls) == set(cpls)
 
 
 @run_with(xfail(Learner1D), xfail(Learner2D), AverageLearner)
 def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
-    """The order of calls to 'add_points' between calls to 'choose_points'
+    """The order of calls to 'tell' between calls to 'ask'
     is arbitrary.
 
     This test will fail for the Learner1D for the same reason as described in
@@ -239,21 +239,21 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     control = learner_type(f, **learner_kwargs)
 
     N = random.randint(10, 30)
-    control.choose_points(N)
-    xs, _ = learner.choose_points(N)
+    control.ask(N)
+    xs, _ = learner.ask(N)
     points = [(x, f(x)) for x in xs]
 
     for p in points:
-        control.add_point(*p)
+        control.tell(*p)
 
     random.shuffle(points)
     for p in points:
-        learner.add_point(*p)
+        learner.tell(*p)
 
     M = random.randint(10, 30)
-    pls = zip(*learner.choose_points(M))
-    cpls = zip(*control.choose_points(M))
-    # Point ordering within a single call to 'choose_points'
+    pls = zip(*learner.ask(M))
+    cpls = zip(*control.ask(M))
+    # Point ordering within a single call to 'ask'
     # is not guaranteed to be the same by the API.
     # We compare the sorted points instead of set, because the points
     # should only be identical up to machine precision.
@@ -266,13 +266,13 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     N = random.randint(50, 100)
-    xs, loss_improvements = learner.choose_points(N)
+    xs, loss_improvements = learner.ask(N)
 
     for x in xs:
-        learner.add_point(x, f(x))
+        learner.tell(x, f(x))
 
     M = random.randint(50, 100)
-    _, loss_improvements = learner.choose_points(M)
+    _, loss_improvements = learner.ask(M)
 
     if learner_type is Learner2D:
         assert (sum(loss_improvements)
@@ -308,10 +308,10 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     npoints = random.randrange(1000, 2000)
 
     for n in range(npoints):
-        cxs, _ = control.choose_points(1)
-        xs, _ = learner.choose_points(1)
-        control.add_data(cxs, [control.function(x) for x in cxs])
-        learner.add_data(xs, [learner.function(x) for x in xs])
+        cxs, _ = control.ask(1)
+        xs, _ = learner.ask(1)
+        control.tell(cxs, [control.function(x) for x in cxs])
+        learner.tell(xs, [learner.function(x) for x in xs])
 
         # Check whether the points returned are the same
         xs_unscaled = np.array(xs) / xscale
@@ -324,24 +324,24 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
 def test_learner1d_first_iteration():
     """Edge cases where we ask for a few points at the start."""
     learner = Learner1D(lambda x: None, (-1, 1))
-    points, loss_improvements = learner.choose_points(2)
+    points, loss_improvements = learner.ask(2)
     assert set(points) == set([-1, 1])
 
     learner = Learner1D(lambda x: None, (-1, 1))
-    points, loss_improvements = learner.choose_points(3)
+    points, loss_improvements = learner.ask(3)
     assert set(points) == set([-1, 0, 1])
 
     learner = Learner1D(lambda x: None, (-1, 1))
-    points, loss_improvements = learner.choose_points(1)
+    points, loss_improvements = learner.ask(1)
     assert len(points) == 1 and points[0] in [-1, 1]
     rest = set([-1, 0, 1]) - set(points)
-    points, loss_improvements = learner.choose_points(2)
+    points, loss_improvements = learner.ask(2)
     assert set(points) == set(rest)
 
     learner = Learner1D(lambda x: None, (-1, 1))
-    points, loss_improvements = learner.choose_points(1)
+    points, loss_improvements = learner.ask(1)
     to_see = set([-1, 1]) - set(points)
-    points, loss_improvements = learner.choose_points(1)
+    points, loss_improvements = learner.ask(1)
     assert set(points) == set(to_see)
 
 
@@ -352,8 +352,8 @@ def _run_on_discontinuity(x_0, bounds):
 
     learner = Learner1D(f, bounds)
     while learner.loss() > 0.1:
-        (x,), _ = learner.choose_points(1)
-        learner.add_point(x, learner.function(x))
+        (x,), _ = learner.ask(1)
+        learner.tell(x, learner.function(x))
 
     return learner
 

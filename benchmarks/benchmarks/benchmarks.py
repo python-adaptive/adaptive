@@ -23,8 +23,8 @@ class TimeLearner1D:
 
     def time_run(self):
         for _ in range(1000):
-            points, _ = self.learner.choose_points(1)
-            self.learner.add_data(points, map(f_1d, points))
+            points, _ = self.learner.ask(1)
+            self.learner.tell(points, map(f_1d, points))
 
 
 class TimeLearner2D:
@@ -35,13 +35,13 @@ class TimeLearner2D:
 
     def time_run(self):
         for _ in range(50**2):
-            points, _ = self.learner.choose_points(1)
-            self.learner.add_data(points, map(f_2d, points))
+            points, _ = self.learner.ask(1)
+            self.learner.tell(points, map(f_2d, points))
 
-    def time_choose_points(self):
+    def time_ask(self):
         for _ in range(50**2):
-            self.learner.choose_points(1)
+            self.learner.ask(1)
 
-    def time_add_point(self):
+    def time_tell(self):
         for x, y in zip(self.xs, self.ys):
-            self.learner.add_point(x, y)
+            self.learner.tell(x, y)
