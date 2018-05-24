@@ -48,7 +48,7 @@ class BalancingLearner(BaseLearner):
             raise TypeError('A BalacingLearner can handle only one type'
                             'of learners.')
 
-    def _choose_and_tells(self, n):
+    def _ask_and_tell(self, n):
         points = []
         for _ in range(n):
             loss_improvements = []
@@ -70,9 +70,9 @@ class BalancingLearner(BaseLearner):
         """Chose points for learners."""
         if not add_data:
             with restore(*self.learners):
-                return self._choose_and_tells(n)
+                return self._ask_and_tell(n)
         else:
-            return self._choose_and_tells(n)
+            return self._ask_and_tell(n)
 
     def _tell(self, x, y):
         index, x = x
