@@ -169,7 +169,11 @@ class BlockingRunner(BaseRunner):
                 n = len(done)
                 if not self._ntasks_is_user_specified:
                     ntasks_new = _get_ncores(self.executor)
-                    n += ntasks_new - self.ntasks
+                    dn = ntasks_new - self.ntasks
+                    if dn < 0:
+                        # Cores have died or stopped
+                        n = 0
+                    n += dn
                     self.ntasks = ntasks_new
 
                 if do_log:
@@ -377,9 +381,15 @@ class AsyncRunner(BaseRunner):
                 # Launch tasks to replace the ones that completed
                 # on the last iteration and check if new workers
                 # have started since the last iteration
-                ntasks_new = _get_ncores(self.executor)
-                n = len(done) + (ntasks_new - self.ntasks)
-                self.ntasks = ntasks_new
+                n = len(done)
+                if not self._ntasks_is_user_specified:
+                    ntasks_new = _get_ncores(self.executor)
+                    dn = ntasks_new - self.ntasks
+                    if dn < 0:
+                        # Cores have died or stopped
+                        n = 0
+                    n += dn
+                    self.ntasks = ntasks_new
 
                 if do_log:
                     self.log.append(('ask', n))
