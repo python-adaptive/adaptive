@@ -152,7 +152,6 @@ def live_info(runner, *, update_interval=0.5):
 
     display(ipywidgets.HBox(
         (status, cancel),
-        description='Runner stats',
         layout=ipywidgets.Layout(border='solid 1px',
                                  width='200px',
                                  align_items='center'),
