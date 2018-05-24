@@ -2,6 +2,7 @@
 import abc
 import collections
 from copy import deepcopy
+from ..notebook_integration import ensure_holoviews
 
 
 class BaseLearner(metaclass=abc.ABCMeta):
@@ -78,6 +79,14 @@ class BaseLearner(metaclass=abc.ABCMeta):
             want to modify the state of the learner.
         """
         pass
+
+    def matplotlibShow(self, *args, **kwargs):
+        import holoviews.plotting.mpl
+        hv = ensure_holoviews()
+        p = self.plot(*args, **kwargs)
+        renderer = hv.Store.renderers['matplotlib']
+        renderer.show(p)
+
 
     def __getstate__(self):
         return deepcopy(self.__dict__)
