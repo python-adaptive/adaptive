@@ -103,6 +103,18 @@ class BaseRunner:
         self.log = [] if log else None
         self.task = None
 
+    def _get_n(self, done):
+        n = len(done)
+        if not self._ntasks_is_user_specified:
+            ntasks_new = _get_ncores(self.executor)
+            dn = ntasks_new - self.ntasks
+            if dn < 0:
+                # Cores have died or stopped
+                n = 0
+            n += dn
+            self.ntasks = ntasks_new
+        return n
+
 
 class BlockingRunner(BaseRunner):
     """Run a learner synchronously in an executor.
@@ -166,15 +178,7 @@ class BlockingRunner(BaseRunner):
                 # Launch tasks to replace the ones that completed
                 # on the last iteration and check if new workers
                 # have started since the last iteration
-                n = len(done)
-                if not self._ntasks_is_user_specified:
-                    ntasks_new = _get_ncores(self.executor)
-                    dn = ntasks_new - self.ntasks
-                    if dn < 0:
-                        # Cores have died or stopped
-                        n = 0
-                    n += dn
-                    self.ntasks = ntasks_new
+                n = self._get_n(done)
 
                 if do_log:
                     self.log.append(('ask', n))
@@ -381,15 +385,7 @@ class AsyncRunner(BaseRunner):
                 # Launch tasks to replace the ones that completed
                 # on the last iteration and check if new workers
                 # have started since the last iteration
-                n = len(done)
-                if not self._ntasks_is_user_specified:
-                    ntasks_new = _get_ncores(self.executor)
-                    dn = ntasks_new - self.ntasks
-                    if dn < 0:
-                        # Cores have died or stopped
-                        n = 0
-                    n += dn
-                    self.ntasks = ntasks_new
+                n = self._get_n(done)
 
                 if do_log:
                     self.log.append(('ask', n))
