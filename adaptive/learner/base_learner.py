@@ -37,12 +37,12 @@ class BaseLearner(metaclass=abc.ABCMeta):
         """
         if all(isinstance(i, collections.Iterable) for i in [xvalues, yvalues]):
             for x, y in zip(xvalues, yvalues):
-                self.add_point(x, y)
+                self.tell(x, y)
         else:
-            self.add_point(xvalues, yvalues)
+            self.tell(xvalues, yvalues)
 
     @abc.abstractmethod
-    def add_point(self, x, y):
+    def tell(self, x, y):
         """Add a single datapoint to the learner."""
         pass
 
@@ -64,7 +64,7 @@ class BaseLearner(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def choose_points(self, n, add_data=True):
+    def ask(self, n, add_data=True):
         """Choose the next 'n' points to evaluate.
 
         Parameters

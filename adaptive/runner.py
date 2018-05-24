@@ -164,9 +164,9 @@ class BlockingRunner(BaseRunner):
                 # Launch tasks to replace the ones that completed
                 # on the last iteration.
                 if do_log:
-                    self.log.append(('choose_points', len(done)))
+                    self.log.append(('ask', len(done)))
 
-                points, _ = self.learner.choose_points(len(done))
+                points, _ = self.learner.ask(len(done))
                 for x in points:
                     xs[self._submit(x)] = x
 
@@ -185,8 +185,8 @@ class BlockingRunner(BaseRunner):
                             'See the top traceback for details.'
                         ) from e
                     if do_log:
-                        self.log.append(('add_point', x, y))
-                    self.learner.add_point(x, y)
+                        self.log.append(('tell', x, y))
+                    self.learner.tell(x, y)
 
         finally:
             # remove points with 'None' values from the learner
@@ -367,9 +367,9 @@ class AsyncRunner(BaseRunner):
                 # Launch tasks to replace the ones that completed
                 # on the last iteration.
                 if do_log:
-                    self.log.append(('choose_points', len(done)))
+                    self.log.append(('ask', len(done)))
 
-                points, _ = self.learner.choose_points(len(done))
+                points, _ = self.learner.ask(len(done))
                 for x in points:
                     xs[self._submit(x)] = x
 
@@ -389,8 +389,8 @@ class AsyncRunner(BaseRunner):
                             'See the top traceback for details.'
                         ) from e
                     if do_log:
-                        self.log.append(('add_point', x, y))
-                    self.learner.add_point(x, y)
+                        self.log.append(('tell', x, y))
+                    self.learner.tell(x, y)
         finally:
             # remove points with 'None' values from the learner
             self.learner.remove_unfinished()
@@ -429,10 +429,10 @@ def simple(learner, goal):
         learner as its sole argument, and return True if we should stop.
     """
     while not goal(learner):
-        xs, _ = learner.choose_points(1)
+        xs, _ = learner.ask(1)
         for x in xs:
             y = learner.function(x)
-            learner.add_point(x, y)
+            learner.tell(x, y)
 
 
 def replay_log(learner, log):

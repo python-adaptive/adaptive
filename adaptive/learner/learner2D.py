@@ -168,7 +168,7 @@ class Learner2D(BaseLearner):
         Sampled points and values.
     stack_size : int, default 10
         The size of the new candidate points stack. Set it to 1
-        to recalculate the best points at each call to `choose_points`.
+        to recalculate the best points at each call to `ask`.
 
     Methods
     -------
@@ -287,7 +287,7 @@ class Learner2D(BaseLearner):
                                                                  values)
         return self._ip_combined
 
-    def add_point(self, point, value):
+    def tell(self, point, value):
         point = tuple(point)
 
         if value is None:
@@ -330,7 +330,7 @@ class Learner2D(BaseLearner):
 
         return points_new, losses_new
 
-    def choose_points(self, n, add_data=True):
+    def ask(self, n, add_data=True):
         # Even if add_data is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
         points = list(self._stack.keys())
