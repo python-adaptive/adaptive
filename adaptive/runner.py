@@ -5,6 +5,7 @@ import functools
 import inspect
 import os
 import time
+import traceback
 import warnings
 
 from .notebook_integration import live_plot, live_info, in_ipynb
@@ -179,10 +180,11 @@ class BlockingRunner(BaseRunner):
                     try:
                         y = fut.result()
                     except Exception as e:
+                        tb = traceback.format_exc()
                         raise RuntimeError(
                             'An error occured while evaluating '
                             f'"learner.function({x})". '
-                            'See the top traceback for details.'
+                            f'See the traceback for details.:\n\n{tb}'
                         ) from e
                     if do_log:
                         self.log.append(('tell', x, y))
@@ -383,10 +385,11 @@ class AsyncRunner(BaseRunner):
                     try:
                         y = fut.result()
                     except Exception as e:
+                        tb = traceback.format_exc()
                         raise RuntimeError(
                             'An error occured while evaluating '
                             f'"learner.function({x})". '
-                            'See the top traceback for details.'
+                            f'See the traceback for details.:\n\n{tb}'
                         ) from e
                     if do_log:
                         self.log.append(('tell', x, y))
