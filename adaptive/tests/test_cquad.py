@@ -161,7 +161,7 @@ def test_adding_points_and_skip_one_point():
     np.testing.assert_almost_equal(learner.igral, learner2.igral)
 
 
-def test_tells_in_random_order(first_add_33=False):
+def test_tell_in_random_order(first_add_33=False):
     from operator import attrgetter
     import random
     tol = 1e-10
@@ -220,8 +220,8 @@ def test_tells_in_random_order(first_add_33=False):
             assert np.isfinite(l.err)
 
 
-def test_tells_in_random_order_first_add_33():
-    test_tells_in_random_order(first_add_33=True)
+def test_tell_in_random_order_first_add_33():
+    test_tell_in_random_order(first_add_33=True)
 
 
 def test_approximating_intervals():

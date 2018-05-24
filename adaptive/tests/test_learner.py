@@ -223,7 +223,7 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
 
 @run_with(xfail(Learner1D), xfail(Learner2D), AverageLearner)
 def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
-    """The order of calls to 'tells' between calls to 'ask'
+    """The order of calls to 'tell' between calls to 'ask'
     is arbitrary.
 
     This test will fail for the Learner1D for the same reason as described in
