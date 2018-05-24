@@ -287,7 +287,7 @@ class Learner2D(BaseLearner):
                                                                  values)
         return self._ip_combined
 
-    def tell(self, point, value):
+    def _tell(self, point, value):
         point = tuple(point)
 
         if value is None:
@@ -336,7 +336,7 @@ class Learner2D(BaseLearner):
         points = list(self._stack.keys())
         loss_improvements = list(self._stack.values())
         n_left = n - len(points)
-        self.add_data(points[:n], itertools.repeat(None))
+        self.tell(points[:n], itertools.repeat(None))
 
         while n_left > 0:
             # The while loop is needed because `stack_till` could be larger
@@ -344,7 +344,7 @@ class Learner2D(BaseLearner):
             # it could fill up till a length smaller than `stack_till`.
             new_points, new_loss_improvements = self._fill_stack(
                 stack_till=max(n_left, self.stack_size))
-            self.add_data(new_points[:n_left], itertools.repeat(None))
+            self.tell(new_points[:n_left], itertools.repeat(None))
             n_left -= len(new_points)
 
             points += new_points

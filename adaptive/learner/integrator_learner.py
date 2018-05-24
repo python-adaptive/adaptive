@@ -359,7 +359,7 @@ class IntegratorLearner(BaseLearner):
     def approximating_intervals(self):
         return self.first_ival.done_leaves
 
-    def tell(self, point, value):
+    def _tell(self, point, value):
         if point not in self.x_mapping:
             raise ValueError("Point {} doesn't belong to any interval"
                              .format(point))

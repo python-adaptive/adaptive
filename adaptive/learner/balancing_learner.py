@@ -74,7 +74,7 @@ class BalancingLearner(BaseLearner):
         else:
             return self._choose_and_tells(n)
 
-    def tell(self, x, y):
+    def _tell(self, x, y):
         index, x = x
         self._points.pop(index, None)
         self._loss.pop(index, None)

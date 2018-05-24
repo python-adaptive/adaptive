@@ -37,7 +37,7 @@ class DataSaver:
         self.__getstate__ = self.learner.__getstate__
         self.__setstate__ = self.learner.__setstate__
 
-    def tell(self, x, result):
+    def _tell(self, x, result):
         y = self.arg_picker(result) if result is not None else None
         self.extra_data[x] = result
         self.learner.tell(x, y)

@@ -214,7 +214,7 @@ class Learner1D(BaseLearner):
                 self._bbox[1][1] = max(self._bbox[1][1], y)
                 self._scale[1] = self._bbox[1][1] - self._bbox[1][0]
 
-    def tell(self, x, y):
+    def _tell(self, x, y):
         real = y is not None
 
         if real:
@@ -305,7 +305,7 @@ class Learner1D(BaseLearner):
                                      for quality, x, n in quals))
 
         if add_data:
-            self.add_data(points, itertools.repeat(None))
+            self.tell(points, itertools.repeat(None))
 
         return points, loss_improvements
 

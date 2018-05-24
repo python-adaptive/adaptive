@@ -310,8 +310,8 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     for n in range(npoints):
         cxs, _ = control.ask(1)
         xs, _ = learner.ask(1)
-        control.add_data(cxs, [control.function(x) for x in cxs])
-        learner.add_data(xs, [learner.function(x) for x in xs])
+        control.tell(cxs, [control.function(x) for x in cxs])
+        learner.tell(xs, [learner.function(x) for x in xs])
 
         # Check whether the points returned are the same
         xs_unscaled = np.array(xs) / xscale
