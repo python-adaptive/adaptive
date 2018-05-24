@@ -5,6 +5,7 @@ Below is a list of the contributors to Adaptive:
 + [Christoph Groth](<http://inac.cea.fr/Pisp/christoph.groth/>)
 + [Bas Nijholt](<http://nijho.lt>)
 + [Joseph Weston](<https://joseph.weston.cloud>)
++ Jorn Hoofwijk
 
 For a full list of contributors run
 
