@@ -239,11 +239,11 @@ class Learner2D(BaseLearner):
         else:
             return np.array([xy_scale[0], xy_scale[1] / self.aspect_ratio])
 
-    def scale(self, points):
+    def _scale(self, points):
         points = np.asarray(points, dtype=float)
         return (points - self.xy_mean) / self.xy_scale
 
-    def unscale(self, points):
+    def _unscale(self, points):
         points = np.asarray(points, dtype=float)
         return points * self.xy_scale + self.xy_mean
 
@@ -272,7 +272,7 @@ class Learner2D(BaseLearner):
         if self._interp:
             points_interp = list(self._interp)
             if self.bounds_are_done:
-                values_interp = self.ip()(self.scale(points_interp))
+                values_interp = self.ip()(self._scale(points_interp))
             else:
                 # Without the bounds the interpolation cannot be done properly,
                 # so we just set everything to zero.
@@ -285,7 +285,7 @@ class Learner2D(BaseLearner):
 
     def ip(self):
         if self._ip is None:
-            points = self.scale(list(self.data.keys()))
+            points = self._scale(list(self.data.keys()))
             values = np.array(list(self.data.values()), dtype=float)
             self._ip = interpolate.LinearNDInterpolator(points, values)
         return self._ip
@@ -293,7 +293,7 @@ class Learner2D(BaseLearner):
     def ip_combined(self):
         if self._ip_combined is None:
             data_combined = self.data_combined()
-            points = self.scale(list(data_combined.keys()))
+            points = self._scale(list(data_combined.keys()))
             values = np.array(list(data_combined.values()), dtype=float)
             self._ip_combined = interpolate.LinearNDInterpolator(points,
                                                                  values)
@@ -327,7 +327,7 @@ class Learner2D(BaseLearner):
             jsimplex = np.argmax(losses)
             triangle = ip.tri.points[ip.tri.vertices[jsimplex]]
             point_new = choose_point_in_triangle(triangle, max_badness=5)
-            point_new = tuple(self.unscale(point_new))
+            point_new = tuple(self._unscale(point_new))
             loss_new = losses[jsimplex]
 
             points_new.append(point_new)
@@ -407,7 +407,7 @@ class Learner2D(BaseLearner):
             im = hv.Image(np.rot90(z), bounds=lbrt)
 
             if tri_alpha:
-                points = self.unscale(ip.tri.points[ip.tri.vertices])
+                points = self._unscale(ip.tri.points[ip.tri.vertices])
                 points = np.pad(points[:, [0, 1, 2, 0], :],
                                 pad_width=((0, 0), (0, 1), (0, 0)),
                                 mode='constant',
