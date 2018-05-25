@@ -169,6 +169,12 @@ class Learner2D(BaseLearner):
     stack_size : int, default 10
         The size of the new candidate points stack. Set it to 1
         to recalculate the best points at each call to `ask`.
+    aspect_ratio : float, int, default 1
+        Average ratio of `x span over `y` span of a triangle. If
+        there is more detail in either `x` or `y` the `aspect_ratio`
+        needs to be adjusted. When `aspect_ratio > 1` the
+        triangles will be stretched along `x`, otherwise
+        along `y`.
 
     Methods
     -------
@@ -213,19 +219,9 @@ class Learner2D(BaseLearner):
         self._stack = OrderedDict()
         self._interp = set()
 
-        xy_mean = np.mean(self.bounds, axis=1)
-        xy_scale = np.ptp(self.bounds, axis=1)
-
-        def scale(points):
-            points = np.asarray(points, dtype=float)
-            return (points - xy_mean) / xy_scale
-
-        def unscale(points):
-            points = np.asarray(points, dtype=float)
-            return points * xy_scale + xy_mean
-
-        self.scale = scale
-        self.unscale = unscale
+        self.xy_mean = np.mean(self.bounds, axis=1)
+        self._xy_scale = np.ptp(self.bounds, axis=1)
+        self.aspect_ratio = 1
 
         self._bounds_points = list(itertools.product(*bounds))
         self._stack.update({p: np.inf for p in self._bounds_points})
@@ -234,6 +230,22 @@ class Learner2D(BaseLearner):
         self._loss = np.inf
 
         self.stack_size = 10
+
+    @property
+    def xy_scale(self):
+        xy_scale = self._xy_scale
+        if self.aspect_ratio == 1:
+            return xy_scale
+        else:
+            return np.array([xy_scale[0], xy_scale[1] / self.aspect_ratio])
+
+    def scale(self, points):
+        points = np.asarray(points, dtype=float)
+        return (points - self.xy_mean) / self.xy_scale
+
+    def unscale(self, points):
+        points = np.asarray(points, dtype=float)
+        return points * self.xy_scale + self.xy_mean
 
     @property
     def npoints(self):
@@ -390,7 +402,7 @@ class Learner2D(BaseLearner):
                 n = max(n, 10)
 
             x = y = np.linspace(-0.5, 0.5, n)
-            z = ip(x[:, None], y[None, :]).squeeze()
+            z = ip(x[:, None], y[None, :] * self.aspect_ratio).squeeze()
 
             im = hv.Image(np.rot90(z), bounds=lbrt)
 
