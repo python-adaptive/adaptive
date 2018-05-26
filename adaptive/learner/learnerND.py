@@ -101,7 +101,7 @@ class LearnerND(BaseLearner):
         Sampled points and values.
     stack_size : int, default 10
         The size of the new candidate points stack. Set it to 1
-        to recalculate the best points at each call to `choose_points`.
+        to recalculate the best points at each call to `ask`.
 
     Methods
     -------
@@ -191,7 +191,7 @@ class LearnerND(BaseLearner):
             self._ip = interpolate.LinearNDInterpolator(points, values)
         return self._ip
 
-    def add_point(self, point, value):
+    def _tell(self, point, value):
         point = tuple(point)
 
         if value is None:
@@ -235,14 +235,14 @@ class LearnerND(BaseLearner):
 
         return points_new, losses_new
 
-    def choose_points(self, n, add_data=True):
+    def ask(self, n, tell=True):
         # TODO adapt this function
-        # Even if add_data is False we add the point such that _fill_stack
+        # Even if tell is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
         points = list(self._stack.keys())
         loss_improvements = list(self._stack.values())
         n_left = n - len(points)
-        self.add_data(points[:n], itertools.repeat(None))
+        self.tell(points[:n], itertools.repeat(None))
 
         while n_left > 0:
             # The while loop is needed because `stack_till` could be larger
@@ -250,13 +250,13 @@ class LearnerND(BaseLearner):
             # it could fill up till a length smaller than `stack_till`.
             new_points, new_loss_improvements = self._fill_stack(
                 stack_till=max(n_left, self.stack_size))
-            self.add_data(new_points[:n_left], itertools.repeat(None))
+            self.tell(new_points[:n_left], itertools.repeat(None))
             n_left -= len(new_points)
 
             points += new_points
             loss_improvements += new_loss_improvements
 
-        if not add_data:
+        if not tell:
             self._stack = OrderedDict(zip(points[:self.stack_size],
                                           loss_improvements))
             for point in points[:n]:
@@ -284,7 +284,6 @@ class LearnerND(BaseLearner):
         for p in self._bounds_points:
             if p not in self.data:
                 self._stack[p] = np.inf
-
 
 
     def plot(self, n=None, tri_alpha=0):
