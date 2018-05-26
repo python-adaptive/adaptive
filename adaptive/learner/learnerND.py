@@ -138,7 +138,7 @@ class LearnerND(BaseLearner):
         self.loss_per_simplex = loss_per_simplex or default_loss
         self.bounds = tuple(tuple(map(float, b)) for b in bounds)
         self.data = OrderedDict()
-        self._stack = OrderedDict() # TODO maybe make a queue
+        self._stack = OrderedDict()
         self._pending: set = set()
 
         self._mean: float = np.mean(self.bounds, axis=1)
@@ -154,10 +154,13 @@ class LearnerND(BaseLearner):
         self.stack_size = 10
 
     def scale(self, points):
+        # this function converts the points from real coordinates to equalised coordinates,
+        # in order to make the triangulation fair
         points = np.asarray(points, dtype=float)
         return (points - self._mean) / self._ptp_scale
 
     def unscale(self, points):
+        # this functions converts the points from equalised coordinates to real coordinates
         points = np.asarray(points, dtype=float)
         return points * self._mean + self._ptp_scale
 
@@ -209,15 +212,15 @@ class LearnerND(BaseLearner):
         # Interpolate
         ip = self.ip_combined()
 
-        losses = self.loss_per_triangle(ip)
+        losses = self.loss_per_triangle(ip)  # compute the losses of all interpolated triangles
 
         points_new = []
         losses_new = []
         for j, _ in enumerate(losses):
-            jsimplex = np.argmax(losses)
-            triangle = ip.tri.points[ip.tri.vertices[jsimplex]]
-            point_new = choose_point_in_simplex(triangle, max_badness=5)
-            point_new = tuple(self.unscale(point_new))
+            jsimplex = np.argmax(losses)  # Find the index of the simplex with the highest loss
+            triangle = ip.tri.points[ip.tri.vertices[jsimplex]]  # get the corner points the the worst simplex
+            point_new = choose_point_in_simplex(triangle, max_badness=5)  # choose a new point in the triangle
+            point_new = tuple(self.unscale(point_new))  # relative coordinates to real coordinates
             loss_new = losses[jsimplex]
 
             points_new.append(point_new)
@@ -281,6 +284,7 @@ class LearnerND(BaseLearner):
         for p in self._bounds_points:
             if p not in self.data:
                 self._stack[p] = np.inf
+
 
 
     def plot(self, n=None, tri_alpha=0):
