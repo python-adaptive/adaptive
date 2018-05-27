@@ -14,9 +14,7 @@ from .base_learner import BaseLearner
 def volumes(ip):
     p = ip.tri.points[ip.tri.vertices]
     matrices = p[:, :-1, :] - p[:, -1, None, :]
-    # vol = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0]) / 2
     n_points, points_per_simplex, dim = np.shape(p)
-    # assert(points_per_simplex == dim + 1)
 
     # See https://www.jstor.org/stable/2315353
     vols = np.abs(np.linalg.det(matrices)) / np.math.factorial(dim)
@@ -42,8 +40,10 @@ def uniform_loss(ip):
     """
     return volumes(ip)
 
+
 def default_loss(ip):
     return uniform_loss(ip)
+
 
 def choose_point_in_simplex(simplex):
     """Choose a new point in inside a simplex.
@@ -68,7 +68,7 @@ def choose_point_in_simplex(simplex):
 
     for i in range(2, N+1):
         for j in range(i):
-            length = np.norm(simplex[i, :] - simplex[j, :])
+            length = np.linalg.norm(simplex[i, :] - simplex[j, :])
             if length > longest:
                 longest = length
                 point = (simplex[i, :] + simplex[j, :]) / 2
@@ -162,7 +162,7 @@ class LearnerND(BaseLearner):
     def unscale(self, points):
         # this functions converts the points from equalised coordinates to real coordinates
         points = np.asarray(points, dtype=float)
-        return points * self._mean + self._ptp_scale
+        return points * self._ptp_scale + self._mean
 
     @property
     def npoints(self):
@@ -180,10 +180,10 @@ class LearnerND(BaseLearner):
 
     @property
     def bounds_are_done(self):
-        return not any((p in self._pending or p in self._stack)
-                       for p in self._bounds_points)
+        return all(p in self.data for p in self._bounds_points)
 
     def ip(self):
+        # raise DeprecationWarning('usage of LinearNDInterpolator should be reduced')
         # returns a scipy.interpolate.LinearNDInterpolator object with the given data as sources
         if self._ip is None:
             points = self.scale(list(self.data.keys()))
@@ -201,68 +201,42 @@ class LearnerND(BaseLearner):
             self._pending.discard(point)
             self._ip = None
 
-        self._stack.pop(point, None)
-
-    def _fill_stack(self, stack_till=1):
-        # Do notice that it is a heap and not a stack
-        # TODO modify this function
-        if len(self.data) + len(self._interp) < self.ndim + 1:
-            raise ValueError("too few points...")
-
-        # Interpolate
-        ip = self.ip_combined()
-
-        losses = self.loss_per_triangle(ip)  # compute the losses of all interpolated triangles
-
-        points_new = []
-        losses_new = []
-        for j, _ in enumerate(losses):
-            jsimplex = np.argmax(losses)  # Find the index of the simplex with the highest loss
-            triangle = ip.tri.points[ip.tri.vertices[jsimplex]]  # get the corner points the the worst simplex
-            point_new = choose_point_in_simplex(triangle, max_badness=5)  # choose a new point in the triangle
-            point_new = tuple(self.unscale(point_new))  # relative coordinates to real coordinates
-            loss_new = losses[jsimplex]
-
-            points_new.append(point_new)
-            losses_new.append(loss_new)
-
-            self._stack[point_new] = loss_new
-
-            if len(self._stack) >= stack_till:
-                break
-            else:
-                losses[jsimplex] = -np.inf
-
-        return points_new, losses_new
-
-    def ask(self, n, tell=True):
+    def ask(self, n=1, tell=True):
+        # Complexity: O(N log N + n * N)
         # TODO adapt this function
         # Even if tell is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
-        points = list(self._stack.keys())
-        loss_improvements = list(self._stack.values())
-        n_left = n - len(points)
-        self.tell(points[:n], itertools.repeat(None))
+        assert(n == 1)
 
-        while n_left > 0:
-            # The while loop is needed because `stack_till` could be larger
-            # than the number of triangles between the points. Therefore
-            # it could fill up till a length smaller than `stack_till`.
-            new_points, new_loss_improvements = self._fill_stack(
-                stack_till=max(n_left, self.stack_size))
-            self.tell(new_points[:n_left], itertools.repeat(None))
-            n_left -= len(new_points)
+        new_points = []
+        new_loss_improvements = []
+        if not self.bounds_are_done:
+            bounds_to_do = [p for p in self._bounds_points if p not in self.data and p not in self._pending]
+            new_points = bounds_to_do[:n]
+            new_loss_improvements = [-np.inf] * n
+            n = n - len(new_points)
 
-            points += new_points
-            loss_improvements += new_loss_improvements
+        if n > 0:
+            # Interpolate
+            ip = self.ip()  # O(N log N) for triangulation
+            losses = self.loss_per_simplex(ip)  # O(N), compute the losses of all interpolated triangles
 
-        if not tell:
-            self._stack = OrderedDict(zip(points[:self.stack_size],
-                                          loss_improvements))
-            for point in points[:n]:
-                self._interp.discard(point)
+            for _ in range(n):
+                simplex_index = np.argmax(losses)  # O(N), Find the index of the simplex with the highest loss
+                simplex = ip.tri.points[ip.tri.vertices[simplex_index]]  # get the corner points the the worst simplex
+                point_new = choose_point_in_simplex(simplex)  # choose a new point in the triangle
+                point_new = tuple(self.unscale(point_new))  # relative coordinates to real coordinates
+                loss_new = losses[simplex_index]
 
-        return points[:n], loss_improvements[:n]
+                new_points.append(point_new)
+                new_loss_improvements.append(loss_new)
+
+                losses[simplex_index] = -np.inf
+
+        if tell:
+            self.tell(new_points, itertools.repeat(None))
+
+        return new_points, new_loss_improvements
 
     # def loss(self, real=True):
     #     if not self.bounds_are_done:
@@ -285,7 +259,6 @@ class LearnerND(BaseLearner):
             if p not in self.data:
                 self._stack[p] = np.inf
 
-
     def plot(self, n=None, tri_alpha=0):
         hv = ensure_holoviews()
         if self.vdim > 1:
@@ -300,7 +273,7 @@ class LearnerND(BaseLearner):
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                n = int(0.658 / sqrt(areas(ip).min()))
+                n = int(0.658 / sqrt(volumes(ip).min()))
                 n = max(n, 10)
 
             x = y = np.linspace(-0.5, 0.5, n)
@@ -326,3 +299,32 @@ class LearnerND(BaseLearner):
         no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
 
         return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
+
+    def plot_slice(self, values, n=None, tri_alpha=0):
+        values = list(values)
+        count_none = values.count(None)
+        assert(count_none == 1 or count_none == 2)
+        if count_none == 2:
+            raise NotImplementedError('plot slice does currently not support 2D plotting')
+        else:
+            hv = ensure_holoviews()
+            if not self.data:
+                p = hv.Scatter([]) * hv.Path([])
+            elif not self.vdim > 1:
+                ind = values.index(None)
+                x = np.linspace(-0.5, 0.5, 500)
+                values[ind] = 0
+                values = list(self.scale(values))
+                values[ind] = x
+                ip = self.ip()
+                y = ip(*values)
+                x = x * self._ptp_scale[ind] + self._mean[ind]
+                p = hv.Path((x, y))
+            else:
+                raise NotImplementedError('multidimensional output not yet supported by plotSlice')
+
+            # Plot with 5% empty margins such that the boundary points are visible
+            margin = 0.05 * self._ptp_scale[ind]
+            plot_bounds = (x[0] - margin, x[-1] + margin)
+
+            return p.redim(x=dict(range=plot_bounds))
