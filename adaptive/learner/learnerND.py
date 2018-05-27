@@ -14,7 +14,7 @@ from .base_learner import BaseLearner
 def volumes(ip):
     p = ip.tri.points[ip.tri.vertices]
     matrices = p[:, :-1, :] - p[:, -1, None, :]
-    n_points, points_per_simplex, dim = np.shape(p)
+    n_points, dim = ip.tri.points.shape
 
     # See https://www.jstor.org/stable/2315353
     vols = np.abs(np.linalg.det(matrices)) / np.math.factorial(dim)
@@ -33,16 +33,28 @@ def uniform_loss(ip):
     ...     x, y = xy
     ...     return x**2 + y**2
     >>>
-    >>> learner = adaptive.Learner2D(f,
+    >>> learner = adaptive.LearnerND(f,
     ...                              bounds=[(-1, -1), (1, 1)],
-    ...                              loss_per_triangle=uniform_sampling_2d)
+    ...                              loss_per_simplex=uniform_loss)
     >>>
     """
     return volumes(ip)
 
 
+def std_loss(ip):
+    # p = ip.tri.points[ip.tri.vertices]
+    # matrices = p[:, :-1, :] - p[:, -1, None, :]
+    v = ip.values[ip.tri.vertices]
+    r = np.std(v, axis=1)
+    vol = volumes(ip)
+
+    n_points, dim = ip.tri.points.shape
+
+    return r.flat * np.power(vol, 1./dim) + vol
+
+
 def default_loss(ip):
-    return uniform_loss(ip)
+    return std_loss(ip)
 
 
 def choose_point_in_simplex(simplex):
@@ -206,6 +218,7 @@ class LearnerND(BaseLearner):
         # TODO adapt this function
         # Even if tell is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
+        # TODO allow cases where n > 1
         assert(n == 1)
 
         new_points = []
