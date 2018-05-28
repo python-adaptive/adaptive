@@ -92,8 +92,7 @@ class BaseRunner:
         self.executor = _ensure_executor(executor)
         self.goal = goal
 
-        self._ntasks_is_user_specified = bool(ntasks)
-        self.ntasks = ntasks or _get_ncores(self.executor)
+        self._max_tasks = ntasks
             
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
@@ -103,17 +102,8 @@ class BaseRunner:
         self.log = [] if log else None
         self.task = None
 
-    def _get_n(self, done):
-        n = len(done)
-        if not self._ntasks_is_user_specified:
-            ntasks_new = _get_ncores(self.executor)
-            dn = ntasks_new - self.ntasks
-            if dn < 0:
-                # Cores have died or stopped
-                n = 0
-            n += dn
-            self.ntasks = ntasks_new
-        return n
+    def max_tasks(self):
+        return self._max_tasks or _get_ncores(self.executor)
 
 
 class BlockingRunner(BaseRunner):
@@ -167,7 +157,6 @@ class BlockingRunner(BaseRunner):
     def _run(self):
         first_completed = concurrent.FIRST_COMPLETED
         xs = dict()
-        done = [None] * self.ntasks
         do_log = self.log is not None
 
         if len(done) == 0:
@@ -176,14 +165,14 @@ class BlockingRunner(BaseRunner):
         try:
             while not self.goal(self.learner):
                 # Launch tasks to replace the ones that completed
-                # on the last iteration and check if new workers
-                # have started since the last iteration
-                n = self._get_n(done)
+                # on the last iteration, making sure to fill workers
+                # that have started since the last iteration.
+                n_new_tasks = max(0, self.max_tasks() - len(xs))
 
                 if do_log:
-                    self.log.append(('ask', n))
+                    self.log.append(('ask', n_new_tasks))
 
-                points, _ = self.learner.ask(n)
+                points, _ = self.learner.ask(n_new_tasks)
 
                 for x in points:
                     xs[self._submit(x)] = x
@@ -373,24 +362,23 @@ class AsyncRunner(BaseRunner):
 
     async def _run(self):
         first_completed = asyncio.FIRST_COMPLETED
-        xs = dict()
-        done = [None] * self.ntasks
+        xs = dict()  # The points we are waiting for
         do_log = self.log is not None
 
-        if len(done) == 0:
+        if self.max_tasks() < 1:
             raise RuntimeError('Executor has no workers')
 
         try:
             while not self.goal(self.learner):
                 # Launch tasks to replace the ones that completed
-                # on the last iteration and check if new workers
-                # have started since the last iteration
-                n = self._get_n(done)
+                # on the last iteration, making sure to fill workers
+                # that have started since the last iteration.
+                n_new_tasks = max(0, self.max_tasks() - len(xs))
 
                 if do_log:
-                    self.log.append(('ask', n))
+                    self.log.append(('ask', n_new_tasks))
 
-                points, _ = self.learner.ask(n)
+                points, _ = self.learner.ask(n_new_tasks)
                 for x in points:
                     xs[self._submit(x)] = x
 
