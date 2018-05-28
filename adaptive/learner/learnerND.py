@@ -313,19 +313,53 @@ class LearnerND(BaseLearner):
 
         return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
 
-    def plot_slice(self, values, n=None, tri_alpha=0):
+    def plot_slice(self, values, n=None):
         values = list(values)
         count_none = values.count(None)
         assert(count_none == 1 or count_none == 2)
         if count_none == 2:
-            raise NotImplementedError('plot slice does currently not support 2D plotting')
+            hv = ensure_holoviews()
+            if self.vdim > 1:
+                raise NotImplemented('holoviews currently does not support',
+                                     '3D surface plots in bokeh.')
+
+            if n is None:
+                # Calculate how many grid points are needed.
+                # factor from A=√3/4 * a² (equilateral triangle)
+                # n = int(0.658 / sqrt(volumes(ip).min()))  # TODO fix this calculation
+                n = 50
+
+            x = y = np.linspace(-0.5, 0.5, n)
+            x = x[:, None]
+            y = y[None, :]
+            i = values.index(None)
+            values[i] = 0
+            j = values.index(None)
+            values[j] = y
+            values[i] = x
+            bx, by = self.bounds[i], self.bounds[j]
+            lbrt = bx[0], by[0], bx[1], by[1]
+
+            if len(self.data) >= 4:
+                ip = self.ip()
+                z = ip(*values).squeeze()
+
+                im = hv.Image(np.rot90(z), bounds=lbrt)
+            else:
+                im = hv.Image([], bounds=lbrt)
+
+            im_opts = dict(cmap='viridis')
+
+            return im.opts(style=im_opts)
         else:
             hv = ensure_holoviews()
             if not self.data:
                 p = hv.Scatter([]) * hv.Path([])
             elif not self.vdim > 1:
                 ind = values.index(None)
-                x = np.linspace(-0.5, 0.5, 500)
+                if n is None:
+                    n = 500
+                x = np.linspace(-0.5, 0.5, n)
                 values[ind] = 0
                 values = list(self.scale(values))
                 values[ind] = x
