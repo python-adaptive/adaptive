@@ -408,7 +408,7 @@ class IntegratorLearner(BaseLearner):
             # Update the mappings
             self.x_mapping[x].add(ival)
             if x in self.done_points:
-                self.tell(x, self.done_points[x])
+                self._tell(x, self.done_points[x])
             elif x not in self.pending_points:
                 self.pending_points.add(x)
                 self._stack.append(x)
