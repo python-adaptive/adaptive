@@ -40,4 +40,4 @@ class DataSaver:
     def _tell(self, x, result):
         y = self.arg_picker(result) if result is not None else None
         self.extra_data[x] = result
-        self.learner.tell(x, y)
+        self.learner._tell(x, y)
