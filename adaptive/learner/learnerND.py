@@ -10,51 +10,73 @@ from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
 
-# Learner2D and helper functions.
-def volumes(ip):
-    p = ip.tri.points[ip.tri.vertices]
-    matrices = p[:, :-1, :] - p[:, -1, None, :]
-    n_points, dim = ip.tri.points.shape
+def volume(simplex, ys=None):
+    matrix = simplex[:-1, :] - simplex[-1, None, :]
+    dim = len(simplex) - 1
 
     # See https://www.jstor.org/stable/2315353
-    vols = np.abs(np.linalg.det(matrices)) / np.math.factorial(dim)
+    vol = np.abs(np.linalg.det(matrix)) / np.math.factorial(dim)
+    return vol
 
-    return vols
+def uniform_loss(simplex, ys=None):
+    return volumes(simplex)
 
+def std_loss(simplex, ys):
+    r = np.std(ys, axis=0)
+    vol = volume(simplex)
 
-def uniform_loss(ip):
-    """Loss function that samples the domain uniformly.
-
-    Works with `~adaptive.LearnerND` only.
-
-    Examples
-    --------
-    >>> def f(xy):
-    ...     x, y = xy
-    ...     return x**2 + y**2
-    >>>
-    >>> learner = adaptive.LearnerND(f,
-    ...                              bounds=[(-1, -1), (1, 1)],
-    ...                              loss_per_simplex=uniform_loss)
-    >>>
-    """
-    return volumes(ip)
-
-
-def std_loss(ip):
-    # p = ip.tri.points[ip.tri.vertices]
-    # matrices = p[:, :-1, :] - p[:, -1, None, :]
-    v = ip.values[ip.tri.vertices]
-    r = np.std(v, axis=1)
-    vol = volumes(ip)
-
-    n_points, dim = ip.tri.points.shape
+    dim = len(simplex) - 1
 
     return r.flat * np.power(vol, 1./dim) + vol
 
+def default_loss(simplex, ys):
+    return std_loss(simplex, ys)
 
-def default_loss(ip):
-    return std_loss(ip)
+# # Learner2D and helper functions.
+# def volumes(ip):
+#     p = ip.tri.points[ip.tri.vertices]
+#     matrices = p[:, :-1, :] - p[:, -1, None, :]
+#     n_points, dim = ip.tri.points.shape
+
+#     # See https://www.jstor.org/stable/2315353
+#     vols = np.abs(np.linalg.det(matrices)) / np.math.factorial(dim)
+
+#     return vols
+
+
+# def uniform_loss(ip):
+#     """Loss function that samples the domain uniformly.
+
+#     Works with `~adaptive.LearnerND` only.
+
+#     Examples
+#     --------
+#     >>> def f(xy):
+#     ...     x, y = xy
+#     ...     return x**2 + y**2
+#     >>>
+#     >>> learner = adaptive.LearnerND(f,
+#     ...                              bounds=[(-1, -1), (1, 1)],
+#     ...                              loss_per_simplex=uniform_loss)
+#     >>>
+#     """
+#     return volumes(ip)
+
+
+# def std_loss(ip):
+#     # p = ip.tri.points[ip.tri.vertices]
+#     # matrices = p[:, :-1, :] - p[:, -1, None, :]
+#     v = ip.values[ip.tri.vertices]
+#     r = np.std(v, axis=1)
+#     vol = volumes(ip)
+
+#     n_points, dim = ip.tri.points.shape
+
+#     return r.flat * np.power(vol, 1./dim) + vol
+
+
+# def default_loss(ip):
+#     return std_loss(ip)
 
 
 def choose_point_in_simplex(simplex):
@@ -232,7 +254,7 @@ class LearnerND(BaseLearner):
         if n > 0:
             # Interpolate
             ip = self.ip()  # O(N log N) for triangulation
-            losses = self.loss_per_simplex(ip)  # O(N), compute the losses of all interpolated triangles
+            losses = list(self.losses())  # O(N), compute the losses of all interpolated triangles
 
             for _ in range(n):
                 simplex_index = np.argmax(losses)  # O(N), Find the index of the simplex with the highest loss
@@ -258,6 +280,14 @@ class LearnerND(BaseLearner):
     #     losses = self.loss_per_triangle(ip)
     #     self._loss = losses.max()
     #     return self._loss
+
+    def losses(self):
+        ip = self.ip()  # TODO: why do we even need the interpolator, just the triangulation would be sufficient
+        for vertices in ip.tri.vertices:
+            simplex = ip.tri.points[vertices]
+            values = ip.values[vertices]
+            yield self.loss_per_simplex(simplex, values)    
+
 
     def loss(self, real=True):
         losses = self.losses if real else self.losses_combined
@@ -286,8 +316,8 @@ class LearnerND(BaseLearner):
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                n = int(0.658 / sqrt(volumes(ip).min()))
-                n = max(n, 10)
+                # n = int(0.658 / sqrt(volumes(ip).min()))
+                n = 50
 
             x = y = np.linspace(-0.5, 0.5, n)
             z = ip(x[:, None], y[None, :]).squeeze()
