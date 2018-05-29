@@ -170,7 +170,7 @@ class Learner2D(BaseLearner):
         The size of the new candidate points stack. Set it to 1
         to recalculate the best points at each call to `ask`.
     aspect_ratio : float, int, default 1
-        Average ratio of `x span over `y` span of a triangle. If
+        Average ratio of `x` span over `y` span of a triangle. If
         there is more detail in either `x` or `y` the `aspect_ratio`
         needs to be adjusted. When `aspect_ratio > 1` the
         triangles will be stretched along `x`, otherwise
