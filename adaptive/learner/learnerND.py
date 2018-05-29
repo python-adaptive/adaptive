@@ -133,9 +133,6 @@ class LearnerND(BaseLearner):
     ----------
     data : dict
         Sampled points and values.
-    stack_size : int, default 10
-        The size of the new candidate points stack. Set it to 1
-        to recalculate the best points at each call to `ask`.
 
     Methods
     -------
@@ -172,7 +169,6 @@ class LearnerND(BaseLearner):
         self.loss_per_simplex = loss_per_simplex or default_loss
         self.bounds = tuple(tuple(map(float, b)) for b in bounds)
         self.data = OrderedDict()
-        self._stack = OrderedDict()
         self._pending: set = set()
 
         self._mean: float = np.mean(self.bounds, axis=1)
@@ -180,12 +176,11 @@ class LearnerND(BaseLearner):
 
         self._bounds_points = list(itertools.product(*bounds))
 
-        self._stack.update({p: np.inf for p in self._bounds_points})
         self.function = function
         self._ip = None
         self._loss = np.inf
+        self._losses = dict()
 
-        self.stack_size = 10
 
     def scale(self, points):
         # this function converts the points from real coordinates to equalised coordinates,
@@ -238,10 +233,7 @@ class LearnerND(BaseLearner):
     def ask(self, n=1, tell=True):
         # Complexity: O(N log N + n * N)
         # TODO adapt this function
-        # Even if tell is False we add the point such that _fill_stack
-        # will return new points, later we remove these points if needed.
         # TODO allow cases where n > 1
-        assert(n == 1)
 
         new_points = []
         new_loss_improvements = []
@@ -254,19 +246,19 @@ class LearnerND(BaseLearner):
         if n > 0:
             # Interpolate
             ip = self.ip()  # O(N log N) for triangulation
-            losses = list(self.losses())  # O(N), compute the losses of all interpolated triangles
-
-            for _ in range(n):
-                simplex_index = np.argmax(losses)  # O(N), Find the index of the simplex with the highest loss
-                simplex = ip.tri.points[ip.tri.vertices[simplex_index]]  # get the corner points the the worst simplex
-                point_new = choose_point_in_simplex(simplex)  # choose a new point in the triangle
+            losses = list(self.losses_combined().items())  # O(N), compute the losses of all interpolated triangles
+            losses.sort(key=lambda item: -item[1]) # O(N log N) sort by loss
+            for i in range(n):
+                simplex, loss = losses[i]  # O(N), Find the index of the simplex with the highest loss
+                # simplex = ip.tri.points[ip.tri.vertices[simplex_index]]  # get the corner points the the worst simplex
+                point_new = choose_point_in_simplex(np.array(simplex))  # choose a new point in the triangle
                 point_new = tuple(self.unscale(point_new))  # relative coordinates to real coordinates
-                loss_new = losses[simplex_index]
+                # loss_new = losses[simplex_index]
 
                 new_points.append(point_new)
-                new_loss_improvements.append(loss_new)
+                new_loss_improvements.append(loss)
 
-                losses[simplex_index] = -np.inf
+                losses[i] = -np.inf
 
         if tell:
             self.tell(new_points, itertools.repeat(None))
@@ -281,16 +273,35 @@ class LearnerND(BaseLearner):
     #     self._loss = losses.max()
     #     return self._loss
 
+    # return a dict of simplex -> loss
     def losses(self):
         ip = self.ip()  # TODO: why do we even need the interpolator, just the triangulation would be sufficient
-        for vertices in ip.tri.vertices:
+        ret = dict()
+        for vertices in ip.tri.vertices: # O(N)
             simplex = ip.tri.points[vertices]
             values = ip.values[vertices]
-            yield self.loss_per_simplex(simplex, values)    
+            key = self._simplex_to_key(simplex)
+            if key in self._losses:
+                loss = self._losses[key]
+            else:
+                loss = self.loss_per_simplex(simplex, values)
+            ret[key] = loss
 
+        self._losses = ret
+        return self._losses
+
+    def _simplex_to_key(self, simplex):
+        l = simplex.tolist()
+        l.sort()
+        l = tuple(map(tuple, simplex))
+        return l
+
+    # return a dict of simplex -> loss
+    def losses_combined(self):
+        return self.losses() # TODO actually get losses_combined
 
     def loss(self, real=True):
-        losses = self.losses if real else self.losses_combined
+        losses = self.losses() if real else self.losses_combined()
         if len(losses) == 0:
             return float('inf')
         else:
@@ -298,9 +309,6 @@ class LearnerND(BaseLearner):
 
     def remove_unfinished(self):
         self._pending = set()
-        for p in self._bounds_points:
-            if p not in self.data:
-                self._stack[p] = np.inf
 
     def plot(self, n=None, tri_alpha=0):
         hv = ensure_holoviews()
