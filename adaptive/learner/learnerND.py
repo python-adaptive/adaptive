@@ -182,13 +182,13 @@ class LearnerND(BaseLearner):
         self._losses = dict()
 
 
-    def scale(self, points):
+    def _scale(self, points):
         # this function converts the points from real coordinates to equalised coordinates,
         # in order to make the triangulation fair
         points = np.asarray(points, dtype=float)
         return (points - self._mean) / self._ptp_scale
 
-    def unscale(self, points):
+    def _unscale(self, points):
         # this functions converts the points from equalised coordinates to real coordinates
         points = np.asarray(points, dtype=float)
         return points * self._ptp_scale + self._mean
@@ -215,7 +215,7 @@ class LearnerND(BaseLearner):
         # raise DeprecationWarning('usage of LinearNDInterpolator should be reduced')
         # returns a scipy.interpolate.LinearNDInterpolator object with the given data as sources
         if self._ip is None:
-            points = self.scale(list(self.data.keys()))
+            points = self._scale(list(self.data.keys()))
             values = np.array(list(self.data.values()), dtype=float)
             self._ip = interpolate.LinearNDInterpolator(points, values)
         return self._ip
@@ -252,7 +252,7 @@ class LearnerND(BaseLearner):
                 simplex, loss = losses[i]  # O(N), Find the index of the simplex with the highest loss
                 # simplex = ip.tri.points[ip.tri.vertices[simplex_index]]  # get the corner points the the worst simplex
                 point_new = choose_point_in_simplex(np.array(simplex))  # choose a new point in the triangle
-                point_new = tuple(self.unscale(point_new))  # relative coordinates to real coordinates
+                point_new = tuple(self._unscale(point_new))  # relative coordinates to real coordinates
                 # loss_new = losses[simplex_index]
 
                 new_points.append(point_new)
@@ -298,6 +298,8 @@ class LearnerND(BaseLearner):
 
     # return a dict of simplex -> loss
     def losses_combined(self):
+
+
         return self.losses() # TODO actually get losses_combined
 
     def loss(self, real=True):
@@ -333,7 +335,7 @@ class LearnerND(BaseLearner):
             im = hv.Image(np.rot90(z), bounds=lbrt)
 
             if tri_alpha:
-                points = self.unscale(ip.tri.points[ip.tri.vertices])
+                points = self._unscale(ip.tri.points[ip.tri.vertices])
                 points = np.pad(points[:, [0, 1, 2, 0], :],
                                 pad_width=((0, 0), (0, 1), (0, 0)),
                                 mode='constant',
@@ -399,7 +401,7 @@ class LearnerND(BaseLearner):
                     n = 500
                 x = np.linspace(-0.5, 0.5, n)
                 values[ind] = 0
-                values = list(self.scale(values))
+                values = list(self._scale(values))
                 values[ind] = x
                 ip = self.ip()
                 y = ip(*values)
