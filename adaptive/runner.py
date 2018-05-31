@@ -128,7 +128,7 @@ class BlockingRunner(BaseRunner):
         of cores available in 'executor'.
     log : bool, default: False
         If True, record the method calls made to the learner by this runner
-    shutdown_executor : Bool, default: True
+    shutdown_executor : Bool, default: False
         If True, shutdown the executor when the runner has completed. If
         'executor' is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
@@ -144,7 +144,7 @@ class BlockingRunner(BaseRunner):
 
     def __init__(self, learner, goal, *,
                  executor=None, ntasks=None, log=False,
-                 shutdown_executor=True):
+                 shutdown_executor=False):
         if inspect.iscoroutinefunction(learner.function):
             raise ValueError("Coroutine functions can only be used "
                              "with 'AsyncRunner'.")
@@ -232,7 +232,7 @@ class AsyncRunner(BaseRunner):
         of cores available in 'executor'.
     log : bool, default: False
         If True, record the method calls made to the learner by this runner
-    shutdown_executor : Bool, default: True
+    shutdown_executor : Bool, default: False
         If True, shutdown the executor when the runner has completed. If
         'executor' is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
@@ -259,7 +259,7 @@ class AsyncRunner(BaseRunner):
 
     def __init__(self, learner, goal=None, *,
                  executor=None, ntasks=None, log=False,
-                 ioloop=None, shutdown_executor=True):
+                 ioloop=None, shutdown_executor=False):
 
         if goal is None:
             def goal(_):
