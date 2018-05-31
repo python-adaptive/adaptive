@@ -33,7 +33,7 @@ class DataSaver:
         self.remove_unfinished = self.learner.remove_unfinished
 
         # Methods that the BaseLearner implements
-        self.add_data = self.learner.add_data
+        self.tell = self.learner.tell
         self.__getstate__ = self.learner.__getstate__
         self.__setstate__ = self.learner.__setstate__
 
