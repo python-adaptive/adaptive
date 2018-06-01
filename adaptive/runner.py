@@ -160,7 +160,7 @@ class BlockingRunner(BaseRunner):
         xs = dict()
         do_log = self.log is not None
 
-        if len(done) == 0:
+        if self.max_tasks() < 1:
             raise RuntimeError('Executor has no workers')
 
         try:
