@@ -9,6 +9,7 @@ import scipy.spatial
 
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
+import copy
 
 
 def volume(simplex, ys=None):
@@ -28,20 +29,19 @@ def orientation(simplex):
 # translated from https://github.com/mikolalysenko/robust-point-in-simplex/blob/master/rpis.js
 # also used https://stackoverflow.com/questions/21819132/how-do-i-check-if-a-simplex-contains-the-origin
 def point_in_simplex(simplex, point):
-    simplex_orientation = orientation(simplex)
-    simplex_copy = simplex[:]
+    simplex_copy = copy.deepcopy(simplex)
+    simplex_orientation = orientation(simplex_copy)
     boundary = False
 
     for i in range(len(simplex)):
-        old_value = simplex[i]
         simplex_copy[i] = point
 
-        orient = orientation(simplex)
+        orient = orientation(simplex_copy)
         if orient == 0:
             boundary = True
         elif orient != simplex_orientation:
             return -1
-        simplex_copy[i] = old_value
+        simplex_copy[i] = copy.copy(simplex[i])
 
     if boundary:
         return 0
@@ -281,20 +281,16 @@ class LearnerND(BaseLearner):
         if not self.bounds_are_done:
             bounds_to_do = [p for p in self._bounds_points if p not in self.data and p not in self._pending]
             new_points = bounds_to_do[:n]
-            new_loss_improvements = [-np.inf] * n
+            new_loss_improvements = [-np.inf] * len(new_points)
             n = n - len(new_points)
 
         if n > 0:
-            # Interpolate
-            ip = self.ip()  # O(N log N) for triangulation
             losses = list(self.losses_combined().items())  # O(N), compute the losses of all interpolated triangles
             losses.sort(key=lambda item: -item[1])  # O(N log N), sort by loss
             for i in range(n):
                 simplex, loss = losses[i]  # O(1), Find the index of the simplex with the highest loss
-                # simplex = ip.tri.points[ip.tri.vertices[simplex_index]]  # get the corner points the the worst simplex
                 point_new = choose_point_in_simplex(np.array(simplex))  # choose a new point in the triangle
                 point_new = tuple(self._unscale(point_new))  # relative coordinates to real coordinates
-                # loss_new = losses[simplex_index]
 
                 new_points.append(point_new)
                 new_loss_improvements.append(loss)
@@ -309,6 +305,8 @@ class LearnerND(BaseLearner):
 
     # return a dict of simplex -> loss
     def losses(self):
+        if len(self.data) < 3:
+            return dict()
         ip = self.ip()  # TODO: why do we even need the interpolator, just the triangulation would be sufficient
         ret = dict()
         for vertices in ip.tri.vertices: # O(N)
@@ -334,7 +332,15 @@ class LearnerND(BaseLearner):
     # return a dict of simplex -> loss
     def losses_combined(self):
         if self.bounds_are_done == False:
-            return self.losses()  # TODO find a better metric, like, triangulate everything and give it infinite loss
+            ret = dict()
+            pts = self._scale(list(self.data.keys()) + list(self._pending))
+            tri = scipy.spatial.Delaunay(pts)
+            for vertices in tri.vertices:
+                simplex = tri.points[vertices]
+                key = self._simplex_to_key(simplex)
+                ret[key] = np.inf
+            return ret
+
         if len(self._pending) == 0:
             return self.losses()
         # TODO also fix that we can request new points even if there does not even if all points are pending
@@ -343,7 +349,7 @@ class LearnerND(BaseLearner):
         ip = self.ip()  # O(N log N)
         losses = self.losses()  # O(N log N), this also has a slow python loop
         # now start adding new items to it, yay
-        pending = list(self._pending)  # O(P) let P be the number of pending points
+        pending = self._scale(list(self._pending))  # O(P) let P be the number of pending points
 
         pending_points_per_simplex = dict()  # TODO better name
 
@@ -354,12 +360,27 @@ class LearnerND(BaseLearner):
 
         # TODO take a look at ip.tri.neighbors[i] as this might be interesting
 
-        for i in range(len(simplices)):
-            s = self._simplex_to_key(ip.tri.points[ip.tri.vertices[simplices[i]]])
-            pending_points_per_simplex[s] = pending_points_per_simplex.get(s, [])
-            pending_points_per_simplex[s].append(pending[i])
+        for index in range(len(simplices)):
+            pending_point = pending[index]
+            # s = self._simplex_to_key(ip.tri.points[ip.tri.vertices[simplices[index]]])
+            # pending_points_per_simplex[s] = pending_points_per_simplex.get(s, [])
+            # pending_points_per_simplex[s].append(pending_point)
 
             # TODO get all neighbouring simplices and add the points ass well
+            # do a DFS of all neighbouring simplices to find which simplices contain the point
+            stack = [simplices[index]]  # contains all done and pending simplices
+            ind = 0
+            while ind < len(stack):
+                q = stack[ind]
+                s = ip.tri.points[ip.tri.vertices[q]]
+                if point_in_simplex(s, pending_point) >= 0:
+                    k = self._simplex_to_key(s)
+                    pending_points_per_simplex[k] = pending_points_per_simplex.get(k, [])
+                    pending_points_per_simplex[k].append(pending_point)
+                    for neighbor in ip.tri.neighbors[q]:
+                        if neighbor >= 0 and neighbor not in stack:
+                            stack.append(neighbor)
+                ind += 1
 
 
         for simplex, pending in pending_points_per_simplex.items():
