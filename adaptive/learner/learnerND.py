@@ -19,6 +19,35 @@ def volume(simplex, ys=None):
     vol = np.abs(np.linalg.det(matrix)) / np.math.factorial(dim)
     return vol
 
+def orientation(simplex):
+    matrix = simplex[:-1, :] - simplex[-1, None, :]
+    # See https://www.jstor.org/stable/2315353
+    sign, logdet = np.linalg.slogdet(matrix)
+    return sign
+
+# translated from https://github.com/mikolalysenko/robust-point-in-simplex/blob/master/rpis.js
+# also used https://stackoverflow.com/questions/21819132/how-do-i-check-if-a-simplex-contains-the-origin
+def point_in_simplex(simplex, point):
+    simplex_orientation = orientation(simplex)
+    simplex_copy = simplex[:]
+    boundary = False
+
+    for i in range(len(simplex)):
+        old_value = simplex[i]
+        simplex_copy[i] = point
+
+        orient = orientation(simplex)
+        if orient == 0:
+            boundary = True
+        elif orient != simplex_orientation:
+            return -1
+        simplex_copy[i] = old_value
+
+    if boundary:
+        return 0
+    return 1
+
+
 def uniform_loss(simplex, ys=None):
     return volumes(simplex)
 
