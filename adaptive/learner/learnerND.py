@@ -5,6 +5,7 @@ from math import sqrt
 
 import numpy as np
 from scipy import interpolate
+import scipy.spatial
 
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
@@ -247,9 +248,9 @@ class LearnerND(BaseLearner):
             # Interpolate
             ip = self.ip()  # O(N log N) for triangulation
             losses = list(self.losses_combined().items())  # O(N), compute the losses of all interpolated triangles
-            losses.sort(key=lambda item: -item[1]) # O(N log N) sort by loss
+            losses.sort(key=lambda item: -item[1])  # O(N log N), sort by loss
             for i in range(n):
-                simplex, loss = losses[i]  # O(N), Find the index of the simplex with the highest loss
+                simplex, loss = losses[i]  # O(1), Find the index of the simplex with the highest loss
                 # simplex = ip.tri.points[ip.tri.vertices[simplex_index]]  # get the corner points the the worst simplex
                 point_new = choose_point_in_simplex(np.array(simplex))  # choose a new point in the triangle
                 point_new = tuple(self._unscale(point_new))  # relative coordinates to real coordinates
@@ -265,13 +266,6 @@ class LearnerND(BaseLearner):
 
         return new_points, new_loss_improvements
 
-    # def loss(self, real=True):
-    #     if not self.bounds_are_done:
-    #         return np.inf
-    #     ip = self.ip() if real else self.ip_combined()
-    #     losses = self.loss_per_triangle(ip)
-    #     self._loss = losses.max()
-    #     return self._loss
 
     # return a dict of simplex -> loss
     def losses(self):
@@ -290,6 +284,7 @@ class LearnerND(BaseLearner):
         self._losses = ret
         return self._losses
 
+    # TODO make this a global method
     def _simplex_to_key(self, simplex):
         l = simplex.tolist()
         l.sort()
@@ -298,9 +293,47 @@ class LearnerND(BaseLearner):
 
     # return a dict of simplex -> loss
     def losses_combined(self):
+        if self.bounds_are_done == False:
+            return self.losses()  # TODO find a better metric, like, triangulate everything and give it infinite loss
+        # TODO also fix that we can request new points even if there does not even if all points are pending
+        # assume the number of pending points is reasonably low (eg 20 or so) to keep performance high
+        # TODO actually make performance better
+        ip = self.ip()  # O(N log N)
+        losses = self.losses()  # O(N log N), this also has a slow python loop
+        # now start adding new items to it, yay
+        pending = list(self._pending)  # O(P) let P be the number of pending points
 
+        pending_points_per_simplex = dict()  # TODO better name
 
-        return self.losses() # TODO actually get losses_combined
+        # TODO come up with better name
+        simplices = ip.tri.find_simplex(pending)  # O(N*P) I guess, find the simplex each point belongs to
+        # TODO what happens if a point belongs to multiple simplices 
+        # (like when it lies on an edge, we should make sure that gets handled as well)
+
+        # TODO take a look at ip.tri.neighbors[i] as this might be interesting
+
+        for i in range(len(simplices)):
+            s = self._simplex_to_key(ip.tri.points[ip.tri.vertices[simplices[i]]])
+            pending_points_per_simplex[s] = pending_points_per_simplex.get(s, [])
+            pending_points_per_simplex[s].append(pending[i])
+
+        for simplex, pending in pending_points_per_simplex.items():
+            # Get all vertices in this simplex (including the known border)
+            vertices = np.append(simplex, pending, axis=0)
+            # Triangulate the vertices
+            print(vertices)
+            triangulation = scipy.spatial.Delaunay(vertices)
+            pending_simplices = vertices[triangulation.simplices]
+
+            total_volume = volume(np.array(simplex))
+            loss_per_volume = losses[simplex] / total_volume
+            losses[simplex] = 0  # do not use this simplex, only it's children
+            for simp in pending_simplices:
+                key = self._simplex_to_key(simp)
+                vol = volume(simp)
+                losses[key] = loss_per_volume * vol
+
+        return losses  # TODO actually get losses_combined
 
     def loss(self, real=True):
         losses = self.losses() if real else self.losses_combined()
