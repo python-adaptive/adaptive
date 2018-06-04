@@ -261,6 +261,17 @@ class LearnerND(BaseLearner):
             self._ip = None
 
     def ask(self, n=1, tell=True):
+        assert tell
+        xs = []
+        losses = []
+        for i in range(n):
+            x, loss = self._ask()
+            xs.append(*x)
+            losses.append(*loss)
+        return xs, losses
+
+
+    def _ask(self, n=1, tell=True):
         # Complexity: O(N log N + n * N)
         # TODO adapt this function
         # TODO allow cases where n > 1
@@ -324,6 +335,8 @@ class LearnerND(BaseLearner):
     def losses_combined(self):
         if self.bounds_are_done == False:
             return self.losses()  # TODO find a better metric, like, triangulate everything and give it infinite loss
+        if len(self._pending) == 0:
+            return self.losses()
         # TODO also fix that we can request new points even if there does not even if all points are pending
         # assume the number of pending points is reasonably low (eg 20 or so) to keep performance high
         # TODO actually make performance better
@@ -346,17 +359,20 @@ class LearnerND(BaseLearner):
             pending_points_per_simplex[s] = pending_points_per_simplex.get(s, [])
             pending_points_per_simplex[s].append(pending[i])
 
+            # TODO get all neighbouring simplices and add the points ass well
+
+
         for simplex, pending in pending_points_per_simplex.items():
             # Get all vertices in this simplex (including the known border)
             vertices = np.append(simplex, pending, axis=0)
             # Triangulate the vertices
-            print(vertices)
+            # print(vertices)
             triangulation = scipy.spatial.Delaunay(vertices)
             pending_simplices = vertices[triangulation.simplices]
 
             total_volume = volume(np.array(simplex))
             loss_per_volume = losses[simplex] / total_volume
-            losses[simplex] = 0  # do not use this simplex, only it's children
+            losses.pop(simplex)  # do not use this simplex, only it's children
             for simp in pending_simplices:
                 key = self._simplex_to_key(simp)
                 vol = volume(simp)
