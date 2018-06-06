@@ -249,12 +249,21 @@ class LearnerND(BaseLearner):
     def tri(self):
         if self._tri is None:
             points = self._scale(list(self.data.keys()))
-            # self._tri = scipy.spatial.Delaunay(points, incremental=True, qhull_options='QJ Qc')
             self._tri = scipy.spatial.Delaunay(points)
         return self._tri
 
     def values(self):
         return np.array(list(self.data.values()), dtype=float)
+
+    _time = None
+    _prev = 1/30
+    def time(self):
+        import time
+        if self._time is None:
+            self._time = time.time()
+        self._prev = 0.98 * self._prev + (time.time() - self._time) * 0.02
+        self._time = time.time()
+        return self._prev
 
     def _tell(self, point, value):
         point = tuple(point)
@@ -266,12 +275,9 @@ class LearnerND(BaseLearner):
             self._ip = None
             self._tri = None
             self.data[point] = value
-            print("addpoint", self.npoints, ":", point)
+            print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), point)
             if len(self.data) > self.ndim:
                 sp = self._scale(point)
-                # if self._tri is not None:
-                #     restart = (self.npoints % 10) == 0  # Restart one in 10 times
-                #     self._tri.add_points([sp], restart=restart)
                 self.recompute_losses_around_newly_added_point(sp)
 
 
@@ -384,7 +390,7 @@ class LearnerND(BaseLearner):
                 if not self._simplex_exists(simplex):
                     # it could be that some of the points are pending, then always accept
                     if not any((tuple(p) in self._pending) for p in self._unscale(simplex)):
-                        del self._losses[simplex]
+                        self._losses.pop(simplex, None)
                         continue
 
 
