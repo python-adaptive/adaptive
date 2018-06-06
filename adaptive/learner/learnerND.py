@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import itertools
 from math import sqrt
+import heapq
 
 import numpy as np
 from scipy import interpolate
@@ -248,6 +249,7 @@ class LearnerND(BaseLearner):
     def tri(self):
         if self._tri is None:
             points = self._scale(list(self.data.keys()))
+            # self._tri = scipy.spatial.Delaunay(points, incremental=True, qhull_options='QJ Qc')
             self._tri = scipy.spatial.Delaunay(points)
         return self._tri
 
@@ -262,15 +264,15 @@ class LearnerND(BaseLearner):
         else:
             self._pending.discard(point)
             self._ip = None
-            old_tri = self._tri
             self._tri = None
             self.data[point] = value
-            if len(self.data) >= 3:
+            print("addpoint", self.npoints, ":", point)
+            if len(self.data) > self.ndim:
                 sp = self._scale(point)
-                print("addpoint:", sp)
-                self.delete_all_wasted_losses(old_tri, sp)
+                # if self._tri is not None:
+                #     restart = (self.npoints % 10) == 0  # Restart one in 10 times
+                #     self._tri.add_points([sp], restart=restart)
                 self.recompute_losses_around_newly_added_point(sp)
-                assert len(self.tri().simplices) == len(self._losses)
 
 
     def recompute_losses_around_newly_added_point(self, point):
@@ -281,17 +283,18 @@ class LearnerND(BaseLearner):
         queue = [s0]
         index = 0
 
-
         while index < len(queue):
             q = queue[index]
-            simplex = tri.points[tri.simplices[q]]
+            p = tri.simplices[q]
+            # print(p, q)
+            simplex = tri.points[p]
             key = self._simplex_to_key(simplex)
             if key not in self._losses:
+                vert = tri.simplices[q]
                 vals = values[tri.simplices[q]]
                 self._losses[key] = self.loss_per_simplex(simplex, vals)
-                print('added:', key)
                 for s in tri.neighbors[q]:
-                    if s not in queue:
+                    if s not in queue and s >= 0:
                         queue.append(s)
             index += 1
 
@@ -335,6 +338,16 @@ class LearnerND(BaseLearner):
             todo.discard(-1)  # remove -1 as this is not relevant
             todo = todo - done
 
+    def _simplex_exists(self, simplex):
+        if len(self.data) < (self.ndim + 1):
+            return False  # no simplex exists
+        center_point = np.average(simplex, axis=0)
+        new_tri = self.tri()
+        new_simplex_index = new_tri.find_simplex(center_point).flat[0]
+        new_simplex = new_tri.points[new_tri.simplices[new_simplex_index]]
+
+        new_key = self._simplex_to_key(new_simplex)
+        return simplex == new_key
 
     def ask(self, n=1, tell=True):
         assert tell
@@ -361,19 +374,25 @@ class LearnerND(BaseLearner):
             n = n - len(new_points)
 
         if n > 0:
-            losses = list(self.losses_combined().items())  # O(N log N) at least, compute the losses of all interpolated triangles
-            tri = self.tri() if len(self.data) >= 3 else None
-            losses.sort(key=lambda item: -item[1])  # O(N log N), sort by loss
-            i = 0
+            losses = [(-v, k) for k,v in self.losses_combined().items()]  # O(N log N) at least, compute the losses of all interpolated triangles
+            tri = self.tri() if len(self.data) > self.ndim else None
+            # losses.sort(key=lambda item: -item[1])  # O(N log N), sort by loss
+            heapq.heapify(losses)
             while len(new_points) < n:
-                simplex, loss = losses[i]  # O(1), Find the index of the simplex with the highest loss
+                loss, simplex = heapq.heappop(losses)
+                # verify that simplex still exists
+                if not self._simplex_exists(simplex):
+                    # it could be that some of the points are pending, then always accept
+                    if not any((tuple(p) in self._pending) for p in self._unscale(simplex)):
+                        del self._losses[simplex]
+                        continue
+
 
                 point_new = choose_point_in_simplex(np.array(simplex))  # choose a new point in the simplex
                 point_new = tuple(self._unscale(point_new))  # relative coordinates to real coordinates
 
                 new_points.append(point_new)
                 new_loss_improvements.append(loss)
-                i += 1
 
         if tell:
             self.tell(new_points, itertools.repeat(None))
@@ -413,7 +432,7 @@ class LearnerND(BaseLearner):
         if self.bounds_are_done == False:
             ret = dict()
             pts = self._scale(list(self.data.keys()) + list(self._pending))
-           su tri = scipy.spatial.Delaunay(pts)
+            tri = scipy.spatial.Delaunay(pts)
             for vertices in tri.vertices:
                 simplex = tri.points[vertices]
                 key = self._simplex_to_key(simplex)
@@ -425,7 +444,8 @@ class LearnerND(BaseLearner):
         # assume the number of pending points is reasonably low (eg 20 or so) to keep performance high
         # TODO actually make performance better
         tri = self.tri()  # O(N log N)
-        losses = copy.deepcopy(self.losses())  # O(N)
+        # losses = self.losses().copy()  # O(N)
+        losses = self._losses.copy()
         # now start adding new items to it, yay
         pending = self._scale(list(self._pending))  # O(P) let P be the number of pending points
 
@@ -459,10 +479,18 @@ class LearnerND(BaseLearner):
             # Get all vertices in this simplex (including the known border)
             vertices = np.append(simplex, pending, axis=0)
             # Triangulate the vertices
+            if volume(np.asarray(simplex)) < 1e-16:
+                continue
+
             triangulation = scipy.spatial.Delaunay(vertices)
             pending_simplices = vertices[triangulation.simplices]
 
             total_volume = volume(np.array(simplex))
+            if simplex not in losses:
+                values = list(map(self.data.get, map(tuple, self._unscale(simplex))))
+                loss = self.loss_per_simplex(np.array(simplex), values)
+                losses[simplex] = loss
+                self._losses[simplex] = loss
             loss_per_volume = losses[simplex] / total_volume
             # <class 'tuple'>: ((0.0, -0.25), (0.125, -0.25), (0.1875, -0.125))
             losses.pop(simplex)  # do not use this simplex, only it's children
