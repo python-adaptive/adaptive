@@ -276,7 +276,7 @@ class LearnerND(BaseLearner):
             self._tri = None
             self.data[point] = value
             print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), point)
-            if len(self.data) > self.ndim:
+            if len(self.data) > self.ndim + 1:
                 sp = self._scale(point)
                 self.recompute_losses_around_newly_added_point(sp)
 
