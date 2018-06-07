@@ -27,15 +27,8 @@ class DataSaver:
         self.function = learner.function
         self.arg_picker = arg_picker
 
-        # The methods a subclass of the BaseLearner needs to implement
-        self.ask = self.learner.ask
-        self.loss = self.learner.loss
-        self.remove_unfinished = self.learner.remove_unfinished
-
-        # Methods that the BaseLearner implements
-        self.tell = self.learner.tell
-        self.__getstate__ = self.learner.__getstate__
-        self.__setstate__ = self.learner.__setstate__
+    def __getattr__(self, attr):
+        return getattr(self.learner, attr)
 
     def _tell(self, x, result):
         y = self.arg_picker(result) if result is not None else None
