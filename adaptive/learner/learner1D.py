@@ -109,7 +109,7 @@ class Learner1D(BaseLearner):
         self._oldscale = deepcopy(self._scale)
 
         # The precision in 'x' below which we set losses to 0.
-        self._dx_eps = max(np.abs(bounds)) * np.finfo(float).eps
+        self._dx_eps = 2 * max(np.abs(bounds)) * np.finfo(float).eps
 
         self.bounds = list(bounds)
 
