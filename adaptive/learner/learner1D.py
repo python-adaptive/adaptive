@@ -134,7 +134,7 @@ class Learner1D(BaseLearner):
         if x_lower is not None and x_upper is not None:
             dx = x_upper - x_lower
             loss = self.loss_per_interval((x_lower, x_upper), self._scale, self.data)
-            self.losses[x_lower, x_upper] = loss if abs(dx) > self._dx_eps else 0
+            self.losses[x_lower, x_upper] = loss
 
             start = self.neighbors_combined.bisect_right(x_lower)
             end = self.neighbors_combined.bisect_left(x_upper)
@@ -157,10 +157,8 @@ class Learner1D(BaseLearner):
             if x_lower is not None and x_upper is not None:
                 dx = x_upper - x_lower
                 loss = self.losses[x_lower, x_upper]
-                losses_combined[a, x] = ((x - a) * loss / dx
-                                         if abs(x - a) > self._dx_eps else 0)
-                losses_combined[x, b] = ((b - x) * loss  / dx
-                                         if abs(b - x) > self._dx_eps else 0)
+                losses_combined[a, x] = (x - a) * loss / dx
+                losses_combined[x, b] = (b - x) * loss / dx
             else:
                 if a is not None:
                     losses_combined[a, x] = float('inf')
