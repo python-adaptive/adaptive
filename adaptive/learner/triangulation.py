@@ -118,6 +118,11 @@ class Triangulation:
 
     def _extend_hull(self, new_vertex, eps=1e-8):
         hull_faces = list(self.faces(vertices=self.hull))
+        # notice that this also includes interior faces, to remove these we
+        # count multiplicities
+        multiplicities = Counter(face for face in hull_faces)
+        hull_faces = [face for face in hull_faces if multiplicities.get(face) < 2]
+
         decomp = []
         for face in hull_faces:
             coords = np.array([self.vertices[i] for i in face]) - new_vertex
