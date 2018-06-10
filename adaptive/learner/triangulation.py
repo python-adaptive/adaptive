@@ -137,11 +137,29 @@ class Triangulation:
             if good:
                 new_vertices.add(index)
 
+        # compute the center of the convex hull, this center lies in the hull
+        # we do not really need the center, we only need a point that is
+        # guaranteed to lie strictly within the hull
+        hull_points = []
+        for p in self.hull:
+            hull_points.append(self.vertices[p])
+        pt_center = np.average(hull_points, axis=0)
+
+
         pt_index = len(self.vertices)
         self.vertices.append(new_vertex)
         for face in hull_faces:
             if all(i in new_vertices for i in face):
-                self.add_simplex(face + (pt_index,))
+                # do orientation check, if orientation is the same, it lies on
+                # the same side of the face, otherwise, it lies on the other
+                # side of the face
+                pts_face = tuple(self.vertices[i] for i in face)
+                orientation_inside = self.orientation(pts_face + (pt_center, ))
+                orientation_new_point = self.orientation(pts_face + (new_vertex, ))
+                if orientation_inside * orientation_new_point == -1:
+                    # if the orientation of the new vertex is zero or directed
+                    # towards the center, do not add the simplex
+                    self.add_simplex(face + (pt_index,))
 
         multiplicities = Counter(face for face in
                                 self.faces(vertices=new_vertices | {pt_index})
@@ -259,6 +277,13 @@ class Triangulation:
         vectors = np.array([self.vertices[i] for i in simplex[1:]])
         return abs(np.linalg.det(vectors
                                  - self.vertices[simplex[0]])) / prefactor
+
+    def orientation(self, points):
+        vectors = np.array(points[1:])
+        sign, logdet = np.linalg.slogdet(vectors - points[0])
+        if logdet < -50: # assume it to be zero when it's close to zero
+            return 0
+        return sign
 
     def reference_invariant(self):
         """vertex_to_simplices and simplices are compatible."""
