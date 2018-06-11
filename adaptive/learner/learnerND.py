@@ -202,11 +202,9 @@ class LearnerND(BaseLearner):
         self._bounds_points = list(itertools.product(*bounds))
 
         self.function = function
-        self._ip = None
         self._tri = None
         self._loss = np.inf
         self._losses = dict()
-
 
     def _scale(self, points):
         # this function converts the points from real coordinates to equalised coordinates,
@@ -240,11 +238,10 @@ class LearnerND(BaseLearner):
     def ip(self):
         # raise DeprecationWarning('usage of LinearNDInterpolator should be reduced')
         # returns a scipy.interpolate.LinearNDInterpolator object with the given data as sources
-        if self._ip is None:
-            points = self._scale(list(self.data.keys()))
-            values = np.array(list(self.data.values()), dtype=float)
-            self._ip = interpolate.LinearNDInterpolator(points, values)
-        return self._ip
+        # TODO take our own triangulation into account when generating the ip
+        points = self._scale(list(self.data.keys()))
+        values = np.array(list(self.data.values()), dtype=float)
+        return interpolate.LinearNDInterpolator(points, values)
 
     def tri(self):
         if self._tri is None:
@@ -272,14 +269,12 @@ class LearnerND(BaseLearner):
             self._pending.add(point)
         else:
             self._pending.discard(point)
-            self._ip = None
             self._tri = None
             self.data[point] = value
             print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), point)
             if len(self.data) > self.ndim + 1:
                 sp = self._scale(point)
                 self.recompute_losses_around_newly_added_point(sp)
-
 
     def recompute_losses_around_newly_added_point(self, point):
         tri = self.tri()
@@ -304,46 +299,6 @@ class LearnerND(BaseLearner):
                         queue.append(s)
             index += 1
 
-    def delete_all_wasted_losses(self, old_tri, point):
-        if old_tri is None or old_tri.npoints < 3:
-            return
-        done = set()
-        todo = set()
-        s0 = old_tri.find_simplex(point)
-        s0 = s0.flat[0]
-        # TODO if s0 == -1 you may have to recompute everything :(
-        if s0 == -1:
-            self.losses() # recheck all losses
-            return
-
-        todo.add(s0)
-        for s in old_tri.neighbors[s0]:
-            todo.add(s)
-        new_tri = self.tri()
-        todo.discard(-1)
-        while len(todo):
-            simplex_indices = list(todo)
-            done.update(todo)
-            todo = set()
-            simplices = old_tri.points[old_tri.simplices[simplex_indices]]
-            center_points = np.average(simplices, axis=1)
-
-            new_simplex_indices = new_tri.find_simplex(center_points)
-            new_simplices = new_tri.points[new_tri.simplices[new_simplex_indices]]
-            for i in range(len(simplices)):
-                old_key = self._simplex_to_key(simplices[i])
-                new_key = self._simplex_to_key(new_simplices[i])
-
-                if old_key != new_key:
-                    # Delete loss
-                    self._losses.pop(old_key, None)
-                    print('del:', old_key)
-                    neighbors = old_tri.neighbors[simplex_indices[i]]
-                    todo.update(neighbors)
-
-            todo.discard(-1)  # remove -1 as this is not relevant
-            todo = todo - done
-
     def _simplex_exists(self, simplex):
         if len(self.data) < (self.ndim + 1):
             return False  # no simplex exists
@@ -364,7 +319,6 @@ class LearnerND(BaseLearner):
             xs.append(*x)
             losses.append(*loss)
         return xs, losses
-
 
     def _ask(self, n=1, tell=True):
         # Complexity: O(N log N + n * N)
@@ -493,7 +447,7 @@ class LearnerND(BaseLearner):
 
             total_volume = volume(np.array(simplex))
             if simplex not in losses:
-                values = list(map(self.data.get, map(tuple, self._unscale(simplex))))
+                values = [self.data.get(tuple(x)) for x in self._unscale(simplex)]
                 loss = self.loss_per_simplex(np.array(simplex), values)
                 losses[simplex] = loss
                 self._losses[simplex] = loss
