@@ -289,14 +289,15 @@ class Learner1D(BaseLearner):
 
             quals = []
             for ((x0, x1), loss) in self.losses_combined.items():
-                dx = x0 - x1
+                dx = x1 - x0
                 if abs(dx) < self._dx_eps:
-                    qual = 0
+                    # The interval is too small and should not be subdivided
+                    quality = 0
                 elif not math.isinf(loss):
-                    qual = -loss
+                    quality = -loss
                 else:
-                    qual = dx / x_scale
-                quals.append((qual, (x0, x1), 1))
+                    quality = -dx / x_scale
+                quals.append((quality, (x0, x1), 1))
 
             heapq.heapify(quals)
 
