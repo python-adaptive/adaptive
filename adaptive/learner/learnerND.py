@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 import itertools
-from math import sqrt
 import heapq
 
 import numpy as np
@@ -12,6 +11,19 @@ from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 import copy
 
+from .triangulation import Triangulation
+
+
+def find_initial_simplex(pts, ndim):
+    origin = pts[0]
+    vecs = pts[1:] - origin
+    if np.linalg.matrix_rank(vecs) < ndim:
+        return None  # all points are coplanar
+
+    tri = scipy.spatial.Delaunay(pts)
+    simplex = tri.simplices[0] # take a random simplex from tri
+    return simplex
+
 
 def volume(simplex, ys=None):
     matrix = simplex[:-1, :] - simplex[-1, None, :]
@@ -21,11 +33,13 @@ def volume(simplex, ys=None):
     vol = np.abs(np.linalg.det(matrix)) / np.math.factorial(dim)
     return vol
 
+
 def orientation(simplex):
     matrix = simplex[:-1, :] - simplex[-1, None, :]
     # See https://www.jstor.org/stable/2315353
     sign, logdet = np.linalg.slogdet(matrix)
     return sign
+
 
 # translated from https://github.com/mikolalysenko/robust-point-in-simplex/blob/master/rpis.js
 # also used https://stackoverflow.com/questions/21819132/how-do-i-check-if-a-simplex-contains-the-origin
@@ -50,7 +64,8 @@ def point_in_simplex(simplex, point):
 
 
 def uniform_loss(simplex, ys=None):
-    return volumes(simplex)
+    return volume(simplex)
+
 
 def std_loss(simplex, ys):
     r = np.std(ys, axis=0)
@@ -60,54 +75,9 @@ def std_loss(simplex, ys):
 
     return r.flat * np.power(vol, 1./dim) + vol
 
+
 def default_loss(simplex, ys):
     return std_loss(simplex, ys)
-
-# # Learner2D and helper functions.
-# def volumes(ip):
-#     p = ip.tri.points[ip.tri.vertices]
-#     matrices = p[:, :-1, :] - p[:, -1, None, :]
-#     n_points, dim = ip.tri.points.shape
-
-#     # See https://www.jstor.org/stable/2315353
-#     vols = np.abs(np.linalg.det(matrices)) / np.math.factorial(dim)
-
-#     return vols
-
-
-# def uniform_loss(ip):
-#     """Loss function that samples the domain uniformly.
-
-#     Works with `~adaptive.LearnerND` only.
-
-#     Examples
-#     --------
-#     >>> def f(xy):
-#     ...     x, y = xy
-#     ...     return x**2 + y**2
-#     >>>
-#     >>> learner = adaptive.LearnerND(f,
-#     ...                              bounds=[(-1, -1), (1, 1)],
-#     ...                              loss_per_simplex=uniform_loss)
-#     >>>
-#     """
-#     return volumes(ip)
-
-
-# def std_loss(ip):
-#     # p = ip.tri.points[ip.tri.vertices]
-#     # matrices = p[:, :-1, :] - p[:, -1, None, :]
-#     v = ip.values[ip.tri.vertices]
-#     r = np.std(v, axis=1)
-#     vol = volumes(ip)
-
-#     n_points, dim = ip.tri.points.shape
-
-#     return r.flat * np.power(vol, 1./dim) + vol
-
-
-# def default_loss(ip):
-#     return std_loss(ip)
 
 
 def choose_point_in_simplex(simplex):
@@ -203,8 +173,9 @@ class LearnerND(BaseLearner):
 
         self.function = function
         self._tri = None
-        self._loss = np.inf
         self._losses = dict()
+
+        self._vertex_to_simplex_cache = dict()
 
     def _scale(self, points):
         # this function converts the points from real coordinates to equalised coordinates,
@@ -245,8 +216,19 @@ class LearnerND(BaseLearner):
 
     def tri(self):
         if self._tri is None:
+            if len(self.data) < 2:
+                return None
             points = self._scale(list(self.data.keys()))
-            self._tri = scipy.spatial.Delaunay(points)
+            initial_simplex = find_initial_simplex(points, self.ndim)
+            if initial_simplex is None:
+                return None
+            pts = points[initial_simplex]
+            self._tri = Triangulation(pts)
+            to_add = [points[i] for i in range(len(points)) if i not in initial_simplex]
+
+            for p in to_add:
+                self._tri.add_point(p)
+
         return self._tri
 
     def values(self):
@@ -254,6 +236,7 @@ class LearnerND(BaseLearner):
 
     _time = None
     _prev = 1/30
+
     def time(self):
         import time
         if self._time is None:
@@ -269,46 +252,28 @@ class LearnerND(BaseLearner):
             self._pending.add(point)
         else:
             self._pending.discard(point)
-            self._tri = None
-            self.data[point] = value
+
             print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), point)
-            if len(self.data) > self.ndim + 1:
-                sp = self._scale(point)
-                self.recompute_losses_around_newly_added_point(sp)
+            self.data[point] = value
 
-    def recompute_losses_around_newly_added_point(self, point):
-        tri = self.tri()
-        values = self.values()
-
-        s0 = tri.find_simplex(point)
-        queue = [s0]
-        index = 0
-
-        while index < len(queue):
-            q = queue[index]
-            p = tri.simplices[q]
-            # print(p, q)
-            simplex = tri.points[p]
-            key = self._simplex_to_key(simplex)
-            if key not in self._losses:
-                vert = tri.simplices[q]
-                vals = values[tri.simplices[q]]
-                self._losses[key] = self.loss_per_simplex(simplex, vals)
-                for s in tri.neighbors[q]:
-                    if s not in queue and s >= 0:
-                        queue.append(s)
-            index += 1
+            if self._tri is not None:
+                simplex = self._vertex_to_simplex_cache.get(point, None)
+                if not self._simplex_exists(simplex):
+                    simplex = None
+                self._tri.add_point(self._scale(point), simplex)
 
     def _simplex_exists(self, simplex):
-        if len(self.data) < (self.ndim + 1):
-            return False  # no simplex exists
-        center_point = np.average(simplex, axis=0)
-        new_tri = self.tri()
-        new_simplex_index = new_tri.find_simplex(center_point).flat[0]
-        new_simplex = new_tri.points[new_tri.simplices[new_simplex_index]]
+        tri = self.tri()
+        simplex = tuple(sorted(simplex))
+        return simplex in tri.simplices
 
-        new_key = self._simplex_to_key(new_simplex)
-        return simplex == new_key
+    def volume(self):
+        tri = self.tri()
+        if tri is None:
+            return 0
+        v = [volume(self._unscale([tri.vertices[i] for i in s])) for s in tri.simplices]
+        v = sum(v)
+        return v
 
     def ask(self, n=1, tell=True):
         assert tell
@@ -334,22 +299,24 @@ class LearnerND(BaseLearner):
             n = n - len(new_points)
 
         if n > 0:
-            losses = [(-v, k) for k,v in self.losses_combined().items()]  # O(N log N) at least, compute the losses of all interpolated triangles
-            tri = self.tri() if len(self.data) > self.ndim else None
-            # losses.sort(key=lambda item: -item[1])  # O(N log N), sort by loss
+            losses = [(-v, k) for k,v in self.losses().items()]
+            tri = self.tri()
             heapq.heapify(losses)
+
             while len(new_points) < n:
                 loss, simplex = heapq.heappop(losses)
                 # verify that simplex still exists
                 if not self._simplex_exists(simplex):
                     # it could be that some of the points are pending, then always accept
-                    if not any((tuple(p) in self._pending) for p in self._unscale(simplex)):
+                    npoints = len(self.data)
+                    if all([i < npoints for i in simplex]):
                         self._losses.pop(simplex, None)
                         continue
 
-
-                point_new = choose_point_in_simplex(np.array(simplex))  # choose a new point in the simplex
+                points = np.array([tri.vertices[i] for i in simplex])
+                point_new = choose_point_in_simplex(points)  # choose a new point in the simplex
                 point_new = tuple(self._unscale(point_new))  # relative coordinates to real coordinates
+                self._vertex_to_simplex_cache[point_new] = simplex
 
                 new_points.append(point_new)
                 new_loss_improvements.append(loss)
@@ -359,36 +326,34 @@ class LearnerND(BaseLearner):
 
         return new_points, new_loss_improvements
 
-
-    # return a dict of simplex -> loss
     def losses(self):
-        if len(self.data) < 3:
+        """
+        :return: a dict of simplex -> loss
+        """
+        if self.tri() is None:
             return dict()
-        tri = self.tri()
-        value_list = self.values()
-        ret = dict()
-        for vertices in tri.vertices: # O(N)
-            simplex = tri.points[vertices]
-            values = value_list[vertices]
-            key = self._simplex_to_key(simplex)
-            if key in self._losses:
-                loss = self._losses[key]
-            else:
-                loss = self.loss_per_simplex(simplex, values)
-            ret[key] = loss
 
-        self._losses = ret
+        tri = self.tri()
+        if tri is not None:
+            losses_to_compute = tri.simplices - set(self._losses)
+            for simplex in losses_to_compute:
+                vertices = self._unscale([tri.vertices[i] for i in simplex])
+                values = [self.data[tuple(self._unscale(tri.vertices[i]))] for i in simplex]
+                loss = self.loss_per_simplex(vertices, values)
+                self._losses[simplex] = float(loss)
+
+
+            losses_to_delete = set(self._losses) - tri.simplices
+            for simplex in losses_to_delete:
+                del self._losses[simplex]
+
         return self._losses
 
-    # TODO make this a global method
-    def _simplex_to_key(self, simplex):
-        l = simplex.tolist()
-        l.sort()
-        l = tuple(map(tuple, l))
-        return l
-
-    # return a dict of simplex -> loss
     def losses_combined(self):
+        """
+        :return: a dict of simplex -> loss
+        """
+        raise NotImplementedError("wait some while")
         if self.bounds_are_done == False:
             ret = dict()
             pts = self._scale(list(self.data.keys()) + list(self._pending))
@@ -403,8 +368,7 @@ class LearnerND(BaseLearner):
             return self.losses()
         # assume the number of pending points is reasonably low (eg 20 or so) to keep performance high
         # TODO actually make performance better
-        tri = self.tri()  # O(N log N)
-        # losses = self.losses().copy()  # O(N)
+        tri = self.tri()  # O(1)
         losses = self._losses.copy()
         # now start adding new items to it, yay
         pending = self._scale(list(self._pending))  # O(P) let P be the number of pending points
@@ -494,7 +458,9 @@ class LearnerND(BaseLearner):
             im = hv.Image(np.rot90(z), bounds=lbrt)
 
             if tri_alpha:
-                points = self._unscale(ip.tri.points[ip.tri.vertices])
+                tri = self.tri()
+                points = np.array([[tri.vertices[i] for i in s] for s in tri.simplices])
+                points = self._unscale(points)
                 points = np.pad(points[:, [0, 1, 2, 0], :],
                                 pad_width=((0, 0), (0, 1), (0, 0)),
                                 mode='constant',
