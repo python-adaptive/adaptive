@@ -3,6 +3,42 @@ from itertools import combinations, chain
 
 import numpy as np
 from scipy import linalg
+"""Add a new vertex and create simplices as appropriate.
+
+        Parameters
+        ----------
+        point : float vector
+            Coordinates of the point to be added.
+        simplex : tuple of ints, optional
+            Simplex containing the point. Empty tuple indicates points outside
+            the hull. If not provided, the algorithm costs O(N), so this should
+            be used whenever possible.
+        """
+
+def orientation(face, origin):
+    """Compute the orientation of the face with respect to a point, origin
+
+    Parameters
+    ----------
+    Face : array-like, of shape (N-dim, N-dim)
+        The hyperplane we want to know the orientation of
+        Do notice that the order in which you provide the points is critical
+    Origin : array-like, point of shape (N-dim)
+        The point to compute the orientation from
+
+    Returns
+    -------
+      0 if the origin lies in the same hyperplane as face,
+      -1 or 1 to indicate left or right orientation
+
+      If two points lie on the same side of the face, the orientation will
+      be equal, if they lie on the other side of the face, it will be negated.
+    """
+    vectors = np.array(face)
+    sign, logdet = np.linalg.slogdet(vectors - origin)
+    if logdet < -50:  # assume it to be zero when it's close to zero
+        return 0
+    return sign
 
 
 class Triangulation:
@@ -159,9 +195,9 @@ class Triangulation:
                 # the same side of the face, otherwise, it lies on the other
                 # side of the face
                 pts_face = tuple(self.vertices[i] for i in face)
-                orientation_inside = self.orientation(pts_face + (pt_center, ))
-                orientation_new_point = self.orientation(pts_face + (new_vertex, ))
-                if orientation_inside * orientation_new_point == -1:
+                orientation_inside = orientation(pts_face, pt_center)
+                orientation_new_point = orientation(pts_face, new_vertex)
+                if orientation_inside == -orientation_new_point:
                     # if the orientation of the new vertex is zero or directed
                     # towards the center, do not add the simplex
                     self.add_simplex(face + (pt_index,))
@@ -282,13 +318,6 @@ class Triangulation:
         vectors = np.array([self.vertices[i] for i in simplex[1:]])
         return abs(np.linalg.det(vectors
                                  - self.vertices[simplex[0]])) / prefactor
-
-    def orientation(self, points):
-        vectors = np.array(points[1:])
-        sign, logdet = np.linalg.slogdet(vectors - points[0])
-        if logdet < -50: # assume it to be zero when it's close to zero
-            return 0
-        return sign
 
     def reference_invariant(self):
         """vertex_to_simplices and simplices are compatible."""
