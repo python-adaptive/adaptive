@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
-import functools
+from functools import partial
 from operator import itemgetter
 
 from .base_learner import BaseLearner
 from ..notebook_integration import ensure_holoviews
-from .utils import restore
+from ..utils import restore, named_product
 
 
 def dispatch(child_functions, arg):
@@ -38,7 +38,7 @@ class BalancingLearner(BaseLearner):
         # Naively we would make 'function' a method, but this causes problems
         # when using executors from 'concurrent.futures' because we have to
         # pickle the whole learner.
-        self.function = functools.partial(dispatch, [l.function for l
+        self.function = partial(dispatch, [l.function for l
                                                      in self.learners])
 
         self._points = {}
@@ -144,3 +144,11 @@ class BalancingLearner(BaseLearner):
         """Remove uncomputed data from the learners."""
         for learner in self.learners:
             learner.remove_unfinished()
+
+    @classmethod
+    def from_combos(cls, f, learner_type, learner_kwargs, combos):
+        learners = []
+        for combo in named_product(**combos):
+            learner = learner_type(partial(f, **combo), **learner_kwargs)
+            learners.append(learner)
+        return cls(learners)
