@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from contextlib import contextmanager
-from functools import partial
+from itertools import product
 
 
 def named_product(**items):
