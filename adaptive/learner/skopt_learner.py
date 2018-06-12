@@ -49,14 +49,15 @@ class SKOptLearner(Optimizer, BaseLearner):
             # Return the in-sample error (i.e. test the model
             # with the training data). This is not the best
             # estimator of loss, but it is the cheapest.
-            return 1 / model.score(self.Xi, self.yi)
+            return 1 - model.score(self.Xi, self.yi)
 
     def ask(self, n, add_data=True):
         points = super().ask(n)
+        # TODO: Choose a better estimate for the loss improvement.
         if self.space.n_dims > 1:
-            return points, [np.inf] * n
+            return points, [self.loss() / n] * n
         else:
-            return [p[0] for p in points], [np.inf] * n
+            return [p[0] for p in points], [self.loss() / n] * n
 
     @property
     def npoints(self):
