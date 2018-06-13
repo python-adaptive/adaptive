@@ -147,6 +147,44 @@ class BalancingLearner(BaseLearner):
 
     @classmethod
     def from_combos(cls, f, learner_type, learner_kwargs, combos):
+        """Create a `BalancingLearner` with learners of all combinations of
+        named variables’ values.
+
+        Parameters
+        ----------
+        f : callable
+            Function to learn, must take arguments provided in in `combos`.
+        learner_type : BaseLearner
+            The learner that should wrap the function. For example `Learner1D`.
+        learner_kwargs : dict
+            Keyword argument for the `learner_type`. For example `dict(bounds=[0, 1])`.
+        combos : dict (mapping individual fn arguments -> sequence of values)
+            For all combinations of each argument a learner will be instantiated.
+
+        Returns
+        -------
+        learner : `BalancingLearner`
+            A `BalancingLearner` with learners of all combinations of `combos`
+
+        Example
+        -------
+        >>> def f(x, n, alpha, beta):
+        ...     return scipy.special.eval_jacobi(n, alpha, beta, x)
+
+        >>> combos = {
+        ...     'n': [1, 2, 4, 8, 16],
+        ...     'alpha': np.linspace(0, 2, 3),
+        ...     'beta': np.linspace(0, 1, 5),
+        ... }
+
+        >>> learner = BalancingLearner.from_combos(
+        ...     f, Learner1D, dict(bounds=(0, 1)), combos)
+
+        Notes
+        -----
+        The order of the child learners inside `learner.learners` is the same
+        as `adaptive.utils.named_product(**combos)`.
+        """
         learners = []
         for combo in named_product(**combos):
             learner = learner_type(partial(f, **combo), **learner_kwargs)
