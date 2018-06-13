@@ -145,7 +145,7 @@ class BalancingLearner(BaseLearner):
             learner.remove_unfinished()
 
     @classmethod
-    def from_combos(cls, f, learner_type, learner_kwargs, combos):
+    def from_product(cls, f, learner_type, learner_kwargs, combos):
         """Create a `BalancingLearner` with learners of all combinations of
         named variables’ values.
 
@@ -176,7 +176,7 @@ class BalancingLearner(BaseLearner):
         ...     'beta': np.linspace(0, 1, 5),
         ... }
 
-        >>> learner = BalancingLearner.from_combos(
+        >>> learner = BalancingLearner.from_product(
         ...     f, Learner1D, dict(bounds=(0, 1)), combos)
 
         Notes
