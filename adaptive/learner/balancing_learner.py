@@ -20,6 +20,19 @@ class BalancingLearner(BaseLearner):
     ----------
     learners : sequence of BaseLearner
         The learners from which to choose. These must all have the same type.
+    cdims : sequence of dicts, or (keys, iterable of values), optional
+        Constant dimensions; the parameters that label the learners. Used
+        in `plot`.
+        Example inputs that all give identical results:
+        - sequence of dicts:
+            >>> cdims = [{'A': True, 'B': 0},
+            ...          {'A': True, 'B': 1},
+            ...          {'A': False, 'B': 0},
+            ...          {'A': False, 'B': 1}]`
+        - tuple with (keys, iterable of values):
+            >>> cdims = (['A', 'B'], itertools.product([True, False], [0, 1]))
+            >>> cdims = (['A', 'B'], [(True, 0), (True, 1),
+            ...                       (False, 0), (False, 1)])
 
     Notes
     -----
@@ -32,7 +45,7 @@ class BalancingLearner(BaseLearner):
     undefined way.
     """
 
-    def __init__(self, learners):
+    def __init__(self, learners, *, cdims=None):
         self.learners = learners
 
         # Naively we would make 'function' a method, but this causes problems
@@ -42,6 +55,7 @@ class BalancingLearner(BaseLearner):
 
         self._points = {}
         self._loss = {}
+        self._cdims_default = cdims
 
         if len(set(learner.__class__ for learner in self.learners)) > 1:
             raise TypeError('A BalacingLearner can handle only one type'
@@ -98,13 +112,13 @@ class BalancingLearner(BaseLearner):
             Example inputs that all give identical results:
             - sequence of dicts:
                 >>> cdims = [{'A': True, 'B': 0},
-                             {'A': True, 'B': 1},
-                             {'A': False, 'B': 0},
-                             {'A': False, 'B': 1}]`
+                ...          {'A': True, 'B': 1},
+                ...          {'A': False, 'B': 0},
+                ...          {'A': False, 'B': 1}]`
             - tuple with (keys, iterable of values):
                 >>> cdims = (['A', 'B'], itertools.product([True, False], [0, 1]))
                 >>> cdims = (['A', 'B'], [(True, 0), (True, 1),
-                                          (False, 0), (False, 1)])
+                ...                       (False, 0), (False, 1)])
         plotter : callable, optional
             A function that takes the learner as a argument and returns a
             holoviews object. By default learner.plot() will be called.
@@ -114,6 +128,7 @@ class BalancingLearner(BaseLearner):
             A DynamicMap with sliders that are defined by 'cdims'.
         """
         hv = ensure_holoviews()
+        cdims = cdims or self._cdims_default
 
         if cdims is None:
             cdims = [{'i': i} for i in range(len(self.learners))]
@@ -185,7 +200,8 @@ class BalancingLearner(BaseLearner):
         as `adaptive.utils.named_product(**combos)`.
         """
         learners = []
-        for combo in named_product(**combos):
+        arguments = named_product(**combos)
+        for combo in arguments:
             learner = learner_type(partial(f, **combo), **learner_kwargs)
             learners.append(learner)
-        return cls(learners)
+        return cls(learners, cdims=arguments)
