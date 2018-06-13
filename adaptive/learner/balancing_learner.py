@@ -162,7 +162,8 @@ class BalancingLearner(BaseLearner):
     @classmethod
     def from_product(cls, f, learner_type, learner_kwargs, combos):
         """Create a `BalancingLearner` with learners of all combinations of
-        named variables’ values.
+        named variables’ values. The `cdims` will be set correctly, so calling
+        `learner.plot` will be a `holoviews.HoloMap` with the correct labels.
 
         Parameters
         ----------
