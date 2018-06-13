@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
-import functools
+from functools import partial
 from operator import itemgetter
 
 from .base_learner import BaseLearner
 from ..notebook_integration import ensure_holoviews
-from .utils import restore
+from ..utils import restore, named_product
 
 
 def dispatch(child_functions, arg):
@@ -20,6 +20,19 @@ class BalancingLearner(BaseLearner):
     ----------
     learners : sequence of BaseLearner
         The learners from which to choose. These must all have the same type.
+    cdims : sequence of dicts, or (keys, iterable of values), optional
+        Constant dimensions; the parameters that label the learners. Used
+        in `plot`.
+        Example inputs that all give identical results:
+        - sequence of dicts:
+            >>> cdims = [{'A': True, 'B': 0},
+            ...          {'A': True, 'B': 1},
+            ...          {'A': False, 'B': 0},
+            ...          {'A': False, 'B': 1}]`
+        - tuple with (keys, iterable of values):
+            >>> cdims = (['A', 'B'], itertools.product([True, False], [0, 1]))
+            >>> cdims = (['A', 'B'], [(True, 0), (True, 1),
+            ...                       (False, 0), (False, 1)])
 
     Notes
     -----
@@ -32,17 +45,17 @@ class BalancingLearner(BaseLearner):
     undefined way.
     """
 
-    def __init__(self, learners):
+    def __init__(self, learners, *, cdims=None):
         self.learners = learners
 
         # Naively we would make 'function' a method, but this causes problems
         # when using executors from 'concurrent.futures' because we have to
         # pickle the whole learner.
-        self.function = functools.partial(dispatch, [l.function for l
-                                                     in self.learners])
+        self.function = partial(dispatch, [l.function for l in self.learners])
 
         self._points = {}
         self._loss = {}
+        self._cdims_default = cdims
 
         if len(set(learner.__class__ for learner in self.learners)) > 1:
             raise TypeError('A BalacingLearner can handle only one type'
@@ -99,13 +112,13 @@ class BalancingLearner(BaseLearner):
             Example inputs that all give identical results:
             - sequence of dicts:
                 >>> cdims = [{'A': True, 'B': 0},
-                             {'A': True, 'B': 1},
-                             {'A': False, 'B': 0},
-                             {'A': False, 'B': 1}]`
+                ...          {'A': True, 'B': 1},
+                ...          {'A': False, 'B': 0},
+                ...          {'A': False, 'B': 1}]`
             - tuple with (keys, iterable of values):
                 >>> cdims = (['A', 'B'], itertools.product([True, False], [0, 1]))
                 >>> cdims = (['A', 'B'], [(True, 0), (True, 1),
-                                          (False, 0), (False, 1)])
+                ...                       (False, 0), (False, 1)])
         plotter : callable, optional
             A function that takes the learner as a argument and returns a
             holoviews object. By default learner.plot() will be called.
@@ -115,6 +128,7 @@ class BalancingLearner(BaseLearner):
             A DynamicMap with sliders that are defined by 'cdims'.
         """
         hv = ensure_holoviews()
+        cdims = cdims or self._cdims_default
 
         if cdims is None:
             cdims = [{'i': i} for i in range(len(self.learners))]
@@ -144,3 +158,51 @@ class BalancingLearner(BaseLearner):
         """Remove uncomputed data from the learners."""
         for learner in self.learners:
             learner.remove_unfinished()
+
+    @classmethod
+    def from_product(cls, f, learner_type, learner_kwargs, combos):
+        """Create a `BalancingLearner` with learners of all combinations of
+        named variables’ values. The `cdims` will be set correctly, so calling
+        `learner.plot` will be a `holoviews.HoloMap` with the correct labels.
+
+        Parameters
+        ----------
+        f : callable
+            Function to learn, must take arguments provided in in `combos`.
+        learner_type : BaseLearner
+            The learner that should wrap the function. For example `Learner1D`.
+        learner_kwargs : dict
+            Keyword argument for the `learner_type`. For example `dict(bounds=[0, 1])`.
+        combos : dict (mapping individual fn arguments -> sequence of values)
+            For all combinations of each argument a learner will be instantiated.
+
+        Returns
+        -------
+        learner : `BalancingLearner`
+            A `BalancingLearner` with learners of all combinations of `combos`
+
+        Example
+        -------
+        >>> def f(x, n, alpha, beta):
+        ...     return scipy.special.eval_jacobi(n, alpha, beta, x)
+
+        >>> combos = {
+        ...     'n': [1, 2, 4, 8, 16],
+        ...     'alpha': np.linspace(0, 2, 3),
+        ...     'beta': np.linspace(0, 1, 5),
+        ... }
+
+        >>> learner = BalancingLearner.from_product(
+        ...     f, Learner1D, dict(bounds=(0, 1)), combos)
+
+        Notes
+        -----
+        The order of the child learners inside `learner.learners` is the same
+        as `adaptive.utils.named_product(**combos)`.
+        """
+        learners = []
+        arguments = named_product(**combos)
+        for combo in arguments:
+            learner = learner_type(partial(f, **combo), **learner_kwargs)
+            learners.append(learner)
+        return cls(learners, cdims=arguments)

@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 from contextlib import contextmanager
+from itertools import product
+
+
+def named_product(**items):
+    names = items.keys()
+    vals = items.values()
+    return [dict(zip(names, res)) for res in product(*vals)]
 
 
 @contextmanager
