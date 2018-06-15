@@ -166,9 +166,13 @@ def _info_html(runner):
              'running': 'blue',
              'finished': 'green'}[status]
 
+    t_total = runner.elapsed_time()
+    efficiency = (t_total - runner.time_ask_tell) / t_total * 100
+
     info = [
         ('status', f'<font color="{color}">{status}</font>'),
-        ('elapsed time', datetime.timedelta(seconds=runner.elapsed_time())),
+        ('elapsed time', datetime.timedelta(seconds=t_total)),
+        (f'efficiency', f'{efficiency:.1f}%'),
     ]
 
     try:

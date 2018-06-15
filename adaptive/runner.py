@@ -287,6 +287,10 @@ class AsyncRunner(BaseRunner):
 
         self.start_time = time.time()
         self.end_time = None
+        self.time_ask_tell = 0
+
+        self._tell = self.timed(self.learner._tell)
+        self.ask = self.timed(self.learner.ask)
 
         self.task = self.ioloop.create_task(self._run())
         if in_ipynb() and not self.ioloop.is_running():
@@ -305,6 +309,14 @@ class AsyncRunner(BaseRunner):
         else:
             end_time = time.time()
         return end_time - self.start_time
+
+    def timed(self, method):
+        def _timed(*args, **kwargs):
+            t_start = time.time()
+            result = method(*args, **kwargs)
+            self.time_ask_tell += time.time() - t_start
+            return result
+        return _timed
 
     def status(self):
         """Return the runner status as a string.
@@ -380,7 +392,7 @@ class AsyncRunner(BaseRunner):
                 if do_log:
                     self.log.append(('ask', n_new_tasks))
 
-                points, _ = self.learner.ask(n_new_tasks)
+                points, _ = self.ask(n_new_tasks)
                 for x in points:
                     xs[self._submit(x)] = x
 
@@ -402,7 +414,7 @@ class AsyncRunner(BaseRunner):
                         ) from e
                     if do_log:
                         self.log.append(('tell', x, y))
-                    self.learner._tell(x, y)
+                    self._tell(x, y)
         finally:
             # remove points with 'None' values from the learner
             self.learner.remove_unfinished()
