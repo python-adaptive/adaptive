@@ -42,6 +42,24 @@ class AverageTimeReturn:
         self.__init__(*state)
 
 
+class TimeReturn:
+    def __init__(self, function, total_time=0):
+        self.function = function
+        self.total_time = total_time
+
+    def __call__(self, *args, **kwargs):
+        t_start = time.time()
+        result = self.function(*args, **kwargs)
+        self.total_time += time.time() - t_start
+        return result, self.total_time
+
+    def __getstate__(self):
+        return (self.function, self.total_time)
+
+    def __setstate__(self, state):
+        self.__init__(*state)
+
+
 def named_product(**items):
     names = items.keys()
     vals = items.values()

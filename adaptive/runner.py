@@ -9,7 +9,7 @@ import traceback
 import warnings
 
 from .notebook_integration import live_plot, live_info, in_ipynb
-from .utils import WithTime, AverageTimeReturn
+from .utils import WithTime, AverageTimeReturn, TimeReturn
 
 try:
     import ipyparallel
@@ -273,12 +273,12 @@ class AsyncRunner(BaseRunner):
 
         self.start_time = time.time()
         self.end_time = None
-        self.time_function = 0
+        self.time_function_total = 0
         self._npoints = 0
 
         self._tell = WithTime(self.learner._tell)
         self.ask = WithTime(self.learner.ask)
-        self.function = AverageTimeReturn(self.learner.function)
+        self.function = TimeReturn(self.learner.function)
 
         # When the learned function is 'async def', we run it
         # directly on the event loop, and not in the executor.
@@ -315,10 +315,17 @@ class AsyncRunner(BaseRunner):
 
     def performance(self):
         try:
-            ncores = _get_ncores(self.executor)
-            t_function = self.time_function / ncores
-            t_adaptive = (self.ask.time + self._tell.time) / self._npoints
+            t_function = self.time_function_total
+            t_adaptive = (self.ask.time + self._tell.time)
             return t_function / t_adaptive
+        except ZeroDivisionError:
+            return 42
+
+    def efficiency(self):
+        try:
+            t_function = self.time_function_total
+            t_total = self.elapsed_time()
+            return t_function / t_total * 100
         except ZeroDivisionError:
             return 42
 
@@ -410,7 +417,7 @@ class AsyncRunner(BaseRunner):
                     x = xs.pop(fut)
                     try:
                         y, t = fut.result()
-                        self.time_function = t
+                        self.time_function_total += t / _get_ncores(self.executor)
                         self._npoints += 1
                     except Exception as e:
                         tb = traceback.format_exc()

@@ -173,6 +173,7 @@ def _info_html(runner):
         ('status', f'<font color="{stat_color}">{status}</font>'),
         ('elapsed time', datetime.timedelta(seconds=runner.elapsed_time())),
         ('performance', f'<font color="{perf_color}">{performance:.1f}</font>'),
+        ('efficiency', f'{runner.efficiency():.2f}%'),
     ]
 
     try:
