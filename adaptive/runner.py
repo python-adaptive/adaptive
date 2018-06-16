@@ -9,6 +9,7 @@ import traceback
 import warnings
 
 from .notebook_integration import live_plot, live_info, in_ipynb
+from .utils import WithTime, AverageTimeReturn
 
 try:
     import ipyparallel
@@ -270,6 +271,14 @@ class AsyncRunner(BaseRunner):
         self.ioloop = ioloop or asyncio.get_event_loop()
         self.task = None
 
+        self.start_time = time.time()
+        self.end_time = None
+        self.time_function = 0
+
+        self._tell = WithTime(self.learner._tell)
+        self.ask = WithTime(self.learner.ask)
+        self.function = AverageTimeReturn(self.learner.function)
+
         # When the learned function is 'async def', we run it
         # directly on the event loop, and not in the executor.
         # The *whole point* of allowing learning of async functions is so that
@@ -279,19 +288,12 @@ class AsyncRunner(BaseRunner):
                 raise RuntimeError('Cannot use an executor when learning an '
                                    'async function.')
             self.executor.shutdown()  # Make sure we don't shoot ourselves later
-            self._submit = lambda x: self.ioloop.create_task(learner.function(x))
+            self._submit = lambda x: self.ioloop.create_task(self.function(x))
         else:
             self._submit = functools.partial(self.ioloop.run_in_executor,
                                              self.executor,
-                                             self.learner.function)
-
-        self.start_time = time.time()
-        self.end_time = None
-        self.time_ask_tell = 0
-
-        self._tell = self.timed(self.learner._tell)
-        self.ask = self.timed(self.learner.ask)
-
+                                             self.function)
+        
         self.task = self.ioloop.create_task(self._run())
         if in_ipynb() and not self.ioloop.is_running():
             warnings.warn("The runner has been scheduled, but the asyncio "
@@ -310,13 +312,9 @@ class AsyncRunner(BaseRunner):
             end_time = time.time()
         return end_time - self.start_time
 
-    def timed(self, method):
-        def _timed(*args, **kwargs):
-            t_start = time.time()
-            result = method(*args, **kwargs)
-            self.time_ask_tell += time.time() - t_start
-            return result
-        return _timed
+    def efficiency(self):
+        t_elapsed = self.elapsed_time()
+        return (t_elapsed - time_function) / t_elapsed * 100
 
     def status(self):
         """Return the runner status as a string.
@@ -404,7 +402,8 @@ class AsyncRunner(BaseRunner):
                 for fut in done:
                     x = xs.pop(fut)
                     try:
-                        y = fut.result()
+                        y, t = fut.result()
+                        self.time_function += t
                     except Exception as e:
                         tb = traceback.format_exc()
                         raise RuntimeError(
