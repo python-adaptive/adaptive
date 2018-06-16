@@ -161,15 +161,18 @@ def live_info(runner, *, update_interval=0.5):
 def _info_html(runner):
     status = runner.status()
 
-    color = {'cancelled': 'orange',
-             'failed': 'red',
-             'running': 'blue',
-             'finished': 'green'}[status]
+    stat_color = {'cancelled': 'orange',
+                  'failed': 'red',
+                  'running': 'blue',
+                  'finished': 'green'}[status]
+
+    performance = runner.performance()
+    perf_color = 'green' if performance > 1 else 'red'
 
     info = [
-        ('status', f'<font color="{color}">{status}</font>'),
+        ('status', f'<font color="{stat_color}">{status}</font>'),
         ('elapsed time', datetime.timedelta(seconds=runner.elapsed_time())),
-        (f'efficiency', f'{runner.efficiency():.1f}%'),
+        ('performance', f'<font color="{perf_color}">{performance:.1f}</font>'),
     ]
 
     try:

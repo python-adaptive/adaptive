@@ -293,7 +293,7 @@ class AsyncRunner(BaseRunner):
             self._submit = functools.partial(self.ioloop.run_in_executor,
                                              self.executor,
                                              self.function)
-        
+
         self.task = self.ioloop.create_task(self._run())
         if in_ipynb() and not self.ioloop.is_running():
             warnings.warn("The runner has been scheduled, but the asyncio "
@@ -312,9 +312,14 @@ class AsyncRunner(BaseRunner):
             end_time = time.time()
         return end_time - self.start_time
 
-    def efficiency(self):
-        t_elapsed = self.elapsed_time()
-        return (t_elapsed - time_function) / t_elapsed * 100
+    def performance(self):
+        try:
+            ncores = _get_ncores(self.executor)
+            t_function = self.time_function / ncores
+            t_adaptive = (self.ask.time + self._tell.time) / self.learner.npoints
+            return t_function / t_adaptive
+        except ZeroDivisionError:
+            return 42
 
     def status(self):
         """Return the runner status as a string.
@@ -372,6 +377,7 @@ class AsyncRunner(BaseRunner):
         """
         return live_info(self, update_interval=update_interval)
 
+
     async def _run(self):
         first_completed = asyncio.FIRST_COMPLETED
         xs = dict()  # The points we are waiting for
@@ -403,7 +409,7 @@ class AsyncRunner(BaseRunner):
                     x = xs.pop(fut)
                     try:
                         y, t = fut.result()
-                        self.time_function += t
+                        self.time_function = t
                     except Exception as e:
                         tb = traceback.format_exc()
                         raise RuntimeError(
