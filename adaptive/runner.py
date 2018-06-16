@@ -274,6 +274,7 @@ class AsyncRunner(BaseRunner):
         self.start_time = time.time()
         self.end_time = None
         self.time_function = 0
+        self._npoints = 0
 
         self._tell = WithTime(self.learner._tell)
         self.ask = WithTime(self.learner.ask)
@@ -316,7 +317,7 @@ class AsyncRunner(BaseRunner):
         try:
             ncores = _get_ncores(self.executor)
             t_function = self.time_function / ncores
-            t_adaptive = (self.ask.time + self._tell.time) / self.learner.npoints
+            t_adaptive = (self.ask.time + self._tell.time) / self._npoints
             return t_function / t_adaptive
         except ZeroDivisionError:
             return 42
@@ -410,6 +411,7 @@ class AsyncRunner(BaseRunner):
                     try:
                         y, t = fut.result()
                         self.time_function = t
+                        self._npoints += 1
                     except Exception as e:
                         tb = traceback.format_exc()
                         raise RuntimeError(
