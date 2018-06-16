@@ -9,7 +9,7 @@ import traceback
 import warnings
 
 from .notebook_integration import live_plot, live_info, in_ipynb
-from .utils import WithTime, AverageTimeReturn, TimeReturn
+from .utils import WithTime, TimeReturn
 
 try:
     import ipyparallel
@@ -273,11 +273,7 @@ class AsyncRunner(BaseRunner):
 
         self.start_time = time.time()
         self.end_time = None
-        self.time_function_total = 0
-        self._npoints = 0
-
-        self._tell = WithTime(self.learner._tell)
-        self.ask = WithTime(self.learner.ask)
+        self.elapsed_function_time = 0
         self.function = TimeReturn(self.learner.function)
 
         # When the learned function is 'async def', we run it
@@ -313,21 +309,10 @@ class AsyncRunner(BaseRunner):
             end_time = time.time()
         return end_time - self.start_time
 
-    def performance(self):
-        try:
-            t_function = self.time_function_total
-            t_adaptive = (self.ask.time + self._tell.time)
-            return t_function / t_adaptive
-        except ZeroDivisionError:
-            return 42
-
-    def efficiency(self):
-        try:
-            t_function = self.time_function_total
-            t_total = self.elapsed_time()
-            return t_function / t_total * 100
-        except ZeroDivisionError:
-            return 42
+    def overhead(self):
+        t_function = self.elapsed_function_time
+        t_total = self.elapsed_time()
+        return (1 - t_function / t_total) * 100
 
     def status(self):
         """Return the runner status as a string.
@@ -404,7 +389,7 @@ class AsyncRunner(BaseRunner):
                 if do_log:
                     self.log.append(('ask', n_new_tasks))
 
-                points, _ = self.ask(n_new_tasks)
+                points, _ = self.learner.ask(n_new_tasks)
                 for x in points:
                     xs[self._submit(x)] = x
 
@@ -417,8 +402,7 @@ class AsyncRunner(BaseRunner):
                     x = xs.pop(fut)
                     try:
                         y, t = fut.result()
-                        self.time_function_total += t / _get_ncores(self.executor)
-                        self._npoints += 1
+                        self.elapsed_function_time += t / _get_ncores(self.executor)
                     except Exception as e:
                         tb = traceback.format_exc()
                         raise RuntimeError(
@@ -428,7 +412,7 @@ class AsyncRunner(BaseRunner):
                         ) from e
                     if do_log:
                         self.log.append(('tell', x, y))
-                    self._tell(x, y)
+                    self.learner._tell(x, y)
         finally:
             # remove points with 'None' values from the learner
             self.learner.remove_unfinished()
