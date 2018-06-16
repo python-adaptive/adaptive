@@ -9,7 +9,7 @@ import traceback
 import warnings
 
 from .notebook_integration import live_plot, live_info, in_ipynb
-from .utils import WithTime, TimeReturn
+from .utils import TimeReturn
 
 try:
     import ipyparallel
