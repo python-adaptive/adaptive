@@ -217,7 +217,63 @@ class Triangulation:
         self.hull.add(pt_index)
         self.hull = self.compute_hull(vertices=self.hull, check=False)
 
-    def add_point(self, point, simplex=None):
+    def circumscribed_circle(self, simplex):
+        """
+        Compute the centre and radius of the circumscribed circle of a simplex
+        :param simplex: the simplex to investigate
+        :return: tuple (centre point, radius)
+        """
+        # Modified from http://mathworld.wolfram.com/Circumsphere.html
+        mat = []
+        for i in simplex:
+            pt = self.vertices[i]
+            length_squared = np.sum(np.square(pt))
+            row = np.array([length_squared, *pt, 1])
+            mat.append(row)
+
+        center = []
+        for i in range(1, len(simplex)):
+            r = np.delete(mat, i, 1)
+            factor = (-1) ** (i+1)
+            center.append(factor * np.linalg.det(r))
+
+        a = np.linalg.det(np.delete(mat, 0, 1))
+        center = [x / (2*a) for x in center]
+
+        x0 = self.vertices[next(iter(simplex))]
+        radius = np.linalg.norm(np.subtract(center, x0))
+
+        for i in simplex:
+            if abs(np.linalg.norm(center - np.array(self.vertices[i])) - radius) > 1e-8:
+                raise RuntimeError("Error in finding Circumscribed Circle")
+
+        return tuple(center), radius
+
+
+    def flip_if_needed(self, face):
+        """
+        check if face needs to be flipped, and flip if this is the case
+        :param face: a face
+        """
+        do_flip = False
+        simplices = self.containing(face)
+        if len(simplices) < 2:
+            return  # we are at a border, do not flip
+
+        simplex = simplices.pop()
+
+        centre, radius = self.circumscribed_circle(simplex)
+
+        other_points = set.union(set(simplex), *simplices) - set(simplex)
+        for i in other_points:
+            pt = np.array(self.vertices[i])
+            if np.linalg.norm(centre - pt) < radius:
+                do_flip = True
+
+        if do_flip:
+            self.flip(face)
+
+    def add_point(self, point, simplex=None, allow_flip=False):
         """Add a new vertex and create simplices as appropriate.
 
         Parameters
@@ -247,11 +303,11 @@ class Triangulation:
         if len(simplex) == 1:
             raise ValueError("Point already in triangulation.")
         elif len(simplex) == self.dim + 1:
-            self.add_point_inside_simplex(point, simplex)
+            self.add_point_inside_simplex(point, simplex, allow_flip)
         else:
-            self.add_point_on_face(point, simplex)
+            self.add_point_on_face(point, simplex, allow_flip)
 
-    def add_point_inside_simplex(self, point, simplex):
+    def add_point_inside_simplex(self, point, simplex, allow_flip=False):
         if len(self.point_in_simplex(point, simplex)) != self.dim + 1:
             raise ValueError("Vertex is not inside simplex")
         pt_index = len(self.vertices)
@@ -263,16 +319,19 @@ class Triangulation:
             tri = others + (pt_index,)
             self.add_simplex(tri)
             new.append(tri)
+            # TODO do a check for the Flip condition
+            if allow_flip:
+                self.flip_if_needed(others)
 
         return(new)
 
-    def add_point_on_face(self, point, face):
+    def add_point_on_face(self, point, face, allow_flip=False):
         pt_index = len(self.vertices)
         self.vertices.append(point)
 
         simplices = self.containing(face)
         if (set(self.point_in_simplex(point, next(iter(simplices))))
-            != set(face)):
+                != set(face)):
 
             raise ValueError("Vertex does not lie on the face.")
 
@@ -284,6 +343,9 @@ class Triangulation:
 
             for others in combinations(face, len(face) - 1):
                 self.add_simplex(others + opposing + (pt_index,))
+                # TODO do a check for the Flip condition
+                if allow_flip:
+                    self.flip_if_needed(others + opposing)
 
     def flip(self, face):
         """Flip the face shared between several simplices."""
@@ -292,7 +354,7 @@ class Triangulation:
         new_face = tuple(set.union(*(set(tri) for tri in simplices))
                          - set(face))
         if len(new_face) + len(face) != self.dim + 2:
-            # TODO: is this condition correct for arbitraty face dimension in
+            # TODO: is this condition correct for arbitrary face dimension in
             # d>2?
             raise RuntimeError("face has too few or too many neighbors.")
 

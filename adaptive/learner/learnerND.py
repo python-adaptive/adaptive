@@ -158,7 +158,7 @@ class LearnerND(BaseLearner):
     it, your function needs to be slow enough to compute.
     """
 
-    def __init__(self, function, bounds, loss_per_simplex=None):
+    def __init__(self, function, bounds, loss_per_simplex=None, allow_flip=True):
         self.ndim = len(bounds)
         self._vdim = None
         self.loss_per_simplex = loss_per_simplex or default_loss
@@ -176,6 +176,8 @@ class LearnerND(BaseLearner):
         self._losses = dict()
 
         self._vertex_to_simplex_cache = dict()
+
+        self.allow_flip = allow_flip
 
     def _scale(self, points):
         # this function converts the points from real coordinates to equalised coordinates,
@@ -227,7 +229,7 @@ class LearnerND(BaseLearner):
             to_add = [points[i] for i in range(len(points)) if i not in initial_simplex]
 
             for p in to_add:
-                self._tri.add_point(p)
+                self._tri.add_point(p, allow_flip=self.allow_flip)
 
         return self._tri
 
@@ -260,7 +262,7 @@ class LearnerND(BaseLearner):
                 simplex = self._vertex_to_simplex_cache.get(point, None)
                 if not self._simplex_exists(simplex):
                     simplex = None
-                self._tri.add_point(self._scale(point), simplex)
+                self._tri.add_point(self._scale(point), simplex, allow_flip=self.allow_flip)
 
     def _simplex_exists(self, simplex):
         tri = self.tri()
