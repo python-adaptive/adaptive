@@ -310,6 +310,12 @@ class AsyncRunner(BaseRunner):
         return end_time - self.start_time
 
     def overhead(self):
+        """Returns the overhead in % of using adaptive and the executor.
+
+        This is measured as `(1 - elapsed_function_time / elapsed_time)`.
+        Note that this overhead includes the overhead of the executor that
+        is used.
+        """
         t_function = self.elapsed_function_time
         t_total = self.elapsed_time()
         return (1 - t_function / t_total) * 100
@@ -369,7 +375,6 @@ class AsyncRunner(BaseRunner):
         visualized in a Jupyter notebook.
         """
         return live_info(self, update_interval=update_interval)
-
 
     async def _run(self):
         first_completed = asyncio.FIRST_COMPLETED
