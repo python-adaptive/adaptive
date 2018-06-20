@@ -9,7 +9,7 @@ import traceback
 import warnings
 
 from .notebook_integration import live_plot, live_info, in_ipynb
-from .utils import TimeReturn
+from .utils import timed
 
 try:
     import ipyparallel
@@ -274,7 +274,7 @@ class AsyncRunner(BaseRunner):
         self.start_time = time.time()
         self.end_time = None
         self.elapsed_function_time = 0
-        self.function = TimeReturn(self.learner.function)
+        self.function = functools.partial(timed, self.learner.function)
 
         # When the learned function is 'async def', we run it
         # directly on the event loop, and not in the executor.

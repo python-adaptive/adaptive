@@ -4,14 +4,10 @@ from itertools import product
 import time
 
 
-class TimeReturn:
-    def __init__(self, function):
-        self.function = function
-
-    def __call__(self, *args, **kwargs):
-        t_start = time.time()
-        result = self.function(*args, **kwargs)
-        return result, time.time() - t_start
+def timed(f, *args, **kwargs):
+    t_start = time.time()
+    result = f(*args, **kwargs)
+    return result, time.time() - t_start
 
 
 def named_product(**items):
