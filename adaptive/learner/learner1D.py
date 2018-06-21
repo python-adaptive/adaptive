@@ -133,7 +133,11 @@ class Learner1D(BaseLearner):
     def update_interpolated_loss_in_interval(self, x_left, x_right):
         if x_left is not None and x_right is not None:
             dx = x_right - x_left
-            loss = self.loss_per_interval((x_left, x_right), self._scale, self.data)
+            if dx < self._dx_eps:
+                loss = 0
+            else:
+                loss = self.loss_per_interval((x_left, x_right),
+                                              self._scale, self.data)
             self.losses[x_left, x_right] = loss
 
             start = self.neighbors_combined.bisect_right(x_left)
