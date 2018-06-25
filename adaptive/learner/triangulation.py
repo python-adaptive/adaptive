@@ -152,7 +152,7 @@ class Triangulation:
         """Simplices containing a face."""
         return set.intersection(*(self.vertex_to_simplices[i] for i in face))
 
-    def _extend_hull(self, new_vertex, eps=1e-8):
+    def _extend_hull(self, new_vertex, allow_flip=False, eps=1e-8):
         hull_faces = list(self.faces(vertices=self.hull))
         # notice that this also includes interior faces, to remove these we
         # count multiplicities
@@ -165,6 +165,7 @@ class Triangulation:
             decomp.append(linalg.lu_factor(coords.T))
         shifted = [self.vertices[vertex] - np.array(new_vertex)
                    for vertex in self.hull]
+
         new_vertices = set()
         for coord, index in zip(shifted, self.hull):
             good = True
@@ -189,8 +190,9 @@ class Triangulation:
 
         pt_index = len(self.vertices)
         self.vertices.append(new_vertex)
+        faces_to_check = set()
         for face in hull_faces:
-            if all(i in new_vertices for i in face):
+            if all(i in new_vertices for i in face) or True:
                 # do orientation check, if orientation is the same, it lies on
                 # the same side of the face, otherwise, it lies on the other
                 # side of the face
@@ -201,6 +203,7 @@ class Triangulation:
                     # if the orientation of the new vertex is zero or directed
                     # towards the center, do not add the simplex
                     self.add_simplex(face + (pt_index,))
+                    faces_to_check.add(face)
 
         multiplicities = Counter(face for face in
                                 self.faces(vertices=new_vertices | {pt_index})
@@ -216,6 +219,12 @@ class Triangulation:
 
         self.hull.add(pt_index)
         self.hull = self.compute_hull(vertices=self.hull, check=False)
+
+        if allow_flip:
+            for face in faces_to_check:
+                self.flip_if_needed(face)
+
+
 
     def circumscribed_circle(self, simplex):
         """
@@ -244,7 +253,7 @@ class Triangulation:
         radius = np.linalg.norm(np.subtract(center, x0))
 
         for i in simplex:
-            if abs(np.linalg.norm(center - np.array(self.vertices[i])) - radius) > 1e-8:
+            if radius < 1e6 and abs(np.linalg.norm(center - np.array(self.vertices[i])) - radius) > 1e-8:
                 raise RuntimeError("Error in finding Circumscribed Circle")
 
         return tuple(center), radius
@@ -265,13 +274,20 @@ class Triangulation:
         centre, radius = self.circumscribed_circle(simplex)
 
         other_points = set.union(set(simplex), *simplices) - set(simplex)
+        # TODO if a flip would create a coplanar simplex, do not flip,
+        # or better even, do a special flip that makes the triangulation the best it can be
+        # see http://www.kiv.zcu.cz/site/documents/verejne/vyzkum/publikace/technicke-zpravy/2002/tr-2002-02.pdf
+        # for inspiration
+
         for i in other_points:
             pt = np.array(self.vertices[i])
+            # if Delaunay flip condition is met, do a flip
             if np.linalg.norm(centre - pt) < radius:
-                do_flip = True
-
-        if do_flip:
-            self.flip(face)
+                try:
+                    self.flip(face)
+                except RuntimeError as e:
+                    pass
+                return
 
     def add_point(self, point, simplex=None, allow_flip=False):
         """Add a new vertex and create simplices as appropriate.
@@ -289,7 +305,7 @@ class Triangulation:
             simplex = self.locate_point(point)
 
         if not simplex:
-            self._extend_hull(point)
+            self._extend_hull(point, allow_flip=allow_flip)
             return
         else:
             reduced_simplex = self.point_in_simplex(point, simplex)
@@ -361,7 +377,16 @@ class Triangulation:
         new_simplices = [others + new_face for others in
                          combinations(face, len(face) - 1)]
 
-        volume_new = sum(self.volume(tri) for tri in new_simplices)
+        new_volumes = [self.volume(tri) for tri in new_simplices]
+        volume_new = sum(new_volumes)
+
+        # do not allow creation of zero-volume
+        if any([(v < 1e-10) for v in new_volumes]):
+            raise RuntimeError(
+                "face cannot be flipped without creating a zero volume simplex"
+                "the corner points are coplanar"
+            )
+
         volume_was = sum(self.volume(tri) for tri in simplices)
 
         if not np.allclose(volume_was, volume_new):
