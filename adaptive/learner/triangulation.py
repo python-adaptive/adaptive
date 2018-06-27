@@ -258,36 +258,56 @@ class Triangulation:
 
         return tuple(center), radius
 
-
-    def flip_if_needed(self, face):
-        """
-        check if face needs to be flipped, and flip if this is the case
-        :param face: a face
-        """
-        do_flip = False
-        simplices = self.containing(face)
-        if len(simplices) < 2:
-            return  # we are at a border, do not flip
-
-        simplex = simplices.pop()
-
+    def point_in_cicumcircle(self, pt_index, simplex):
+        eps = 1e-10
         centre, radius = self.circumscribed_circle(simplex)
+        pt = np.array(self.vertices[pt_index])
+        return np.linalg.norm(centre - pt) < radius + eps  # TODO <= or <
 
-        other_points = set.union(set(simplex), *simplices) - set(simplex)
-        # TODO if a flip would create a coplanar simplex, do not flip,
-        # or better even, do a special flip that makes the triangulation the best it can be
-        # see http://www.kiv.zcu.cz/site/documents/verejne/vyzkum/publikace/technicke-zpravy/2002/tr-2002-02.pdf
-        # for inspiration
+    def bowyer_watson(self, pt_index):
+        """
+        Modified Bowyer-Watson point adding algorithm
 
-        for i in other_points:
-            pt = np.array(self.vertices[i])
-            # if Delaunay flip condition is met, do a flip
-            if np.linalg.norm(centre - pt) < radius:
-                try:
-                    self.flip(face)
-                except RuntimeError as e:
-                    pass
-                return
+        Create a hole in the triangulation around the new point, then retriangulate this hole.
+
+        :param pt_index: the index of the point to inspect
+        :return: nothing
+        """
+        queue = set()
+        done_simplices = set()
+
+        queue.update(self.vertex_to_simplices[pt_index])
+        done_points = set([pt_index])
+
+        bad_triangles = set()
+
+        while len(queue):
+            simplex = queue.pop()
+            done_simplices.add(simplex)
+
+            if self.point_in_cicumcircle(pt_index, simplex):
+                self.delete_simplex(simplex)
+                todo_points = set(simplex) - done_points
+                done_points.update(simplex)
+
+                if len(todo_points):
+                    neighbours = set.union(*[self.vertex_to_simplices[p] for p in todo_points])
+                    queue.update(neighbours - done_simplices)
+
+                bad_triangles.add(simplex)
+
+        faces = list(self.faces(simplices=bad_triangles))
+
+        multiplicities = Counter(face for face in faces)
+        hole_faces = [face for face in faces if multiplicities.get(face) < 2]
+
+        for face in hole_faces:
+            if pt_index not in face:
+                if self.volume(face+ (pt_index,)) < 1e-8:
+                    continue
+                self.add_simplex(face + (pt_index,))
+
+
 
     def add_point(self, point, simplex=None, allow_flip=False):
         """Add a new vertex and create simplices as appropriate.
@@ -301,11 +321,15 @@ class Triangulation:
             the hull. If not provided, the algorithm costs O(N), so this should
             be used whenever possible.
         """
+        allow_flip = False
         if simplex is None:
             simplex = self.locate_point(point)
 
         if not simplex:
             self._extend_hull(point, allow_flip=allow_flip)
+
+            pt_index = len(self.vertices) - 1
+            self.bowyer_watson(pt_index)
             return
         else:
             reduced_simplex = self.point_in_simplex(point, simplex)
@@ -319,9 +343,12 @@ class Triangulation:
         if len(simplex) == 1:
             raise ValueError("Point already in triangulation.")
         elif len(simplex) == self.dim + 1:
-            self.add_point_inside_simplex(point, simplex, allow_flip)
+            self.add_point_inside_simplex(point, simplex, allow_flip=allow_flip)
         else:
-            self.add_point_on_face(point, simplex, allow_flip)
+            self.add_point_on_face(point, simplex, allow_flip=allow_flip)
+
+        pt_index = len(self.vertices) - 1
+        self.bowyer_watson(pt_index)
 
     def add_point_inside_simplex(self, point, simplex, allow_flip=False):
         if len(self.point_in_simplex(point, simplex)) != self.dim + 1:
