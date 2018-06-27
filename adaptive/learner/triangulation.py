@@ -15,6 +15,67 @@ from scipy import linalg
             be used whenever possible.
         """
 
+def fast_2d_circumcircle(points):
+    """
+    Compute the centre and radius of the circumscribed circle of a simplex
+    :param points: the triangle to investigate
+    :return: tuple (centre point, radius)
+    """
+    pts = points[1:] - points[0]
+    l = [np.dot(p, p) for p in pts] # length squared
+    x,y = pts.T
+    x1,x2 = x
+    y1,y2 = y
+    l1,l2 = l
+
+    dx = + l1 * y2 - l2 * y1
+    dy = - l1 * x2 + l2 * x1
+    aa = + x1 * y2 - x2 * y1
+    a = 2 * aa
+
+    center = [dx/a, dy/a]
+    radius = np.sqrt(np.dot(center, center))
+    center = np.add(center, points[0])
+
+    # for p in points:
+    #     if radius < 1e6 and abs(np.linalg.norm(center - np.array(p)) - radius) > 1e-8:
+    #         raise RuntimeError("Error in finding Circumscribed Circle")
+
+    return tuple(center), radius
+
+
+def fast_3d_circumcircle(points):
+    """
+    Compute the centre and radius of the circumscribed circle of a simplex
+    :param points: the simplex to investigate
+    :return: tuple (centre point, radius)
+    """
+    pts = points[1:] - points[0]
+    l = [np.dot(p, p) for p in pts] # length squared
+    x,y,z = pts.T
+    x1,x2,x3 = x
+    y1,y2,y3 = y
+    z1,z2,z3 = z
+    l1,l2,l3 = l
+
+    # Compute some determinants:
+    dx = + l1 * (y2 * z3 - z2 * y3) - l2 * (y1 * z3 - z1 * y3) + l3 * (y1 * z2 - z1 * y2)
+    dy = + l1 * (x2 * z3 - z2 * x3) - l2 * (x1 * z3 - z1 * x3) + l3 * (x1 * z2 - z1 * x2)
+    dz = + l1 * (x2 * y3 - y2 * x3) - l2 * (x1 * y3 - y1 * x3) + l3 * (x1 * y2 - y1 * x2)
+    aa = + x1 * (y2 * z3 - z2 * y3) - x2 * (y1 * z3 - z1 * y3) + x3 * (y1 * z2 - z1 * y2)
+    a = 2*aa
+
+    center = [dx/a, -dy/a, dz/a]
+    radius = np.sqrt(np.dot(center, center))
+    center = np.add(center, points[0])
+
+    # for p in points:
+    #     if radius < 1e6 and abs(np.linalg.norm(center - np.array(p)) - radius) > 1e-8:
+    #         raise RuntimeError("Error in finding Circumscribed Circle")
+
+    return tuple(center), radius
+
+
 def orientation(face, origin):
     """Compute the orientation of the face with respect to a point, origin
 
@@ -236,6 +297,13 @@ class Triangulation:
         :param simplex: the simplex to investigate
         :return: tuple (centre point, radius)
         """
+        if self.dim == 2:
+            c, r = fast_2d_circumcircle([self.vertices[i] for i in simplex])
+            return tuple(c), r
+        if self.dim == 3:
+            c, r = fast_3d_circumcircle([self.vertices[i] for i in simplex])
+            return tuple(c), r
+
         # Modified from http://mathworld.wolfram.com/Circumsphere.html
         mat = []
         for i in simplex:
@@ -254,19 +322,28 @@ class Triangulation:
         center = [x / (2*a) for x in center]
 
         x0 = self.vertices[next(iter(simplex))]
-        radius = np.linalg.norm(np.subtract(center, x0))
+        vec = np.subtract(center, x0)
+        # radius = np.linalg.norm()
+        radius = np.sqrt(np.dot(vec, vec))
 
-        for i in simplex:
-            if radius < 1e6 and abs(np.linalg.norm(center - np.array(self.vertices[i])) - radius) > 1e-8:
-                raise RuntimeError("Error in finding Circumscribed Circle")
+        # for i in simplex:
+        #     if radius < 1e6 and abs(np.linalg.norm(center - np.array(self.vertices[i])) - radius) > 1e-8:
+        #         raise RuntimeError("Error in finding Circumscribed Circle")
+
+
 
         return tuple(center), radius
 
+
     def point_in_cicumcircle(self, pt_index, simplex):
         eps = 1e-10
-        centre, radius = self.circumcircles[simplex]
+        center, radius = self.circumcircles[simplex]
         pt = np.array(self.vertices[pt_index])
-        return np.linalg.norm(centre - pt) < radius + eps  # TODO <= or <
+
+        vec = np.subtract(center, pt)
+        # radius = np.linalg.norm()
+        norm = np.sqrt(np.dot(vec, vec))
+        return norm < (radius + eps)
 
     def bowyer_watson(self, pt_index, containing_simplex=None):
         """
