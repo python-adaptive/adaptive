@@ -68,6 +68,8 @@ class Triangulation:
 
         if len(coords) != dim + 1:
             raise ValueError("Can only add one simplex on initialization")
+
+        self.circumcircles = dict()
         self.vertices = list(coords)
         self.simplices = set()
         self.vertex_to_simplices = defaultdict(set)
@@ -79,12 +81,14 @@ class Triangulation:
         self.simplices.remove(simplex)
         for vertex in simplex:
             self.vertex_to_simplices[vertex].remove(simplex)
+        del self.circumcircles[simplex]
 
     def add_simplex(self, simplex):
         simplex = tuple(sorted(simplex))
         self.simplices.add(simplex)
         for vertex in simplex:
             self.vertex_to_simplices[vertex].add(simplex)
+        self.circumcircles[simplex] = self.circumscribed_circle(simplex)
 
     def point_in_simplex(self, point, simplex, eps=1e-8):
         """Check whether vertex lies within a simplex.
@@ -260,11 +264,11 @@ class Triangulation:
 
     def point_in_cicumcircle(self, pt_index, simplex):
         eps = 1e-10
-        centre, radius = self.circumscribed_circle(simplex)
+        centre, radius = self.circumcircles[simplex]
         pt = np.array(self.vertices[pt_index])
         return np.linalg.norm(centre - pt) < radius + eps  # TODO <= or <
 
-    def bowyer_watson(self, pt_index):
+    def bowyer_watson(self, pt_index, containing_simplex=None):
         """
         Modified Bowyer-Watson point adding algorithm
 
@@ -276,7 +280,11 @@ class Triangulation:
         queue = set()
         done_simplices = set()
 
-        queue.update(self.vertex_to_simplices[pt_index])
+        if containing_simplex is None:
+            queue.update(self.vertex_to_simplices[pt_index])
+        else:
+            queue.add(containing_simplex)
+
         done_points = set([pt_index])
 
         bad_triangles = set()
@@ -325,6 +333,8 @@ class Triangulation:
         if simplex is None:
             simplex = self.locate_point(point)
 
+        actual_simplex = simplex
+
         if not simplex:
             self._extend_hull(point, allow_flip=allow_flip)
 
@@ -342,13 +352,15 @@ class Triangulation:
 
         if len(simplex) == 1:
             raise ValueError("Point already in triangulation.")
-        elif len(simplex) == self.dim + 1:
-            self.add_point_inside_simplex(point, simplex, allow_flip=allow_flip)
         else:
-            self.add_point_on_face(point, simplex, allow_flip=allow_flip)
+            pt_index = len(self.vertices)
+            self.vertices.append(point)
+            self.bowyer_watson(pt_index, containing_simplex=actual_simplex)
+        # elif len(simplex) == self.dim + 1:
+        #     self.add_point_inside_simplex(point, simplex, allow_flip=allow_flip)
+        # else:
+        #     self.add_point_on_face(point, simplex, allow_flip=allow_flip)
 
-        pt_index = len(self.vertices) - 1
-        self.bowyer_watson(pt_index)
 
     def add_point_inside_simplex(self, point, simplex, allow_flip=False):
         if len(self.point_in_simplex(point, simplex)) != self.dim + 1:
