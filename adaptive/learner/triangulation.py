@@ -15,12 +15,48 @@ from scipy import linalg
             be used whenever possible.
         """
 
+def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
+    p0x, p0y = simplex[0]
+    p1x, p1y = simplex[1]
+    p2x, p2y = simplex[2]
+    px, py = point
+
+    Area = 0.5 * (-p1y * p2x + p0y * (-p1x + p2x) + p0x * (p1y - p2y) + p1x * p2y)
+
+    s = 1 / (2 * Area) * (p0y * p2x - p0x * p2y + (p2y - p0y) * px + (p0x - p2x) * py)
+    if s < -eps or s > 1+eps:
+        return
+    t = 1 / (2 * Area) * (p0x * p1y - p0y * p1x + (p0y - p1y) * px + (p1x - p0x) * py)
+
+    return (t >= -eps) and (s + t <= 1+eps)
+
+# def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
+#     p0x, p0y, p0z = simplex[0]
+#     p1x, p1y, p1z = simplex[1]
+#     p2x, p2y, p2z = simplex[2]
+#     p3x, p3y, p3z = simplex[3]
+#     px, py, pz = point
+#
+#     Area = 0.5 * (-p1y * p2x + p0y * (-p1x + p2x) + p0x * (p1y - p2y) + p1x * p2y)
+#
+#     s = 1 / (2 * Area) * (p0y * p2x - p0x * p2y + (p2y - p0y) * px + (p0x - p2x) * py)
+#     if s < -eps or s > 1+eps:
+#         return
+#     t = 1 / (2 * Area) * (p0x * p1y - p0y * p1x + (p0y - p1y) * px + (p1x - p0x) * py)
+#     if t < -eps or s+t > 1+eps:
+#         return
+#     u = 0
+#
+#     return (s >= 0) and (u >= 0) and (s + t + u<= 1)
+
+
 def fast_2d_circumcircle(points):
     """
     Compute the centre and radius of the circumscribed circle of a simplex
     :param points: the triangle to investigate
     :return: tuple (centre point, radius)
     """
+    points = np.array(points)
     pts = points[1:] - points[0]
     l = [np.dot(p, p) for p in pts] # length squared
     x,y = pts.T
@@ -50,6 +86,7 @@ def fast_3d_circumcircle(points):
     :param points: the simplex to investigate
     :return: tuple (centre point, radius)
     """
+    points = np.array(points)
     pts = points[1:] - points[0]
     l = [np.dot(p, p) for p in pts] # length squared
     x,y,z = pts.T
@@ -174,6 +211,14 @@ class Triangulation:
         )
         return [simplex[i] for i in result]
 
+    def fast_point_in_simplex(self, point, simplex, eps=1e-8):
+        if self.dim == 2:
+            return fast_2d_point_in_simplex(point, [self.vertices[i] for i in simplex], eps)
+        elif self.dim == 3:
+            return self.point_in_simplex(point, simplex, eps)
+        else:
+            return self.point_in_simplex(point, simplex, eps)
+
     def locate_point(self, point):
         """Find to which simplex the point belongs.
 
@@ -181,10 +226,8 @@ class Triangulation:
         Empty tuple means the point is outside the triangulation
         """
         for simplex in self.simplices:
-            face = self.point_in_simplex(point, simplex)
-            if face:
-                return face
-
+            if self.fast_point_in_simplex(point, simplex):
+                return simplex
         return ()
 
     @property
@@ -285,11 +328,6 @@ class Triangulation:
         self.hull.add(pt_index)
         self.hull = self.compute_hull(vertices=self.hull, check=False)
 
-        if allow_flip:
-            for face in faces_to_check:
-                self.flip_if_needed(face)
-
-
 
     def circumscribed_circle(self, simplex):
         """
@@ -330,8 +368,6 @@ class Triangulation:
         #     if radius < 1e6 and abs(np.linalg.norm(center - np.array(self.vertices[i])) - radius) > 1e-8:
         #         raise RuntimeError("Error in finding Circumscribed Circle")
 
-
-
         return tuple(center), radius
 
 
@@ -352,7 +388,7 @@ class Triangulation:
         Create a hole in the triangulation around the new point, then retriangulate this hole.
 
         :param pt_index: the index of the point to inspect
-        :return: nothing
+        :return: deleted_simplices, new_simplices
         """
         queue = set()
         done_simplices = set()
@@ -392,6 +428,7 @@ class Triangulation:
                     continue
                 self.add_simplex(face + (pt_index,))
 
+        return bad_triangles, self.vertex_to_simplices[pt_index]
 
 
     def add_point(self, point, simplex=None, allow_flip=False):
@@ -406,6 +443,7 @@ class Triangulation:
             the hull. If not provided, the algorithm costs O(N), so this should
             be used whenever possible.
         """
+        point = tuple(point)
         allow_flip = False
         if simplex is None:
             simplex = self.locate_point(point)
@@ -416,8 +454,8 @@ class Triangulation:
             self._extend_hull(point, allow_flip=allow_flip)
 
             pt_index = len(self.vertices) - 1
-            self.bowyer_watson(pt_index)
-            return
+            # self.bowyer_watson(pt_index)
+            return self.bowyer_watson(pt_index)
         else:
             reduced_simplex = self.point_in_simplex(point, simplex)
             if not reduced_simplex:
@@ -432,7 +470,7 @@ class Triangulation:
         else:
             pt_index = len(self.vertices)
             self.vertices.append(point)
-            self.bowyer_watson(pt_index, containing_simplex=actual_simplex)
+            return self.bowyer_watson(pt_index, containing_simplex=actual_simplex)
         # elif len(simplex) == self.dim + 1:
         #     self.add_point_inside_simplex(point, simplex, allow_flip=allow_flip)
         # else:

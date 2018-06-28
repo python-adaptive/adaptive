@@ -10,6 +10,7 @@ import scipy.spatial
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 import copy
+import random
 
 from .triangulation import Triangulation
 
@@ -65,7 +66,6 @@ def point_in_simplex(simplex, point):
 
 def uniform_loss(simplex, ys=None):
     return volume(simplex)
-
 
 def std_loss(simplex, ys):
     r = np.std(ys, axis=0)
@@ -179,6 +179,9 @@ class LearnerND(BaseLearner):
 
         self.allow_flip = allow_flip
 
+        self._subtriangulations = dict() # simplex -> triangulation
+        self._subpoints = dict() # simplex -> pending point indices
+
     def _scale(self, points):
         # this function converts the points from real coordinates to equalised coordinates,
         # in order to make the triangulation fair
@@ -225,7 +228,7 @@ class LearnerND(BaseLearner):
             if initial_simplex is None:
                 return None
             pts = points[initial_simplex]
-            self._tri = Triangulation(pts)
+            self._tri = Triangulation([tuple(p) for p in pts])
             to_add = [points[i] for i in range(len(points)) if i not in initial_simplex]
 
             for p in to_add:
@@ -244,6 +247,7 @@ class LearnerND(BaseLearner):
         if self._time is None:
             self._time = time.time()
         self._prev = 0.98 * self._prev + (time.time() - self._time) * 0.02
+        # take exponential decaying weighted average
         self._time = time.time()
         return self._prev
 
@@ -251,19 +255,21 @@ class LearnerND(BaseLearner):
         point = tuple(point)
 
         if value is None:
-            self._pending.add(point)
-        else:
-            self._pending.discard(point)
+            raise ValueError("Value cannot be None, use _tell_pending to add a pending point")
 
-            simpl = len(self._tri.simplices) if self._tri else 0
-            print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), "nsimplices: ", simpl, point)
-            self.data[point] = value
+        self._pending.discard(point)
 
-            if self._tri is not None:
-                simplex = self._vertex_to_simplex_cache.get(point, None)
-                if not self._simplex_exists(simplex):
-                    simplex = None
-                self._tri.add_point(self._scale(point), simplex, allow_flip=self.allow_flip)
+        simpl = len(self._tri.simplices) if self._tri else 0
+        print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), "nsimplices: ", simpl, point)
+
+        self.data[point] = value
+
+        if self._tri is not None:
+            simplex = self._vertex_to_simplex_cache.get(point, None)
+            if simplex is not None and not self._simplex_exists(simplex):
+                simplex = None
+            to_delete, to_add = self._tri.add_point(tuple(self._scale(point)), simplex, allow_flip=self.allow_flip)
+            self.update_losses(to_delete, to_add)
 
     def _simplex_exists(self, simplex):
         tri = self.tri()
@@ -278,8 +284,30 @@ class LearnerND(BaseLearner):
         v = sum(v)
         return v
 
-    def ask(self, n=1, tell=True):
-        assert tell
+    def _tell_pending(self, point, simplex=None):
+        point = tuple(point)
+        self._pending.add(point)
+
+        tri = self.tri()
+        if tri is not None: # TODO also add this point to the neighbours of simplex
+            p = tuple(self._scale(point))
+            if simplex is None:
+                simplex = tri.locate_point(p)
+                if len(simplex) == 0:
+                    return
+
+            simplex = tuple(simplex)
+            simplices = set.union(*[tri.vertex_to_simplices[i] for i in simplex])
+
+            for simplex in simplices:
+                if tri.fast_point_in_simplex(p, simplex):
+                    if simplex not in self._subtriangulations:
+                        tr = self._subtriangulations[simplex] = Triangulation([tri.vertices[i] for i in simplex])
+                        tr.add_point(p, next(iter(tr.simplices)))
+                    else:
+                        self._subtriangulations[simplex].add_point(p)
+
+    def ask(self, n=1):
         xs = []
         losses = []
         for i in range(n):
@@ -288,10 +316,11 @@ class LearnerND(BaseLearner):
             losses.append(*loss)
         return xs, losses
 
-    def _ask(self, n=1, tell=True):
+    def _ask(self, n=1):
         # Complexity: O(N log N + n * N)
         # TODO adapt this function
         # TODO allow cases where n > 1
+        assert n == 1
 
         new_points = []
         new_loss_improvements = []
@@ -300,23 +329,54 @@ class LearnerND(BaseLearner):
             new_points = bounds_to_do[:n]
             new_loss_improvements = [-np.inf] * len(new_points)
             n = n - len(new_points)
+            for p in new_points:
+                self._tell_pending(p)
 
         if n > 0:
             losses = [(-v, k) for k,v in self.losses().items()]
             tri = self.tri()
             heapq.heapify(losses)
 
+            pending_losses = [] # also a heap
+
+            if len(losses) == 0:
+                # pick a random point inside the bounds
+                a = np.diff(self.bounds).flat
+                b = np.array(self.bounds)[:, 0]
+                p = np.random.random(self.ndim) * a + b
+                p = tuple(p)
+                return [p], [-np.inf]
+
             while len(new_points) < n:
-                loss, simplex = heapq.heappop(losses)
-                # verify that simplex still exists
-                if not self._simplex_exists(simplex):
-                    # it could be that some of the points are pending, then always accept
-                    npoints = len(self.data)
-                    if all([i < npoints for i in simplex]):
-                        self._losses.pop(simplex, None)
+                if len(losses):
+                    loss, simplex = heapq.heappop(losses)
+
+                    if not self._simplex_exists(simplex):
+                        raise RuntimeError("all simplices in the heap should exist")
+
+                    if simplex in self._subtriangulations:
+                        subtri = self._subtriangulations[simplex]
+                        loss_density = loss / tri.volume(simplex)
+                        for pend_simplex in subtri.simplices:
+                            pend_loss = subtri.volume(pend_simplex) * loss_density
+                            heapq.heappush(pending_losses, (pend_loss, simplex, pend_simplex))
                         continue
+                else:
+                    loss = 0
+                    simplex = ()
 
                 points = np.array([tri.vertices[i] for i in simplex])
+                loss = abs(loss)
+                if len(pending_losses):
+                    pend_loss, real_simp, pend_simp = pending_losses[0]
+                    pend_loss = abs(pend_loss)
+
+                    if pend_loss > loss:
+                        subtri = self._subtriangulations[real_simp]
+                        points = np.array([subtri.vertices[i] for i in pend_simp])
+                        simplex = real_simp
+                        loss = pend_loss
+
                 point_new = choose_point_in_simplex(points)  # choose a new point in the simplex
                 point_new = tuple(self._unscale(point_new))  # relative coordinates to real coordinates
                 self._vertex_to_simplex_cache[point_new] = simplex
@@ -324,109 +384,54 @@ class LearnerND(BaseLearner):
                 new_points.append(point_new)
                 new_loss_improvements.append(loss)
 
-        if tell:
-            self.tell(new_points, itertools.repeat(None))
+                self._tell_pending(point_new, simplex)
 
         return new_points, new_loss_improvements
+
+    def update_losses(self, to_delete, to_add):
+        pending_points_unbound = set() # TODO add the points outside the triangulation to this
+
+        for simplex in to_delete:
+            subtri = self._subtriangulations.get(simplex, None)
+            if subtri is not None:
+                pending_points_unbound.update(subtri.vertices)
+                del self._subtriangulations[simplex]
+
+            if simplex in self._losses:
+                del self._losses[simplex]
+
+        pending_points_unbound = set([p for p in pending_points_unbound if tuple(self._unscale(p)) not in self.data])
+
+        tri = self.tri()
+        for simplex in to_add:
+            vertices = self._unscale([tri.vertices[i] for i in simplex])
+            values = [self.data[tuple(v)] for v in vertices]
+            loss = self.loss_per_simplex(vertices, values)
+            self._losses[simplex] = float(loss)
+
+            for p in pending_points_unbound:
+                # tri to insert it
+                if tri.point_in_simplex(p, simplex):
+                    if simplex not in self._subtriangulations:
+                        self._subtriangulations[simplex] = Triangulation([tri.vertices[i] for i in simplex])
+                    self._subtriangulations[simplex].add_point(p)
+                    self._vertex_to_simplex_cache[p] = simplex
+
 
     def losses(self):
         """
         :return: a dict of simplex -> loss
         """
-        if self.tri() is None:
+        tri = self.tri()
+        if tri is None:
             return dict()
 
-        tri = self.tri()
-        if tri is not None:
-            losses_to_compute = tri.simplices - set(self._losses)
-            for simplex in losses_to_compute:
-                vertices = self._unscale([tri.vertices[i] for i in simplex])
-                values = [self.data[tuple(self._unscale(tri.vertices[i]))] for i in simplex]
-                loss = self.loss_per_simplex(vertices, values)
-                self._losses[simplex] = float(loss)
-
-
-            losses_to_delete = set(self._losses) - tri.simplices
-            for simplex in losses_to_delete:
-                del self._losses[simplex]
+        # losses_to_compute = tri.simplices - set(self._losses)
+        # losses_to_delete = set(self._losses) - tri.simplices
+        #
+        # self.update_losses(losses_to_delete, losses_to_compute)
 
         return self._losses
-
-    def losses_combined(self):
-        """
-        :return: a dict of simplex -> loss
-        """
-        raise NotImplementedError("wait some while")
-        if self.bounds_are_done == False:
-            ret = dict()
-            pts = self._scale(list(self.data.keys()) + list(self._pending))
-            tri = scipy.spatial.Delaunay(pts)
-            for vertices in tri.vertices:
-                simplex = tri.points[vertices]
-                key = self._simplex_to_key(simplex)
-                ret[key] = np.inf
-            return ret
-
-        if len(self._pending) == 0:
-            return self.losses()
-        # assume the number of pending points is reasonably low (eg 20 or so) to keep performance high
-        # TODO actually make performance better
-        tri = self.tri()  # O(1)
-        losses = self._losses.copy()
-        # now start adding new items to it, yay
-        pending = self._scale(list(self._pending))  # O(P) let P be the number of pending points
-
-        pending_points_per_simplex = dict()  # TODO better name
-
-        # TODO come up with better name
-        simplices = tri.find_simplex(pending)  # O(N*P) I guess, find the simplex each point belongs to
-        # TODO what happens if a point belongs to multiple simplices 
-        # (like when it lies on an edge, we should make sure that gets handled as well)
-
-        for index in range(len(simplices)):
-            pending_point = pending[index]
-
-            # do a DFS of all neighbouring simplices to find which simplices contain the point
-            stack = [simplices[index]]  # contains all done and pending simplices
-            ind = 0
-            while ind < len(stack):
-                q = stack[ind]
-                s = tri.points[tri.vertices[q]]
-                if point_in_simplex(s, pending_point) >= 0:
-                    k = self._simplex_to_key(s)
-                    pending_points_per_simplex[k] = pending_points_per_simplex.get(k, [])
-                    pending_points_per_simplex[k].append(pending_point)
-                    for neighbor in tri.neighbors[q]:
-                        if neighbor >= 0 and neighbor not in stack:
-                            stack.append(neighbor)
-                ind += 1
-
-
-        for simplex, pending in pending_points_per_simplex.items():
-            # Get all vertices in this simplex (including the known border)
-            vertices = np.append(simplex, pending, axis=0)
-            # Triangulate the vertices
-            if volume(np.asarray(simplex)) < 1e-16:
-                continue
-
-            triangulation = scipy.spatial.Delaunay(vertices)
-            pending_simplices = vertices[triangulation.simplices]
-
-            total_volume = volume(np.array(simplex))
-            if simplex not in losses:
-                values = [self.data.get(tuple(x)) for x in self._unscale(simplex)]
-                loss = self.loss_per_simplex(np.array(simplex), values)
-                losses[simplex] = loss
-                self._losses[simplex] = loss
-            loss_per_volume = losses[simplex] / total_volume
-            # <class 'tuple'>: ((0.0, -0.25), (0.125, -0.25), (0.1875, -0.125))
-            losses.pop(simplex)  # do not use this simplex, only it's children
-            for simp in pending_simplices:
-                key = self._simplex_to_key(simp)
-                vol = volume(simp)
-                losses[key] = loss_per_volume * vol
-
-        return losses
 
     def loss(self, real=True):
         losses = self.losses() if real else self.losses_combined()
