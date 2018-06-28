@@ -175,7 +175,7 @@ class LearnerND(BaseLearner):
         self._tri = None
         self._losses = dict()
 
-        self._vertex_to_simplex_cache = dict()
+        self._vertex_to_simplex_cache = dict() # vertex -> simplex
 
         self.allow_flip = allow_flip
 
@@ -317,7 +317,7 @@ class LearnerND(BaseLearner):
         return xs, losses
 
     def _ask(self, n=1):
-        # Complexity: O(N log N + n * N)
+        # Complexity: O(N log N)
         # TODO adapt this function
         # TODO allow cases where n > 1
         assert n == 1
@@ -388,8 +388,8 @@ class LearnerND(BaseLearner):
 
         return new_points, new_loss_improvements
 
-    def update_losses(self, to_delete, to_add):
-        pending_points_unbound = set() # TODO add the points outside the triangulation to this
+    def update_losses(self, to_delete:set, to_add:set):
+        pending_points_unbound = set() # TODO add the points outside the triangulation to this as well
 
         for simplex in to_delete:
             subtri = self._subtriangulations.pop(simplex, None)
@@ -409,13 +409,12 @@ class LearnerND(BaseLearner):
             self._losses[simplex] = float(loss)
 
             for p in pending_points_unbound:
-                # tri to insert it
-                if tri.point_in_simplex(p, simplex):
+                # try to insert it
+                if tri.fast_point_in_simplex(p, simplex):
                     if simplex not in self._subtriangulations:
                         self._subtriangulations[simplex] = Triangulation([tri.vertices[i] for i in simplex])
                     self._subtriangulations[simplex].add_point(p)
-                    self._vertex_to_simplex_cache[p] = simplex
-
+                    self._vertex_to_simplex_cache[tuple(self._unscale(p))] = simplex
 
     def losses(self):
         """
