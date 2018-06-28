@@ -260,7 +260,7 @@ class LearnerND(BaseLearner):
         self._pending.discard(point)
 
         simpl = len(self._tri.simplices) if self._tri else 0
-        print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), "nsimplices: ", simpl, point)
+        # print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), "nsimplices: ", simpl, point)
 
         self.data[point] = value
 

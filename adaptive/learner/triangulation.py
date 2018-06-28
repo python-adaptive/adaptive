@@ -300,18 +300,17 @@ class Triangulation:
         self.vertices.append(new_vertex)
         faces_to_check = set()
         for face in hull_faces:
-            if all(i in new_vertices for i in face) or True:
-                # do orientation check, if orientation is the same, it lies on
-                # the same side of the face, otherwise, it lies on the other
-                # side of the face
-                pts_face = tuple(self.vertices[i] for i in face)
-                orientation_inside = orientation(pts_face, pt_center)
-                orientation_new_point = orientation(pts_face, new_vertex)
-                if orientation_inside == -orientation_new_point:
-                    # if the orientation of the new vertex is zero or directed
-                    # towards the center, do not add the simplex
-                    self.add_simplex(face + (pt_index,))
-                    faces_to_check.add(face)
+            # do orientation check, if orientation is the same, it lies on
+            # the same side of the face, otherwise, it lies on the other
+            # side of the face
+            pts_face = tuple(self.vertices[i] for i in face)
+            orientation_inside = orientation(pts_face, pt_center)
+            orientation_new_point = orientation(pts_face, new_vertex)
+            if orientation_inside == -orientation_new_point:
+                # if the orientation of the new vertex is zero or directed
+                # towards the center, do not add the simplex
+                self.add_simplex(face + (pt_index,))
+                faces_to_check.add(face)
 
         multiplicities = Counter(face for face in
                                 self.faces(vertices=new_vertices | {pt_index})
