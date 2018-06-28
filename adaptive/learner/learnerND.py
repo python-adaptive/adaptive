@@ -220,21 +220,21 @@ class LearnerND(BaseLearner):
         return interpolate.LinearNDInterpolator(points, values)
 
     def tri(self):
-        if self._tri is None:
-            if len(self.data) < 2:
-                return None
-            points = self._scale(list(self.data.keys()))
-            initial_simplex = find_initial_simplex(points, self.ndim)
-            if initial_simplex is None:
-                return None
-            pts = points[initial_simplex]
-            self._tri = Triangulation([tuple(p) for p in pts])
-            to_add = [points[i] for i in range(len(points)) if i not in initial_simplex]
+        if self._tri is not None:
+            return self._tri
 
-            for p in to_add:
-                self._tri.add_point(p, allow_flip=self.allow_flip)
+        if len(self.data) < 2:
+            return None
+        points = self._scale(list(self.data.keys()))
+        initial_simplex = find_initial_simplex(points, self.ndim)
+        if initial_simplex is None:
+            return None
+        pts = points[initial_simplex]
+        self._tri = Triangulation([tuple(p) for p in pts])
+        to_add = [points[i] for i in range(len(points)) if i not in initial_simplex]
 
-        return self._tri
+        for p in to_add:
+            self._tri.add_point(p, allow_flip=self.allow_flip)
 
     def values(self):
         return np.array(list(self.data.values()), dtype=float)
