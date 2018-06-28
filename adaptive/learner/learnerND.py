@@ -231,7 +231,7 @@ class LearnerND(BaseLearner):
             return None
         pts = points[initial_simplex]
         self._tri = Triangulation([tuple(p) for p in pts])
-        to_add = [points[i] for i in range(len(points)) if i not in initial_simplex]
+        to_add = [points[i] for i,p in enumerate(points) if i not in initial_simplex]
 
         for p in to_add:
             self._tri.add_point(p, allow_flip=self.allow_flip)
