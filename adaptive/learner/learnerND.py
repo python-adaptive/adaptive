@@ -260,7 +260,7 @@ class LearnerND(BaseLearner):
         self._pending.discard(point)
 
         simpl = len(self._tri.simplices) if self._tri else 0
-        # print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), "nsimplices: ", simpl, point)
+        print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), "nsimplices: ", simpl, point)
 
         self.data[point] = value
 
@@ -392,10 +392,9 @@ class LearnerND(BaseLearner):
         pending_points_unbound = set() # TODO add the points outside the triangulation to this
 
         for simplex in to_delete:
-            subtri = self._subtriangulations.get(simplex, None)
+            subtri = self._subtriangulations.pop(simplex, None)
             if subtri is not None:
                 pending_points_unbound.update(subtri.vertices)
-                del self._subtriangulations[simplex]
 
             if simplex in self._losses:
                 del self._losses[simplex]
