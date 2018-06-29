@@ -12,7 +12,7 @@ import scipy.spatial
 import pytest
 
 from ..learner import *
-from ..runner import replay_log
+from ..runner import replay_log, BlockingRunner, SequentialExecutor
 
 
 def generate_random_parametrization(f):
@@ -412,21 +412,23 @@ def test_loss_at_machine_precision_interval_is_zero():
     def f(x):
         return 1 if x == 0 else 0
 
-    learner = adaptive.Learner1D(f, bounds=(-1, 1))
-    ex = adaptive.runner.SequentialExecutor()
-    runner = adaptive.BlockingRunner(learner, executor=ex, 
+    learner = Learner1D(f, bounds=(-1, 1))
+    ex = SequentialExecutor()
+    runner = BlockingRunner(learner, executor=ex, 
         goal=lambda l: l.loss() < 0.001)
+
+
+def small_deviations(x):
+    import random
+    return 0 if x < 1 else 1 + 10**(-random.randint(12, 14))
 
 
 def test_small_deviations():
     """This tests whether the Learner1D can handle small deviations.
     See https://gitlab.kwant-project.org/qt/adaptive/merge_requests/73 and
     https://gitlab.kwant-project.org/qt/adaptive/issues/61."""
-    def f(x):
-        import random
-        return 0 if x < 1 else 1 + 10**(-random.randint(12, 14))
-    learner = adaptive.Learner1D(f, (0, 2))
-    runner = adaptive.BlockingRunner(learner,
+    learner = Learner1D(small_deviations, bounds=(0, 2))
+    runner = BlockingRunner(learner,
         goal=lambda l: l.npoints > 5000)
 
 
