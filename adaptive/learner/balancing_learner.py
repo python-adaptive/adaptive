@@ -203,6 +203,6 @@ class BalancingLearner(BaseLearner):
         learners = []
         arguments = named_product(**combos)
         for combo in arguments:
-            learner = learner_type(partial(f, **combo), **learner_kwargs)
+            learner = learner_type(function=partial(f, **combo), **learner_kwargs)
             learners.append(learner)
         return cls(learners, cdims=arguments)
