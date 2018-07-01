@@ -228,7 +228,7 @@ class LearnerND(BaseLearner):
         point = tuple(point)
 
         if value is None:
-            raise ValueError("Value cannot be None, use _tell_pending to add a pending point")
+            self._tell_pending(point)
 
         self._pending.discard(point)
 
