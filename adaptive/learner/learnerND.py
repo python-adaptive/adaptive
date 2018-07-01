@@ -77,7 +77,9 @@ def std_loss(simplex, ys):
 
 
 def default_loss(simplex, ys):
-    return std_loss(simplex, ys)
+    longest_edge = np.max(scipy.spatial.distance.pdist(simplex))
+    # TODO change this longest edge contribution to be scale independent
+    return std_loss(simplex, ys) + longest_edge * 0.1
 
 
 def choose_point_in_simplex(simplex):
@@ -260,7 +262,7 @@ class LearnerND(BaseLearner):
         self._pending.discard(point)
 
         simpl = len(self._tri.simplices) if self._tri else 0
-        print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), "nsimplices: ", simpl, point)
+        # print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), "nsimplices: ", simpl, point)
 
         self.data[point] = value
 
