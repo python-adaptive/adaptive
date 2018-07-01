@@ -214,6 +214,7 @@ class LearnerND(BaseLearner):
         values = np.array(list(self.data.values()), dtype=float)
         return interpolate.LinearNDInterpolator(points, values)
 
+    @property
     def tri(self):
         if self._tri is not None:
             return self._tri
@@ -267,15 +268,14 @@ class LearnerND(BaseLearner):
             self.update_losses(to_delete, to_add)
 
     def _simplex_exists(self, simplex):
-        tri = self.tri()
+        tri = self.tri
         simplex = tuple(sorted(simplex))
         return simplex in tri.simplices
 
     def volume(self):
-        tri = self.tri()
-        if tri is None:
+        if self.tri is None:
             return 0
-        v = [volume(self._unscale([tri.vertices[i] for i in s])) for s in tri.simplices]
+        v = [volume(self._unscale([self.tri.vertices[i] for i in s])) for s in self.tri.simplices]
         v = sum(v)
         return v
 
@@ -283,21 +283,20 @@ class LearnerND(BaseLearner):
         point = tuple(point)
         self._pending.add(point)
 
-        tri = self.tri()
-        if tri is not None: # TODO also add this point to the neighbours of simplex
+        if self.tri is not None: # TODO also add this point to the neighbours of simplex
             p = tuple(self._scale(point))
             if simplex is None:
-                simplex = tri.locate_point(p)
+                simplex = self.tri.locate_point(p)
                 if len(simplex) == 0:
                     return
 
             simplex = tuple(simplex)
-            simplices = set.union(*[tri.vertex_to_simplices[i] for i in simplex])
+            simplices = set.union(*[self.tri.vertex_to_simplices[i] for i in simplex])
 
             for simplex in simplices:
-                if tri.fast_point_in_simplex(p, simplex):
+                if self.tri.fast_point_in_simplex(p, simplex):
                     if simplex not in self._subtriangulations:
-                        tr = self._subtriangulations[simplex] = Triangulation([tri.vertices[i] for i in simplex])
+                        tr = self._subtriangulations[simplex] = Triangulation([self.tri.vertices[i] for i in simplex])
                         tr.add_point(p, next(iter(tr.simplices)))
                     else:
                         self._subtriangulations[simplex].add_point(p)
@@ -331,7 +330,6 @@ class LearnerND(BaseLearner):
             return new_points, new_loss_improvements
 
         losses = [(-v, k) for k,v in self.losses().items()]
-        tri = self.tri()
         heapq.heapify(losses)
 
         pending_losses = [] # also a heap
@@ -353,7 +351,7 @@ class LearnerND(BaseLearner):
 
                 if simplex in self._subtriangulations:
                     subtri = self._subtriangulations[simplex]
-                    loss_density = loss / tri.volume(simplex)
+                    loss_density = loss / self.tri.volume(simplex)
                     for pend_simplex in subtri.simplices:
                         pend_loss = subtri.volume(pend_simplex) * loss_density
                         heapq.heappush(pending_losses, (pend_loss, simplex, pend_simplex))
@@ -362,7 +360,7 @@ class LearnerND(BaseLearner):
                 loss = 0
                 simplex = ()
 
-            points = np.array([tri.vertices[i] for i in simplex])
+            points = np.array([self.tri.vertices[i] for i in simplex])
             loss = abs(loss)
             if len(pending_losses):
                 pend_loss, real_simp, pend_simp = pending_losses[0]
@@ -396,18 +394,17 @@ class LearnerND(BaseLearner):
 
         pending_points_unbound = set([p for p in pending_points_unbound if tuple(self._unscale(p)) not in self.data])
 
-        tri = self.tri()
         for simplex in to_add:
-            vertices = self._unscale([tri.vertices[i] for i in simplex])
+            vertices = self._unscale([self.tri.vertices[i] for i in simplex])
             values = [self.data[tuple(v)] for v in vertices]
             loss = self.loss_per_simplex(vertices, values)
             self._losses[simplex] = float(loss)
 
             for p in pending_points_unbound:
                 # try to insert it
-                if tri.fast_point_in_simplex(p, simplex):
+                if self.tri.fast_point_in_simplex(p, simplex):
                     if simplex not in self._subtriangulations:
-                        self._subtriangulations[simplex] = Triangulation([tri.vertices[i] for i in simplex])
+                        self._subtriangulations[simplex] = Triangulation([self.tri.vertices[i] for i in simplex])
                     self._subtriangulations[simplex].add_point(p)
                     self._vertex_to_simplex_cache[tuple(self._unscale(p))] = simplex
 
@@ -415,8 +412,7 @@ class LearnerND(BaseLearner):
         """
         :return: a dict of simplex -> loss
         """
-        tri = self.tri()
-        if tri is None:
+        if self.tri is None:
             return dict()
 
         return self._losses
@@ -451,8 +447,7 @@ class LearnerND(BaseLearner):
             im = hv.Image(np.rot90(z), bounds=lbrt)
 
             if tri_alpha:
-                tri = self.tri()
-                points = np.array([[tri.vertices[i] for i in s] for s in tri.simplices])
+                points = np.array([[self.tri.vertices[i] for i in s] for s in self.tri.simplices])
                 points = self._unscale(points)
                 points = np.pad(points[:, [0, 1, 2, 0], :],
                                 pad_width=((0, 0), (0, 1), (0, 0)),
