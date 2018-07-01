@@ -396,12 +396,10 @@ class LearnerND(BaseLearner):
         pending_points_unbound = set() # TODO add the points outside the triangulation to this as well
 
         for simplex in to_delete:
+            self._losses.pop(simplex, None)
             subtri = self._subtriangulations.pop(simplex, None)
             if subtri is not None:
                 pending_points_unbound.update(subtri.vertices)
-
-            if simplex in self._losses:
-                del self._losses[simplex]
 
         pending_points_unbound = set([p for p in pending_points_unbound if tuple(self._unscale(p)) not in self.data])
 
@@ -427,11 +425,6 @@ class LearnerND(BaseLearner):
         tri = self.tri()
         if tri is None:
             return dict()
-
-        # losses_to_compute = tri.simplices - set(self._losses)
-        # losses_to_delete = set(self._losses) - tri.simplices
-        #
-        # self.update_losses(losses_to_delete, losses_to_compute)
 
         return self._losses
 
