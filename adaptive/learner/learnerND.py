@@ -41,8 +41,10 @@ def orientation(simplex):
     sign, logdet = np.linalg.slogdet(matrix)
     return sign
 
+
 def uniform_loss(simplex, ys=None):
     return volume(simplex)
+
 
 def std_loss(simplex, ys):
     r = np.std(ys, axis=0)
