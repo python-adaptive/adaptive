@@ -101,7 +101,7 @@ def choose_point_in_simplex(simplex):
     point = None
     N = simplex.shape[1]
 
-    for i in range(2, N+1):
+    for i in range(1, N+1):
         for j in range(i):
             length = np.linalg.norm(simplex[i, :] - simplex[j, :])
             if length > longest:
