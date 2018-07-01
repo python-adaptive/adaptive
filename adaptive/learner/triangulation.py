@@ -19,6 +19,9 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
     p0x, p0y = simplex[0]
     p1x, p1y = simplex[1]
     p2x, p2y = simplex[2]
+
+
+
     px, py = point
 
     Area = 0.5 * (-p1y * p2x + p0y * (-p1x + p2x) + p0x * (p1y - p2y) + p1x * p2y)

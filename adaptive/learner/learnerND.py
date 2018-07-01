@@ -166,7 +166,7 @@ class LearnerND(BaseLearner):
         self.loss_per_simplex = loss_per_simplex or default_loss
         self.bounds = tuple(tuple(map(float, b)) for b in bounds)
         self.data = OrderedDict()
-        self._pending: set = set()
+        self._pending = set()
 
         self._mean: float = np.mean(self.bounds, axis=1)
         self._ptp_scale: float = np.ptp(self.bounds, axis=1)
@@ -182,7 +182,6 @@ class LearnerND(BaseLearner):
         self.allow_flip = allow_flip
 
         self._subtriangulations = dict() # simplex -> triangulation
-        self._subpoints = dict() # simplex -> pending point indices
 
     def _scale(self, points):
         # this function converts the points from real coordinates to equalised coordinates,
