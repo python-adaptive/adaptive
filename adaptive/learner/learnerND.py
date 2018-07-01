@@ -189,8 +189,8 @@ class LearnerND(BaseLearner):
         # raise DeprecationWarning('usage of LinearNDInterpolator should be reduced')
         # returns a scipy.interpolate.LinearNDInterpolator object with the given data as sources
         # TODO take our own triangulation into account when generating the ip
-        points = self._scale(list(self.data.keys()))
-        values = np.array(list(self.data.values()), dtype=float)
+        points = self._scale(self.points)
+        values = self.values
         return interpolate.LinearNDInterpolator(points, values)
 
     @property
@@ -200,7 +200,7 @@ class LearnerND(BaseLearner):
 
         if len(self.data) < 2:
             return None
-        points = self._scale(list(self.data.keys()))
+        points = self._scale(self.points)
         initial_simplex = find_initial_simplex(points, self.ndim)
         if initial_simplex is None:
             return None
@@ -211,8 +211,16 @@ class LearnerND(BaseLearner):
         for p in to_add:
             self._tri.add_point(p, allow_flip=self.allow_flip)
 
+
+    @property
     def values(self):
         return np.array(list(self.data.values()), dtype=float)
+
+
+    @property
+    def points(self):
+        return np.array(list(self.data.keys()), dtype=float)
+
 
     _time = None
     _prev = 1/30
@@ -225,6 +233,7 @@ class LearnerND(BaseLearner):
         # take exponential decaying weighted average
         self._time = time.time()
         return self._prev
+
 
     def _tell(self, point, value):
         point = tuple(point)
