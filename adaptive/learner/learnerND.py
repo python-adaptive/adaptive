@@ -334,59 +334,61 @@ class LearnerND(BaseLearner):
             for p in new_points:
                 self._tell_pending(p)
 
-        if n > 0:
-            losses = [(-v, k) for k,v in self.losses().items()]
-            tri = self.tri()
-            heapq.heapify(losses)
+        if n == 0:
+            return new_points, new_loss_improvements
 
-            pending_losses = [] # also a heap
+        losses = [(-v, k) for k,v in self.losses().items()]
+        tri = self.tri()
+        heapq.heapify(losses)
 
-            if len(losses) == 0:
-                # pick a random point inside the bounds
-                a = np.diff(self.bounds).flat
-                b = np.array(self.bounds)[:, 0]
-                p = np.random.random(self.ndim) * a + b
-                p = tuple(p)
-                return [p], [-np.inf]
+        pending_losses = [] # also a heap
 
-            while len(new_points) < n:
-                if len(losses):
-                    loss, simplex = heapq.heappop(losses)
+        if len(losses) == 0:
+            # pick a random point inside the bounds
+            a = np.diff(self.bounds).flat
+            b = np.array(self.bounds)[:, 0]
+            p = np.random.random(self.ndim) * a + b
+            p = tuple(p)
+            return [p], [-np.inf]
 
-                    if not self._simplex_exists(simplex):
-                        raise RuntimeError("all simplices in the heap should exist")
+        while len(new_points) < n:
+            if len(losses):
+                loss, simplex = heapq.heappop(losses)
 
-                    if simplex in self._subtriangulations:
-                        subtri = self._subtriangulations[simplex]
-                        loss_density = loss / tri.volume(simplex)
-                        for pend_simplex in subtri.simplices:
-                            pend_loss = subtri.volume(pend_simplex) * loss_density
-                            heapq.heappush(pending_losses, (pend_loss, simplex, pend_simplex))
-                        continue
-                else:
-                    loss = 0
-                    simplex = ()
+                if not self._simplex_exists(simplex):
+                    raise RuntimeError("all simplices in the heap should exist")
 
-                points = np.array([tri.vertices[i] for i in simplex])
-                loss = abs(loss)
-                if len(pending_losses):
-                    pend_loss, real_simp, pend_simp = pending_losses[0]
-                    pend_loss = abs(pend_loss)
+                if simplex in self._subtriangulations:
+                    subtri = self._subtriangulations[simplex]
+                    loss_density = loss / tri.volume(simplex)
+                    for pend_simplex in subtri.simplices:
+                        pend_loss = subtri.volume(pend_simplex) * loss_density
+                        heapq.heappush(pending_losses, (pend_loss, simplex, pend_simplex))
+                    continue
+            else:
+                loss = 0
+                simplex = ()
 
-                    if pend_loss > loss:
-                        subtri = self._subtriangulations[real_simp]
-                        points = np.array([subtri.vertices[i] for i in pend_simp])
-                        simplex = real_simp
-                        loss = pend_loss
+            points = np.array([tri.vertices[i] for i in simplex])
+            loss = abs(loss)
+            if len(pending_losses):
+                pend_loss, real_simp, pend_simp = pending_losses[0]
+                pend_loss = abs(pend_loss)
 
-                point_new = choose_point_in_simplex(points)  # choose a new point in the simplex
-                point_new = tuple(self._unscale(point_new))  # relative coordinates to real coordinates
-                self._vertex_to_simplex_cache[point_new] = simplex
+                if pend_loss > loss:
+                    subtri = self._subtriangulations[real_simp]
+                    points = np.array([subtri.vertices[i] for i in pend_simp])
+                    simplex = real_simp
+                    loss = pend_loss
 
-                new_points.append(point_new)
-                new_loss_improvements.append(loss)
+            point_new = choose_point_in_simplex(points)  # choose a new point in the simplex
+            point_new = tuple(self._unscale(point_new))  # relative coordinates to real coordinates
+            self._vertex_to_simplex_cache[point_new] = simplex
 
-                self._tell_pending(point_new, simplex)
+            new_points.append(point_new)
+            new_loss_improvements.append(loss)
+
+            self._tell_pending(point_new, simplex)
 
         return new_points, new_loss_improvements
 
