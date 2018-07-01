@@ -16,12 +16,7 @@ from scipy import linalg
         """
 
 def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
-    p0x, p0y = simplex[0]
-    p1x, p1y = simplex[1]
-    p2x, p2y = simplex[2]
-
-
-
+    (p0x, p0y), (p1x, p1y), (p2x, p2y) = simplex
     px, py = point
 
     Area = 0.5 * (-p1y * p2x + p0y * (-p1x + p2x) + p0x * (p1y - p2y) + p1x * p2y)
@@ -63,9 +58,8 @@ def fast_2d_circumcircle(points):
     points = np.array(points)
     pts = points[1:] - points[0]
     l = [np.dot(p, p) for p in pts] # length squared
-    x,y = pts.T
-    x1,x2 = x
-    y1,y2 = y
+
+    (x1, y1), (x2, y2) = pts
     l1,l2 = l
 
     dx = + l1 * y2 - l2 * y1
@@ -76,10 +70,6 @@ def fast_2d_circumcircle(points):
     center = [dx/a, dy/a]
     radius = np.sqrt(np.dot(center, center))
     center = np.add(center, points[0])
-
-    # for p in points:
-    #     if radius < 1e6 and abs(np.linalg.norm(center - np.array(p)) - radius) > 1e-8:
-    #         raise RuntimeError("Error in finding Circumscribed Circle")
 
     return tuple(center), radius
 
@@ -92,12 +82,9 @@ def fast_3d_circumcircle(points):
     """
     points = np.array(points)
     pts = points[1:] - points[0]
-    l = [np.dot(p, p) for p in pts] # length squared
-    x,y,z = pts.T
-    x1,x2,x3 = x
-    y1,y2,y3 = y
-    z1,z2,z3 = z
-    l1,l2,l3 = l
+
+    l1, l2, l3 = [np.dot(p, p) for p in pts] # length squared
+    (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) = pts
 
     # Compute some determinants:
     dx = + l1 * (y2 * z3 - z2 * y3) - l2 * (y1 * z3 - z1 * y3) + l3 * (y1 * z2 - z1 * y2)
@@ -109,10 +96,6 @@ def fast_3d_circumcircle(points):
     center = [dx/a, -dy/a, dz/a]
     radius = np.sqrt(np.dot(center, center))
     center = np.add(center, points[0])
-
-    # for p in points:
-    #     if radius < 1e6 and abs(np.linalg.norm(center - np.array(p)) - radius) > 1e-8:
-    #         raise RuntimeError("Error in finding Circumscribed Circle")
 
     return tuple(center), radius
 
