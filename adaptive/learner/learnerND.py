@@ -437,10 +437,7 @@ class LearnerND(BaseLearner):
 
     def loss(self, real=True):
         losses = self.losses() if real else self.losses_combined()
-        if len(losses) == 0:
-            return float('inf')
-        else:
-            return max(losses.values())
+        return max(losses.values()) if losses else float('inf')
 
     def remove_unfinished(self):
         self._pending = set()
