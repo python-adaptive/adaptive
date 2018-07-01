@@ -150,7 +150,7 @@ class LearnerND(BaseLearner):
         self._tri = None
         self._losses = dict()
 
-        self._vertex_to_simplex_cache = dict() # vertex -> simplex
+        self._pending_to_simplex = dict() # vertex -> simplex
 
         self.allow_flip = allow_flip
 
@@ -249,7 +249,7 @@ class LearnerND(BaseLearner):
         self.data[point] = value
 
         if self._tri is not None:
-            simplex = self._vertex_to_simplex_cache.get(point, None)
+            simplex = self._pending_to_simplex.get(point, None)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = None
             to_delete, to_add = self._tri.add_point(tuple(self._scale(point)), simplex, allow_flip=self.allow_flip)
@@ -362,7 +362,7 @@ class LearnerND(BaseLearner):
 
             point_new = choose_point_in_simplex(points)  # choose a new point in the simplex
             point_new = tuple(self._unscale(point_new))  # relative coordinates to real coordinates
-            self._vertex_to_simplex_cache[point_new] = simplex
+            self._pending_to_simplex[point_new] = simplex
 
             new_points.append(point_new)
             new_loss_improvements.append(loss)
@@ -394,7 +394,7 @@ class LearnerND(BaseLearner):
                     if simplex not in self._subtriangulations:
                         self._subtriangulations[simplex] = Triangulation(self.tri.get_vertices(simplex))
                     self._subtriangulations[simplex].add_point(p)
-                    self._vertex_to_simplex_cache[tuple(self._unscale(p))] = simplex
+                    self._pending_to_simplex[tuple(self._unscale(p))] = simplex
 
     def losses(self):
         """
