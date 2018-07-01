@@ -99,17 +99,11 @@ def choose_point_in_simplex(simplex):
     """
 
     # TODO find a better selection algorithm
-    longest = 0
-    point = None
-    N = simplex.shape[1]
+    distances = scipy.spatial.distance.pdist(simplex)
+    distance_matrix = scipy.spatial.distance.squareform(distances)
+    i,j = np.unravel_index(np.argmax(distance_matrix), distance_matrix.shape)
 
-    for i in range(1, N+1):
-        for j in range(i):
-            length = np.linalg.norm(simplex[i, :] - simplex[j, :])
-            if length > longest:
-                longest = length
-                point = (simplex[i, :] + simplex[j, :]) / 2
-
+    point = (simplex[i,:] + simplex[j,:]) / 2
     return point
 
 
