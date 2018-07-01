@@ -41,29 +41,6 @@ def orientation(simplex):
     sign, logdet = np.linalg.slogdet(matrix)
     return sign
 
-
-# translated from https://github.com/mikolalysenko/robust-point-in-simplex/blob/master/rpis.js
-# also used https://stackoverflow.com/questions/21819132/how-do-i-check-if-a-simplex-contains-the-origin
-def point_in_simplex(simplex, point):
-    simplex_copy = copy.deepcopy(simplex)
-    simplex_orientation = orientation(simplex_copy)
-    boundary = False
-
-    for i in range(len(simplex)):
-        simplex_copy[i] = point
-
-        orient = orientation(simplex_copy)
-        if orient == 0:
-            boundary = True
-        elif orient != simplex_orientation:
-            return -1
-        simplex_copy[i] = copy.copy(simplex[i])
-
-    if boundary:
-        return 0
-    return 1
-
-
 def uniform_loss(simplex, ys=None):
     return volume(simplex)
 
