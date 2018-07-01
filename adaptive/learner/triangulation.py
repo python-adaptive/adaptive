@@ -33,7 +33,8 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
 
     return (t >= -eps) and (s + t <= 1+eps)
 
-# def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
+# WIP
+# def fast_3d_point_in_simplex(point, simplex, eps=1e-8):
 #     p0x, p0y, p0z = simplex[0]
 #     p1x, p1y, p1z = simplex[1]
 #     p2x, p2y, p2z = simplex[2]
@@ -191,6 +192,9 @@ class Triangulation:
             self.vertex_to_simplices[vertex].add(simplex)
         self.circumcircles[simplex] = self.circumscribed_circle(simplex)
 
+    def get_vertices(self, indices):
+        return [self.vertices[i] for i in indices]
+
     def point_in_simplex(self, point, simplex, eps=1e-8):
         """Check whether vertex lies within a simplex.
 
@@ -204,7 +208,7 @@ class Triangulation:
             # We are checking whether point belongs to a face.
             simplex = self.containing(simplex).pop()
         x0 = np.array(self.vertices[simplex[0]])
-        vectors = np.array([self.vertices[i] for i in simplex[1:]]) - x0
+        vectors = np.array(self.get_vertices(simplex[1:])) - x0
         alpha = np.linalg.solve(vectors.T, point - x0)
         if any(alpha < -eps) or sum(alpha) > 1 + eps:
             return []
@@ -216,7 +220,8 @@ class Triangulation:
 
     def fast_point_in_simplex(self, point, simplex, eps=1e-8):
         if self.dim == 2:
-            return fast_2d_point_in_simplex(point, [self.vertices[i] for i in simplex], eps)
+
+            return fast_2d_point_in_simplex(point, self.get_vertices(simplex), eps)
         elif self.dim == 3:
             return self.point_in_simplex(point, simplex, eps)
         else:
@@ -272,10 +277,10 @@ class Triangulation:
 
         decomp = []
         for face in hull_faces:
-            coords = np.array([self.vertices[i] for i in face]) - new_vertex
+            coords = np.array(self.get_vertices(face)) - new_vertex
             decomp.append(linalg.lu_factor(coords.T))
-        shifted = [self.vertices[vertex] - np.array(new_vertex)
-                   for vertex in self.hull]
+
+        shifted = np.subtract(self.get_vertices(self.hull), new_vertex)
 
         new_vertices = set()
         for coord, index in zip(shifted, self.hull):
@@ -293,9 +298,7 @@ class Triangulation:
         # compute the center of the convex hull, this center lies in the hull
         # we do not really need the center, we only need a point that is
         # guaranteed to lie strictly within the hull
-        hull_points = []
-        for p in self.hull:
-            hull_points.append(self.vertices[p])
+        hull_points = self.get_vertices(self.hull)
         pt_center = np.average(hull_points, axis=0)
 
 
@@ -306,7 +309,7 @@ class Triangulation:
             # do orientation check, if orientation is the same, it lies on
             # the same side of the face, otherwise, it lies on the other
             # side of the face
-            pts_face = tuple(self.vertices[i] for i in face)
+            pts_face = tuple(self.get_vertices(face))
             orientation_inside = orientation(pts_face, pt_center)
             orientation_new_point = orientation(pts_face, new_vertex)
             if orientation_inside == -orientation_new_point:
@@ -338,10 +341,10 @@ class Triangulation:
         :return: tuple (centre point, radius)
         """
         if self.dim == 2:
-            c, r = fast_2d_circumcircle([self.vertices[i] for i in simplex])
+            c, r = fast_2d_circumcircle(self.get_vertices(simplex))
             return tuple(c), r
         if self.dim == 3:
-            c, r = fast_3d_circumcircle([self.vertices[i] for i in simplex])
+            c, r = fast_3d_circumcircle(self.get_vertices(simplex))
             return tuple(c), r
 
         # Modified from http://mathworld.wolfram.com/Circumsphere.html
@@ -365,10 +368,6 @@ class Triangulation:
         vec = np.subtract(center, x0)
         # radius = np.linalg.norm()
         radius = np.sqrt(np.dot(vec, vec))
-
-        # for i in simplex:
-        #     if radius < 1e6 and abs(np.linalg.norm(center - np.array(self.vertices[i])) - radius) > 1e-8:
-        #         raise RuntimeError("Error in finding Circumscribed Circle")
 
         return tuple(center), radius
 
@@ -558,9 +557,9 @@ class Triangulation:
 
     def volume(self, simplex):
         prefactor = np.math.factorial(self.dim)
-        vectors = np.array([self.vertices[i] for i in simplex[1:]])
-        return abs(np.linalg.det(vectors
-                                 - self.vertices[simplex[0]])) / prefactor
+        vertices = np.array(self.get_vertices(simplex))
+        vectors = vertices[1:] - vertices[0]
+        return abs(np.linalg.det(vectors)) / prefactor
 
     def reference_invariant(self):
         """vertex_to_simplices and simplices are compatible."""
