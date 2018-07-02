@@ -24,7 +24,7 @@ class TimeLearner1D:
     def time_run(self):
         for _ in range(1000):
             points, _ = self.learner.ask(1)
-            self.learner.tell(points, map(f_1d, points))
+            self.learner.tell_many(points, map(f_1d, points))
 
 
 class TimeLearner2D:
@@ -36,7 +36,7 @@ class TimeLearner2D:
     def time_run(self):
         for _ in range(50**2):
             points, _ = self.learner.ask(1)
-            self.learner.tell(points, map(f_2d, points))
+            self.learner.tell_many(points, map(f_2d, points))
 
     def time_ask(self):
         for _ in range(50**2):

@@ -31,10 +31,10 @@ class DataSaver:
     def __getattr__(self, attr):
         return getattr(self.learner, attr)
 
-    def _tell(self, x, result):
+    def tell(self, x, result):
         y = self.arg_picker(result) if result is not None else None
         self.extra_data[x] = result
-        self.learner._tell(x, y)
+        self.learner.tell(x, y)
 
 
 def _ds(learner_type, arg_picker, *args, **kwargs):

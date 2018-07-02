@@ -23,28 +23,26 @@ class BaseLearner(metaclass=abc.ABCMeta):
     and returns a holoviews plot.
     """
 
-    def tell(self, xvalues, yvalues):
-        """Add data to the learner.
+    def tell(self, x, y):
+        """Tell the learner about a single value.
 
         Parameters
         ----------
-        xvalues : value from the function domain, or iterable of such
-            Values from the domain of the learned function.
-        yvalues : value from the function image, or iterable of such
-            Values from the range of the learned function, or None.
-            If 'None', then it indicates that the value has not yet
-            been computed.
+        x : A value from the function domain
+        y : A value from the function image
         """
-        if all(isinstance(i, collections.Iterable) for i in [xvalues, yvalues]):
-            for x, y in zip(xvalues, yvalues):
-                self._tell(x, y)
-        else:
-            self._tell(xvalues, yvalues)
+        self.tell_many([x], [y])
 
-    @abc.abstractmethod
-    def _tell(self, x, y):
-        """Add a single datapoint to the learner."""
-        pass
+    def tell_many(self, xs, ys):
+        """Tell the learner about some values.
+
+        Parameters
+        ----------
+        xs : Iterable of values from the function domain
+        ys : Iterable of values from the function image
+        """
+        for x, y in zip(xs, ys):
+            self.tell(x, y)
 
     @abc.abstractmethod
     def remove_unfinished(self):

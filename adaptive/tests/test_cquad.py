@@ -25,7 +25,7 @@ def run_integrator_learner(f, a, b, tol, n):
     learner = IntegratorLearner(f, bounds=(a, b), tol=tol)
     for _ in range(n):
         points, _ = learner.ask(1)
-        learner.tell(points, map(learner.function, points))
+        learner.tell_many(points, map(learner.function, points))
     return learner
 
 

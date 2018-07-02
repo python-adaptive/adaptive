@@ -76,7 +76,7 @@ class BalancingLearner(BaseLearner):
                 pairs.append((index, point[0]))
             x, _ = max(zip(pairs, loss_improvements), key=itemgetter(1))
             points.append(x)
-            self._tell(x, None)
+            self.tell(x, None)
 
         return points, None
 
@@ -88,11 +88,11 @@ class BalancingLearner(BaseLearner):
         else:
             return self._ask_and_tell(n)
 
-    def _tell(self, x, y):
+    def tell(self, x, y):
         index, x = x
         self._points.pop(index, None)
         self._loss.pop(index, None)
-        self.learners[index]._tell(x, y)
+        self.learners[index].tell(x, y)
 
     def loss(self, real=True):
         losses = []

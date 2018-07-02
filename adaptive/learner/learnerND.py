@@ -221,7 +221,7 @@ class LearnerND(BaseLearner):
     def points(self):
         return np.array(list(self.data.keys()), dtype=float)
 
-    def _tell(self, point, value):
+    def tell(self, point, value):
         point = tuple(point)
 
         if point in self.data:

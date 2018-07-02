@@ -27,11 +27,11 @@ class SKOptLearner(Optimizer, BaseLearner):
         self.function = function
         super().__init__(**kwargs)
 
-    def _tell(self, x, y, fit=True):
+    def tell(self, x, y, fit=True):
         if y is not None:
             # 'skopt.Optimizer' takes care of points we
             # have not got results for.
-            super()._tell([x], y, fit)
+            super().tell([x], y, fit)
 
     def remove_unfinished(self):
         pass

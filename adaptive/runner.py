@@ -194,7 +194,7 @@ class BlockingRunner(BaseRunner):
                         ) from e
                     if do_log:
                         self.log.append(('tell', x, y))
-                    self.learner._tell(x, y)
+                    self.learner.tell(x, y)
 
         finally:
             # remove points with 'None' values from the learner
@@ -415,7 +415,7 @@ class AsyncRunner(BaseRunner):
                         ) from e
                     if do_log:
                         self.log.append(('tell', x, y))
-                    self.learner._tell(x, y)
+                    self.learner.tell(x, y)
         finally:
             # remove points with 'None' values from the learner
             self.learner.remove_unfinished()
@@ -457,7 +457,7 @@ def simple(learner, goal):
         xs, _ = learner.ask(1)
         for x in xs:
             y = learner.function(x)
-            learner._tell(x, y)
+            learner.tell(x, y)
 
 
 def replay_log(learner, log):
