@@ -169,6 +169,7 @@ def _info_html(runner):
     info = [
         ('status', f'<font color="{color}">{status}</font>'),
         ('elapsed time', datetime.timedelta(seconds=runner.elapsed_time())),
+        ('overhead', f'{runner.overhead():.2f}%'),
     ]
 
     try:

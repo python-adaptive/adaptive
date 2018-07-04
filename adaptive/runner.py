@@ -9,6 +9,7 @@ import traceback
 import warnings
 
 from .notebook_integration import live_plot, live_info, in_ipynb
+from .utils import timed
 
 try:
     import ipyparallel
@@ -270,6 +271,11 @@ class AsyncRunner(BaseRunner):
         self.ioloop = ioloop or asyncio.get_event_loop()
         self.task = None
 
+        self.start_time = time.time()
+        self.end_time = None
+        self.elapsed_function_time = 0
+        self.function = functools.partial(timed, self.learner.function)
+
         # When the learned function is 'async def', we run it
         # directly on the event loop, and not in the executor.
         # The *whole point* of allowing learning of async functions is so that
@@ -279,14 +285,11 @@ class AsyncRunner(BaseRunner):
                 raise RuntimeError('Cannot use an executor when learning an '
                                    'async function.')
             self.executor.shutdown()  # Make sure we don't shoot ourselves later
-            self._submit = lambda x: self.ioloop.create_task(learner.function(x))
+            self._submit = lambda x: self.ioloop.create_task(self.function(x))
         else:
             self._submit = functools.partial(self.ioloop.run_in_executor,
                                              self.executor,
-                                             self.learner.function)
-
-        self.start_time = time.time()
-        self.end_time = None
+                                             self.function)
 
         self.task = self.ioloop.create_task(self._run())
         if in_ipynb() and not self.ioloop.is_running():
@@ -305,6 +308,17 @@ class AsyncRunner(BaseRunner):
         else:
             end_time = time.time()
         return end_time - self.start_time
+
+    def overhead(self):
+        """Returns the overhead in % of using adaptive and the executor.
+
+        This is measured as `(1 - elapsed_function_time / elapsed_time)`.
+        Note that this overhead includes the overhead of the executor that
+        is used.
+        """
+        t_function = self.elapsed_function_time
+        t_total = self.elapsed_time()
+        return (1 - t_function / t_total) * 100
 
     def status(self):
         """Return the runner status as a string.
@@ -392,7 +406,8 @@ class AsyncRunner(BaseRunner):
                 for fut in done:
                     x = xs.pop(fut)
                     try:
-                        y = fut.result()
+                        y, t = fut.result()
+                        self.elapsed_function_time += t / _get_ncores(self.executor)
                     except Exception as e:
                         tb = traceback.format_exc()
                         raise RuntimeError(
