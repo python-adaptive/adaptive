@@ -259,15 +259,16 @@ class LearnerND(BaseLearner):
             return
 
         simplex = tuple(simplex)
-        simplices = set.union(*[self.tri.vertex_to_simplices[i] for i in simplex])
+        neightbours = set.union(*[self.tri.vertex_to_simplices[i] for i in simplex])
+        # Neighbours also includes the simplex itself
 
-        for simplex in simplices:
-            if self.tri.fast_point_in_simplex(point, simplex):
-                if simplex not in self._subtriangulations:
-                    tr = self._subtriangulations[simplex] = Triangulation(self.tri.get_vertices(simplex))
+        for simpl in neightbours:
+            if self.tri.fast_point_in_simplex(point, simpl):
+                if simpl not in self._subtriangulations:
+                    tr = self._subtriangulations[simpl] = Triangulation(self.tri.get_vertices(simpl))
                     tr.add_point(point, next(iter(tr.simplices)))
                 else:
-                    self._subtriangulations[simplex].add_point(point)
+                    self._subtriangulations[simpl].add_point(point)
 
     def ask(self, n=1):
         # TODO make this method shorter, and nicer, it should be possible
