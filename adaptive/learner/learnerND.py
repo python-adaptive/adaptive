@@ -11,6 +11,7 @@ from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
 from .triangulation import Triangulation
+import math
 
 
 def find_initial_simplex(pts, ndim):
@@ -59,7 +60,7 @@ def default_loss(simplex, ys):
     return std_loss(simplex, ys) + longest_edge * 0.1
 
 
-def choose_point_in_simplex(simplex, metric=None):
+def choose_point_in_simplex(simplex, transform=None):
     """Choose a new point in inside a simplex.
 
     Pick the center of the longest edge of this simplex
@@ -68,7 +69,7 @@ def choose_point_in_simplex(simplex, metric=None):
     ----------
     simplex : numpy array
         The coordinates of a triangle with shape (N+1, N)
-    metric : N*N matrix
+    transform : N*N matrix
         The multiplication to apply to the simplex before choosing the new point
 
     Returns
@@ -78,15 +79,15 @@ def choose_point_in_simplex(simplex, metric=None):
     """
 
     # TODO find a better selection algorithm
-    if metric is not None:
-        simplex = np.dot(simplex, metric)
+    if transform is not None:
+        simplex = np.dot(simplex, transform)
 
     distances = scipy.spatial.distance.pdist(simplex)
     distance_matrix = scipy.spatial.distance.squareform(distances)
     i, j = np.unravel_index(np.argmax(distance_matrix), distance_matrix.shape)
 
     point = (simplex[i, :] + simplex[j, :]) / 2
-    return np.dot(point, np.linalg.inv(metric))
+    return np.linalg.solve(transform, point)
 
 
 class LearnerND(BaseLearner):
@@ -154,7 +155,7 @@ class LearnerND(BaseLearner):
 
         self._subtriangulations = dict()  # simplex -> triangulation
 
-        self._metric = np.linalg.inv(np.diag(np.diff(bounds).flat))
+        self._transform = np.linalg.inv(np.diag(np.diff(bounds).flat))
 
     @property
     def npoints(self):
@@ -194,7 +195,7 @@ class LearnerND(BaseLearner):
         to_add = [p for i, p in enumerate(self.points) if i not in initial_simplex]
 
         for p in to_add:
-            self._tri.add_point(p, metric=self._metric)
+            self._tri.add_point(p, transform=self._transform)
         # TODO also compute losses of initial simplex
 
     @property
@@ -234,7 +235,7 @@ class LearnerND(BaseLearner):
             simplex = self._pending_to_simplex.get(point, None)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = None
-            to_delete, to_add = self._tri.add_point(point, simplex, metric=self._metric)
+            to_delete, to_add = self._tri.add_point(point, simplex, transform=self._transform)
             self.update_losses(to_delete, to_add)
 
     def _simplex_exists(self, simplex):
@@ -339,7 +340,7 @@ class LearnerND(BaseLearner):
                     simplex = real_simp
                     loss = pend_loss
 
-            point_new = tuple(choose_point_in_simplex(points, metric=self._metric))  # choose a new point in the simplex
+            point_new = tuple(choose_point_in_simplex(points, transform=self._transform))  # choose a new point in the simplex
             self._pending_to_simplex[point_new] = simplex
 
             new_points.append(point_new)
@@ -390,7 +391,8 @@ class LearnerND(BaseLearner):
     def remove_unfinished(self):
         # TODO implement this method
         self._pending = set()
-        raise NotImplementedError("method 'LearnerND.remove_unfinished()' is not yet fully implemented")
+        self._subtriangulations = dict()
+        self._pending_to_simplex = dict()
 
     def plot(self, n=None, tri_alpha=0):
         hv = ensure_holoviews()
@@ -488,7 +490,7 @@ class LearnerND(BaseLearner):
                 raise NotImplementedError('multidimensional output not yet supported by plotSlice')
 
             # Plot with 5% empty margins such that the boundary points are visible
-            margin = 0.05 / np.diag(self._metric)[ind]
+            margin = 0.05 / np.diag(self._transform)[ind]
             plot_bounds = (a - margin, b + margin)
 
             return p.redim(x=dict(range=plot_bounds))

@@ -5,18 +5,23 @@ import numpy as np
 from scipy import linalg
 import math
 
-# WIP:
+def fast_norm(v):
+    # notice this method can be even more optimised
+    return math.sqrt(np.dot(v,v))
+
+def fast_norm_2d(v):
+    return math.sqrt(v[0]*v[0] + v[1]*v[1])
 
 def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
     (p0x, p0y), (p1x, p1y), (p2x, p2y) = simplex
     px, py = point
 
-    Area = 0.5 * (-p1y * p2x + p0y * (-p1x + p2x) + p0x * (p1y - p2y) + p1x * p2y)
+    area = 0.5 * (-p1y * p2x + p0y * (-p1x + p2x) + p0x * (p1y - p2y) + p1x * p2y)
 
-    s = 1 / (2 * Area) * (p0y * p2x - p0x * p2y + (p2y - p0y) * px + (p0x - p2x) * py)
+    s = 1 / (2 * area) * (p0y * p2x - p0x * p2y + (p2y - p0y) * px + (p0x - p2x) * py)
     if s < -eps or s > 1+eps:
         return
-    t = 1 / (2 * Area) * (p0x * p1y - p0y * p1x + (p0y - p1y) * px + (p1x - p0x) * py)
+    t = 1 / (2 * area) * (p0x * p1y - p0y * p1x + (p0y - p1y) * px + (p1x - p0x) * py)
 
     return (t >= -eps) and (s + t <= 1+eps)
 
@@ -90,7 +95,7 @@ def fast_3d_circumcircle(points):
     a = 2*aa
 
     center = [dx/a, -dy/a, dz/a]
-    radius = np.sqrt(np.dot(center, center))
+    radius = fast_norm(center)
     center = np.add(center, points[0])
 
     return tuple(center), radius
@@ -168,11 +173,11 @@ class Triangulation:
         for vertex in simplex:
             self.vertex_to_simplices[vertex].add(simplex)
 
-    def get_vertices(self, indices, metric=None):
-        if metric is None:
+    def get_vertices(self, indices, transform=None):
+        if transform is None:
             return [self.vertices[i] for i in indices]
         else:
-            return np.dot(self.get_vertices(indices), metric)
+            return np.dot(self.get_vertices(indices), transform)
 
     def point_in_simplex(self, point, simplex, eps=1e-8):
         """Check whether vertex lies within a simplex.
@@ -191,10 +196,11 @@ class Triangulation:
         alpha = np.linalg.solve(vectors.T, point - x0)
         if any(alpha < -eps) or sum(alpha) > 1 + eps:
             return []
-        result = (
-            ([0] if sum(alpha)  < 1 - eps else [])
-            + [i + 1 for i, a in enumerate(alpha) if a > eps]
-        )
+
+        result = [i for i, a in enumerate(alpha, 1) if a > eps]
+        if sum(alpha) < 1 - eps:
+            result.insert(0, 0)
+
         return [simplex[i] for i in result]
 
     def fast_point_in_simplex(self, point, simplex, eps=1e-8):
@@ -293,7 +299,7 @@ class Triangulation:
             if orientation_inside == -orientation_new_point:
                 # if the orientation of the new vertex is zero or directed
                 # towards the center, do not add the simplex
-                self.add_simplex(face + (pt_index,))
+                self.add_simplex((*face, pt_index))
                 faces_to_check.add(face)
 
         multiplicities = Counter(face for face in
@@ -312,20 +318,20 @@ class Triangulation:
         self.hull = self.compute_hull(vertices=self.hull, check=False)
 
 
-    def circumscribed_circle(self, simplex, metric):
+    def circumscribed_circle(self, simplex, transform):
         """
         Compute the centre and radius of the circumscribed circle of a simplex
         :param simplex: the simplex to investigate
         :return: tuple (centre point, radius)
         """
         if self.dim == 2:
-            return fast_2d_circumcircle(self.get_vertices(simplex, metric))
+            return fast_2d_circumcircle(self.get_vertices(simplex, transform))
         if self.dim == 3:
-            return fast_3d_circumcircle(self.get_vertices(simplex, metric))
+            return fast_3d_circumcircle(self.get_vertices(simplex, transform))
 
         # Modified from http://mathworld.wolfram.com/Circumsphere.html
         mat = []
-        pts = self.get_vertices(simplex, metric)
+        pts = self.get_vertices(simplex, transform)
         for pt in pts:
             length_squared = np.sum(np.square(pt))
             row = np.array([length_squared, *pt, 1])
@@ -342,45 +348,46 @@ class Triangulation:
 
         x0 = self.vertices[next(iter(simplex))]
         vec = np.subtract(center, x0)
-        radius = np.sqrt(np.dot(vec, vec))
+        radius = fast_norm(vec)
 
         return tuple(center), radius
 
 
-    def point_in_cicumcircle(self, pt_index, simplex, metric):
-        # return self.fast_point_in_circumcircle(pt_index, simplex, metric)
+    def point_in_cicumcircle(self, pt_index, simplex, transform):
+        # return self.fast_point_in_circumcircle(pt_index, simplex, transform)
         eps = 1e-8
 
-        center, radius = self.circumscribed_circle(simplex, metric)
-        pt = self.get_vertices([pt_index], metric)[0]
+        center, radius = self.circumscribed_circle(simplex, transform)
+        pt = self.get_vertices([pt_index], transform)[0]
 
         return np.linalg.norm(center - pt) < (radius * (1 + eps))
 
-    def fast_point_in_circumcircle(self, pt_index, simplex, metric):
-        # Construct the matrix
-        eps = 1e-10
-        indices = simplex + (pt_index,)
-        original_points = self.get_vertices(indices)
-        points = np.dot(original_points, metric)
-        l_squared = np.sum(np.square(points), axis=1)
-
-        M = [*np.transpose(points), l_squared, np.ones(l_squared.shape)]
-
-        # Compute the determinant
-        det = np.linalg.det(M)
-        if np.abs(det) < eps:
-            return True
-
-        M2 = [*np.transpose(points[:-1]), np.ones(len(simplex))]
-        det_inside = np.linalg.det(M2)
-
-        return np.sign(det) == np.sign(det_inside)
+    # WIP: currently this is slower than computing the circumcircle
+    # def fast_point_in_circumcircle(self, pt_index, simplex, transform):
+    #     # Construct the matrix
+    #     eps = 1e-10
+    #     indices = simplex + (pt_index,)
+    #     original_points = self.get_vertices(indices)
+    #     points = np.dot(original_points, transform)
+    #     l_squared = np.sum(np.square(points), axis=1)
+    #
+    #     M = np.array([*np.transpose(points), l_squared, np.ones(l_squared.shape)], dtype=float)
+    #
+    #     # Compute the determinant
+    #     det = np.linalg.det(M)
+    #     if np.abs(det) < eps:
+    #         return True
+    #
+    #     M2 = [*np.transpose(points[:-1]), np.ones(len(simplex))]
+    #     det_inside = np.linalg.det(M2)
+    #
+    #     return np.sign(det) == np.sign(det_inside)
 
     @property
-    def default_metric(self):
+    def default_transform(self):
         return np.eye(self.dim)
 
-    def bowyer_watson(self, pt_index, containing_simplex=None, metric=None):
+    def bowyer_watson(self, pt_index, containing_simplex=None, transform=None):
         """
         Modified Bowyer-Watson point adding algorithm
 
@@ -392,7 +399,7 @@ class Triangulation:
         queue = set()
         done_simplices = set()
 
-        metric = self.default_metric if metric is None else metric
+        transform = self.default_transform if transform is None else transform
 
         if containing_simplex is None:
             queue.update(self.vertex_to_simplices[pt_index])
@@ -407,7 +414,7 @@ class Triangulation:
             simplex = queue.pop()
             done_simplices.add(simplex)
 
-            if self.point_in_cicumcircle(pt_index, simplex, metric):
+            if self.point_in_cicumcircle(pt_index, simplex, transform):
                 self.delete_simplex(simplex)
                 todo_points = set(simplex) - done_points
                 done_points.update(simplex)
@@ -431,14 +438,14 @@ class Triangulation:
 
         return bad_triangles, self.vertex_to_simplices[pt_index]
 
-    def add_point(self, point, simplex=None, metric=None):
+    def add_point(self, point, simplex=None, transform=None):
         """Add a new vertex and create simplices as appropriate.
 
         Parameters
         ----------
         point : float vector
             Coordinates of the point to be added.
-        metric : N*N matrix of floats
+        transform : N*N matrix of floats
             Multiplication matrix to apply to the point (and neighbouring
             simplices) when running the Bowyer Watson method.
         simplex : tuple of ints, optional
@@ -457,7 +464,7 @@ class Triangulation:
 
             pt_index = len(self.vertices) - 1
             # self.bowyer_watson(pt_index)
-            return self.bowyer_watson(pt_index, metric=metric)
+            return self.bowyer_watson(pt_index, transform=transform)
         else:
             reduced_simplex = self.point_in_simplex(point, simplex)
             if not reduced_simplex:
@@ -472,7 +479,7 @@ class Triangulation:
         else:
             pt_index = len(self.vertices)
             self.vertices.append(point)
-            return self.bowyer_watson(pt_index, actual_simplex, metric)
+            return self.bowyer_watson(pt_index, actual_simplex, transform)
 
     def add_point_inside_simplex(self, point, simplex):
         if len(self.point_in_simplex(point, simplex)) != self.dim + 1:
@@ -483,7 +490,7 @@ class Triangulation:
 
         new = []
         for others in combinations(simplex, len(simplex) - 1):
-            tri = others + (pt_index,)
+            tri = (*others, pt_index)
             self.add_simplex(tri)
             new.append(tri)
 
@@ -506,7 +513,7 @@ class Triangulation:
             opposing = tuple(pt for pt in simplex if pt not in face)
 
             for others in combinations(face, len(face) - 1):
-                self.add_simplex(others + opposing + (pt_index,))
+                self.add_simplex((*others, *opposing, pt_index))
 
     def flip(self, face):
         """Flip the face shared between several simplices."""
