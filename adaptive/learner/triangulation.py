@@ -3,6 +3,9 @@ from itertools import combinations, chain
 
 import numpy as np
 from scipy import linalg
+import math
+
+# WIP:
 
 def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
     (p0x, p0y), (p1x, p1y), (p2x, p2y) = simplex
@@ -45,22 +48,26 @@ def fast_2d_circumcircle(points):
     :return: tuple (centre point, radius)
     """
     points = np.array(points)
+    # transform to relative coordinates
     pts = points[1:] - points[0]
-    l = [np.dot(p, p) for p in pts] # length squared
 
     (x1, y1), (x2, y2) = pts
-    l1,l2 = l
+    # compute the length squared
+    l1 = x1*x1 + y1*y1
+    l2 = x2*x2 + y2*y2
 
+    # compute some determinants
     dx = + l1 * y2 - l2 * y1
     dy = - l1 * x2 + l2 * x1
     aa = + x1 * y2 - x2 * y1
     a = 2 * aa
 
-    center = [dx/a, dy/a]
-    radius = np.sqrt(np.dot(center, center))
-    center = np.add(center, points[0])
+    # compute center
+    x = dx/a
+    y = dy/a
+    radius = math.sqrt(x*x + y*y) # radius = norm([x, y])
 
-    return tuple(center), radius
+    return (x + points[0][0], y + points[0][1]), radius
 
 
 def fast_3d_circumcircle(points):
@@ -343,6 +350,7 @@ class Triangulation:
 
 
     def point_in_cicumcircle(self, pt_index, simplex, metric):
+        # return self.fast_point_in_circumcircle(pt_index, simplex, metric)
         eps = 1e-8
 
         center, radius = self.circumscribed_circle(simplex, metric)
@@ -350,7 +358,25 @@ class Triangulation:
 
         return np.linalg.norm(center - pt) < (radius * (1 + eps))
 
+    def fast_point_in_circumcircle(self, pt_index, simplex, metric):
+        # Construct the matrix
+        eps = 1e-10
+        indices = simplex + (pt_index,)
+        original_points = self.get_vertices(indices)
+        points = np.dot(original_points, metric)
+        l_squared = np.sum(np.square(points), axis=1)
 
+        M = [*np.transpose(points), l_squared, np.ones(l_squared.shape)]
+
+        # Compute the determinant
+        det = np.linalg.det(M)
+        if np.abs(det) < eps:
+            return True
+
+        M2 = [*np.transpose(points[:-1]), np.ones(len(simplex))]
+        det_inside = np.linalg.det(M2)
+
+        return np.sign(det) == np.sign(det_inside)
 
     @property
     def default_metric(self):
