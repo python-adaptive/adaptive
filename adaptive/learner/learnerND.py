@@ -25,8 +25,7 @@ def find_initial_simplex(pts, ndim):
 
 
 def volume(simplex, ys=None):
-    matrix = np.subtract(simplex[:-1], simplex[-1])
-    matrix = np.subtract(simplex[:-1], simplex[-1])
+    matrix = np.array(np.subtract(simplex[:-1], simplex[-1]), dtype=float)
     dim = len(simplex) - 1
 
     # See https://www.jstor.org/stable/2315353
@@ -359,7 +358,7 @@ class LearnerND(BaseLearner):
             if subtri is not None:
                 pending_points_unbound.update(subtri.vertices)
 
-        pending_points_unbound = set([p for p in pending_points_unbound if p not in self.data])
+        pending_points_unbound = set(p for p in pending_points_unbound if p not in self.data)
 
         for simplex in to_add:
             vertices = self.tri.get_vertices(simplex)

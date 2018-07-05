@@ -319,11 +319,9 @@ class Triangulation:
         :return: tuple (centre point, radius)
         """
         if self.dim == 2:
-            c, r = fast_2d_circumcircle(self.get_vertices(simplex, metric))
-            return tuple(c), r
+            return fast_2d_circumcircle(self.get_vertices(simplex, metric))
         if self.dim == 3:
-            c, r = fast_3d_circumcircle(self.get_vertices(simplex, metric))
-            return tuple(c), r
+            return fast_3d_circumcircle(self.get_vertices(simplex, metric))
 
         # Modified from http://mathworld.wolfram.com/Circumsphere.html
         mat = []
@@ -394,15 +392,14 @@ class Triangulation:
         queue = set()
         done_simplices = set()
 
-        if metric is None:
-            metric = self.default_metric
+        metric = self.default_metric if metric is None else metric
 
         if containing_simplex is None:
             queue.update(self.vertex_to_simplices[pt_index])
         else:
             queue.add(containing_simplex)
 
-        done_points = set([pt_index])
+        done_points = {pt_index}
 
         bad_triangles = set()
 
@@ -428,9 +425,9 @@ class Triangulation:
 
         for face in hole_faces:
             if pt_index not in face:
-                if self.volume(face+ (pt_index,)) < 1e-8:
+                if self.volume((*face, pt_index)) < 1e-8:
                     continue
-                self.add_simplex(face + (pt_index,))
+                self.add_simplex((*face, pt_index))
 
         return bad_triangles, self.vertex_to_simplices[pt_index]
 
@@ -475,7 +472,7 @@ class Triangulation:
         else:
             pt_index = len(self.vertices)
             self.vertices.append(point)
-            return self.bowyer_watson(pt_index, containing_simplex=actual_simplex, metric=metric)
+            return self.bowyer_watson(pt_index, actual_simplex, metric)
 
     def add_point_inside_simplex(self, point, simplex):
         if len(self.point_in_simplex(point, simplex)) != self.dim + 1:
