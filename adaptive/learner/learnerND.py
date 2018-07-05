@@ -259,10 +259,10 @@ class LearnerND(BaseLearner):
             return
 
         simplex = tuple(simplex)
-        neightbours = set.union(*[self.tri.vertex_to_simplices[i] for i in simplex])
+        neighbours = set.union(*[self.tri.vertex_to_simplices[i] for i in simplex])
         # Neighbours also includes the simplex itself
 
-        for simpl in neightbours:
+        for simpl in neighbours:
             if self.tri.fast_point_in_simplex(point, simpl):
                 if simpl not in self._subtriangulations:
                     tr = self._subtriangulations[simpl] = Triangulation(self.tri.get_vertices(simpl))
