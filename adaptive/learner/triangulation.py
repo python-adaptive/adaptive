@@ -185,7 +185,7 @@ class Triangulation:
             return [self.vertices[i] for i in indices]
             return
 
-    def get_face_of_simplex_with_point(self, point, simplex, eps=1e-8):
+    def get_reduced_simplex(self, point, simplex, eps=1e-8):
         """Check whether vertex lies within a simplex.
 
         Returns
@@ -194,6 +194,7 @@ class Triangulation:
             Indices of vertices of the simplex to which the vertex belongs. None
             indicates that the vertex is outside the simplex
         """
+        # TODO in the end we want to lose this method
         if len(simplex) != self.dim + 1:
             # We are checking whether point belongs to a face.
             simplex = self.containing(simplex).pop()
@@ -213,9 +214,11 @@ class Triangulation:
         if self.dim == 2:
             return fast_2d_point_in_simplex(point, self.get_vertices(simplex), eps)
         elif self.dim == 3:
-            return len(self.get_face_of_simplex_with_point(point, simplex, eps)) > 0
+            # TODO Better to write a separate function for this
+            return len(self.get_reduced_simplex(point, simplex, eps)) > 0
         else:
-            return len(self.get_face_of_simplex_with_point(point, simplex, eps)) > 0
+            # TODO Better to write a separate function for this
+            return len(self.get_reduced_simplex(point, simplex, eps)) > 0
 
     def locate_point(self, point):
         """Find to which simplex the point belongs.
@@ -473,7 +476,7 @@ class Triangulation:
             # self.bowyer_watson(pt_index)
             return self.bowyer_watson(pt_index, transform=transform)
         else:
-            reduced_simplex = self.get_face_of_simplex_with_point(point, simplex)
+            reduced_simplex = self.get_reduced_simplex(point, simplex)
             if not reduced_simplex:
                 raise ValueError(
                     'Point lies outside of the specified simplex.'
@@ -489,7 +492,8 @@ class Triangulation:
             return self.bowyer_watson(pt_index, actual_simplex, transform)
 
     def add_point_inside_simplex(self, point, simplex):
-        if len(self.get_face_of_simplex_with_point(point, simplex)) != self.dim + 1:
+        # TODO maybe have a method point_strictly_inside_simplex
+        if len(self.get_reduced_simplex(point, simplex)) != self.dim + 1:
             raise ValueError("Vertex is not inside simplex")
         pt_index = len(self.vertices)
         self.vertices.append(point)
@@ -508,7 +512,8 @@ class Triangulation:
         self.vertices.append(point)
 
         simplices = self.containing(face)
-        if (set(self.get_face_of_simplex_with_point(point, next(iter(simplices))))
+        # TODO maybe have a method point_on_face
+        if (set(self.get_reduced_simplex(point, next(iter(simplices))))
                 != set(face)):
 
             raise ValueError("Vertex does not lie on the face.")
