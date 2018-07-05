@@ -99,18 +99,17 @@ class LearnerND(BaseLearner):
 
     Parameters
     ----------
-    function : callable
-        The function to learn. Must take a tuple of two real
-        parameters and return a real number.
+    func: callable
+        The function to learn. Must take a tuple of N real
+        parameters and return a real number or an arraylike of length M.
     bounds : list of 2-tuples
-        A list ``[(a1, b1), (a2, b2), ...]`` containing bounds,
-        one per dimension.
+        A list ``[(a_1, b_1), (a_2, b_2), ..., (a_n, b_n)]`` containing bounds,
+        one pair per dimension.
     loss_per_simplex : callable, optional
-        A function that returns the loss for every triangle.
+        A function that returns the loss for a simplex.
         If not provided, then a default is used, which uses
         the deviation from a linear estimate, as well as
-        triangle area, to determine the loss. See the notes
-        for more details.
+        triangle area, to determine the loss.
 
 
     Attributes
@@ -120,25 +119,33 @@ class LearnerND(BaseLearner):
 
     Methods
     -------
-    plotSlice(x_1, x_2, ..., x_n)
-        plot a slice of the function using the current data.
+    plot()
+        If dim == 1 or dim == 2, this method will plot the function being learned
+    plot_slice((x_1, x_2, ..., x_n), )
+        plot a slice of the function using the current data. If a coordinate is
+        passed as None, it will be used to plot. e.g. you have a 3d learner,
+        passing (1, None, None) will plot a 2d intersection with
+        x = 1, y = linspace(y_min, y_max), z = linspace(z_min, z_max).
 
     Notes
     -----
-    Adapted from an initial implementation by Pauli Virtanen.
-
     The sample points are chosen by estimating the point where the
-    linear and cubic interpolants based on the existing points have
-    maximal disagreement. This point is then taken as the next point
-    to be sampled.
+    gradient is maximal. This is based on the currently known points.
 
     In practice, this sampling protocol results to sparser sampling of
-    smooth regions, and denser sampling of regions where the function
-    changes rapidly, which is useful if the function is expensive to
+    flat regions, and denser sampling of regions where the function
+    has a high gradient, which is useful if the function is expensive to
     compute.
 
-    This sampling procedure is not extremely fast, so to benefit from
+    This sampling procedure is not fast, so to benefit from
     it, your function needs to be slow enough to compute.
+
+
+    This class keeps track of all known points. It triangulates these points and
+    with every simplex it associates a loss. Then if you request points that you
+    will compute in the future, it will subtriangulate a real simplex with the
+    pending points inside it and distribute the loss among it's children based
+    on volume.
     """
 
     def __init__(self, func, bounds, loss_per_simplex=None):
@@ -211,18 +218,6 @@ class LearnerND(BaseLearner):
     def points(self):
         return np.array(list(self.data.keys()), dtype=float)
 
-    _time = None
-    _prev = 1/30
-
-    def time(self):
-        import time
-        if self._time is None:
-            self._time = time.time()
-        self._prev = 0.98 * self._prev + (time.time() - self._time) * 0.02
-        # take exponential decaying weighted average
-        self._time = time.time()
-        return self._prev
-
     def _tell(self, point, value):
         point = tuple(point)
 
@@ -232,7 +227,6 @@ class LearnerND(BaseLearner):
         self._pending.discard(point)
 
         simpl = len(self._tri.simplices) if self._tri else 0
-        print("addpoint", self.npoints, ":", "(p/s: %.2f)" % (1/self.time()), "nsimplices: ", simpl, point)
 
         self.data[point] = value
 
@@ -276,6 +270,7 @@ class LearnerND(BaseLearner):
                     self._subtriangulations[simplex].add_point(point)
 
     def ask(self, n=1):
+        # TODO make this method shorter, and nicer, it should be possible
         xs = []
         losses = []
         for i in range(n):
