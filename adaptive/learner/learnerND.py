@@ -11,8 +11,7 @@ from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
 from .triangulation import Triangulation
-import math
-
+import random
 
 def find_initial_simplex(pts, ndim):
     origin = pts[0]
@@ -92,8 +91,6 @@ def choose_point_in_simplex(simplex, transform=None):
     return np.linalg.solve(transform, point)
 
 
-np.random.seed(0)
-
 class LearnerND(BaseLearner):
     """Learns and predicts a function 'f: ℝ^N → ℝ^M'.
 
@@ -168,6 +165,8 @@ class LearnerND(BaseLearner):
         # i.e. the triangulation of the pending points inside a specific simplex
 
         self._transform = np.linalg.inv(np.diag(np.diff(bounds).flat))
+
+        self._random = random.Random(1)  # create a private random number generator with fixed seed
 
     @property
     def npoints(self):
@@ -308,7 +307,8 @@ class LearnerND(BaseLearner):
             # pick a random point inside the bounds
             a = np.diff(self.bounds).flat
             b = np.array(self.bounds)[:, 0]
-            p = np.random.random(self.ndim) * a + b
+            r = np.array([self._random.random() for _ in range(self.ndim)])
+            p = r * a + b
             p = tuple(p)
             return [p], [np.inf]
 
