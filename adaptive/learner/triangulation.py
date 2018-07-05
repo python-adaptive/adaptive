@@ -173,11 +173,9 @@ class Triangulation:
         for vertex in simplex:
             self.vertex_to_simplices[vertex].add(simplex)
 
-    def get_vertices(self, indices, transform=None):
-        if transform is None:
+    def get_vertices(self, indices):
             return [self.vertices[i] for i in indices]
-        else:
-            return np.dot(self.get_vertices(indices), transform)
+            return
 
     def point_in_simplex(self, point, simplex, eps=1e-8):
         """Check whether vertex lies within a simplex.
@@ -324,14 +322,14 @@ class Triangulation:
         :param simplex: the simplex to investigate
         :return: tuple (centre point, radius)
         """
+        pts = np.dot(self.get_vertices(simplex), transform)
         if self.dim == 2:
-            return fast_2d_circumcircle(self.get_vertices(simplex, transform))
+            return fast_2d_circumcircle(pts)
         if self.dim == 3:
-            return fast_3d_circumcircle(self.get_vertices(simplex, transform))
+            return fast_3d_circumcircle(pts)
 
         # Modified from http://mathworld.wolfram.com/Circumsphere.html
         mat = []
-        pts = self.get_vertices(simplex, transform)
         for pt in pts:
             length_squared = np.sum(np.square(pt))
             row = np.array([length_squared, *pt, 1])
@@ -358,7 +356,8 @@ class Triangulation:
         eps = 1e-8
 
         center, radius = self.circumscribed_circle(simplex, transform)
-        pt = self.get_vertices([pt_index], transform)[0]
+        pt = np.dot(self.get_vertices([pt_index]), transform)[0]
+
 
         return np.linalg.norm(center - pt) < (radius * (1 + eps))
 
