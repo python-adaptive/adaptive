@@ -26,6 +26,8 @@ def find_initial_simplex(pts, ndim):
 
 
 def volume(simplex, ys=None):
+    # Notice the parameter ys is there so you can use this volume method as
+    # as loss function
     matrix = np.array(np.subtract(simplex[:-1], simplex[-1]), dtype=float)
     dim = len(simplex) - 1
 
@@ -90,6 +92,8 @@ def choose_point_in_simplex(simplex, transform=None):
     return np.linalg.solve(transform, point)
 
 
+np.random.seed(0)
+
 class LearnerND(BaseLearner):
     """Learns and predicts a function 'f: ℝ^N → ℝ^M'.
 
@@ -153,7 +157,8 @@ class LearnerND(BaseLearner):
 
         self._pending_to_simplex = dict()  # vertex -> simplex
 
-        self._subtriangulations = dict()  # simplex -> triangulation
+        self._subtriangulations = dict()  # simplex -> triangulation,
+        # i.e. the triangulation of the pending points inside a specific simplex
 
         self._transform = np.linalg.inv(np.diag(np.diff(bounds).flat))
 
@@ -232,7 +237,7 @@ class LearnerND(BaseLearner):
         self.data[point] = value
 
         if self._tri is not None:
-            simplex = self._pending_to_simplex.get(point, None)
+            simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = None
             to_delete, to_add = self._tri.add_point(point, simplex, transform=self._transform)
@@ -252,22 +257,23 @@ class LearnerND(BaseLearner):
         point = tuple(point)
         self._pending.add(point)
 
-        if self.tri is not None:
-            if simplex is None:
-                simplex = self.tri.locate_point(point)
-                if len(simplex) == 0:
-                    return
+        if self.tri is None:
+            return
 
-            simplex = tuple(simplex)
-            simplices = set.union(*[self.tri.vertex_to_simplices[i] for i in simplex])
+        simplex = tuple(simplex or self.tri.locate_point(point))
+        if not simplex:
+            return
 
-            for simplex in simplices:
-                if self.tri.fast_point_in_simplex(point, simplex):
-                    if simplex not in self._subtriangulations:
-                        tr = self._subtriangulations[simplex] = Triangulation(self.tri.get_vertices(simplex))
-                        tr.add_point(point, next(iter(tr.simplices)))
-                    else:
-                        self._subtriangulations[simplex].add_point(point)
+        simplex = tuple(simplex)
+        simplices = set.union(*[self.tri.vertex_to_simplices[i] for i in simplex])
+
+        for simplex in simplices:
+            if self.tri.fast_point_in_simplex(point, simplex):
+                if simplex not in self._subtriangulations:
+                    tr = self._subtriangulations[simplex] = Triangulation(self.tri.get_vertices(simplex))
+                    tr.add_point(point, next(iter(tr.simplices)))
+                else:
+                    self._subtriangulations[simplex].add_point(point)
 
     def ask(self, n=1):
         xs = []
@@ -289,7 +295,7 @@ class LearnerND(BaseLearner):
         if not self.bounds_are_done:
             bounds_to_do = [p for p in self._bounds_points if p not in self.data and p not in self._pending]
             new_points = bounds_to_do[:n]
-            new_loss_improvements = [-np.inf] * len(new_points)
+            new_loss_improvements = [np.inf] * len(new_points)
             n = n - len(new_points)
             for p in new_points:
                 self._tell_pending(p)
@@ -308,14 +314,13 @@ class LearnerND(BaseLearner):
             b = np.array(self.bounds)[:, 0]
             p = np.random.random(self.ndim) * a + b
             p = tuple(p)
-            return [p], [-np.inf]
+            return [p], [np.inf]
 
         while len(new_points) < n:
             if len(losses):
                 loss, simplex = heapq.heappop(losses)
 
-                if not self._simplex_exists(simplex):
-                    raise RuntimeError("all simplices in the heap should exist")
+                assert self._simplex_exists(simplex), "all simplices in the heap should exist"
 
                 if simplex in self._subtriangulations:
                     subtri = self._subtriangulations[simplex]
@@ -344,7 +349,7 @@ class LearnerND(BaseLearner):
             self._pending_to_simplex[point_new] = simplex
 
             new_points.append(point_new)
-            new_loss_improvements.append(loss)
+            new_loss_improvements.append(-loss)
 
             self._tell_pending(point_new, simplex)
 
@@ -438,7 +443,7 @@ class LearnerND(BaseLearner):
     def plot_slice(self, values, n=None):
         values = list(values)
         count_none = values.count(None)
-        assert(count_none == 1 or count_none == 2)
+        assert count_none == 1 or count_none == 2
         if count_none == 2:
             hv = ensure_holoviews()
             if self.vdim > 1:

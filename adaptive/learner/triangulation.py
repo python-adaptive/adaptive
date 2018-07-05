@@ -20,7 +20,7 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
 
     s = 1 / (2 * area) * (p0y * p2x - p0x * p2y + (p2y - p0y) * px + (p0x - p2x) * py)
     if s < -eps or s > 1+eps:
-        return
+        return False
     t = 1 / (2 * area) * (p0x * p1y - p0y * p1x + (p0y - p1y) * px + (p1x - p0x) * py)
 
     return (t >= -eps) and (s + t <= 1+eps)
@@ -84,7 +84,7 @@ def fast_3d_circumcircle(points):
     points = np.array(points)
     pts = points[1:] - points[0]
 
-    l1, l2, l3 = [np.dot(p, p) for p in pts] # length squared
+    l1, l2, l3 = np.dot(pts.T, pts) # length squared
     (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) = pts
 
     # Compute some determinants:
@@ -255,7 +255,7 @@ class Triangulation:
         # notice that this also includes interior faces, to remove these we
         # count multiplicities
         multiplicities = Counter(face for face in hull_faces)
-        hull_faces = [face for face in hull_faces if multiplicities.get(face) < 2]
+        hull_faces = [face for face in hull_faces if multiplicities[face] < 2]
 
         decomp = []
         for face in hull_faces:
@@ -427,7 +427,7 @@ class Triangulation:
         faces = list(self.faces(simplices=bad_triangles))
 
         multiplicities = Counter(face for face in faces)
-        hole_faces = [face for face in faces if multiplicities.get(face) < 2]
+        hole_faces = [face for face in faces if multiplicities[face] < 2]
 
         for face in hole_faces:
             if pt_index not in face:
@@ -493,7 +493,7 @@ class Triangulation:
             self.add_simplex(tri)
             new.append(tri)
 
-        return(new)
+        return new
 
     def add_point_on_face(self, point, face):
         pt_index = len(self.vertices)
