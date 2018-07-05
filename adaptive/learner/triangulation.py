@@ -92,7 +92,7 @@ def fast_3d_circumcircle(points):
     points = np.array(points)
     pts = points[1:] - points[0]
 
-    l1, l2, l3 = np.dot(pts.T, pts) # length squared
+    l1, l2, l3 = [np.dot(p, p) for p in pts] # length squared
     (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) = pts
 
     # Compute some determinants:
@@ -339,12 +339,8 @@ class Triangulation:
         if self.dim == 3:
             return fast_3d_circumcircle(pts)
 
-        # Modified from http://mathworld.wolfram.com/Circumsphere.html
-        mat = []
-        for pt in pts:
-            length_squared = np.sum(np.square(pt))
-            row = np.array([length_squared, *pt, 1])
-            mat.append(row)
+        # Modified method from http://mathworld.wolfram.com/Circumsphere.html
+        mat = [[np.sum(np.square(pt)), *pt, 1] for pt in pts]
 
         center = []
         for i in range(1, len(simplex)):
