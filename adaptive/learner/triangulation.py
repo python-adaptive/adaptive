@@ -49,8 +49,16 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
 def fast_2d_circumcircle(points):
     """
     Compute the centre and radius of the circumscribed circle of a simplex
-    :param points: the triangle to investigate
-    :return: tuple (centre point, radius)
+
+    Parameters
+    ----------
+        points: 2D array-like
+            the points of the triangle to investigate
+
+    Returns
+    -------
+        tuple
+            (centre point : tuple(int), radius: int)
     """
     points = np.array(points)
     # transform to relative coordinates
