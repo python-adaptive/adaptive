@@ -263,7 +263,7 @@ class LearnerND(BaseLearner):
         # Neighbours also includes the simplex itself
 
         for simpl in neighbours:
-            if self.tri.fast_point_in_simplex(point, simpl):
+            if self.tri.point_in_simplex(point, simpl):
                 if simpl not in self._subtriangulations:
                     tr = self._subtriangulations[simpl] = Triangulation(self.tri.get_vertices(simpl))
                     tr.add_point(point, next(iter(tr.simplices)))
@@ -370,7 +370,7 @@ class LearnerND(BaseLearner):
 
             for p in pending_points_unbound:
                 # try to insert it
-                if self.tri.fast_point_in_simplex(p, simplex):
+                if self.tri.point_in_simplex(p, simplex):
                     if simplex not in self._subtriangulations:
                         self._subtriangulations[simplex] = Triangulation(self.tri.get_vertices(simplex))
                     self._subtriangulations[simplex].add_point(p)
