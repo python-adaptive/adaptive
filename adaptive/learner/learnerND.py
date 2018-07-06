@@ -409,8 +409,7 @@ class LearnerND(BaseLearner):
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                # n = int(0.658 / sqrt(volumes(ip).min()))
-                n = 50
+                n = int(0.658 / np.sqrt(np.min([self.tri.volume(sim) for sim in self.tri.simplices])))
 
             x = y = np.linspace(-0.5, 0.5, n)
             z = ip(x[:, None], y[None, :]).squeeze()
