@@ -405,8 +405,17 @@ class Triangulation:
 
         Create a hole in the triangulation around the new point, then retriangulate this hole.
 
-        :param pt_index: the index of the point to inspect
-        :return: deleted_simplices, new_simplices
+        Parameters
+        ----------
+            pt_index: number
+                the index of the point to inspect
+
+        Returns
+        -------
+            deleted_simplices: set of tuples
+                Simplices that have been deleted
+            new_simplices: set of tuples
+                Simplices that have been added
         """
         queue = set()
         done_simplices = set()
