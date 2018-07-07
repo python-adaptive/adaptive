@@ -270,14 +270,8 @@ class LearnerND(BaseLearner):
                     self._subtriangulations[simpl].add_point(point)
 
     def ask(self, n=1):
-        # TODO make this method shorter, and nicer, it should be possible
-        xs = []
-        losses = []
-        for i in range(n):
-            x, loss = self._ask()
-            xs.append(*x)
-            losses.append(*loss)
-        return xs, losses
+        xs, losses = zip(*(self._ask() for _ in range(n)))
+        return list(xs), list(losses)
 
     def _ask(self, n=1):
         # Complexity: O(N log N)
@@ -296,7 +290,7 @@ class LearnerND(BaseLearner):
                 self._tell_pending(p)
 
         if n == 0:
-            return new_points, new_loss_improvements
+            return new_points[0], new_loss_improvements[0]
 
         losses = [(-v, k) for k, v in self.losses().items()]
         heapq.heapify(losses)
@@ -310,7 +304,7 @@ class LearnerND(BaseLearner):
             r = np.array([self._random.random() for _ in range(self.ndim)])
             p = r * a + b
             p = tuple(p)
-            return [p], [np.inf]
+            return p, np.inf
 
         while len(new_points) < n:
             if len(losses):
@@ -349,7 +343,7 @@ class LearnerND(BaseLearner):
 
             self._tell_pending(point_new, simplex)
 
-        return new_points, new_loss_improvements
+        return new_points[0], new_loss_improvements[0]
 
     def update_losses(self, to_delete: set, to_add: set):
         pending_points_unbound = set()  # TODO add the points outside the triangulation to this as well
