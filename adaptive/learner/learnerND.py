@@ -56,9 +56,9 @@ def std_loss(simplex, ys):
 
 
 def default_loss(simplex, ys):
-    longest_edge = np.max(scipy.spatial.distance.pdist(simplex))
+    # longest_edge = np.max(scipy.spatial.distance.pdist(simplex))
     # TODO change this longest edge contribution to be scale independent
-    return std_loss(simplex, ys) + longest_edge * 0.1
+    return std_loss(simplex, ys) # + longest_edge * 0.1
 
 
 def choose_point_in_simplex(simplex, transform=None):
@@ -411,8 +411,10 @@ class LearnerND(BaseLearner):
                 # factor from A=√3/4 * a² (equilateral triangle)
                 n = int(0.658 / np.sqrt(np.min([self.tri.volume(sim) for sim in self.tri.simplices])))
 
-            x = y = np.linspace(-0.5, 0.5, n)
-            z = ip(x[:, None], y[None, :]).squeeze()
+            xs = ys = np.linspace(0, 1, n)
+            xs = xs * (x[1] - x[0]) + x[0]
+            ys = ys * (y[1] - y[0]) + y[0]
+            z = ip(xs[:, None], ys[None, :]).squeeze()
 
             im = hv.Image(np.rot90(z), bounds=lbrt)
 
@@ -451,15 +453,16 @@ class LearnerND(BaseLearner):
                 # n = int(0.658 / sqrt(volumes(ip).min()))  # TODO fix this calculation
                 n = 50
 
-            x = y = np.linspace(-0.5, 0.5, n)
-            x = x[:, None]
-            y = y[None, :]
+            xs = ys = np.linspace(-0.5, 0.5, n)
+            xs = xs[:, None]
+            ys = ys[None, :]
             i = values.index(None)
-            values[i] = 0
             j = values.index(None)
-            values[j] = y
-            values[i] = x
+
             bx, by = self.bounds[i], self.bounds[j]
+
+            values[i] = xs * (bx[1] - bx[0]) + bx[0]
+            values[j] = ys * (by[1] - by[0]) + by[0]
             lbrt = bx[0], by[0], bx[1], by[1]
 
             if len(self.data) >= 4:
