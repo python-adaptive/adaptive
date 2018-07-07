@@ -56,9 +56,7 @@ def std_loss(simplex, ys):
 
 
 def default_loss(simplex, ys):
-    # longest_edge = np.max(scipy.spatial.distance.pdist(simplex))
-    # TODO change this longest edge contribution to be scale independent
-    return std_loss(simplex, ys) # + longest_edge * 0.1
+    return std_loss(simplex, ys)
 
 
 def choose_point_in_simplex(simplex, transform=None):
