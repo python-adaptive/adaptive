@@ -2,7 +2,6 @@
 import abc
 import collections
 from copy import deepcopy
-from ..notebook_integration import ensure_holoviews
 
 
 class BaseLearner(metaclass=abc.ABCMeta):
