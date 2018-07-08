@@ -115,12 +115,12 @@ class LearnerND(BaseLearner):
     Methods
     -------
     plot()
-        If dim == 1 or dim == 2, this method will plot the function being learned
-    plot_slice((x_1, x_2, ..., x_n), )
+        If dim == 2, this method will plot the function being learned.
+    plot_slice((x, y, ...), n)
         plot a slice of the function using the current data. If a coordinate is
         passed as None, it will be used to plot. e.g. you have a 3d learner,
         passing (1, None, None) will plot a 2d intersection with
-        x = 1, y = linspace(y_min, y_max), z = linspace(z_min, z_max).
+        x = 1, y = linspace(y_min, y_max, n), z = linspace(z_min, z_max, n).
 
     Notes
     -----
