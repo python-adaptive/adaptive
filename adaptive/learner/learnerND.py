@@ -13,6 +13,7 @@ from .base_learner import BaseLearner
 from .triangulation import Triangulation
 import random
 
+
 def find_initial_simplex(pts, ndim):
     origin = pts[0]
     vecs = pts[1:] - origin
@@ -333,7 +334,7 @@ class LearnerND(BaseLearner):
                     simplex = real_simp
                     loss = pend_loss
 
-            point_new = tuple(choose_point_in_simplex(points, transform=self._transform))  # choose a new point in the simplex
+            point_new = tuple(choose_point_in_simplex(points, transform=self._transform))
             self._pending_to_simplex[point_new] = simplex
 
             new_points.append(point_new)
