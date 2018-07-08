@@ -62,6 +62,19 @@ def test_adding_many_points():
     assert volume < 1+eps
 
 
+def test_triangulation_is_deterministic():
+    dim = 2
+    eps = 1e-8
+    pts = np.random.random((100, dim))
+    t1 = Triangulation(pts[:dim + 1])
+    t2 = Triangulation(pts[:dim + 1])
+    for p in pts[dim + 1:]:
+        t1.add_point(p)
+        t2.add_point(p)
+
+    assert t1.simplices == t2.simplices
+
+
 def test_3d_add_many():
     dim = 3
     eps = 1e-8
