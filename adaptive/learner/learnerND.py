@@ -445,11 +445,11 @@ class LearnerND(BaseLearner):
                 # n = int(0.658 / sqrt(volumes(ip).min()))  # TODO fix this calculation
                 n = 50
 
-            xs = ys = np.linspace(-0.5, 0.5, n)
+            xs = ys = np.linspace(0, 1, n)
             xs = xs[:, None]
             ys = ys[None, :]
             i = values.index(None)
-            j = values.index(None)
+            j = values.index(None, i+1)
 
             bx, by = self.bounds[i], self.bounds[j]
 
