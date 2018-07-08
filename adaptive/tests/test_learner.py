@@ -40,6 +40,7 @@ def uniform(a, b):
 
 learner_function_combos = collections.defaultdict(list)
 
+
 def learn_with(learner_type, **init_kwargs):
 
     def _(f):
@@ -73,6 +74,20 @@ def ring_of_fire(xy, d: uniform(0.2, 1)):
     a = 0.2
     x, y = xy
     return x + math.exp(-(x**2 + y**2 - d**2)**2 / a**4)
+
+
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
+def ring_of_fire_2(xy, d: uniform(0.2, 1)):
+    a = 0.2
+    x, y = xy
+    return x + math.exp(-(x**2 + y**2 - d**2)**2 / a**4)
+
+
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
+def sphere_of_fire(xyz, d: uniform(0.2, 1)):
+    a = 0.2
+    x, y, z = xyz
+    return x + math.exp(-(x**2 + y**2 + z**2 - d**2)**2 / a**4) + z**2
 
 
 @learn_with(AverageLearner, rtol=1)
@@ -148,7 +163,7 @@ def test_uniform_sampling1D(learner_type, f, learner_kwargs):
 
 
 @pytest.mark.xfail
-@run_with(Learner2D)
+@run_with(Learner2D, LearnerND)
 def test_uniform_sampling2D(learner_type, f, learner_kwargs):
     """Points are sampled uniformly if no data is provided.
 
@@ -172,7 +187,7 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
     assert max(distances) < math.sqrt(dx**2 + dy**2)
 
 
-@run_with(xfail(Learner1D), Learner2D)
+@run_with(xfail(Learner1D), Learner2D, LearnerND)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
 
@@ -211,7 +226,7 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
 
 # XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
 #      but we xfail it now, as Learner2D will be deprecated anyway
-@run_with(Learner1D, xfail(Learner2D), AverageLearner)
+@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner)
 def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     """Adding data for a point that was not returned by 'ask'."""
     # XXX: learner, control and bounds are not defined
@@ -241,7 +256,7 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     assert set(pls) == set(cpls)
 
 
-@run_with(xfail(Learner1D), xfail(Learner2D), AverageLearner)
+@run_with(xfail(Learner1D), xfail(Learner2D), xfail(LearnerND), AverageLearner)
 def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     """The order of calls to 'tell' between calls to 'ask'
     is arbitrary.
@@ -280,7 +295,7 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     np.testing.assert_almost_equal(sorted(pls), sorted(cpls))
 
 
-@run_with(Learner1D, Learner2D, AverageLearner)
+@run_with(Learner1D, Learner2D, LearnerND, AverageLearner)
 def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, learner_kwargs):
     """The estimated loss improvement can never be greater than the total loss."""
     f = generate_random_parametrization(f)
@@ -305,7 +320,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
 
 # XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
 #      but we xfail it now, as Learner2D will be deprecated anyway
-@run_with(Learner1D, xfail(Learner2D))
+@run_with(Learner1D, xfail(Learner2D), xfail(LearnerND))
 def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner_kwargs):
     """Learners behave identically under transformations that leave
        the loss invariant.
@@ -396,7 +411,7 @@ def test_termination_on_discontinuities():
 
 
 @pytest.mark.xfail
-@run_with(Learner1D, Learner2D)
+@run_with(Learner1D, Learner2D, LearnerND)
 def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
     """Learners that are learning the same function should converge
     to the same result "eventually" if given the same data, regardless
@@ -408,7 +423,7 @@ def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
 
 
 @pytest.mark.xfail
-@run_with(Learner1D, Learner2D)
+@run_with(Learner1D, Learner2D, LearnerND)
 def test_learner_subdomain(learner_type, f, learner_kwargs):
     """Learners that never receive data outside of a subdomain should
        perform 'similarly' to learners defined on that subdomain only."""

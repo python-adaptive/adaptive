@@ -5,12 +5,15 @@ import numpy as np
 from scipy import linalg
 import math
 
+
 def fast_norm(v):
     # notice this method can be even more optimised
-    return math.sqrt(np.dot(v,v))
+    return math.sqrt(np.dot(v, v))
+
 
 def fast_norm_2d(v):
     return math.sqrt(v[0]*v[0] + v[1]*v[1])
+
 
 def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
     (p0x, p0y), (p1x, p1y), (p2x, p2y) = simplex
@@ -120,10 +123,10 @@ def orientation(face, origin):
 
     Parameters
     ----------
-    Face : array-like, of shape (N-dim, N-dim)
+    face : array-like, of shape (N-dim, N-dim)
         The hyperplane we want to know the orientation of
         Do notice that the order in which you provide the points is critical
-    Origin : array-like, point of shape (N-dim)
+    origin : array-like, point of shape (N-dim)
         The point to compute the orientation from
 
     Returns
@@ -142,26 +145,27 @@ def orientation(face, origin):
 
 
 class Triangulation:
+    """A triangulation object.
+
+    Parameters
+    ----------
+    coords : 2d array-like of floats
+        Coordinates of vertices of the first simplex.
+
+    Attributes
+    ----------
+    vertices : list of float tuples
+        Coordinates of the triangulation vertices.
+    simplices : set of integer tuples
+        List with indices of vertices forming individual simplices
+    vertex_to_simplices : dict int → set
+        Mapping from vertex index to the set of simplices containing that
+        vertex.
+    hull : set of int
+        Exterior vertices
+    """
+
     def __init__(self, coords):
-        """A triangulation object.
-
-        Parameters
-        ----------
-        coords : 2d array-like of floats
-            Coordinates of vertices of the first simplex.
-
-        Attributes
-        ----------
-        vertices : list of float tuples
-            Coordinates of the triangulation vertices.
-        simplices : set of integer tuples
-            List with indices of vertices forming individual simplices
-        vertex_to_simplices : dict int → set
-            Mapping from vertex index to the set of simplices containing that
-            vertex.
-        hull : set of int
-            Exterior vertices
-        """
         dim = len(coords[0])
         if any(len(coord) != dim for coord in coords):
             raise ValueError("Coordinates dimension mismatch")
@@ -188,8 +192,7 @@ class Triangulation:
             self.vertex_to_simplices[vertex].add(simplex)
 
     def get_vertices(self, indices):
-            return [self.vertices[i] for i in indices]
-            return
+        return [self.vertices[i] for i in indices]
 
     def get_reduced_simplex(self, point, simplex, eps=1e-8):
         """Check whether vertex lies within a simplex.
@@ -300,7 +303,6 @@ class Triangulation:
         hull_points = self.get_vertices(self.hull)
         pt_center = np.average(hull_points, axis=0)
 
-
         pt_index = len(self.vertices)
         self.vertices.append(new_vertex)
         faces_to_check = set()
@@ -318,8 +320,8 @@ class Triangulation:
                 faces_to_check.add(face)
 
         multiplicities = Counter(face for face in
-                                self.faces(vertices=new_vertices | {pt_index})
-                                if pt_index in face)
+                                 self.faces(vertices=new_vertices | {pt_index})
+                                 if pt_index in face)
 
         if all(i == 2 for i in multiplicities.values()):
             # We tried to add an internal point, revert and raise.
@@ -330,8 +332,7 @@ class Triangulation:
             raise ValueError("Candidate vertex is inside the hull.")
 
         self.hull.add(pt_index)
-        self.hull = self.compute_hull(vertices=self.hull, check=False)
-
+        self.hull = self.compute_hull(check=False)
 
     def circumscribed_circle(self, simplex, transform):
         """
@@ -363,14 +364,12 @@ class Triangulation:
 
         return tuple(center), radius
 
-
     def point_in_cicumcircle(self, pt_index, simplex, transform):
         # return self.fast_point_in_circumcircle(pt_index, simplex, transform)
         eps = 1e-8
 
         center, radius = self.circumscribed_circle(simplex, transform)
         pt = np.dot(self.get_vertices([pt_index]), transform)[0]
-
 
         return np.linalg.norm(center - pt) < (radius * (1 + eps))
 
@@ -597,12 +596,11 @@ class Triangulation:
         """Simplices originating from a vertex don't overlap."""
         raise NotImplementedError
 
-    def compute_hull(self, vertices=None, check=True):
+    def compute_hull(self, check=True):
         """Recompute hull from triangulation.
 
         Parameters
         ----------
-        vertices : set of int
         check : bool, default True
             Whether to raise an error if the computed hull is different from
             stored.
@@ -614,7 +612,7 @@ class Triangulation:
         """
         counts = Counter(self.faces())
         if any(i > 2 for i in counts.values()):
-            raise RuntimeError("Broken triangulation, a d-1 dimensional face "
+            raise RuntimeError("Broken triangulation, a (N-1)-dimensional face "
                                "appears in more than 2 simplices.")
 
         hull = set(point for face, count in counts.items() if count == 1

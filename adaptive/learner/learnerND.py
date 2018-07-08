@@ -218,16 +218,16 @@ class LearnerND(BaseLearner):
     def _tell(self, point, value):
         point = tuple(point)
 
+        if point in self.data:
+            return
+
         if value is None:
             return self._tell_pending(point)
 
         self._pending.discard(point)
-
-        simpl = len(self._tri.simplices) if self._tri else 0
-
         self.data[point] = value
 
-        if self._tri is not None:
+        if self.tri is not None:
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = None
