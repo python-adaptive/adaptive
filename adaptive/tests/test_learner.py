@@ -112,6 +112,24 @@ def ask_randomly(learner, rounds, points):
     return xs, ls
 
 
+def test_skopt_learner_runs():
+    """The SKOptLearner provides very few guarantees about its
+       behaviour, so we only test the most basic usage
+    """
+
+    def g(x, noise_level=0.1):
+        return (np.sin(5 * x) * (1 - np.tanh(x ** 2))
+                + np.random.randn() * noise_level)
+
+    learner = SKOptLearner(g, dimensions=[(-2., 2.)])
+
+    for _ in range(11):
+        (x,), _ = learner.ask(1)
+        # XXX: revisit this when https://gitlab.kwant-project.org/qt/adaptive/issues/59
+        #      is resolved.
+        learner._tell(x, learner.function(x))
+
+
 @run_with(Learner1D)
 def test_uniform_sampling1D(learner_type, f, learner_kwargs):
     """Points are sampled uniformly if no data is provided.
