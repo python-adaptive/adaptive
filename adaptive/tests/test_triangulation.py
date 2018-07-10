@@ -46,19 +46,25 @@ def test_triangulation_of_standard_simplex_is_valid(dim):
                       _standard_simplex_volume(dim))
 
 
-def test_adding_point_outside_simplex():
-    c = [(0, 0), (1, 0), (0, 1)]
-    t = Triangulation(c)
-    t.add_point((1.1, 1.1))
+@with_dimension
+def test_adding_point_outside_standard_simplex_is_valid(dim):
+    t = Triangulation(_make_standard_simplex(dim))
+    t.add_point((1.1,) * dim)
 
-    assert t.simplices == {(0, 1, 2), (1, 2, 3)}
-    assert np.isclose(t.volume((0, 1, 2)), 0.5)
-    assert t.volume((1, 2, 3)) > 0.5
+    assert _simplices_are_valid(t)
+    # Check that there are only 2 simplices, and that the standard
+    # simplex is one of them (it was not removed with the addition of
+    # the extra point).
+    assert len(t.simplices) == 2
+    assert tuple(range(dim + 1)) in t.simplices
 
-    assert t.vertex_to_simplices[0] == {(0, 1, 2)}
-    assert t.vertex_to_simplices[1] == {(0, 1, 2), (1, 2, 3)}
-    assert t.vertex_to_simplices[2] == {(0, 1, 2), (1, 2, 3)}
-    assert t.vertex_to_simplices[3] == {(1, 2, 3)}
+    # The first and last point belong to different simplices
+    assert t.vertex_to_simplices[0] != t.vertex_to_simplices[dim + 1]
+    # rest of the points are shared between the simplices
+    shared_simplices = t.vertex_to_simplices[1]
+    assert all(shared_simplices == t.vertex_to_simplices[v]
+               for v in range(1, dim + 1))
+
 
 
 def test_adding_point_inside_simplex():
