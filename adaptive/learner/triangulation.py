@@ -8,6 +8,8 @@ import math
 
 def fast_norm(v):
     # notice this method can be even more optimised
+    if len(v) == 2:
+        return fast_norm_2d(v)
     return math.sqrt(np.dot(v, v))
 
 
@@ -54,13 +56,13 @@ def fast_2d_circumcircle(points):
 
     Parameters
     ----------
-        points: 2D array-like
-            the points of the triangle to investigate
+    points: 2D array-like
+        the points of the triangle to investigate
 
     Returns
     -------
-        tuple
-            (centre point : tuple(int), radius: int)
+    tuple
+        (centre point : tuple(int), radius: int)
     """
     points = np.array(points)
     # transform to relative coordinates
@@ -90,13 +92,13 @@ def fast_3d_circumcircle(points):
 
     Parameters
     ----------
-        points: 2D array-like
-            the points of the triangle to investigate
+    points: 2D array-like
+        the points of the triangle to investigate
 
     Returns
     -------
-        tuple
-            (centre point : tuple(int), radius: int)
+    tuple
+        (centre point : tuple(int), radius: int)
     """
     points = np.array(points)
     pts = points[1:] - points[0]
@@ -131,11 +133,11 @@ def orientation(face, origin):
 
     Returns
     -------
-      0 if the origin lies in the same hyperplane as face,
-      -1 or 1 to indicate left or right orientation
+    0 if the origin lies in the same hyperplane as face,
+    -1 or 1 to indicate left or right orientation
 
-      If two points lie on the same side of the face, the orientation will
-      be equal, if they lie on the other side of the face, it will be negated.
+    If two points lie on the same side of the face, the orientation will
+    be equal, if they lie on the other side of the face, it will be negated.
     """
     vectors = np.array(face)
     sign, logdet = np.linalg.slogdet(vectors - origin)
@@ -337,8 +339,16 @@ class Triangulation:
     def circumscribed_circle(self, simplex, transform):
         """
         Compute the centre and radius of the circumscribed circle of a simplex
-        :param simplex: the simplex to investigate
-        :return: tuple (centre point, radius)
+
+        Parameters
+        ----------
+        simplex : tuple of ints
+            the simplex to investigate
+
+        Returns
+        -------
+        tuple (centre point, radius)
+            The center and radius of the circumscribed circle
         """
         pts = np.dot(self.get_vertices(simplex), transform)
         if self.dim == 2:
@@ -406,15 +416,15 @@ class Triangulation:
 
         Parameters
         ----------
-            pt_index: number
-                the index of the point to inspect
+        pt_index: number
+            the index of the point to inspect
 
         Returns
         -------
-            deleted_simplices: set of tuples
-                Simplices that have been deleted
-            new_simplices: set of tuples
-                Simplices that have been added
+        deleted_simplices : set of tuples
+            Simplices that have been deleted
+        new_simplices : set of tuples
+            Simplices that have been added
         """
         queue = set()
         done_simplices = set()

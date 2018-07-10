@@ -371,7 +371,10 @@ class LearnerND(BaseLearner):
 
     def losses(self):
         """
-        :return: a dict of simplex -> loss
+        Returns
+        -------
+        losses : dict
+            the key is a simplex, the value is the loss of this simplex
         """
         if self.tri is None:
             return dict()
