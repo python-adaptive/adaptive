@@ -69,15 +69,9 @@ def linear_with_peak(x, d: uniform(-1, 1)):
     return x + a**2 / (a**2 + (x - d)**2)
 
 
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
 @learn_with(Learner2D, bounds=((-1, 1), (-1, 1)))
 def ring_of_fire(xy, d: uniform(0.2, 1)):
-    a = 0.2
-    x, y = xy
-    return x + math.exp(-(x**2 + y**2 - d**2)**2 / a**4)
-
-
-@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
-def ring_of_fire_2(xy, d: uniform(0.2, 1)):
     a = 0.2
     x, y = xy
     return x + math.exp(-(x**2 + y**2 - d**2)**2 / a**4)
