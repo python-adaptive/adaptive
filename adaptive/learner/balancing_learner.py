@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
+from contextlib import suppress
 from functools import partial
 from operator import itemgetter
 
@@ -145,11 +146,9 @@ class BalancingLearner(BaseLearner):
                 d[k].append(v)
 
         def plot_function(*args):
-            try:
+            with suppress(KeyError):
                 learner = mapping[tuple(args)]
                 return learner.plot() if plotter is None else plotter(learner)
-            except KeyError:
-                pass
 
         dm = hv.DynamicMap(plot_function, kdims=list(d.keys()))
         return dm.redim.values(**d)

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from contextlib import suppress
+
 from .notebook_integration import (notebook_extension, live_plot,
                                    active_plotting_tasks)
 
@@ -9,11 +11,10 @@ from . import utils
 from .learner import (Learner1D, Learner2D, AverageLearner,
                       BalancingLearner, make_datasaver, DataSaver,
                       IntegratorLearner)
-try:
+
+with suppress(ImportError):
     # Only available if 'scikit-optimize' is installed
     from .learner import SKOptLearner
-except ImportError:
-    pass
 
 from .runner import Runner, BlockingRunner
 from . import version

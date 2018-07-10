@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import concurrent.futures as concurrent
+from contextlib import suppress
 import functools
 import inspect
 import os
@@ -23,11 +24,9 @@ try:
 except ModuleNotFoundError:
     with_distributed = False
 
-try:
+with suppress(ModuleNotFoundError):
     import uvloop
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-except ModuleNotFoundError:
-    pass
 
 
 if os.name == 'nt':
@@ -52,7 +51,6 @@ if os.name == 'nt':
 else:
     _default_executor = concurrent.ProcessPoolExecutor
     _default_executor_kwargs = {}
-
 
 
 class BaseRunner:
@@ -95,7 +93,7 @@ class BaseRunner:
         self.goal = goal
 
         self._max_tasks = ntasks
-            
+
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
         self.shutdown_executor = shutdown_executor or (executor is None)
@@ -482,6 +480,7 @@ class SequentialExecutor(concurrent.Executor):
 
     This executor is mainly for testing.
     """
+
     def submit(self, fn, *args, **kwargs):
         fut = concurrent.Future()
         try:

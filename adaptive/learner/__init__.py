@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from contextlib import suppress
+
 from .average_learner import AverageLearner
 from .base_learner import BaseLearner
 from .balancing_learner import BalancingLearner
@@ -7,8 +9,6 @@ from .learner2D import Learner2D
 from .integrator_learner import IntegratorLearner
 from .data_saver import DataSaver, make_datasaver
 
-try:
+with suppress(ImportError):
     # Only available if 'scikit-optimize' is installed
     from .skopt_learner import SKOptLearner
-except ImportError:
-    pass

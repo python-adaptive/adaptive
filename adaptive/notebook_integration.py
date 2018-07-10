@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import importlib
 import asyncio
+from contextlib import suppress
 import datetime
 from pkg_resources import parse_version
 import warnings
@@ -110,10 +111,8 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
             cancel_button.layout.display = 'none'  # remove cancel button
 
     def cancel(_):
-        try:
+        with suppress(KeyError):
             active_plotting_tasks[name].cancel()
-        except KeyError:
-            pass
 
     active_plotting_tasks[name] = runner.ioloop.create_task(updater())
     cancel_button.on_click(cancel)
@@ -172,10 +171,8 @@ def _info_html(runner):
         ('overhead', f'{runner.overhead():.2f}%'),
     ]
 
-    try:
+    with suppress(Exception):
         info.append(('# of points', runner.learner.npoints))
-    except Exception:
-        pass
 
     template = '<dt>{}</dt><dd>{}</dd>'
     table = '\n'.join(template.format(k, v) for k, v in info)
