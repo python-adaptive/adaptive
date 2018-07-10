@@ -1,3 +1,4 @@
+from collections import defaultdict
 from math import factorial
 
 import pytest
@@ -26,11 +27,21 @@ def _standard_simplex_volume(dim):
     return 1 / factorial(dim)
 
 
+def _simplices_are_valid(t):
+    """Check that 'simplices' and 'vertex_to_simplices' are consistent."""
+    vertex_to_simplices = defaultdict(set)
+    for simplex in t.simplices:
+        for vertex in simplex:
+            vertex_to_simplices[vertex].add(simplex)
+    return vertex_to_simplices == t.vertex_to_simplices
+
+
 @with_dimension
 def test_triangulation_of_standard_simplex_is_valid(dim):
     t = Triangulation(_make_standard_simplex(dim))
     expected_simplex = tuple(range(dim + 1))
     assert t.simplices == {expected_simplex}
+    assert _simplices_are_valid(t)
     assert np.isclose(t.volume(expected_simplex),
                       _standard_simplex_volume(dim))
 
