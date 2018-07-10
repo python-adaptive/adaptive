@@ -209,8 +209,8 @@ class Triangulation:
         Returns
         -------
         vertices : list of ints
-            Indices of vertices of the simplex to which the vertex
-            belongs. None indicates that the vertex is outside the simplex.
+            Indices of vertices of the simplex to which the vertex belongs.
+            An empty list indicates that the vertex is outside the simplex.
         """
         # XXX: in the end we want to lose this method
         if len(simplex) != self.dim + 1:
@@ -554,7 +554,9 @@ class Triangulation:
             for others in combinations(face, len(face) - 1):
                 self.add_simplex((*others, *opposing, pt_index))
 
-    def flip(self, face):
+    # NOTE: This is not actually used anywhere currently, nor is
+    #       it tested.
+    def _flip(self, face):
         """Flip the face shared between several simplices."""
         simplices = self.containing(face)
 
