@@ -7,6 +7,7 @@ import numpy as np
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
+
 class AverageLearner(BaseLearner):
     """A naive implementation of adaptive computing of averages.
 
