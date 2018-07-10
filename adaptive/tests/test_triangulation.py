@@ -67,10 +67,15 @@ def test_adding_point_outside_standard_simplex_is_valid(dim):
 
 
 @with_dimension
-def test_adding_point_inside_standard_simplex_is_valid(dim):
+@pytest.mark.parametrize('provide_simplex', [True, False])
+def test_adding_point_inside_standard_simplex_is_valid(dim, provide_simplex):
     t = Triangulation(_make_standard_simplex(dim))
     first_simplex = tuple(range(dim + 1))
-    t.add_point((0.1,) * dim, simplex=first_simplex)  # close to the origin
+    inside_simplex = (0.1,) * dim
+    if provide_simplex:
+        t.add_point(inside_simplex, simplex=first_simplex)
+    else:
+        t.add_point(inside_simplex)
     added_point = dim + 1  # *index* of added point
 
     assert len(t.simplices) == dim + 1
@@ -78,15 +83,6 @@ def test_adding_point_inside_standard_simplex_is_valid(dim):
 
     volume = np.sum([t.volume(s) for s in t.simplices])
     assert np.isclose(volume, _standard_simplex_volume(dim))
-
-
-def test_adding_point_inside_simplex_without_providing_simplex():
-    c = [(0, 0), (1, 0), (0, 1)]
-    t = Triangulation(c)
-    t.add_point((0.1, 0.1))
-    assert t.simplices == {(0, 1, 3), (0, 2, 3), (1, 2, 3)}
-    volume = np.sum([t.volume(s) for s in t.simplices])
-    assert np.isclose(volume, 0.5)
 
 
 def test_adding_point_on_face():
