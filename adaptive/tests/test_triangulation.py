@@ -1,3 +1,5 @@
+from math import factorial
+
 import pytest
 
 from ..learner.triangulation import Triangulation
@@ -15,11 +17,22 @@ def _make_triangulation(points):
     return t
 
 
-def test_initializing():
-    c = [(0, 0), (1, 0), (0, 1)]
-    t = Triangulation(c)
-    assert t.simplices == {(0, 1, 2)}
-    assert np.isclose(t.volume((0, 1, 2)), 0.5)
+def _make_standard_simplex(dim):
+    """Return the vertices of the standard simplex in dimension 'dim'."""
+    return np.vstack((np.zeros(dim), np.eye(dim)))
+
+
+def _standard_simplex_volume(dim):
+    return 1 / factorial(dim)
+
+
+@with_dimension
+def test_triangulation_of_standard_simplex_is_valid(dim):
+    t = Triangulation(_make_standard_simplex(dim))
+    expected_simplex = tuple(range(dim + 1))
+    assert t.simplices == {expected_simplex}
+    assert np.isclose(t.volume(expected_simplex),
+                      _standard_simplex_volume(dim))
 
 
 def test_adding_point_outside_simplex():
