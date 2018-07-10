@@ -85,16 +85,22 @@ def test_adding_point_inside_standard_simplex_is_valid(dim, provide_simplex):
     assert np.isclose(volume, _standard_simplex_volume(dim))
 
 
-def test_adding_point_on_face():
-    c = [(0, 0), (1, 0), (0, 1)]
-    t = Triangulation(c)
-    t.add_point((0.5, 0.5))
-    assert t.simplices == {(0, 1, 3), (0, 2, 3)}
+@with_dimension
+def test_adding_point_on_face_of_standard_simplex_is_valid(dim):
+    if dim == 1:
+        # there are no faces in 1D, so we'd end up adding an existing point
+        return
+
+    t = Triangulation(_make_standard_simplex(dim))
+    centre_of_face = (1 / dim,) * dim
+    t.add_point(centre_of_face)
+    added_point = dim + 1  # *index* of added point
+
+    assert len(t.simplices) == dim
+    assert all(added_point in simplex for simplex in t.simplices)
+
     volume = np.sum([t.volume(s) for s in t.simplices])
-    assert np.isclose(volume, 0.5)
-
-
-
+    assert np.isclose(volume, _standard_simplex_volume(dim))
 
 
 @with_dimension
