@@ -6,7 +6,7 @@ def test_initializing():
     c = [(0, 0), (1, 0), (0, 1)]
     t = Triangulation(c)
     assert t.simplices == {(0, 1, 2)}
-    assert t.volume((0, 1, 2)) == 0.5
+    assert np.isclose(t.volume((0, 1, 2)), 0.5)
 
 
 def test_adding_point_outside_simplex():
@@ -64,7 +64,6 @@ def test_adding_many_points():
 
 def test_triangulation_is_deterministic():
     dim = 2
-    eps = 1e-8
     pts = np.random.random((100, dim))
     t1 = Triangulation(pts[:dim + 1])
     t2 = Triangulation(pts[:dim + 1])
