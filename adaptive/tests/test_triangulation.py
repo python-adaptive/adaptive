@@ -118,3 +118,16 @@ def test_triangulation_is_deterministic(dim):
     t1 = _make_triangulation(points)
     t2 = _make_triangulation(points)
     assert t1.simplices == t2.simplices
+
+
+# No idea why this fails
+def test_adding_points_to_cube_succeeds():
+    vertices = np.array([
+        (-1, -1, -1),
+        (-1, -1, 1),
+        (-1, 1, -1),
+        (-1, 1, 1),
+        (1, -1, 1),
+        (1, -1, -1),
+    ])
+    _make_triangulation(vertices)
