@@ -53,7 +53,7 @@ def std_loss(simplex, ys):
 
     dim = len(simplex) - 1
 
-    return r.flat * np.power(vol, 1./dim) + vol
+    return r.flat * np.power(vol, 1. / dim) + vol
 
 
 def default_loss(simplex, ys):
@@ -400,17 +400,16 @@ class LearnerND(BaseLearner):
         lbrt = x[0], y[0], x[1], y[1]
 
         if len(self.data) >= 4:
-            ip = self.ip()
-
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                n = int(0.658 / np.sqrt(np.min([self.tri.volume(sim) for sim in self.tri.simplices])))
+                volumes = [self.tri.volume(sim) for sim in self.tri.simplices]
+                n = int(0.658 / np.sqrt(np.min(volumes)))
 
             xs = ys = np.linspace(0, 1, n)
             xs = xs * (x[1] - x[0]) + x[0]
             ys = ys * (y[1] - y[0]) + y[0]
-            z = ip(xs[:, None], ys[None, :]).squeeze()
+            z = self.ip()(xs[:, None], ys[None, :]).squeeze()
 
             im = hv.Image(np.rot90(z), bounds=lbrt)
 
@@ -433,63 +432,54 @@ class LearnerND(BaseLearner):
 
         return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
 
-    def plot_slice(self, values, n=None):
-        values = list(values)
-        count_none = values.count(None)
-        assert count_none == 1 or count_none == 2
-        if count_none == 2:
-            hv = ensure_holoviews()
-            if self.vdim > 1:
-                raise NotImplemented('holoviews currently does not support',
-                                     '3D surface plots in bokeh.')
+    def plot_slice(self, cut_mapping, n=None):
+        hv = ensure_holoviews()
+        plot_dim = self.ndim - len(cut_mapping)
+        if plot_dim == 1:
+            if not self.data:
+                return hv.Scatter([]) * hv.Path([])
+            elif self.vdim > 1:
+                raise NotImplementedError('multidimensional output not yet'
+                                          ' supported by `plot_slice`')
+            n = n or 201
+            values = [cut_mapping.get(i, np.linspace(*self.bounds[i], n))
+                      for i in range(self.ndim)]
+            ind = next(i for i in range(self.ndim) if i not in cut_mapping)
+            x = values[ind]
+            y = self.ip()(*values)
+            p = hv.Path((x, y))
 
+            # Plot with 5% empty margins such that the boundary points are visible
+            margin = 0.05 / self._transform[ind, ind]
+            plot_bounds = (x.min() - margin, x.max() + margin)
+            return p.redim(x=dict(range=plot_bounds))
+
+        elif plot_dim == 2:
+            if self.vdim > 1:
+                raise NotImplementedError('holoviews currently does not support',
+                                          '3D surface plots in bokeh.')
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                # n = int(0.658 / sqrt(volumes(ip).min()))  # TODO fix this calculation
-                n = 50
+                volumes = [self.tri.volume(sim) for sim in self.tri.simplices]
+                n = int(0.658 / np.sqrt(np.min(volumes)))
 
             xs = ys = np.linspace(0, 1, n)
-            xs = xs[:, None]
-            ys = ys[None, :]
-            i = values.index(None)
-            j = values.index(None, i+1)
+            xys = [xs[:, None], ys[None, :]]
+            values = [cut_mapping[i] if i in cut_mapping
+                      else xys.pop(0) * (b[1] - b[0]) + b[0]
+                      for i, b in enumerate(self.bounds)]
 
-            bx, by = self.bounds[i], self.bounds[j]
-
-            values[i] = xs * (bx[1] - bx[0]) + bx[0]
-            values[j] = ys * (by[1] - by[0]) + by[0]
-            lbrt = bx[0], by[0], bx[1], by[1]
+            lbrt = [b for i, b in enumerate(self.bounds)
+                    if i not in cut_mapping]
+            lbrt = np.reshape(lbrt, (2, 2)).T.flatten().tolist()
 
             if len(self.data) >= 4:
-                ip = self.ip()
-                z = ip(*values).squeeze()
-
+                z = self.ip()(*values).squeeze()
                 im = hv.Image(np.rot90(z), bounds=lbrt)
             else:
                 im = hv.Image([], bounds=lbrt)
 
-            im_opts = dict(cmap='viridis')
-
-            return im.opts(style=im_opts)
+            return im.opts(style=dict(cmap='viridis'))
         else:
-            hv = ensure_holoviews()
-            ind = values.index(None)
-            a, b = self.bounds[ind]
-            if not self.data:
-                p = hv.Scatter([]) * hv.Path([])
-            elif not self.vdim > 1:
-                if n is None:
-                    n = 500
-                values[ind] = np.linspace(a, b, n)
-                ip = self.ip()
-                y = ip(*values)
-                p = hv.Path((values[ind], y))
-            else:
-                raise NotImplementedError('multidimensional output not yet supported by plotSlice')
-
-            # Plot with 5% empty margins such that the boundary points are visible
-            margin = 0.05 / np.diag(self._transform)[ind]
-            plot_bounds = (a - margin, b + margin)
-
-            return p.redim(x=dict(range=plot_bounds))
+            raise ValueError(f"Only 1 or 2-dimensional plots can be generated.")
