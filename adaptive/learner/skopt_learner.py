@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
-from copy import deepcopy
-import heapq
-import itertools
-import math
 
 import numpy as np
-import sortedcontainers
 
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
