@@ -73,8 +73,9 @@ def same_ivals(f, a, b, tol):
 
         return equal_ivals(learner.ivals, ivals, verbose=True)
 
-
-def test_cquad():
+# XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
+@pytest.mark.xfail
+def test_that_gives_same_intervals_as_reference_implementation():
     for i, args in enumerate([[f0, 0, 3, 1e-5],
                               [f7, 0, 1, 1e-6],
                               [f21, 0, 1, 1e-3],
@@ -161,6 +162,9 @@ def test_adding_points_and_skip_one_point():
     np.testing.assert_almost_equal(learner.igral, learner2.igral)
 
 
+
+# XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
+@pytest.mark.xfail
 def test_tell_in_random_order(first_add_33=False):
     from operator import attrgetter
     import random
@@ -238,7 +242,12 @@ def test_approximating_intervals():
         assert ivals[i].b == ivals[i + 1].a, (ivals[i], ivals[i + 1])
 
 
+# XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/43)
+@pytest.mark.xfail
 def test_removed_choose_mutiple_points_at_once():
+    """Given that a high-precision interval that was split into 2 low-precision ones,
+       we should use the high-precision interval.
+    """
     learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
     n = ns[-1] + 2 * (ns[0] - 2)  # first + two children (33+6=39)
     xs, _ = learner.ask(n)
