@@ -66,14 +66,18 @@ def test_adding_point_outside_standard_simplex_is_valid(dim):
                for v in range(1, dim + 1))
 
 
+@with_dimension
+def test_adding_point_inside_standard_simplex_is_valid(dim):
+    t = Triangulation(_make_standard_simplex(dim))
+    first_simplex = tuple(range(dim + 1))
+    t.add_point((0.1,) * dim, simplex=first_simplex)  # close to the origin
+    added_point = dim + 1  # *index* of added point
 
-def test_adding_point_inside_simplex():
-    c = [(0, 0), (1, 0), (0, 1)]
-    t = Triangulation(c)
-    t.add_point((0.1, 0.1), simplex=(0, 1, 2))
-    assert t.simplices == {(0, 1, 3), (0, 2, 3), (1, 2, 3)}
+    assert len(t.simplices) == dim + 1
+    assert all(added_point in simplex for simplex in t.simplices)
+
     volume = np.sum([t.volume(s) for s in t.simplices])
-    assert np.isclose(volume, 0.5)
+    assert np.isclose(volume, _standard_simplex_volume(dim))
 
 
 def test_adding_point_inside_simplex_without_providing_simplex():
