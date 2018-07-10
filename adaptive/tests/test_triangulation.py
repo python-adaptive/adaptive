@@ -1,5 +1,18 @@
+import pytest
+
 from ..learner.triangulation import Triangulation
 import numpy as np
+
+with_dimension = pytest.mark.parametrize('dim', [1, 2, 3, 4])
+
+
+def _make_triangulation(points):
+    num_vertices = points.shape[1] + 1
+    first_simplex, points = points[:num_vertices], points[num_vertices:]
+    t = Triangulation(first_simplex)
+    for p in points:
+        t.add_point(p)
+    return t
 
 
 def test_initializing():
@@ -51,50 +64,21 @@ def test_adding_point_on_face():
     assert np.isclose(volume, 0.5)
 
 
-def test_adding_many_points():
-    dim = 2
+
+
+
+@with_dimension
+def test_triangulation_volume_is_less_than_bounding_box(dim):
     eps = 1e-8
-    pts = np.random.random((100, dim))
-    t = Triangulation(pts[:dim + 1])
-    for p in pts[dim + 1:]:
-        t.add_point(p)
+    points = np.random.random((30, dim))  # all within the unit hypercube
+    t = _make_triangulation(points)
     volume = np.sum([t.volume(s) for s in t.simplices])
     assert volume < 1+eps
 
 
-def test_triangulation_is_deterministic():
-    dim = 2
-    pts = np.random.random((100, dim))
-    t1 = Triangulation(pts[:dim + 1])
-    t2 = Triangulation(pts[:dim + 1])
-    for p in pts[dim + 1:]:
-        t1.add_point(p)
-        t2.add_point(p)
-
+@with_dimension
+def test_triangulation_is_deterministic(dim):
+    points = np.random.random((30, dim))
+    t1 = _make_triangulation(points)
+    t2 = _make_triangulation(points)
     assert t1.simplices == t2.simplices
-
-
-def test_3d_add_many():
-    dim = 3
-    eps = 1e-8
-    pts = np.random.random((50, dim))
-    t = Triangulation(pts[:dim + 1])
-    for p in pts[dim + 1:]:
-        t.add_point(p)
-    volume = np.sum([t.volume(s) for s in t.simplices])
-    assert volume < 1 + eps
-
-
-def test_4d_add_many():
-    dim = 4
-    eps = 1e-8
-    pts = np.random.random((50, dim))
-    t = Triangulation(pts[:dim + 1])
-    for p in pts[dim + 1:]:
-        t.add_point(p)
-    volume = np.sum([t.volume(s) for s in t.simplices])
-    assert volume < 1 + eps
-
-
-
-
