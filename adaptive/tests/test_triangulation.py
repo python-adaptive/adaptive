@@ -47,6 +47,19 @@ def test_triangulation_of_standard_simplex_is_valid(dim):
 
 
 @with_dimension
+def test_zero_volume_initial_simplex_raises_exception(dim):
+
+    points = np.random.random((dim - 1, dim))
+    linearly_dependent_point = np.dot(np.random.random(dim - 1), points)
+    points = np.vstack((np.zeros(dim), points, linearly_dependent_point))
+    assert np.isclose(np.linalg.det(points[1:]), 0)  # sanity check
+    print(points)
+
+    with pytest.raises(ValueError):
+        Triangulation(points)
+
+
+@with_dimension
 def test_adding_point_outside_standard_simplex_is_valid(dim):
     t = Triangulation(_make_standard_simplex(dim))
     t.add_point((1.1,) * dim)
@@ -118,16 +131,3 @@ def test_triangulation_is_deterministic(dim):
     t1 = _make_triangulation(points)
     t2 = _make_triangulation(points)
     assert t1.simplices == t2.simplices
-
-
-# No idea why this fails
-def test_adding_points_to_cube_succeeds():
-    vertices = np.array([
-        (-1, -1, -1),
-        (-1, -1, 1),
-        (-1, 1, -1),
-        (-1, 1, 1),
-        (1, -1, 1),
-        (1, -1, -1),
-    ])
-    _make_triangulation(vertices)
