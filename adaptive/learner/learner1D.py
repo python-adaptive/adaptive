@@ -251,7 +251,6 @@ class Learner1D(BaseLearner):
 
             self._oldscale = deepcopy(self._scale)
 
-
     def ask(self, n, add_data=True):
         """Return n points that are expected to maximally reduce the loss."""
         # Find out how to divide the n points over the intervals
@@ -273,11 +272,11 @@ class Learner1D(BaseLearner):
         if len(points) == 2:
             # First time
             loss_improvements = [np.inf] * n
-            points = np.linspace(*self.bounds, n)
+            points = np.linspace(*self.bounds, n).tolist()
         elif len(points) == 1:
             # Second time, if we previously returned just self.bounds[0]
             loss_improvements = [np.inf] * n
-            points = np.linspace(*self.bounds, n + 1)[1:]
+            points = np.linspace(*self.bounds, n + 1)[1:].tolist()
         else:
             def xs(x, n):
                 if n == 1:
@@ -335,7 +334,6 @@ class Learner1D(BaseLearner):
         plot_bounds = (self.bounds[0] - margin, self.bounds[1] + margin)
 
         return p.redim(x=dict(range=plot_bounds))
-
 
     def remove_unfinished(self):
         self.pending_points = set()
