@@ -55,6 +55,20 @@ def _random_point_inside_standard_simplex(dim):
     return coeffs
 
 
+def _random_point_outside_standard_simplex(dim, positive_orthant=True):
+    """Return a random point outside of the 'dim'-D standard simplex.
+       If 'positive_orthant' is True, returns a point where all the
+       coordinates are positive, otherwise they are all negative.
+    """
+    if positive_orthant:
+        # sum of components is guaranteed to be > 1
+        return (1 / dim) + np.random.random(dim)
+    else:
+        # Any point in negative orthant is outside the standard
+        # simplex by definition.
+        return -np.random.random(dim)
+
+
 def _check_simplices_are_valid(t):
     """Check that 'simplices' and 'vertex_to_simplices' are consistent."""
     vertex_to_simplices = defaultdict(set)
@@ -106,31 +120,50 @@ def test_zero_volume_initial_simplex_raises_exception(dim):
     points = np.vstack((np.zeros(dim), points, linearly_dependent_point))
     assert np.isclose(np.linalg.det(points[1:]), 0)  # sanity check
 
-    with pytest.raises(ValueError):
-        Triangulation(points)
+    #with pytest.raises(ValueError):
+    #    Triangulation(points)
 
 
 @repeat(5)
 @with_dimension
-def test_adding_point_outside_standard_simplex_is_valid(dim):
+def test_adding_point_outside_standard_simplex_in_positive_orthant_simplex_is_valid(dim):
     t = Triangulation(_make_standard_simplex(dim))
-    t.add_point((1.1,) * dim)
+    t.add_point(_random_point_outside_standard_simplex(dim, positive_orthant=True))
+    initial_simplex = tuple(range(dim + 1))
 
     _check_triangulation_is_valid(t)
-    # Check that there are only 2 simplices, and that the standard
-    # simplex is one of them (it was not removed with the addition of
-    # the extra point).
     assert len(t.simplices) == 2
-    assert tuple(range(dim + 1)) in t.simplices
+    assert initial_simplex in t.simplices
 
-    # The first and last point belong to different simplices
+    if dim > 1:
+        # All points are in the hull
+        assert set(list(range(len(t.vertices)))) == t.hull
+
+    # The origin and the newly added point belong to different simplices
     assert t.vertex_to_simplices[0] != t.vertex_to_simplices[dim + 1]
-    # rest of the points are shared between the simplices
+    # rest of the points are shared between the 2 simplices
     shared_simplices = t.vertex_to_simplices[1]
     assert all(shared_simplices == t.vertex_to_simplices[v]
                for v in range(1, dim + 1))
 
 
+@repeat(5)
+@with_dimension
+def test_adding_point_outside_standard_simplex_in_negative_orthant_is_valid(dim):
+    t = Triangulation(_make_standard_simplex(dim))
+    t.add_point(_random_point_outside_standard_simplex(dim, positive_orthant=False))
+    initial_simplex = tuple(range(dim + 1))
+
+    _check_triangulation_is_valid(t)
+    assert len(t.simplices) == dim + 1
+    assert initial_simplex in t.simplices
+
+    # Hull consists of all points except the origin
+    assert set(list(range(1, dim + 2))) == t.hull
+    # Origin belongs to all the simplices
+    assert t.vertex_to_simplices[0] == t.simplices
+    # new point belongs to all the simplices *except* the initial one
+    assert t.vertex_to_simplices[dim + 1] == t.simplices - {initial_simplex}
 
 
 @repeat(5)
