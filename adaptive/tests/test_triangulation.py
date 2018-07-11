@@ -27,6 +27,17 @@ def _standard_simplex_volume(dim):
     return 1 / factorial(dim)
 
 
+def _random_point_inside_standard_simplex(dim):
+    coeffs = []
+    for d in range(dim):
+        coeffs.append((1 - sum(coeffs)) * np.random.random())
+    coeffs = np.array(coeffs)
+    # Sanity checks
+    assert np.all(coeffs > 0) and not np.any(np.isclose(0, coeffs))
+    assert np.sum(coeffs) < 1 and not np.isclose(1, np.sum(coeffs))
+    return coeffs
+
+
 def _check_simplices_are_valid(t):
     """Check that 'simplices' and 'vertex_to_simplices' are consistent."""
     vertex_to_simplices = defaultdict(set)
@@ -106,7 +117,7 @@ def test_adding_point_outside_standard_simplex_is_valid(dim):
 def test_adding_point_inside_standard_simplex_is_valid(dim, provide_simplex):
     t = Triangulation(_make_standard_simplex(dim))
     first_simplex = tuple(range(dim + 1))
-    inside_simplex = (0.1,) * dim
+    inside_simplex = _random_point_inside_standard_simplex(dim)
     if provide_simplex:
         t.add_point(inside_simplex, simplex=first_simplex)
     else:
