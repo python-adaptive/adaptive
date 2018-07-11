@@ -125,10 +125,7 @@ class Learner1D(BaseLearner):
 
     def loss(self, real=True):
         losses = self.losses if real else self.losses_combined
-        if len(losses) == 0:
-            return float('inf')
-        else:
-            return max(losses.values())
+        return max(losses.values()) if len(losses) > 0 else float('inf')
 
     def update_interpolated_loss_in_interval(self, x_left, x_right):
         if x_left is not None and x_right is not None:
@@ -176,7 +173,7 @@ class Learner1D(BaseLearner):
         if x in neighbors:
             return neighbors[x]
         pos = neighbors.bisect_left(x)
-        x_left = neighbors.iloc[pos-1] if pos != 0 else None
+        x_left = neighbors.iloc[pos - 1] if pos != 0 else None
         x_right = neighbors.iloc[pos] if pos != len(neighbors) else None
         return x_left, x_right
 
@@ -264,10 +261,8 @@ class Learner1D(BaseLearner):
             return [], []
 
         # If the bounds have not been chosen yet, we choose them first.
-        points = []
-        for bound in self.bounds:
-            if bound not in self.data and bound not in self.pending_points:
-                points.append(bound)
+        points = [b for b in self.bounds if b not in self.data
+                  and b not in self.pending_points]
 
         if len(points) == 2:
             # First time
@@ -288,12 +283,10 @@ class Learner1D(BaseLearner):
 
             # Calculate how many points belong to each interval.
             x_scale = self._scale[0]
-
             quals = []
-            for ((x_left, x_right), loss) in self.losses_combined.items():
-                quality = -loss if not math.isinf(loss) else -(x_right - x_left) / x_scale
-                quals.append((quality, (x_left, x_right), 1))
-
+            for x, loss in self.losses_combined.items():
+                quality = -loss if not math.isinf(loss) else -(x[1] - x[0]) / x_scale
+                quals.append((quality, x, 1))
             heapq.heapify(quals)
 
             for point_number in range(n):
