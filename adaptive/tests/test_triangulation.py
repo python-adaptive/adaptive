@@ -1,3 +1,4 @@
+import functools
 from collections import defaultdict, Counter
 from math import factorial
 
@@ -7,6 +8,22 @@ from ..learner.triangulation import Triangulation
 import numpy as np
 
 with_dimension = pytest.mark.parametrize('dim', [1, 2, 3, 4])
+
+def repeat(n_repetitions):
+    """Decorator for testcases: calls them 'n_repetitions' times in succession.
+
+       Useful for tests that use the RNG.
+    """
+    def _(testcase):
+
+        @functools.wraps(testcase)
+        def with_repetition(*args, **kwargs):
+            for _ in range(n_repetitions):
+                testcase(*args, **kwargs)
+
+        return with_repetition
+
+    return _
 
 
 def _make_triangulation(points):
@@ -82,6 +99,7 @@ def test_triangulation_of_standard_simplex_is_valid(dim):
 
 
 @with_dimension
+@repeat(5)
 def test_zero_volume_initial_simplex_raises_exception(dim):
     points = np.random.random((dim - 1, dim))
     linearly_dependent_point = np.dot(np.random.random(dim - 1), points)
@@ -92,6 +110,7 @@ def test_zero_volume_initial_simplex_raises_exception(dim):
         Triangulation(points)
 
 
+@repeat(5)
 @with_dimension
 def test_adding_point_outside_standard_simplex_is_valid(dim):
     t = Triangulation(_make_standard_simplex(dim))
@@ -112,6 +131,9 @@ def test_adding_point_outside_standard_simplex_is_valid(dim):
                for v in range(1, dim + 1))
 
 
+
+
+@repeat(5)
 @with_dimension
 @pytest.mark.parametrize('provide_simplex', [True, False])
 def test_adding_point_inside_standard_simplex_is_valid(dim, provide_simplex):
