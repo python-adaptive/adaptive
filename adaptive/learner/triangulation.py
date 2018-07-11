@@ -9,26 +9,25 @@ import math
 def fast_norm(v):
     # notice this method can be even more optimised
     if len(v) == 2:
-        return fast_norm_2d(v)
+        return math.sqrt(v[0] * v[0] + v[1] * v[1])
     return math.sqrt(np.dot(v, v))
-
-
-def fast_norm_2d(v):
-    return math.sqrt(v[0]*v[0] + v[1]*v[1])
 
 
 def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
     (p0x, p0y), (p1x, p1y), (p2x, p2y) = simplex
     px, py = point
 
-    area = 0.5 * (-p1y * p2x + p0y * (-p1x + p2x) + p0x * (p1y - p2y) + p1x * p2y)
+    area = 0.5 * (- p1y * p2x + p0y * (p2x - p1x)
+                  + p1x * p2y + p0x * (p1y - p2y))
 
-    s = 1 / (2 * area) * (p0y * p2x - p0x * p2y + (p2y - p0y) * px + (p0x - p2x) * py)
-    if s < -eps or s > 1+eps:
+    s = 1 / (2 * area) * (+ p0y * p2x + (p2y - p0y) * px
+                          - p0x * p2y + (p0x - p2x) * py)
+    if s < -eps or s > 1 + eps:
         return False
-    t = 1 / (2 * area) * (p0x * p1y - p0y * p1x + (p0y - p1y) * px + (p1x - p0x) * py)
+    t = 1 / (2 * area) * (+ p0x * p1y + (p0y - p1y) * px
+                          - p0y * p1x + (p1x - p0x) * py)
 
-    return (t >= -eps) and (s + t <= 1+eps)
+    return (t >= -eps) and (s + t <= 1 + eps)
 
 # WIP
 # def fast_3d_point_in_simplex(point, simplex, eps=1e-8):
@@ -52,7 +51,7 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
 
 
 def fast_2d_circumcircle(points):
-    """Compute the centre and radius of the circumscribed circle of a triangle
+    """Compute the center and radius of the circumscribed circle of a triangle
 
     Parameters
     ----------
@@ -62,7 +61,7 @@ def fast_2d_circumcircle(points):
     Returns
     -------
     tuple
-        (centre point : tuple(int), radius: int)
+        (center point : tuple(int), radius: int)
     """
     points = np.array(points)
     # transform to relative coordinates
@@ -70,8 +69,8 @@ def fast_2d_circumcircle(points):
 
     (x1, y1), (x2, y2) = pts
     # compute the length squared
-    l1 = x1*x1 + y1*y1
-    l2 = x2*x2 + y2*y2
+    l1 = x1 * x1 + y1 * y1
+    l2 = x2 * x2 + y2 * y2
 
     # compute some determinants
     dx = + l1 * y2 - l2 * y1
@@ -80,15 +79,15 @@ def fast_2d_circumcircle(points):
     a = 2 * aa
 
     # compute center
-    x = dx/a
-    y = dy/a
-    radius = math.sqrt(x*x + y*y) # radius = norm([x, y])
+    x = dx / a
+    y = dy / a
+    radius = math.sqrt(x*x + y*y)  # radius = norm([x, y])
 
     return (x + points[0][0], y + points[0][1]), radius
 
 
 def fast_3d_circumcircle(points):
-    """Compute the centre and radius of the circumscribed shpere of a simplex
+    """Compute the center and radius of the circumscribed shpere of a simplex.
 
     Parameters
     ----------
@@ -98,22 +97,30 @@ def fast_3d_circumcircle(points):
     Returns
     -------
     tuple
-        (centre point : tuple(int), radius: int)
+        (center point : tuple(int), radius: int)
     """
     points = np.array(points)
     pts = points[1:] - points[0]
 
-    l1, l2, l3 = [np.dot(p, p) for p in pts] # length squared
+    l1, l2, l3 = [np.dot(p, p) for p in pts]  # length squared
     (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) = pts
 
     # Compute some determinants:
-    dx = + l1 * (y2 * z3 - z2 * y3) - l2 * (y1 * z3 - z1 * y3) + l3 * (y1 * z2 - z1 * y2)
-    dy = + l1 * (x2 * z3 - z2 * x3) - l2 * (x1 * z3 - z1 * x3) + l3 * (x1 * z2 - z1 * x2)
-    dz = + l1 * (x2 * y3 - y2 * x3) - l2 * (x1 * y3 - y1 * x3) + l3 * (x1 * y2 - y1 * x2)
-    aa = + x1 * (y2 * z3 - z2 * y3) - x2 * (y1 * z3 - z1 * y3) + x3 * (y1 * z2 - z1 * y2)
-    a = 2*aa
+    dx = (+ l1 * (y2 * z3 - z2 * y3)
+          - l2 * (y1 * z3 - z1 * y3)
+          + l3 * (y1 * z2 - z1 * y2))
+    dy = (+ l1 * (x2 * z3 - z2 * x3)
+          - l2 * (x1 * z3 - z1 * x3)
+          + l3 * (x1 * z2 - z1 * x2))
+    dz = (+ l1 * (x2 * y3 - y2 * x3)
+          - l2 * (x1 * y3 - y1 * x3)
+          + l3 * (x1 * y2 - y1 * x2))
+    aa = (+ x1 * (y2 * z3 - z2 * y3)
+          - x2 * (y1 * z3 - z1 * y3)
+          + x3 * (y1 * z2 - z1 * y2))
+    a = 2 * aa
 
-    center = [dx/a, -dy/a, dz/a]
+    center = [dx / a, -dy / a, dz / a]
     radius = fast_norm(center)
     center = np.add(center, points[0])
 
@@ -121,7 +128,7 @@ def fast_3d_circumcircle(points):
 
 
 def orientation(face, origin):
-    """Compute the orientation of the face with respect to a point, origin
+    """Compute the orientation of the face with respect to a point, origin.
 
     Parameters
     ----------
@@ -202,10 +209,10 @@ class Triangulation:
         Returns
         -------
         vertices : list of ints
-            Indices of vertices of the simplex to which the vertex belongs. None
-            indicates that the vertex is outside the simplex
+            Indices of vertices of the simplex to which the vertex
+            belongs. None indicates that the vertex is outside the simplex.
         """
-        # TODO in the end we want to lose this method
+        # XXX: in the end we want to lose this method
         if len(simplex) != self.dim + 1:
             # We are checking whether point belongs to a face.
             simplex = self.containing(simplex).pop()
@@ -223,12 +230,13 @@ class Triangulation:
 
     def point_in_simplex(self, point, simplex, eps=1e-8):
         if self.dim == 2:
-            return fast_2d_point_in_simplex(point, self.get_vertices(simplex), eps)
+            vertices = self.get_vertices(simplex)
+            return fast_2d_point_in_simplex(point, vertices, eps)
         elif self.dim == 3:
-            # TODO Better to write a separate function for this
+            # XXX: Better to write a separate function for this
             return len(self.get_reduced_simplex(point, simplex, eps)) > 0
         else:
-            # TODO Better to write a separate function for this
+            # XXX: Better to write a separate function for this
             return len(self.get_reduced_simplex(point, simplex, eps)) > 0
 
     def locate_point(self, point):
@@ -337,8 +345,7 @@ class Triangulation:
         self.hull = self.compute_hull(check=False)
 
     def circumscribed_circle(self, simplex, transform):
-        """
-        Compute the centre and radius of the circumscribed circle of a simplex
+        """Compute the center and radius of the circumscribed circle of a simplex.
 
         Parameters
         ----------
@@ -347,7 +354,7 @@ class Triangulation:
 
         Returns
         -------
-        tuple (centre point, radius)
+        tuple (center point, radius)
             The center and radius of the circumscribed circle
         """
         pts = np.dot(self.get_vertices(simplex), transform)
@@ -409,10 +416,10 @@ class Triangulation:
         return np.eye(self.dim)
 
     def bowyer_watson(self, pt_index, containing_simplex=None, transform=None):
-        """
-        Modified Bowyer-Watson point adding algorithm
+        """Modified Bowyer-Watson point adding algorithm.
 
-        Create a hole in the triangulation around the new point, then retriangulate this hole.
+        Create a hole in the triangulation around the new point,
+        then retriangulate this hole.
 
         Parameters
         ----------
@@ -450,7 +457,8 @@ class Triangulation:
                 done_points.update(simplex)
 
                 if len(todo_points):
-                    neighbours = set.union(*[self.vertex_to_simplices[p] for p in todo_points])
+                    neighbours = set.union(*[self.vertex_to_simplices[p]
+                                             for p in todo_points])
                     queue.update(neighbours - done_simplices)
 
                 bad_triangles.add(simplex)
@@ -493,7 +501,6 @@ class Triangulation:
             self._extend_hull(point)
 
             pt_index = len(self.vertices) - 1
-            # self.bowyer_watson(pt_index)
             return self.bowyer_watson(pt_index, transform=transform)
         else:
             reduced_simplex = self.get_reduced_simplex(point, simplex)
@@ -512,7 +519,7 @@ class Triangulation:
             return self.bowyer_watson(pt_index, actual_simplex, transform)
 
     def add_point_inside_simplex(self, point, simplex):
-        # TODO maybe have a method point_strictly_inside_simplex
+        # XXX: maybe have a method point_strictly_inside_simplex
         if len(self.get_reduced_simplex(point, simplex)) != self.dim + 1:
             raise ValueError("Vertex is not inside simplex")
         pt_index = len(self.vertices)
@@ -532,7 +539,7 @@ class Triangulation:
         self.vertices.append(point)
 
         simplices = self.containing(face)
-        # TODO maybe have a method point_on_face
+        # XXX: maybe have a method point_on_face
         if (set(self.get_reduced_simplex(point, next(iter(simplices))))
                 != set(face)):
 
@@ -554,7 +561,7 @@ class Triangulation:
         new_face = tuple(set.union(*(set(tri) for tri in simplices))
                          - set(face))
         if len(new_face) + len(face) != self.dim + 2:
-            # TODO: is this condition correct for arbitrary face dimension in
+            # XXX: is this condition correct for arbitrary face dimension in
             # d>2?
             raise RuntimeError("face has too few or too many neighbors.")
 
@@ -565,7 +572,7 @@ class Triangulation:
         volume_new = sum(new_volumes)
 
         # do not allow creation of zero-volume
-        if any([(v < 1e-10) for v in new_volumes]):
+        if any((v < 1e-10) for v in new_volumes):
             raise RuntimeError(
                 "face cannot be flipped without creating a zero volume simplex"
                 "the corner points are coplanar"
@@ -589,6 +596,9 @@ class Triangulation:
         vertices = np.array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
         return abs(np.linalg.det(vectors)) / prefactor
+
+    def volumes(self):
+        return [self.volume(sim) for sim in self.simplices]
 
     def reference_invariant(self):
         """vertex_to_simplices and simplices are compatible."""
@@ -622,8 +632,8 @@ class Triangulation:
         """
         counts = Counter(self.faces())
         if any(i > 2 for i in counts.values()):
-            raise RuntimeError("Broken triangulation, a (N-1)-dimensional face "
-                               "appears in more than 2 simplices.")
+            raise RuntimeError("Broken triangulation, a (N-1)-dimensional"
+                               " appears in more than 2 simplices.")
 
         hull = set(point for face, count in counts.items() if count == 1
                    for point in face)

@@ -78,7 +78,7 @@ def choose_point_in_simplex(simplex, transform=None):
         The coordinates of the suggested new point.
     """
 
-    # TODO find a better selection algorithm
+    # XXX: find a better selection algorithm
     if transform is not None:
         simplex = np.dot(simplex, transform)
 
@@ -137,11 +137,11 @@ class LearnerND(BaseLearner):
     it, your function needs to be slow enough to compute.
 
 
-    This class keeps track of all known points. It triangulates these points and
-    with every simplex it associates a loss. Then if you request points that you
-    will compute in the future, it will subtriangulate a real simplex with the
-    pending points inside it and distribute the loss among it's children based
-    on volume.
+    This class keeps track of all known points. It triangulates these points
+    and with every simplex it associates a loss. Then if you request points
+    that you will compute in the future, it will subtriangulate a real simplex
+    with the pending points inside it and distribute the loss among it's
+    children based on volume.
     """
 
     def __init__(self, func, bounds, loss_per_simplex=None):
@@ -160,12 +160,13 @@ class LearnerND(BaseLearner):
 
         self._pending_to_simplex = dict()  # vertex -> simplex
 
-        self._subtriangulations = dict()  # simplex -> triangulation,
-        # i.e. the triangulation of the pending points inside a specific simplex
+        # triangulation of the pending points inside a specific simplex
+        self._subtriangulations = dict()  # simplex -> triangulation
 
         self._transform = np.linalg.inv(np.diag(np.diff(bounds).flat))
 
-        self._random = random.Random(1)  # create a private random number generator with fixed seed
+        # create a private random number generator with fixed seed
+        self._random = random.Random(1)
 
     @property
     def npoints(self):
@@ -186,7 +187,7 @@ class LearnerND(BaseLearner):
         return all(p in self.data for p in self._bounds_points)
 
     def ip(self):
-        # TODO take our own triangulation into account when generating the ip
+        # XXX: take our own triangulation into account when generating the ip
         return interpolate.LinearNDInterpolator(self.points, self.values)
 
     @property
@@ -202,11 +203,12 @@ class LearnerND(BaseLearner):
             return None
         pts = self.points[initial_simplex]
         self._tri = Triangulation([tuple(p) for p in pts])
-        to_add = [p for i, p in enumerate(self.points) if i not in initial_simplex]
+        to_add = [p for i, p in enumerate(self.points)
+                  if i not in initial_simplex]
 
         for p in to_add:
             self._tri.add_point(p, transform=self._transform)
-        # TODO also compute losses of initial simplex
+        # XXX: also compute losses of initial simplex
 
     @property
     def values(self):
@@ -232,7 +234,8 @@ class LearnerND(BaseLearner):
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = None
-            to_delete, to_add = self._tri.add_point(point, simplex, transform=self._transform)
+            to_delete, to_add = self._tri.add_point(
+                point, simplex, transform=self._transform)
             self.update_losses(to_delete, to_add)
 
     def _simplex_exists(self, simplex):
@@ -257,16 +260,19 @@ class LearnerND(BaseLearner):
             return
 
         simplex = tuple(simplex)
-        neighbours = set.union(*[self.tri.vertex_to_simplices[i] for i in simplex])
+        simplices = [self.tri.vertex_to_simplices[i] for i in simplex]
+        neighbours = set.union(*simplices)
         # Neighbours also includes the simplex itself
 
         for simpl in neighbours:
             if self.tri.point_in_simplex(point, simpl):
-                if simpl not in self._subtriangulations:
-                    tr = self._subtriangulations[simpl] = Triangulation(self.tri.get_vertices(simpl))
+                subtri = self._subtriangulations
+                if simpl not in subtri:
+                    vertices = self.tri.get_vertices(simpl)
+                    tr = subtri[simpl] = Triangulation(vertices)
                     tr.add_point(point, next(iter(tr.simplices)))
                 else:
-                    self._subtriangulations[simpl].add_point(point)
+                    subtri[simpl].add_point(point)
 
     def ask(self, n=1):
         xs, losses = zip(*(self._ask() for _ in range(n)))
@@ -274,14 +280,15 @@ class LearnerND(BaseLearner):
 
     def _ask(self, n=1):
         # Complexity: O(N log N)
-        # TODO adapt this function
-        # TODO allow cases where n > 1
+        # XXX: adapt this function
+        # XXX: allow cases where n > 1
         assert n == 1
 
         new_points = []
         new_loss_improvements = []
         if not self.bounds_are_done:
-            bounds_to_do = [p for p in self._bounds_points if p not in self.data and p not in self._pending]
+            bounds_to_do = [p for p in self._bounds_points
+                            if p not in self.data and p not in self._pending]
             new_points = bounds_to_do[:n]
             new_loss_improvements = [np.inf] * len(new_points)
             n = n - len(new_points)
@@ -334,7 +341,8 @@ class LearnerND(BaseLearner):
                     simplex = real_simp
                     loss = pend_loss
 
-            point_new = tuple(choose_point_in_simplex(points, transform=self._transform))
+            point_new = tuple(choose_point_in_simplex(
+                points, transform=self._transform))
             self._pending_to_simplex[point_new] = simplex
 
             new_points.append(point_new)
@@ -345,7 +353,7 @@ class LearnerND(BaseLearner):
         return new_points[0], new_loss_improvements[0]
 
     def update_losses(self, to_delete: set, to_add: set):
-        pending_points_unbound = set()  # TODO add the points outside the triangulation to this as well
+        pending_points_unbound = set()  # XXX: add the points outside the triangulation to this as well
 
         for simplex in to_delete:
             self._losses.pop(simplex, None)
@@ -353,7 +361,8 @@ class LearnerND(BaseLearner):
             if subtri is not None:
                 pending_points_unbound.update(subtri.vertices)
 
-        pending_points_unbound = set(p for p in pending_points_unbound if p not in self.data)
+        pending_points_unbound = set(p for p in pending_points_unbound
+                                     if p not in self.data)
 
         for simplex in to_add:
             vertices = self.tri.get_vertices(simplex)
@@ -364,9 +373,11 @@ class LearnerND(BaseLearner):
             for p in pending_points_unbound:
                 # try to insert it
                 if self.tri.point_in_simplex(p, simplex):
-                    if simplex not in self._subtriangulations:
-                        self._subtriangulations[simplex] = Triangulation(self.tri.get_vertices(simplex))
-                    self._subtriangulations[simplex].add_point(p)
+                    subtri = self._subtriangulations
+                    if simplex not in subtri:
+                        vertices = self.tri.get_vertices(simplex)
+                        subtri[simplex] = Triangulation(vertices)
+                    subtri[simplex].add_point(p)
                     self._pending_to_simplex[p] = simplex
 
     def losses(self):
@@ -382,11 +393,11 @@ class LearnerND(BaseLearner):
         return self._losses
 
     def loss(self, real=True):
-        losses = self.losses()  # TODO compute pending loss if real == False
+        losses = self.losses()  # XXX: compute pending loss if real == False
         return max(losses.values()) if losses else float('inf')
 
     def remove_unfinished(self):
-        # TODO implement this method
+        # XXX: implement this method
         self._pending = set()
         self._subtriangulations = dict()
         self._pending_to_simplex = dict()
@@ -403,8 +414,7 @@ class LearnerND(BaseLearner):
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                volumes = [self.tri.volume(sim) for sim in self.tri.simplices]
-                n = int(0.658 / np.sqrt(np.min(volumes)))
+                n = int(0.658 / np.sqrt(np.min(self.tri.volumes())))
 
             xs = ys = np.linspace(0, 1, n)
             xs = xs * (x[1] - x[0]) + x[0]
@@ -414,7 +424,8 @@ class LearnerND(BaseLearner):
             im = hv.Image(np.rot90(z), bounds=lbrt)
 
             if tri_alpha:
-                points = np.array([self.tri.get_vertices(s) for s in self.tri.simplices])
+                points = np.array([self.tri.get_vertices(s)
+                                   for s in self.tri.simplices])
                 points = np.pad(points[:, [0, 1, 2, 0], :],
                                 pad_width=((0, 0), (0, 1), (0, 0)),
                                 mode='constant',
@@ -449,20 +460,19 @@ class LearnerND(BaseLearner):
             y = self.ip()(*values)
             p = hv.Path((x, y))
 
-            # Plot with 5% empty margins such that the boundary points are visible
+            # Plot with 5% margins such that the boundary points are visible
             margin = 0.05 / self._transform[ind, ind]
             plot_bounds = (x.min() - margin, x.max() + margin)
             return p.redim(x=dict(range=plot_bounds))
 
         elif plot_dim == 2:
             if self.vdim > 1:
-                raise NotImplementedError('holoviews currently does not support',
-                                          '3D surface plots in bokeh.')
+                raise NotImplementedError('holoviews currently does not support'
+                                          ' 3D surface plots in bokeh.')
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                volumes = [self.tri.volume(sim) for sim in self.tri.simplices]
-                n = int(0.658 / np.sqrt(np.min(volumes)))
+                n = int(0.658 / np.sqrt(np.min(self.tri.volumes())))
 
             xs = ys = np.linspace(0, 1, n)
             xys = [xs[:, None], ys[None, :]]
@@ -482,4 +492,4 @@ class LearnerND(BaseLearner):
 
             return im.opts(style=dict(cmap='viridis'))
         else:
-            raise ValueError(f"Only 1 or 2-dimensional plots can be generated.")
+            raise ValueError("Only 1 or 2-dimensional plots can be generated.")
