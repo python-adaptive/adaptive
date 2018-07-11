@@ -455,6 +455,11 @@ def test_small_deviations():
         for _ in range(5):
             learner.tell(stash.pop(), learner.function(x))
 
+        if learner.loss() == 0:
+            # If this condition is met, the learner can't return any
+            # more points.
+            break
+
 
 @pytest.mark.xfail
 @run_with(Learner1D, Learner2D, LearnerND)
