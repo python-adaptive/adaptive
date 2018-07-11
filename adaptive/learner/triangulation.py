@@ -29,26 +29,6 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
 
     return (t >= -eps) and (s + t <= 1 + eps)
 
-# WIP
-# def fast_3d_point_in_simplex(point, simplex, eps=1e-8):
-#     p0x, p0y, p0z = simplex[0]
-#     p1x, p1y, p1z = simplex[1]
-#     p2x, p2y, p2z = simplex[2]
-#     p3x, p3y, p3z = simplex[3]
-#     px, py, pz = point
-#
-#     Area = 0.5 * (-p1y * p2x + p0y * (-p1x + p2x) + p0x * (p1y - p2y) + p1x * p2y)
-#
-#     s = 1 / (2 * Area) * (p0y * p2x - p0x * p2y + (p2y - p0y) * px + (p0x - p2x) * py)
-#     if s < -eps or s > 1+eps:
-#         return
-#     t = 1 / (2 * Area) * (p0x * p1y - p0y * p1x + (p0y - p1y) * px + (p1x - p0x) * py)
-#     if t < -eps or s+t > 1+eps:
-#         return
-#     u = 0
-#
-#     return (s >= 0) and (u >= 0) and (s + t + u<= 1)
-
 
 def fast_2d_circumcircle(points):
     """Compute the center and radius of the circumscribed circle of a triangle
@@ -287,26 +267,6 @@ class Triangulation:
         multiplicities = Counter(face for face in hull_faces)
         hull_faces = [face for face in hull_faces if multiplicities[face] < 2]
 
-        decomp = []
-        for face in hull_faces:
-            coords = np.array(self.get_vertices(face)) - new_vertex
-            decomp.append(linalg.lu_factor(coords.T))
-
-        shifted = np.subtract(self.get_vertices(self.hull), new_vertex)
-
-        new_vertices = set()
-        for coord, index in zip(shifted, self.hull):
-            good = True
-            for face, factored in zip(hull_faces, decomp):
-                if index in face:
-                    continue
-                alpha = linalg.lu_solve(factored, coord)
-                if all(alpha > eps):
-                    good = False
-                    break
-            if good:
-                new_vertices.add(index)
-
         # compute the center of the convex hull, this center lies in the hull
         # we do not really need the center, we only need a point that is
         # guaranteed to lie strictly within the hull
@@ -315,7 +275,8 @@ class Triangulation:
 
         pt_index = len(self.vertices)
         self.vertices.append(new_vertex)
-        faces_to_check = set()
+
+        new_simplices = set()
         for face in hull_faces:
             # do orientation check, if orientation is the same, it lies on
             # the same side of the face, otherwise, it lies on the other
@@ -327,13 +288,9 @@ class Triangulation:
                 # if the orientation of the new vertex is zero or directed
                 # towards the center, do not add the simplex
                 self.add_simplex((*face, pt_index))
-                faces_to_check.add(face)
+                new_simplices.add((*face, pt_index))
 
-        multiplicities = Counter(face for face in
-                                 self.faces(vertices=new_vertices | {pt_index})
-                                 if pt_index in face)
-
-        if all(i == 2 for i in multiplicities.values()):
+        if len(new_simplices) == 0:
             # We tried to add an internal point, revert and raise.
             for tri in self.vertex_to_simplices[pt_index]:
                 self.simplices.remove(tri)
@@ -343,6 +300,7 @@ class Triangulation:
 
         self.hull.add(pt_index)
         self.hull = self.compute_hull(check=False)
+        return new_simplices
 
     def circumscribed_circle(self, simplex, transform):
         """Compute the center and radius of the circumscribed circle of a simplex.
@@ -389,27 +347,6 @@ class Triangulation:
         pt = np.dot(self.get_vertices([pt_index]), transform)[0]
 
         return np.linalg.norm(center - pt) < (radius * (1 + eps))
-
-    # WIP: currently this is slower than computing the circumcircle
-    # def fast_point_in_circumcircle(self, pt_index, simplex, transform):
-    #     # Construct the matrix
-    #     eps = 1e-10
-    #     indices = simplex + (pt_index,)
-    #     original_points = self.get_vertices(indices)
-    #     points = np.dot(original_points, transform)
-    #     l_squared = np.sum(np.square(points), axis=1)
-    #
-    #     M = np.array([*np.transpose(points), l_squared, np.ones(l_squared.shape)], dtype=float)
-    #
-    #     # Compute the determinant
-    #     det = np.linalg.det(M)
-    #     if np.abs(det) < eps:
-    #         return True
-    #
-    #     M2 = [*np.transpose(points[:-1]), np.ones(len(simplex))]
-    #     det_inside = np.linalg.det(M2)
-    #
-    #     return np.sign(det) == np.sign(det_inside)
 
     @property
     def default_transform(self):
@@ -505,9 +442,7 @@ class Triangulation:
         else:
             reduced_simplex = self.get_reduced_simplex(point, simplex)
             if not reduced_simplex:
-                raise ValueError(
-                    'Point lies outside of the specified simplex.'
-                )
+                raise ValueError('Point lies outside of the specified simplex.')
             else:
                 simplex = reduced_simplex
 
@@ -517,81 +452,6 @@ class Triangulation:
             pt_index = len(self.vertices)
             self.vertices.append(point)
             return self.bowyer_watson(pt_index, actual_simplex, transform)
-
-    def add_point_inside_simplex(self, point, simplex):
-        # XXX: maybe have a method point_strictly_inside_simplex
-        if len(self.get_reduced_simplex(point, simplex)) != self.dim + 1:
-            raise ValueError("Vertex is not inside simplex")
-        pt_index = len(self.vertices)
-        self.vertices.append(point)
-        self.delete_simplex(simplex)
-
-        new = []
-        for others in combinations(simplex, len(simplex) - 1):
-            tri = (*others, pt_index)
-            self.add_simplex(tri)
-            new.append(tri)
-
-        return new
-
-    def add_point_on_face(self, point, face):
-        pt_index = len(self.vertices)
-        self.vertices.append(point)
-
-        simplices = self.containing(face)
-        # XXX: maybe have a method point_on_face
-        if (set(self.get_reduced_simplex(point, next(iter(simplices))))
-                != set(face)):
-
-            raise ValueError("Vertex does not lie on the face.")
-
-        if all(pt in self.hull for pt in face):
-            self.hull.add(pt_index)
-        for simplex in simplices:
-            self.delete_simplex(simplex)
-            opposing = tuple(pt for pt in simplex if pt not in face)
-
-            for others in combinations(face, len(face) - 1):
-                self.add_simplex((*others, *opposing, pt_index))
-
-    # NOTE: This is not actually used anywhere currently, nor is
-    #       it tested.
-    def _flip(self, face):
-        """Flip the face shared between several simplices."""
-        simplices = self.containing(face)
-
-        new_face = tuple(set.union(*(set(tri) for tri in simplices))
-                         - set(face))
-        if len(new_face) + len(face) != self.dim + 2:
-            # XXX: is this condition correct for arbitrary face dimension in
-            # d>2?
-            raise RuntimeError("face has too few or too many neighbors.")
-
-        new_simplices = [others + new_face for others in
-                         combinations(face, len(face) - 1)]
-
-        new_volumes = [self.volume(tri) for tri in new_simplices]
-        volume_new = sum(new_volumes)
-
-        # do not allow creation of zero-volume
-        if any((v < 1e-10) for v in new_volumes):
-            raise RuntimeError(
-                "face cannot be flipped without creating a zero volume simplex"
-                "the corner points are coplanar"
-            )
-
-        volume_was = sum(self.volume(tri) for tri in simplices)
-
-        if not np.allclose(volume_was, volume_new):
-            raise RuntimeError(
-                "face cannot be flipped without breaking the triangulation."
-            )
-
-        for simplex in new_simplices:
-            self.add_simplex(simplex)
-
-        for simplex in simplices:
-            self.delete_simplex(simplex)
 
     def volume(self, simplex):
         prefactor = np.math.factorial(self.dim)

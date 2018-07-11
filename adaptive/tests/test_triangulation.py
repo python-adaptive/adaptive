@@ -72,7 +72,6 @@ def _random_point_on_standard_simplex_face(dim):
     return coeffs
 
 
-
 def _random_point_outside_standard_simplex(dim, positive_orthant=True):
     """Return a random point outside of the 'dim'-D standard simplex.
        If 'positive_orthant' is True, returns a point where all the
@@ -138,7 +137,7 @@ def test_zero_volume_initial_simplex_raises_exception(dim):
     points = np.vstack((np.zeros(dim), points, linearly_dependent_point))
     assert np.isclose(np.linalg.det(points[1:]), 0)  # sanity check
 
-    #with pytest.raises(ValueError):
+    # with pytest.raises(ValueError):
     #    Triangulation(points)
 
 
