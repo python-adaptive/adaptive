@@ -144,7 +144,7 @@ def test_zero_volume_initial_simplex_raises_exception(dim):
 
 @repeat(5)
 @with_dimension
-def test_adding_point_outside_standard_simplex_in_positive_orthant_simplex_is_valid(dim):
+def test_adding_point_outside_standard_simplex_in_positive_orthant_is_valid(dim):
     t = Triangulation(_make_standard_simplex(dim))
     t.add_point(_random_point_outside_standard_simplex(dim, positive_orthant=True))
     initial_simplex = tuple(range(dim + 1))
