@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, Counter
 from math import factorial
 
 import pytest
@@ -27,13 +27,37 @@ def _standard_simplex_volume(dim):
     return 1 / factorial(dim)
 
 
-def _simplices_are_valid(t):
+def _check_simplices_are_valid(t):
     """Check that 'simplices' and 'vertex_to_simplices' are consistent."""
     vertex_to_simplices = defaultdict(set)
     for simplex in t.simplices:
         for vertex in simplex:
             vertex_to_simplices[vertex].add(simplex)
-    return vertex_to_simplices == t.vertex_to_simplices
+    assert vertex_to_simplices == t.vertex_to_simplices,\
+           (t.vertex_to_simplices, vertex_to_simplices)
+
+
+def _check_faces_are_valid(t):
+    """Check that a 'dim-1'-D face is shared by no more than 2 simplices."""
+    counts = Counter(t.faces())
+    assert not any(i > 2 for i in counts.values()), counts
+
+
+def _check_hull_is_valid(t):
+    """Check that the stored hull is consistent with one computed from scratch."""
+    counts = Counter(t.faces())
+    hull = set(point
+               for face, count in counts.items()
+               if count == 1
+               for point in face)
+
+    assert t.hull == hull, (t.hull, hull)
+
+
+def _check_triangulation_is_valid(t):
+    _check_simplices_are_valid(t)
+    _check_faces_are_valid(t)
+    _check_hull_is_valid(t)
 
 
 @with_dimension
@@ -41,7 +65,7 @@ def test_triangulation_of_standard_simplex_is_valid(dim):
     t = Triangulation(_make_standard_simplex(dim))
     expected_simplex = tuple(range(dim + 1))
     assert t.simplices == {expected_simplex}
-    assert _simplices_are_valid(t)
+    _check_triangulation_is_valid(t)
     assert np.isclose(t.volume(expected_simplex),
                       _standard_simplex_volume(dim))
 
@@ -62,7 +86,7 @@ def test_adding_point_outside_standard_simplex_is_valid(dim):
     t = Triangulation(_make_standard_simplex(dim))
     t.add_point((1.1,) * dim)
 
-    assert _simplices_are_valid(t)
+    _check_triangulation_is_valid(t)
     # Check that there are only 2 simplices, and that the standard
     # simplex is one of them (it was not removed with the addition of
     # the extra point).
@@ -89,6 +113,7 @@ def test_adding_point_inside_standard_simplex_is_valid(dim, provide_simplex):
         t.add_point(inside_simplex)
     added_point = dim + 1  # *index* of added point
 
+    _check_triangulation_is_valid(t)
     assert len(t.simplices) == dim + 1
     assert all(added_point in simplex for simplex in t.simplices)
 
@@ -107,6 +132,7 @@ def test_adding_point_on_face_of_standard_simplex_is_valid(dim):
     t.add_point(centre_of_face)
     added_point = dim + 1  # *index* of added point
 
+    _check_triangulation_is_valid(t)
     assert len(t.simplices) == dim
     assert all(added_point in simplex for simplex in t.simplices)
 
@@ -119,6 +145,8 @@ def test_triangulation_volume_is_less_than_bounding_box(dim):
     eps = 1e-8
     points = np.random.random((30, dim))  # all within the unit hypercube
     t = _make_triangulation(points)
+
+    _check_triangulation_is_valid(t)
     volume = np.sum([t.volume(s) for s in t.simplices])
     assert volume < 1+eps
 
