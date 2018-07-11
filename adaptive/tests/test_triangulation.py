@@ -48,12 +48,10 @@ def test_triangulation_of_standard_simplex_is_valid(dim):
 
 @with_dimension
 def test_zero_volume_initial_simplex_raises_exception(dim):
-
     points = np.random.random((dim - 1, dim))
     linearly_dependent_point = np.dot(np.random.random(dim - 1), points)
     points = np.vstack((np.zeros(dim), points, linearly_dependent_point))
     assert np.isclose(np.linalg.det(points[1:]), 0)  # sanity check
-    print(points)
 
     with pytest.raises(ValueError):
         Triangulation(points)
