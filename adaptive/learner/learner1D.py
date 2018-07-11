@@ -278,39 +278,36 @@ class Learner1D(BaseLearner):
             loss_improvements = [np.inf] * n
             points = np.linspace(*self.bounds, n + 1)[1:].tolist()
         else:
-            def xs(x, n):
+            def xs(x_left, x_right, n):
                 if n == 1:
+                    # This is just an optimization
                     return []
                 else:
-                    step = (x[1] - x[0]) / n
-                    return [x[0] + step * i for i in range(1, n)]
+                    step = (x_right - x_left) / n
+                    return [x_left + step * i for i in range(1, n)]
 
             # Calculate how many points belong to each interval.
             x_scale = self._scale[0]
 
             quals = []
             for ((x_left, x_right), loss) in self.losses_combined.items():
-                dx = x_right - x_left
-                if abs(dx) < self._dx_eps:
-                    # The interval is too small and should not be subdivided
-                    quality = 0
-                elif not math.isinf(loss):
-                    quality = -loss
-                else:
-                    quality = -dx / x_scale
+                quality = -loss if not math.isinf(loss) else -(x_right - x_left) / x_scale
                 quals.append((quality, (x_left, x_right), 1))
 
             heapq.heapify(quals)
 
             for point_number in range(n):
                 quality, x, n = quals[0]
+                if abs(x[1] - x[0]) / (n + 1) <= self._dx_eps:
+                    # The interval is too small and should not be subdivided
+                    quality = np.inf
                 heapq.heapreplace(quals, (quality * n / (n + 1), x, n + 1))
 
-            points = list(itertools.chain.from_iterable(xs(x, n)
-                          for quality, x, n in quals))
+            points = list(itertools.chain.from_iterable(
+                xs(*x, n) for quality, x, n in quals))
 
             loss_improvements = list(itertools.chain.from_iterable(
-                                     itertools.repeat(-quality, n-1)
+                                     itertools.repeat(-quality, n - 1)
                                      for quality, x, n in quals))
 
         if add_data:
