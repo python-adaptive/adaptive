@@ -55,6 +55,24 @@ def _random_point_inside_standard_simplex(dim):
     return coeffs
 
 
+def _random_point_on_standard_simplex_face(dim):
+    """Return a random point on the largest 'dim-1'-face
+       of the standard simplex in 'dim' dimensions. for 2D
+       this is a random point on the hypotenuse.
+    """
+    assert dim > 1  # for 1D 0-face is a vertex, which won't work
+    coeffs = []
+    for d in range(dim - 1):
+        coeffs.append((1 - sum(coeffs)) * np.random.random())
+    coeffs.append(1 - sum(coeffs))
+    coeffs = np.array(coeffs)
+    # Sanity checks
+    assert np.all(coeffs > 0) and not np.any(np.isclose(0, coeffs))
+    assert np.isclose(1, np.sum(coeffs))
+    return coeffs
+
+
+
 def _random_point_outside_standard_simplex(dim, positive_orthant=True):
     """Return a random point outside of the 'dim'-D standard simplex.
        If 'positive_orthant' is True, returns a point where all the
@@ -187,20 +205,22 @@ def test_adding_point_inside_standard_simplex_is_valid(dim, provide_simplex):
     assert np.isclose(volume, _standard_simplex_volume(dim))
 
 
+@repeat(5)
 @with_dimension
-def test_adding_point_on_face_of_standard_simplex_is_valid(dim):
+def test_adding_point_on_standard_simplex_face_is_valid(dim):
     if dim == 1:
-        # there are no faces in 1D, so we'd end up adding an existing point
-        return
-
+        return  # 1D has no faces that are not vertices
     t = Triangulation(_make_standard_simplex(dim))
-    centre_of_face = (1 / dim,) * dim
-    t.add_point(centre_of_face)
+    first_simplex = tuple(range(dim + 1))
+    on_simplex = _random_point_on_standard_simplex_face(dim)
+    t.add_point(on_simplex)
     added_point = dim + 1  # *index* of added point
 
     _check_triangulation_is_valid(t)
     assert len(t.simplices) == dim
+    # Origin and added point are in all simplices
     assert all(added_point in simplex for simplex in t.simplices)
+    assert all(0 in simplex for simplex in t.simplices)
 
     volume = np.sum([t.volume(s) for s in t.simplices])
     assert np.isclose(volume, _standard_simplex_volume(dim))
