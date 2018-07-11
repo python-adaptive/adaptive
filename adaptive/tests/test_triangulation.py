@@ -176,7 +176,7 @@ def test_adding_point_on_face_of_standard_simplex_is_valid(dim):
 @with_dimension
 def test_triangulation_volume_is_less_than_bounding_box(dim):
     eps = 1e-8
-    points = np.random.random((30, dim))  # all within the unit hypercube
+    points = np.random.random((10, dim))  # all within the unit hypercube
     t = _make_triangulation(points)
 
     _check_triangulation_is_valid(t)
@@ -186,7 +186,7 @@ def test_triangulation_volume_is_less_than_bounding_box(dim):
 
 @with_dimension
 def test_triangulation_is_deterministic(dim):
-    points = np.random.random((30, dim))
+    points = np.random.random((10, dim))
     t1 = _make_triangulation(points)
     t2 = _make_triangulation(points)
     assert t1.simplices == t2.simplices
