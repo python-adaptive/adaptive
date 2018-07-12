@@ -33,8 +33,7 @@ def _check_simplices_are_valid(t):
     for simplex in t.simplices:
         for vertex in simplex:
             vertex_to_simplices[vertex].add(simplex)
-    assert vertex_to_simplices == t.vertex_to_simplices,\
-           (t.vertex_to_simplices, vertex_to_simplices)
+    assert vertex_to_simplices == t.vertex_to_simplices
 
 
 def _check_faces_are_valid(t):
@@ -51,7 +50,7 @@ def _check_hull_is_valid(t):
                if count == 1
                for point in face)
 
-    assert t.hull == hull, (t.hull, hull)
+    assert t.hull == hull
 
 
 def _check_triangulation_is_valid(t):
