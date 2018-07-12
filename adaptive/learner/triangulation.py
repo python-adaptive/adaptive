@@ -1,8 +1,9 @@
-from collections import defaultdict, Counter, Sequence
+from collections import defaultdict, Counter, Sized, Iterable
 from itertools import combinations, chain
 
 import numpy as np
 import math
+from abc import ABC
 
 
 def fast_norm(v):
@@ -132,6 +133,10 @@ def orientation(face, origin):
     return sign
 
 
+def isIterableAndSized(obj):
+    return isinstance(obj, Iterable)
+
+
 class Triangulation:
     """A triangulation object.
 
@@ -153,9 +158,11 @@ class Triangulation:
         Exterior vertices
     """
 
-    def __init__(self, coords: Sequence):
-        if not isinstance(coords, Sequence) \
-                or not all(isinstance(coord, Sequence) for coord in coords):
+    def __init__(self, coords):
+        if not isIterableAndSized(coords):
+            raise ValueError("Please provide a 2-dimensional list of points")
+        coords = list(coords)
+        if not all(isIterableAndSized(coord) for coord in coords):
             raise ValueError("Please provide a 2-dimensional list of points")
 
         dim = len(coords[0])
@@ -168,6 +175,7 @@ class Triangulation:
         if len(coords) != dim + 1:
             raise ValueError("Can only add one simplex on initialization")
 
+        coords = list(map(tuple, coords))
         vectors = np.subtract(coords[1:], coords[0])
         if np.linalg.det(vectors) == 0:
             raise ValueError("Initial simplex has zero volumes "
