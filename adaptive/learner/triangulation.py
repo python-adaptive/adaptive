@@ -2,7 +2,6 @@ from collections import defaultdict, Counter, Iterable
 from itertools import combinations, chain
 
 import numpy as np
-from scipy import linalg
 import math
 
 
