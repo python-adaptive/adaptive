@@ -245,12 +245,6 @@ class LearnerND(BaseLearner):
         simplex = tuple(sorted(simplex))
         return simplex in self.tri.simplices
 
-    def volume(self):
-        if self.tri is None:
-            return 0
-        v = [volume(self.tri.get_vertices(s)) for s in self.tri.simplices]
-        return sum(v)
-
     def _tell_pending(self, point, simplex=None):
         point = tuple(point)
         self._pending.add(point)
