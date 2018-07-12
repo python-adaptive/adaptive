@@ -88,7 +88,7 @@ def test_triangulation_of_standard_simplex(dim):
 @with_dimension
 def test_zero_volume_initial_simplex_raises_exception(dim):
     points = _make_standard_simplex(dim)[:-1]
-    linearly_dependent_point = np.dot(np.random.random(dim - 1), points)
+    linearly_dependent_point = np.dot(np.random.random(dim), points)
     zero_volume_simplex = np.vstack((points, linearly_dependent_point))
 
     assert np.isclose(np.linalg.det(zero_volume_simplex[1:]), 0)  # sanity check
