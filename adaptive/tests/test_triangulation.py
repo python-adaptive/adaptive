@@ -218,6 +218,36 @@ def test_adding_point_on_standard_simplex_edge(dim):
 
 
 @with_dimension
+def test_adding_point_colinear_with_first_edge(dim):
+    pts = _make_standard_simplex(dim)
+    t = Triangulation(pts)
+    edge_extension = np.multiply(pts[1], 2)
+
+    t.add_point(edge_extension)
+    _check_triangulation_is_valid(t)
+
+    simplex1 = tuple(range(dim + 1))
+    simplex2 = tuple(range(1, dim + 2))
+
+    assert t.simplices == {simplex1, simplex2}
+
+
+@with_dimension
+def test_adding_point_coplanar_with_a_face(dim):
+    pts = _make_standard_simplex(dim)
+    t = Triangulation(pts)
+    face_extension = np.sum(pts[:-1], axis=0) * 2
+
+    t.add_point(face_extension)
+    _check_triangulation_is_valid(t)
+
+    simplex1 = tuple(range(dim + 1))
+    simplex2 = tuple(range(1, dim + 2))
+
+    assert t.simplices == {simplex1, simplex2}
+
+
+@with_dimension
 def test_adding_point_inside_circumscribed_circle(dim):
     pts = _make_standard_simplex(dim)
     t = Triangulation(pts)
