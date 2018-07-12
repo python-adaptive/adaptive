@@ -6,7 +6,7 @@ import pytest
 from ..learner.triangulation import Triangulation
 import numpy as np
 
-with_dimension = pytest.mark.parametrize('dim', [1, 2, 3, 4])
+with_dimension = pytest.mark.parametrize('dim', [2, 3, 4])
 
 
 def _make_triangulation(points):
@@ -59,6 +59,14 @@ def _check_triangulation_is_valid(t):
     _check_hull_is_valid(t)
 
 
+def test_triangulation_raises_exception_for_1d():
+    # We could support 1d, but we don't for now, because it is not relevant
+    # so a user has to be aware
+    pts = [0, 1]
+    with pytest.raises(ValueError):
+        Triangulation(pts)
+
+
 @with_dimension
 def test_triangulation_of_standard_simplex(dim):
     t = Triangulation(_make_standard_simplex(dim))
@@ -95,9 +103,8 @@ def test_adding_point_outside_circumscribed_hypersphere_in_positive_orthant(dim)
     _check_triangulation_is_valid(t)
     assert t.simplices == {simplex1, simplex2}
 
-    if dim > 1:
-        # All points are in the hull
-        assert t.hull == set(range(n_vertices))
+    # All points are in the hull
+    assert t.hull == set(range(n_vertices))
 
     assert t.vertex_to_simplices[0] == {simplex1}
     assert t.vertex_to_simplices[n_vertices - 1] == {simplex2}
@@ -167,8 +174,6 @@ def test_adding_point_inside_standard_simplex(dim, provide_simplex):
 
 @with_dimension
 def test_adding_point_on_standard_simplex_face(dim):
-    if dim == 1:
-        return  # 1D has no faces that are not vertices
     pts = _make_standard_simplex(dim)
     t = Triangulation(pts)
     on_simplex = np.average(pts[1:], axis=0)
