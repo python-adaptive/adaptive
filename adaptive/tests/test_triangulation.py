@@ -193,6 +193,23 @@ def test_adding_point_on_standard_simplex_face(dim):
 
 
 @with_dimension
+def test_adding_point_inside_circumscribed_circle(dim):
+    pts = _make_standard_simplex(dim)
+    t = Triangulation(pts)
+    on_simplex = (0.6,) * dim
+
+    t.add_point(on_simplex)
+    added_point = dim + 1  # *index* of added point
+
+    _check_triangulation_is_valid(t)
+
+    other_points = list(range(1, dim+1))
+    new_simplices = {(0, *points, added_point)
+                     for points in itertools.combinations(other_points, dim-1)}
+    assert new_simplices == t.simplices
+
+
+@with_dimension
 def test_triangulation_volume_is_less_than_bounding_box(dim):
     eps = 1e-8
     points = np.random.random((10, dim))  # all within the unit hypercube
