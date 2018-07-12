@@ -59,10 +59,18 @@ def _check_triangulation_is_valid(t):
     _check_hull_is_valid(t)
 
 
-def test_triangulation_raises_exception_for_1d():
+def test_triangulation_raises_exception_for_1d_list():
     # We could support 1d, but we don't for now, because it is not relevant
     # so a user has to be aware
     pts = [0, 1]
+    with pytest.raises(ValueError):
+        Triangulation(pts)
+
+
+def test_triangulation_raises_exception_for_1d_points():
+    # We could support 1d, but we don't for now, because it is not relevant
+    # so a user has to be aware
+    pts = [(0,), (1,)]
     with pytest.raises(ValueError):
         Triangulation(pts)
 

@@ -1,4 +1,4 @@
-from collections import defaultdict, Counter
+from collections import defaultdict, Counter, Iterable
 from itertools import combinations, chain
 
 import numpy as np
@@ -155,9 +155,16 @@ class Triangulation:
     """
 
     def __init__(self, coords):
+        if not isinstance(coords, Iterable) \
+                or not all(isinstance(coord, Iterable) for coord in coords):
+            raise ValueError("Please provide a 2-dimensional list of points")
+
         dim = len(coords[0])
         if any(len(coord) != dim for coord in coords):
             raise ValueError("Coordinates dimension mismatch")
+
+        if dim == 1:
+            raise ValueError("Triangulation class only supports dim >= 2")
 
         if len(coords) != dim + 1:
             raise ValueError("Can only add one simplex on initialization")
