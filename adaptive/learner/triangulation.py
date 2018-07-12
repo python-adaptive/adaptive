@@ -424,7 +424,8 @@ class Triangulation:
                     continue
                 self.add_simplex((*face, pt_index))
 
-        return bad_triangles, self.vertex_to_simplices[pt_index]
+        new_triangles = self.vertex_to_simplices[pt_index]
+        return bad_triangles - new_triangles, new_triangles - bad_triangles
 
     def add_point(self, point, simplex=None, transform=None):
         """Add a new vertex and create simplices as appropriate.
@@ -448,10 +449,15 @@ class Triangulation:
         actual_simplex = simplex
 
         if not simplex:
-            self._extend_hull(point)
+            temporary_simplices = self._extend_hull(point)
 
             pt_index = len(self.vertices) - 1
-            return self.bowyer_watson(pt_index, transform=transform)
+            deleted_simplices, added_simplices = \
+                self.bowyer_watson(pt_index, transform)
+
+            deleted = deleted_simplices - temporary_simplices
+            added = added_simplices | (temporary_simplices - deleted_simplices)
+            return deleted, added
         else:
             reduced_simplex = self.get_reduced_simplex(point, simplex)
             if not reduced_simplex:
