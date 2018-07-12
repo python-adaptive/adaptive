@@ -453,7 +453,7 @@ class Triangulation:
 
             pt_index = len(self.vertices) - 1
             deleted_simplices, added_simplices = \
-                self.bowyer_watson(pt_index, transform)
+                self.bowyer_watson(pt_index, transform=transform)
 
             deleted = deleted_simplices - temporary_simplices
             added = added_simplices | (temporary_simplices - deleted_simplices)
