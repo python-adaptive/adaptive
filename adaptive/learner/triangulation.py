@@ -177,7 +177,6 @@ class Triangulation:
         self.simplices = set()
         self.vertex_to_simplices = defaultdict(set)
         self.add_simplex(range(len(self.vertices)))
-        self.hull = set(range(len(coords)))
 
     def delete_simplex(self, simplex):
         simplex = tuple(sorted(simplex))
@@ -272,11 +271,9 @@ class Triangulation:
         return set.intersection(*(self.vertex_to_simplices[i] for i in face))
 
     def _extend_hull(self, new_vertex, eps=1e-8):
-        hull_faces = list(self.faces(vertices=self.hull))
-        # notice that this also includes interior faces, to remove these we
-        # count multiplicities
-        multiplicities = Counter(face for face in hull_faces)
-        hull_faces = [face for face in hull_faces if multiplicities[face] < 2]
+        # count multiplicities in order to get all hull faces
+        multiplicities = Counter(face for face in self.faces())
+        hull_faces = [face for face, count in multiplicities.items() if count == 1]
 
         # compute the center of the convex hull, this center lies in the hull
         # we do not really need the center, we only need a point that is
@@ -309,8 +306,6 @@ class Triangulation:
             del self.vertices[pt_index]
             raise ValueError("Candidate vertex is inside the hull.")
 
-        self.hull.add(pt_index)
-        self.hull = self.compute_hull(check=False)
         return new_simplices
 
     def circumscribed_circle(self, simplex, transform):
@@ -489,8 +484,9 @@ class Triangulation:
         """Simplices originating from a vertex don't overlap."""
         raise NotImplementedError
 
-    def compute_hull(self, check=True):
-        """Recompute hull from triangulation.
+    @property
+    def hull(self):
+        """Compute hull from triangulation.
 
         Parameters
         ----------
@@ -510,10 +506,6 @@ class Triangulation:
 
         hull = set(point for face, count in counts.items() if count == 1
                    for point in face)
-
-        if check and self.hull != hull:
-            raise RuntimeError("Incorrect hull value.")
-
         return hull
 
     def convex_invariant(self, vertex):
