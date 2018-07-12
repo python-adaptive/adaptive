@@ -3,7 +3,6 @@ from itertools import combinations, chain
 
 import numpy as np
 import math
-from abc import ABC
 
 
 def fast_norm(v):
@@ -133,8 +132,8 @@ def orientation(face, origin):
     return sign
 
 
-def isIterableAndSized(obj):
-    return isinstance(obj, Iterable)
+def is_iterable_and_sized(obj):
+    return isinstance(obj, Iterable) and isinstance(obj, Sized)
 
 
 class Triangulation:
@@ -159,10 +158,10 @@ class Triangulation:
     """
 
     def __init__(self, coords):
-        if not isIterableAndSized(coords):
+        if not is_iterable_and_sized(coords):
             raise ValueError("Please provide a 2-dimensional list of points")
         coords = list(coords)
-        if not all(isIterableAndSized(coord) for coord in coords):
+        if not all(is_iterable_and_sized(coord) for coord in coords):
             raise ValueError("Please provide a 2-dimensional list of points")
 
         dim = len(coords[0])
