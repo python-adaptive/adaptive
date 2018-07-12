@@ -115,13 +115,12 @@ class LearnerND(BaseLearner):
 
     Methods
     -------
-    plot()
+    plot(n)
         If dim == 2, this method will plot the function being learned.
-    plot_slice((x, y, ...), n)
-        plot a slice of the function using the current data. If a coordinate is
-        passed as None, it will be used to plot. e.g. you have a 3d learner,
-        passing (1, None, None) will plot a 2d intersection with
-        x = 1, y = linspace(y_min, y_max, n), z = linspace(z_min, z_max, n).
+    plot_slice(cut_mapping, n)
+        plot a slice of the function using interpolation of the current data.
+        the cut_mapping contains the fixed parameters, the other parameters are
+        used as axes for plotting.
 
     Notes
     -----
@@ -459,7 +458,8 @@ class LearnerND(BaseLearner):
         Parameters
         ----------
         cut_mapping : dict (int -> float)
-            for each dimension the value
+            for each fixed dimension the value, the other dimensions
+            are interpolated
         n : int
             the number of boxes in the interpolation grid along each axis
         """
