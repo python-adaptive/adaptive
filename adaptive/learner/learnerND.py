@@ -381,7 +381,8 @@ class LearnerND(BaseLearner):
                     self._pending_to_simplex[p] = simplex
 
     def losses(self):
-        """
+        """Get the losses of each simplex in the current triangulation, as dict
+
         Returns
         -------
         losses : dict
@@ -403,6 +404,15 @@ class LearnerND(BaseLearner):
         self._pending_to_simplex = dict()
 
     def plot(self, n=None, tri_alpha=0):
+        """Plot the function we want to learn, only works in 2D.
+
+        Parameters
+        ----------
+        n : int
+            the number of boxes in the interpolation grid along each axis
+        tri_alpha : float (0 to 1)
+            Opacity of triangulation lines
+        """
         hv = ensure_holoviews()
         if self.vdim > 1:
             raise NotImplemented('holoviews currently does not support',
@@ -444,6 +454,15 @@ class LearnerND(BaseLearner):
         return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
 
     def plot_slice(self, cut_mapping, n=None):
+        """Plot a 1d or 2d interpolated slice of a N-dimensional function.
+
+        Parameters
+        ----------
+        cut_mapping : dict (int -> float)
+            for each dimension the value
+        n : int
+            the number of boxes in the interpolation grid along each axis
+        """
         hv = ensure_holoviews()
         plot_dim = self.ndim - len(cut_mapping)
         if plot_dim == 1:
