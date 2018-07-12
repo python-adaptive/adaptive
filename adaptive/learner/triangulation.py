@@ -1,4 +1,4 @@
-from collections import defaultdict, Counter, Iterable
+from collections import defaultdict, Counter, Sequence
 from itertools import combinations, chain
 
 import numpy as np
@@ -153,9 +153,9 @@ class Triangulation:
         Exterior vertices
     """
 
-    def __init__(self, coords):
-        if not isinstance(coords, Iterable) \
-                or not all(isinstance(coord, Iterable) for coord in coords):
+    def __init__(self, coords: Sequence):
+        if not isinstance(coords, Sequence) \
+                or not all(isinstance(coord, Sequence) for coord in coords):
             raise ValueError("Please provide a 2-dimensional list of points")
 
         dim = len(coords[0])
