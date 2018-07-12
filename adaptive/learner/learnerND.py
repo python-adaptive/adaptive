@@ -112,6 +112,10 @@ class LearnerND(BaseLearner):
     ----------
     data : dict
         Sampled points and values.
+    points : numpy array
+        Coordinates of the currently known points
+    values : numpy array
+        The values of each of the known points
 
     Methods
     -------
