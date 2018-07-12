@@ -168,6 +168,11 @@ class Triangulation:
         if len(coords) != dim + 1:
             raise ValueError("Can only add one simplex on initialization")
 
+        vectors = np.subtract(coords[1:], coords[0])
+        if np.linalg.det(vectors) == 0:
+            raise ValueError("Initial simplex has zero volumes "
+                             "(the points are linearly dependent)")
+
         self.vertices = list(coords)
         self.simplices = set()
         self.vertex_to_simplices = defaultdict(set)
