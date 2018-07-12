@@ -77,8 +77,8 @@ def test_zero_volume_initial_simplex_raises_exception(dim):
 
     assert np.isclose(np.linalg.det(zero_volume_simplex[1:]), 0)  # sanity check
 
-    # with pytest.raises(ValueError):
-    #    Triangulation(points)
+    with pytest.raises(ValueError):
+        Triangulation(zero_volume_simplex)
 
 
 @with_dimension
