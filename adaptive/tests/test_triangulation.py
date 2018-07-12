@@ -199,6 +199,25 @@ def test_adding_point_on_standard_simplex_face(dim):
 
 
 @with_dimension
+def test_adding_point_on_standard_simplex_edge(dim):
+    pts = _make_standard_simplex(dim)
+    t = Triangulation(pts)
+    on_edge = np.average(pts[:2], axis=0)
+
+    t.add_point(on_edge)
+    _check_triangulation_is_valid(t)
+
+    other_points = list(range(2, dim+2))
+
+    new_simplices = {(0, *other_points),
+                     (1, *other_points)}
+
+    assert new_simplices == t.simplices
+
+    assert np.isclose(np.sum(t.volumes()), _standard_simplex_volume(dim))
+
+
+@with_dimension
 def test_adding_point_inside_circumscribed_circle(dim):
     pts = _make_standard_simplex(dim)
     t = Triangulation(pts)
