@@ -1,29 +1,12 @@
-import functools
 from collections import defaultdict, Counter
 from math import factorial
-
+import itertools
 import pytest
 
 from ..learner.triangulation import Triangulation
 import numpy as np
 
 with_dimension = pytest.mark.parametrize('dim', [1, 2, 3, 4])
-
-def repeat(n_repetitions):
-    """Decorator for testcases: calls them 'n_repetitions' times in succession.
-
-       Useful for tests that use the RNG.
-    """
-    def _(testcase):
-
-        @functools.wraps(testcase)
-        def with_repetition(*args, **kwargs):
-            for _ in range(n_repetitions):
-                testcase(*args, **kwargs)
-
-        return with_repetition
-
-    return _
 
 
 def _make_triangulation(points):
@@ -42,48 +25,6 @@ def _make_standard_simplex(dim):
 
 def _standard_simplex_volume(dim):
     return 1 / factorial(dim)
-
-
-def _random_point_inside_standard_simplex(dim):
-    coeffs = []
-    for d in range(dim):
-        coeffs.append((1 - sum(coeffs)) * np.random.random())
-    coeffs = np.array(coeffs)
-    # Sanity checks
-    assert np.all(coeffs > 0) and not np.any(np.isclose(0, coeffs))
-    assert np.sum(coeffs) < 1 and not np.isclose(1, np.sum(coeffs))
-    return coeffs
-
-
-def _random_point_on_standard_simplex_face(dim):
-    """Return a random point on the largest 'dim-1'-face
-       of the standard simplex in 'dim' dimensions. for 2D
-       this is a random point on the hypotenuse.
-    """
-    assert dim > 1  # for 1D 0-face is a vertex, which won't work
-    coeffs = []
-    for d in range(dim - 1):
-        coeffs.append((1 - sum(coeffs)) * np.random.random())
-    coeffs.append(1 - sum(coeffs))
-    coeffs = np.array(coeffs)
-    # Sanity checks
-    assert np.all(coeffs > 0) and not np.any(np.isclose(0, coeffs))
-    assert np.isclose(1, np.sum(coeffs))
-    return coeffs
-
-
-def _random_point_outside_standard_simplex(dim, positive_orthant=True):
-    """Return a random point outside of the 'dim'-D standard simplex.
-       If 'positive_orthant' is True, returns a point where all the
-       coordinates are positive, otherwise they are all negative.
-    """
-    if positive_orthant:
-        # sum of components is guaranteed to be > 1
-        return (1 / dim) + np.random.random(dim)
-    else:
-        # Any point in negative orthant is outside the standard
-        # simplex by definition.
-        return -np.random.random(dim)
 
 
 def _check_simplices_are_valid(t):
@@ -120,7 +61,7 @@ def _check_triangulation_is_valid(t):
 
 
 @with_dimension
-def test_triangulation_of_standard_simplex_is_valid(dim):
+def test_triangulation_of_standard_simplex(dim):
     t = Triangulation(_make_standard_simplex(dim))
     expected_simplex = tuple(range(dim + 1))
     assert t.simplices == {expected_simplex}
@@ -130,45 +71,53 @@ def test_triangulation_of_standard_simplex_is_valid(dim):
 
 
 @with_dimension
-@repeat(5)
 def test_zero_volume_initial_simplex_raises_exception(dim):
-    points = np.random.random((dim - 1, dim))
+    points = _make_standard_simplex(dim)[:-1]
     linearly_dependent_point = np.dot(np.random.random(dim - 1), points)
-    points = np.vstack((np.zeros(dim), points, linearly_dependent_point))
-    assert np.isclose(np.linalg.det(points[1:]), 0)  # sanity check
+    zero_volume_simplex = np.vstack((points, linearly_dependent_point))
+
+    assert np.isclose(np.linalg.det(zero_volume_simplex[1:]), 0)  # sanity check
 
     # with pytest.raises(ValueError):
     #    Triangulation(points)
 
 
-@repeat(5)
 @with_dimension
-def test_adding_point_outside_standard_simplex_in_positive_orthant_is_valid(dim):
+def test_adding_point_outside_circumscribed_hypersphere_in_positive_orthant(dim):
     t = Triangulation(_make_standard_simplex(dim))
-    t.add_point(_random_point_outside_standard_simplex(dim, positive_orthant=True))
-    initial_simplex = tuple(range(dim + 1))
+
+    point_outside_circumscribed_sphere = (1.1,) * dim
+    t.add_point(point_outside_circumscribed_sphere)
+
+    simplex1 = tuple(range(dim + 1))
+    simplex2 = tuple(range(1, dim + 2))
+    n_vertices = len(t.vertices)
 
     _check_triangulation_is_valid(t)
-    assert len(t.simplices) == 2
-    assert initial_simplex in t.simplices
+    assert t.simplices == {simplex1, simplex2}
 
     if dim > 1:
         # All points are in the hull
-        assert set(list(range(len(t.vertices)))) == t.hull
+        assert t.hull == set(range(n_vertices))
 
-    # The origin and the newly added point belong to different simplices
-    assert t.vertex_to_simplices[0] != t.vertex_to_simplices[dim + 1]
+    assert t.vertex_to_simplices[0] == {simplex1}
+    assert t.vertex_to_simplices[n_vertices - 1] == {simplex2}
+
     # rest of the points are shared between the 2 simplices
-    shared_simplices = t.vertex_to_simplices[1]
-    assert all(shared_simplices == t.vertex_to_simplices[v]
-               for v in range(1, dim + 1))
+    shared_simplices = {simplex1, simplex2}
+    assert all(t.vertex_to_simplices[v] == shared_simplices
+               for v in range(1, n_vertices - 1))
 
 
-@repeat(5)
 @with_dimension
-def test_adding_point_outside_standard_simplex_in_negative_orthant_is_valid(dim):
+def test_adding_point_outside_standard_simplex_in_negative_orthant(dim):
     t = Triangulation(_make_standard_simplex(dim))
-    t.add_point(_random_point_outside_standard_simplex(dim, positive_orthant=False))
+    new_point = list(range(-dim, 0))
+
+    t.add_point(new_point)
+
+    n_vertices = len(t.vertices)
+
     initial_simplex = tuple(range(dim + 1))
 
     _check_triangulation_is_valid(t)
@@ -176,50 +125,64 @@ def test_adding_point_outside_standard_simplex_in_negative_orthant_is_valid(dim)
     assert initial_simplex in t.simplices
 
     # Hull consists of all points except the origin
-    assert set(list(range(1, dim + 2))) == t.hull
+    assert set(range(1, n_vertices)) == t.hull
+
     # Origin belongs to all the simplices
     assert t.vertex_to_simplices[0] == t.simplices
+
     # new point belongs to all the simplices *except* the initial one
     assert t.vertex_to_simplices[dim + 1] == t.simplices - {initial_simplex}
 
+    other_points = list(range(1, dim+1))
+    last_vertex = n_vertices - 1
+    extra_simplices = {(0, *points, last_vertex)
+                       for points in itertools.combinations(other_points, dim-1)}
 
-@repeat(5)
+    assert extra_simplices | {initial_simplex} == t.simplices
+
+
 @with_dimension
 @pytest.mark.parametrize('provide_simplex', [True, False])
-def test_adding_point_inside_standard_simplex_is_valid(dim, provide_simplex):
+def test_adding_point_inside_standard_simplex(dim, provide_simplex):
     t = Triangulation(_make_standard_simplex(dim))
     first_simplex = tuple(range(dim + 1))
-    inside_simplex = _random_point_inside_standard_simplex(dim)
+    inside_simplex = (0.1,) * dim
+
     if provide_simplex:
         t.add_point(inside_simplex, simplex=first_simplex)
     else:
         t.add_point(inside_simplex)
+
     added_point = dim + 1  # *index* of added point
 
     _check_triangulation_is_valid(t)
-    assert len(t.simplices) == dim + 1
-    assert all(added_point in simplex for simplex in t.simplices)
+
+    other_points = list(range(dim + 1))
+    new_simplices = {(*points, added_point)
+                     for points in itertools.combinations(other_points, dim)}
+    assert new_simplices == t.simplices
 
     volume = np.sum([t.volume(s) for s in t.simplices])
     assert np.isclose(volume, _standard_simplex_volume(dim))
 
 
-@repeat(5)
 @with_dimension
-def test_adding_point_on_standard_simplex_face_is_valid(dim):
+def test_adding_point_on_standard_simplex_face(dim):
     if dim == 1:
         return  # 1D has no faces that are not vertices
-    t = Triangulation(_make_standard_simplex(dim))
-    first_simplex = tuple(range(dim + 1))
-    on_simplex = _random_point_on_standard_simplex_face(dim)
+    pts = _make_standard_simplex(dim)
+    t = Triangulation(pts)
+    on_simplex = np.average(pts[1:], axis=0)
+
     t.add_point(on_simplex)
     added_point = dim + 1  # *index* of added point
 
     _check_triangulation_is_valid(t)
-    assert len(t.simplices) == dim
-    # Origin and added point are in all simplices
-    assert all(added_point in simplex for simplex in t.simplices)
-    assert all(0 in simplex for simplex in t.simplices)
+
+    other_points = list(range(1, dim+1))
+    new_simplices = {(0, *points, added_point)
+                     for points in itertools.combinations(other_points, dim-1)}
+    assert new_simplices == t.simplices
 
     volume = np.sum([t.volume(s) for s in t.simplices])
     assert np.isclose(volume, _standard_simplex_volume(dim))
