@@ -168,8 +168,7 @@ def test_adding_point_inside_standard_simplex(dim, provide_simplex):
                      for points in itertools.combinations(other_points, dim)}
     assert new_simplices == t.simplices
 
-    volume = np.sum([t.volume(s) for s in t.simplices])
-    assert np.isclose(volume, _standard_simplex_volume(dim))
+    assert np.isclose(np.sum(t.volumes()), _standard_simplex_volume(dim))
 
 
 @with_dimension
@@ -188,8 +187,7 @@ def test_adding_point_on_standard_simplex_face(dim):
                      for points in itertools.combinations(other_points, dim-1)}
     assert new_simplices == t.simplices
 
-    volume = np.sum([t.volume(s) for s in t.simplices])
-    assert np.isclose(volume, _standard_simplex_volume(dim))
+    assert np.isclose(np.sum(t.volumes()), _standard_simplex_volume(dim))
 
 
 @with_dimension
@@ -216,8 +214,7 @@ def test_triangulation_volume_is_less_than_bounding_box(dim):
     t = _make_triangulation(points)
 
     _check_triangulation_is_valid(t)
-    volume = np.sum([t.volume(s) for s in t.simplices])
-    assert volume < 1+eps
+    assert np.sum(t.volumes()) < 1+eps
 
 
 @with_dimension
