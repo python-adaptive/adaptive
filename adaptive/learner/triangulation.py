@@ -150,9 +150,9 @@ class Triangulation:
         Coordinates of the triangulation vertices.
     simplices : set of integer tuples
         List with indices of vertices forming individual simplices
-    vertex_to_simplices : dict int → set
-        Mapping from vertex index to the set of simplices containing that
-        vertex.
+    vertex_to_simplices : list of sets
+        Set of simplices connected to a vertex, the index of the vertex is the
+        index of the list.
     hull : set of int
         Exterior vertices
     """
@@ -182,7 +182,8 @@ class Triangulation:
 
         self.vertices = list(coords)
         self.simplices = set()
-        self.vertex_to_simplices = defaultdict(set)
+        # initialise empty set for each vertex
+        self.vertex_to_simplices = [set() for _ in coords]
         self.add_simplex(range(len(self.vertices)))
 
     def delete_simplex(self, simplex):
@@ -200,7 +201,7 @@ class Triangulation:
     def get_vertices(self, indices):
         return [self.vertices[i] for i in indices]
 
-    def get_reduced_simplex(self, point, simplex, eps=1e-8):
+    def get_reduced_simplex(self, point, simplex, eps=1e-8) -> list:
         """Check whether vertex lies within a simplex.
 
         Returns
@@ -447,6 +448,7 @@ class Triangulation:
             simplex = self.locate_point(point)
 
         actual_simplex = simplex
+        self.vertex_to_simplices.append(set())
 
         if not simplex:
             temporary_simplices = self._extend_hull(point)
@@ -461,11 +463,13 @@ class Triangulation:
         else:
             reduced_simplex = self.get_reduced_simplex(point, simplex)
             if not reduced_simplex:
+                self.vertex_to_simplices.pop() # revert adding vertex
                 raise ValueError('Point lies outside of the specified simplex.')
             else:
                 simplex = reduced_simplex
 
         if len(simplex) == 1:
+            self.vertex_to_simplices.pop()  # revert adding vertex
             raise ValueError("Point already in triangulation.")
         else:
             pt_index = len(self.vertices)

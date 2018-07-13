@@ -29,7 +29,8 @@ def _standard_simplex_volume(dim):
 
 def _check_simplices_are_valid(t):
     """Check that 'simplices' and 'vertex_to_simplices' are consistent."""
-    vertex_to_simplices = defaultdict(set)
+    vertex_to_simplices = [set() for _ in t.vertices]
+
     for simplex in t.simplices:
         for vertex in simplex:
             vertex_to_simplices[vertex].add(simplex)
