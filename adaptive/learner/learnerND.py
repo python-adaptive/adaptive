@@ -286,29 +286,31 @@ class LearnerND(BaseLearner):
         self._tell_pending(new_point)
         return new_point, np.inf
 
+    def _ask_point_without_known_simplices(self):
+        # pick a random point inside the bounds
+        # XXX: change this into picking a point based on volume loss
+        a = np.diff(self.bounds).flat
+        b = np.array(self.bounds)[:, 0]
+        r = np.array([self._random.random() for _ in range(self.ndim)])
+        p = r * a + b
+        p = tuple(p)
+        return p, np.inf
+
     def _ask(self):
         # Complexity: O(N log N)
-        # XXX: adapt this function
-        # XXX: allow cases where n > 1
-
         if not self.bounds_are_done:
             return self._ask_bound_point()
 
-        losses = [(-v, k) for k, v in self.losses().items()]
-        heapq.heapify(losses)
+        losses = [(-v, k) for k, v in self.losses().items()]  # O(N)
+        heapq.heapify(losses)  # O(N log N)
         pending_losses = []  # also a heap
 
         new_points = []
         new_loss_improvements = []
 
         if len(losses) == 0:
-            # pick a random point inside the bounds
-            a = np.diff(self.bounds).flat
-            b = np.array(self.bounds)[:, 0]
-            r = np.array([self._random.random() for _ in range(self.ndim)])
-            p = r * a + b
-            p = tuple(p)
-            return p, np.inf
+            # we have no known simplices
+            return self._ask_point_without_known_simplices()
 
         while len(new_points) < 1:
             if len(losses):
