@@ -275,30 +275,27 @@ class LearnerND(BaseLearner):
         xs, losses = zip(*(self._ask() for _ in range(n)))
         return list(xs), list(losses)
 
-    def _ask(self, n=1):
+    def _ask_bound_point(self):
+        bounds_to_do = [p for p in self._bounds_points
+                        if p not in self.data and p not in self._pending]
+        new_point = bounds_to_do[0]
+        self._tell_pending(new_point)
+        return new_point, np.inf
+
+    def _ask(self):
         # Complexity: O(N log N)
         # XXX: adapt this function
         # XXX: allow cases where n > 1
-        assert n == 1
 
-        new_points = []
-        new_loss_improvements = []
         if not self.bounds_are_done:
-            bounds_to_do = [p for p in self._bounds_points
-                            if p not in self.data and p not in self._pending]
-            new_points = bounds_to_do[:n]
-            new_loss_improvements = [np.inf] * len(new_points)
-            n = n - len(new_points)
-            for p in new_points:
-                self._tell_pending(p)
-
-        if n == 0:
-            return new_points[0], new_loss_improvements[0]
+            return self._ask_bound_point()
 
         losses = [(-v, k) for k, v in self.losses().items()]
         heapq.heapify(losses)
-
         pending_losses = []  # also a heap
+
+        new_points = []
+        new_loss_improvements = []
 
         if len(losses) == 0:
             # pick a random point inside the bounds
@@ -309,7 +306,7 @@ class LearnerND(BaseLearner):
             p = tuple(p)
             return p, np.inf
 
-        while len(new_points) < n:
+        while len(new_points) < 1:
             if len(losses):
                 loss, simplex = heapq.heappop(losses)
 
