@@ -48,7 +48,7 @@ def uniform_loss(simplex, ys=None):
 
 
 def std_loss(simplex, ys):
-    r = np.std(ys, axis=0)
+    r = np.linalg.norm(np.std(ys, axis=0))
     vol = volume(simplex)
 
     dim = len(simplex) - 1
