@@ -8,7 +8,7 @@ from . import learner
 from . import runner
 from . import utils
 
-from .learner import (Learner1D, Learner2D, AverageLearner,
+from .learner import (Learner1D, Learner2D, LearnerND, AverageLearner,
                       BalancingLearner, make_datasaver, DataSaver,
                       IntegratorLearner)
 
