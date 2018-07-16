@@ -13,6 +13,7 @@ from .base_learner import BaseLearner
 from .triangulation import Triangulation, point_in_simplex, \
                            circumsphere, simplex_volume_in_embedding
 import random
+from sortedcontainers import SortedList
 
 
 def volume(simplex, ys=None):
@@ -287,6 +288,7 @@ class LearnerND(BaseLearner):
         return new_point, np.inf
 
     def _ask_point_without_known_simplices(self):
+        assert self.bounds_are_done
         # pick a random point inside the bounds
         # XXX: change this into picking a point based on volume loss
         a = np.diff(self.bounds).flat
@@ -296,21 +298,14 @@ class LearnerND(BaseLearner):
         p = tuple(p)
         return p, np.inf
 
-    def _ask(self):
-        # Complexity: O(N log N)
-        if not self.bounds_are_done:
-            return self._ask_bound_point()
-
-        losses = [(-v, k) for k, v in self.losses().items()]  # O(N)
-        heapq.heapify(losses)  # O(N log N)
+    def _ask_best_point(self):
+        assert self.bounds_are_done
+        assert self.tri is not None
+        losses = SortedList([(v, k) for k, v in self.losses().items()])  # O(N log N)
         pending_losses = []  # also a heap
 
         new_points = []
         new_loss_improvements = []
-
-        if len(losses) == 0:
-            # we have no known simplices
-            return self._ask_point_without_known_simplices()
 
         while len(new_points) < 1:
             if len(losses):
@@ -354,6 +349,16 @@ class LearnerND(BaseLearner):
 
         return new_points[0], new_loss_improvements[0]
 
+    def _ask(self):
+        if not self.bounds_are_done:
+            return self._ask_bound_point()  # O(1)
+
+        if self.tri is None:
+            # we have no known simplices
+            return self._ask_point_without_known_simplices()  # O(1)
+
+        return self._ask_best_point()  # O(N)
+
     def update_losses(self, to_delete: set, to_add: set):
         # XXX: add the points outside the triangulation to this as well
         pending_points_unbound = set()
@@ -391,6 +396,7 @@ class LearnerND(BaseLearner):
         losses : dict
             the key is a simplex, the value is the loss of this simplex
         """
+        # XXX could be a property
         if self.tri is None:
             return dict()
 
