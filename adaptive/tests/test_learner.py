@@ -12,7 +12,7 @@ import scipy.spatial
 import pytest
 
 from ..learner import *
-from ..runner import replay_log
+from ..runner import simple, replay_log
 
 
 def generate_random_parametrization(f):
@@ -403,6 +403,62 @@ def test_termination_on_discontinuities():
     learner = _run_on_discontinuity(0.5E3, (-1E3, 1E3))
     smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
     assert smallest_interval >= 0.5E3 * np.finfo(float).eps
+
+
+def test_loss_at_machine_precision_interval_is_zero():
+    """The loss of an interval smaller than _dx_eps
+    should be set to zero."""
+    def f(x):
+        return 1 if x == 0 else 0
+
+    def goal(l):
+        return l.loss() < 0.01 or l.npoints >= 1000
+
+    learner = Learner1D(f, bounds=(-1, 1))
+    simple(learner, goal=goal)
+
+    # this means loss < 0.01 was reached
+    assert learner.npoints != 1000
+
+
+def small_deviations(x):
+    import random
+    return 0 if x <= 1 else 1 + 10**(-random.randint(12, 14))
+
+
+def test_small_deviations():
+    """This tests whether the Learner1D can handle small deviations.
+    See https://gitlab.kwant-project.org/qt/adaptive/merge_requests/73 and
+    https://gitlab.kwant-project.org/qt/adaptive/issues/61."""
+
+    eps = 5e-14
+    learner = Learner1D(small_deviations, bounds=(1 - eps, 1 + eps))
+
+    # Some non-determinism is needed to make this test fail so we keep
+    # a list of points that will be evaluated later to emulate
+    # parallel execution
+    stash = []
+
+    for i in range(100):
+        xs, _ = learner.ask(10)
+
+        # Save 5 random points out of `xs` for later
+        random.shuffle(xs)
+        for _ in range(5):
+            stash.append(xs.pop())
+
+        for x in xs:
+            learner.tell(x, learner.function(x))
+
+        # Evaluate and add 5 random points from `stash`
+        random.shuffle(stash)
+        for _ in range(5):
+            learner.tell(stash.pop(), learner.function(x))
+
+        if learner.loss() == 0:
+            # If this condition is met, the learner can't return any
+            # more points.
+            break
 
 
 @pytest.mark.xfail
