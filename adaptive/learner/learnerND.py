@@ -167,10 +167,19 @@ class LearnerND(BaseLearner):
         # triangulation of the pending points inside a specific simplex
         self._subtriangulations = dict()  # simplex -> triangulation
 
+        # scale to unit
         self._transform = np.linalg.inv(np.diag(np.diff(bounds).flat))
 
         # create a private random number generator with fixed seed
         self._random = random.Random(1)
+
+        # All real triangles
+        # list of tuple (loss, simplex)
+        self._losses_real = SortedList()
+
+        # all real triangles that have not been subdivided and the pending triangles
+        # list of tuple (loss, real simplex, sub_simplex or None)
+        self._losses_combined = SortedList()
 
     @property
     def npoints(self):
@@ -263,14 +272,16 @@ class LearnerND(BaseLearner):
         # Neighbours also includes the simplex itself
 
         for simpl in neighbours:
-            if self.tri.point_in_simplex(point, simpl):
-                subtri = self._subtriangulations
-                if simpl not in subtri:
-                    vertices = self.tri.get_vertices(simpl)
-                    tr = subtri[simpl] = Triangulation(vertices)
-                    tr.add_point(point, next(iter(tr.simplices)))
-                else:
-                    subtri[simpl].add_point(point)
+            if not self.tri.point_in_simplex(point, simpl):
+                continue  # point not in simplex
+            
+            subtri = self._subtriangulations
+            if simpl not in subtri:
+                vertices = self.tri.get_vertices(simpl)
+                tr = subtri[simpl] = Triangulation(vertices)
+                tr.add_point(point, next(iter(tr.simplices)))
+            else:
+                subtri[simpl].add_point(point)
 
     def ask(self, n=1):
         xs, losses = zip(*(self._ask() for _ in range(n)))
@@ -305,7 +316,7 @@ class LearnerND(BaseLearner):
 
         while len(new_points) < 1:
             if len(losses):
-                loss, simplex = heapq.heappop(losses)
+                loss, simplex = losses.pop()
 
                 assert self._simplex_exists(simplex), "all simplices in the heap should exist"
 
@@ -314,7 +325,7 @@ class LearnerND(BaseLearner):
                     loss_density = loss / self.tri.volume(simplex)
                     for pend_simplex in subtri.simplices:
                         pend_loss = subtri.volume(pend_simplex) * loss_density
-                        heapq.heappush(pending_losses, (pend_loss, simplex, pend_simplex))
+                        heapq.heappush(pending_losses, (-pend_loss, simplex, pend_simplex))
                     continue
             else:
                 loss = 0
