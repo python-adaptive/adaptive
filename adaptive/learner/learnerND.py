@@ -412,8 +412,11 @@ class LearnerND(BaseLearner):
         """
         hv = ensure_holoviews()
         if self.vdim > 1:
-            raise NotImplemented('holoviews currently does not support',
-                                 '3D surface plots in bokeh.')
+            raise NotImplementedError('holoviews currently does not support',
+                                      '3D surface plots in bokeh.')
+        if len(self.bounds) != 2:
+           raise NotImplementedError("Only 2D plots are implemented: You can "
+                                     "plot a 2D slice with 'plot_slice'.")
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
 
