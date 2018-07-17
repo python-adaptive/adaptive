@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict
+from collections import OrderedDict, Iterable
 import itertools
 import heapq
 
@@ -12,6 +12,7 @@ from .base_learner import BaseLearner
 
 from .triangulation import Triangulation
 import random
+from math import factorial
 
 
 def volume(simplex, ys=None):
@@ -45,8 +46,51 @@ def std_loss(simplex, ys):
     return r.flat * np.power(vol, 1. / dim) + vol
 
 
+def simplex_volume(vertices) -> float:
+    """
+    Return the volume of the simplex with given vertices.
+
+    If vertices are given they must be in a arraylike with shape (N+1, N):
+    the position vectors of the N+1 vertices in N dimensions. If the sides
+    are given, they must be the compressed pairwise distance matrix as
+    returned from scipy.spatial.distance.pdist.
+
+    Raises a ValueError if the vertices do not form a simplex (for example,
+    because they are coplanar, colinear or coincident).
+
+    Warning: this algorithm has not been tested for numerical stability.
+    """
+
+    # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
+    # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
+
+    # β_ij = |v_i - v_k|²
+    vertices = np.array(vertices, dtype=float)
+    sq_dists = scipy.spatial.distance.pdist(vertices, metric='sqeuclidean')
+
+    # Add border while compressed
+    num_verts = scipy.spatial.distance.num_obs_y(sq_dists)
+    bordered = np.concatenate((np.ones(num_verts), sq_dists))
+
+    # Make matrix and find volume
+    sq_dists_mat = scipy.spatial.distance.squareform(bordered)
+
+    coeff = - (-2) ** (num_verts-1) * factorial(num_verts-1) ** 2
+    vol_square = np.linalg.det(sq_dists_mat) / coeff
+
+    if vol_square <= 0:
+        raise ValueError('Provided vertices do not form a tetrahedron')
+
+    return np.sqrt(vol_square)
+
+
 def default_loss(simplex, ys):
-    return std_loss(simplex, ys)
+    # return std_loss(simplex, ys)
+    if isinstance(ys[0], Iterable):
+        pts = [(*s, *ys[i]) for i, s in enumerate(simplex)]
+    else:
+        pts = [(*s, ys[i]) for i, s in enumerate(simplex)]
+    return simplex_volume(pts)
 
 
 def choose_point_in_simplex(simplex, transform=None):
