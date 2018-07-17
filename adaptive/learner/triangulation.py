@@ -565,7 +565,7 @@ class Triangulation:
         prefactor = np.math.factorial(self.dim)
         vertices = np.array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
-        return abs(np.linalg.det(vectors)) / prefactor
+        return float(abs(np.linalg.det(vectors)) / prefactor)
 
     def volumes(self):
         return [self.volume(sim) for sim in self.simplices]
