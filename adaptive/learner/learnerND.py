@@ -10,7 +10,7 @@ import scipy.spatial
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
-from .triangulation import Triangulation
+from .triangulation import Triangulation, point_in_simplex, circumsphere
 import random
 from math import factorial
 
@@ -126,12 +126,19 @@ def choose_point_in_simplex(simplex, transform=None):
     if transform is not None:
         simplex = np.dot(simplex, transform)
 
-    distances = scipy.spatial.distance.pdist(simplex)
-    distance_matrix = scipy.spatial.distance.squareform(distances)
-    i, j = np.unravel_index(np.argmax(distance_matrix), distance_matrix.shape)
+    # choose center iff the shape of the simplex is nice,
+    # otherwise the longest edge
+    center, radius = circumsphere(simplex)
+    if point_in_simplex(center, simplex):
+        point = np.average(simplex, axis=0)
+    else:
+        distances = scipy.spatial.distance.pdist(simplex)
+        distance_matrix = scipy.spatial.distance.squareform(distances)
+        i, j = np.unravel_index(np.argmax(distance_matrix), distance_matrix.shape)
 
-    point = (simplex[i, :] + simplex[j, :]) / 2
-    return np.linalg.solve(transform, point)
+        point = (simplex[i, :] + simplex[j, :]) / 2
+
+    return np.linalg.solve(transform, point)  # undo the transform
 
 
 class LearnerND(BaseLearner):
