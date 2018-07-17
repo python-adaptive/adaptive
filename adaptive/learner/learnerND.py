@@ -155,7 +155,7 @@ class LearnerND(BaseLearner):
         self.data = OrderedDict()
         self._pending = set()
 
-        self._bounds_points = list(itertools.product(*bounds))
+        self._bounds_points = list(map(tuple, itertools.product(*bounds)))
 
         self.function = func
         self._tri = None
@@ -318,7 +318,7 @@ class LearnerND(BaseLearner):
         return new_point, np.inf
 
     def _ask_point_without_known_simplices(self):
-        assert self.bounds_are_done
+        assert not self._bounds_available
         # pick a random point inside the bounds
         # XXX: change this into picking a point based on volume loss
         a = np.diff(self.bounds).flat
@@ -329,7 +329,7 @@ class LearnerND(BaseLearner):
         return p, np.inf
 
     def _ask_best_point(self):
-        assert self.bounds_are_done
+        assert not self._bounds_available
         assert self.tri is not None
 
         # _losses_combined is a SortedList. pop() will give us the highest loss
@@ -351,8 +351,12 @@ class LearnerND(BaseLearner):
 
         return point_new, loss
 
+    @property
+    def _bounds_available(self):
+        return any((p not in self._pending and p not in self.data) for p in self._bounds_points)
+
     def _ask(self):
-        if not self.bounds_are_done:
+        if self._bounds_available:
             return self._ask_bound_point()  # O(1)
 
         if self.tri is None:
@@ -383,7 +387,7 @@ class LearnerND(BaseLearner):
         for simplex in to_add:
             vertices = self.tri.get_vertices(simplex)
             values = [self.data[tuple(v)] for v in vertices]
-            loss = self.loss_per_simplex(vertices, values)
+            loss = float(self.loss_per_simplex(vertices, values))
             self._losses[simplex] = float(loss)
             self._losses_list.add((loss, simplex))
 
