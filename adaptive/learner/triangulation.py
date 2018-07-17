@@ -1,4 +1,4 @@
-from collections import defaultdict, Counter, Sized, Iterable
+from collections import Counter, Sized, Iterable
 from itertools import combinations, chain
 
 import numpy as np
