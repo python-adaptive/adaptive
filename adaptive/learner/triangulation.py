@@ -30,6 +30,17 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
     return (t >= -eps) and (s + t <= 1 + eps)
 
 
+def point_in_simplex(point, simplex, eps=1e-8):
+    if len(point) == 2:
+        return fast_2d_point_in_simplex(point, simplex, eps)
+
+    x0 = np.array(simplex[0], dtype=float)
+    vectors = np.array(simplex[1:], dtype=float) - x0
+    alpha = np.linalg.solve(vectors.T, point - x0)
+
+    return all(alpha > -eps) and sum(alpha) < 1 + eps
+
+
 def fast_2d_circumcircle(points):
     """Compute the center and radius of the circumscribed circle of a triangle
 
@@ -103,6 +114,32 @@ def fast_3d_circumcircle(points):
     center = [dx / a, -dy / a, dz / a]
     radius = fast_norm(center)
     center = np.add(center, points[0])
+
+    return tuple(center), radius
+
+
+def circumsphere(pts):
+    dim = len(pts) - 1
+    if dim == 2:
+        return fast_2d_circumcircle(pts)
+    if dim == 3:
+        return fast_3d_circumcircle(pts)
+
+    # Modified method from http://mathworld.wolfram.com/Circumsphere.html
+    mat = [[np.sum(np.square(pt)), *pt, 1] for pt in pts]
+
+    center = []
+    for i in range(1, len(pts)):
+        r = np.delete(mat, i, 1)
+        factor = (-1) ** (i + 1)
+        center.append(factor * np.linalg.det(r))
+
+    a = np.linalg.det(np.delete(mat, 0, 1))
+    center = [x / (2 * a) for x in center]
+
+    x0 = pts[0]
+    vec = np.subtract(center, x0)
+    radius = fast_norm(vec)
 
     return tuple(center), radius
 
@@ -242,15 +279,8 @@ class Triangulation:
         return [simplex[i] for i in result]
 
     def point_in_simplex(self, point, simplex, eps=1e-8):
-        if self.dim == 2:
-            vertices = self.get_vertices(simplex)
-            return fast_2d_point_in_simplex(point, vertices, eps)
-        elif self.dim == 3:
-            # XXX: Better to write a separate function for this
-            return len(self.get_reduced_simplex(point, simplex, eps)) > 0
-        else:
-            # XXX: Better to write a separate function for this
-            return len(self.get_reduced_simplex(point, simplex, eps)) > 0
+        vertices = self.get_vertices(simplex)
+        return point_in_simplex(point, vertices, eps)
 
     def locate_point(self, point):
         """Find to which simplex the point belongs.
@@ -345,28 +375,7 @@ class Triangulation:
             The center and radius of the circumscribed circle
         """
         pts = np.dot(self.get_vertices(simplex), transform)
-        if self.dim == 2:
-            return fast_2d_circumcircle(pts)
-        if self.dim == 3:
-            return fast_3d_circumcircle(pts)
-
-        # Modified method from http://mathworld.wolfram.com/Circumsphere.html
-        mat = [[np.sum(np.square(pt)), *pt, 1] for pt in pts]
-
-        center = []
-        for i in range(1, len(simplex)):
-            r = np.delete(mat, i, 1)
-            factor = (-1) ** (i+1)
-            center.append(factor * np.linalg.det(r))
-
-        a = np.linalg.det(np.delete(mat, 0, 1))
-        center = [x / (2*a) for x in center]
-
-        x0 = self.vertices[next(iter(simplex))]
-        vec = np.subtract(center, x0)
-        radius = fast_norm(vec)
-
-        return tuple(center), radius
+        return circumsphere(pts)
 
     def point_in_cicumcircle(self, pt_index, simplex, transform):
         # return self.fast_point_in_circumcircle(pt_index, simplex, transform)
