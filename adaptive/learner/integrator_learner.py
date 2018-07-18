@@ -10,11 +10,11 @@ import numpy as np
 from scipy.linalg import norm
 from sortedcontainers import SortedSet
 
-from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
                                 ndiv_max, min_sep, eps, xi, V_inv,
                                 Vcond, alpha, gamma)
+from ..notebook_integration import ensure_holoviews
 
 
 def _downdate(c, nans, depth):
@@ -414,7 +414,10 @@ class IntegratorLearner(BaseLearner):
                 self._stack.append(x)
         self.ivals.add(ival)
 
-    def ask(self, n):
+    def ask(self, n, add_data=True):
+        if not add_data:
+            raise NotImplementedError(
+                "Asking points irreversibly changes the learner's data structure.")
         points, loss_improvements = self.pop_from_stack(n)
         n_left = n - len(points)
         while n_left > 0:
