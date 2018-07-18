@@ -2,7 +2,7 @@ image: quantumtinkerer/research
 test:
   script:
     - pip install -r test-requirements.txt
-    - conda install -y -q sckit-optimize
+    - conda install -y -q scikit-optimize
     - py.test --verbose --cov=adaptive --cov-report term --cov-report html adaptive
   artifacts:
     paths:
