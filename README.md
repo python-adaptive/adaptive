@@ -35,6 +35,7 @@ sampling are completely customizable.
 The following learners are implemented:
 * `Learner1D`, for 1D functions `f: ℝ → ℝ^N`,
 * `Learner2D`, for 2D functions `f: ℝ^2 → ℝ^N`,
+* `LearnerND`, for ND functions `f: ℝ^N → ℝ^M`,
 * `AverageLearner`, For stochastic functions where you want to average the result over many evaluations,
 * `IntegratorLearner`, for when you want to intergrate a 1D function `f: ℝ → ℝ`,
 * `BalancingLearner`, for when you want to run several learners at once, selecting the "best" one each time you get more points.
