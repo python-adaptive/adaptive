@@ -387,8 +387,8 @@ class Learner2D(BaseLearner):
     def plot(self, n=None, tri_alpha=0):
         hv = ensure_holoviews()
         if self.vdim > 1:
-            raise NotImplemented('holoviews currently does not support',
-                                 '3D surface plots in bokeh.')
+            raise NotImplementedError('holoviews currently does not support',
+                                      '3D surface plots in bokeh.')
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
 
