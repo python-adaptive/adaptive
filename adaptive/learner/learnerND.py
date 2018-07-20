@@ -29,7 +29,7 @@ def volume(simplex, ys=None):
 def orientation(simplex):
     matrix = np.subtract(simplex[:-1], simplex[-1])
     # See https://www.jstor.org/stable/2315353
-    sign, logdet = np.linalg.slogdet(matrix)
+    sign, _logdet = np.linalg.slogdet(matrix)
     return sign
 
 
@@ -117,13 +117,14 @@ def choose_point_in_simplex(simplex, transform=None):
 
     # choose center iff the shape of the simplex is nice,
     # otherwise the longest edge
-    center, radius = circumsphere(simplex)
+    center, _radius = circumsphere(simplex)
     if point_in_simplex(center, simplex):
         point = np.average(simplex, axis=0)
     else:
         distances = scipy.spatial.distance.pdist(simplex)
         distance_matrix = scipy.spatial.distance.squareform(distances)
-        i, j = np.unravel_index(np.argmax(distance_matrix), distance_matrix.shape)
+        i, j = np.unravel_index(np.argmax(distance_matrix), 
+                                distance_matrix.shape)
 
         point = (simplex[i, :] + simplex[j, :]) / 2
 
@@ -350,8 +351,8 @@ class LearnerND(BaseLearner):
             if len(losses):
                 loss, simplex = heapq.heappop(losses)
 
-                assert self._simplex_exists(
-                    simplex), "all simplices in the heap should exist"
+                assert self._simplex_exists(simplex), \
+                    "all simplices in the heap should exist"
 
                 if simplex in self._subtriangulations:
                     subtri = self._subtriangulations[simplex]
