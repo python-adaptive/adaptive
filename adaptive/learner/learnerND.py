@@ -47,16 +47,25 @@ def std_loss(simplex, ys):
 
 
 def simplex_volume(vertices) -> float:
-    """
-    Return the volume of the simplex with given vertices.
+    """Calculate the volume of a simplex in a higher dimensional embedding.
+    That is: dim > len(vertices) - 1. For example if you would like to know the 
+    surface area of a triangle in a 3d space.
 
-    If vertices are given they must be in a arraylike with shape (N+1, N):
-    the position vectors of the N+1 vertices in N dimensions. If the sides
-    are given, they must be the compressed pairwise distance matrix as
-    returned from scipy.spatial.distance.pdist.
+    Parameters
+    ----------
+    vertices: arraylike (2 dimensional)
+        array of points
 
-    Raises a ValueError if the vertices do not form a simplex (for example,
-    because they are coplanar, colinear or coincident).
+    Returns
+    -------
+    volume: int
+        the volume of the simplex with given vertices.
+
+    Raises
+    ------
+    ValueError:
+        if the vertices do not form a simplex (for example,
+        because they are coplanar, colinear or coincident).
 
     Warning: this algorithm has not been tested for numerical stability.
     """
@@ -96,7 +105,9 @@ def default_loss(simplex, ys):
 def choose_point_in_simplex(simplex, transform=None):
     """Choose a new point in inside a simplex.
 
-    Pick the center of the longest edge of this simplex
+    Pick the center of the simplex if the shape is nice (that is, the 
+    circumcenter lies within the simplex). Otherwise take the middle of the 
+    longest edge.
 
     Parameters
     ----------
@@ -107,7 +118,7 @@ def choose_point_in_simplex(simplex, transform=None):
 
     Returns
     -------
-    point : numpy array
+    point : numpy array of length N
         The coordinates of the suggested new point.
     """
 
@@ -115,20 +126,23 @@ def choose_point_in_simplex(simplex, transform=None):
     if transform is not None:
         simplex = np.dot(simplex, transform)
 
-    # choose center iff the shape of the simplex is nice,
-    # otherwise the longest edge
+    # choose center if and only if the shape of the simplex is nice,
+    # otherwise: the longest edge
     center, _radius = circumsphere(simplex)
     if point_in_simplex(center, simplex):
         point = np.average(simplex, axis=0)
     else:
         distances = scipy.spatial.distance.pdist(simplex)
         distance_matrix = scipy.spatial.distance.squareform(distances)
-        i, j = np.unravel_index(np.argmax(distance_matrix), 
+        i, j = np.unravel_index(np.argmax(distance_matrix),
                                 distance_matrix.shape)
 
         point = (simplex[i, :] + simplex[j, :]) / 2
 
-    return np.linalg.solve(transform, point)  # undo the transform
+    if transform is not None:
+        point = np.linalg.solve(transform, point)  # undo the transform
+        
+    return point
 
 
 class LearnerND(BaseLearner):
