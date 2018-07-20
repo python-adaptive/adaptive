@@ -40,7 +40,7 @@ def volume(simplex, ys=None):
 def orientation(simplex):
     matrix = np.subtract(simplex[:-1], simplex[-1])
     # See https://www.jstor.org/stable/2315353
-    sign, logdet = np.linalg.slogdet(matrix)
+    sign, _logdet = np.linalg.slogdet(matrix)
     return sign
 
 
@@ -128,13 +128,14 @@ def choose_point_in_simplex(simplex, transform=None):
 
     # choose center iff the shape of the simplex is nice,
     # otherwise the longest edge
-    center, radius = circumsphere(simplex)
+    center, _radius = circumsphere(simplex)
     if point_in_simplex(center, simplex):
         point = np.average(simplex, axis=0)
     else:
         distances = scipy.spatial.distance.pdist(simplex)
         distance_matrix = scipy.spatial.distance.squareform(distances)
-        i, j = np.unravel_index(np.argmax(distance_matrix), distance_matrix.shape)
+        i, j = np.unravel_index(np.argmax(distance_matrix), 
+                                distance_matrix.shape)
 
         point = (simplex[i, :] + simplex[j, :]) / 2
 
@@ -364,14 +365,16 @@ class LearnerND(BaseLearner):
             if len(losses):
                 loss, simplex = heapq.heappop(losses)
 
-                assert self._simplex_exists(simplex), "all simplices in the heap should exist"
+                assert self._simplex_exists(simplex), \
+                    "all simplices in the heap should exist"
 
                 if simplex in self._subtriangulations:
                     subtri = self._subtriangulations[simplex]
                     loss_density = loss / self.tri.volume(simplex)
                     for pend_simplex in subtri.simplices:
                         pend_loss = subtri.volume(pend_simplex) * loss_density
-                        heapq.heappush(pending_losses, (pend_loss, simplex, pend_simplex))
+                        heapq.heappush(
+                            pending_losses, (pend_loss, simplex, pend_simplex))
                     continue
             else:
                 loss = 0
@@ -401,7 +404,8 @@ class LearnerND(BaseLearner):
         return new_points[0], new_loss_improvements[0]
 
     def update_losses(self, to_delete: set, to_add: set):
-        pending_points_unbound = set()  # XXX: add the points outside the triangulation to this as well
+        # XXX: add the points outside the triangulation to this as well
+        pending_points_unbound = set()
 
         for simplex in to_delete:
             self._losses.pop(simplex, None)
@@ -466,8 +470,8 @@ class LearnerND(BaseLearner):
             raise NotImplementedError('holoviews currently does not support',
                                       '3D surface plots in bokeh.')
         if len(self.bounds) != 2:
-           raise NotImplementedError("Only 2D plots are implemented: You can "
-                                     "plot a 2D slice with 'plot_slice'.")
+            raise NotImplementedError("Only 2D plots are implemented: You can "
+                                      "plot a 2D slice with 'plot_slice'.")
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
 
