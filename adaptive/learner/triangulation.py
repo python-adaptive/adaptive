@@ -411,15 +411,18 @@ class Triangulation:
 
             if self.point_in_cicumcircle(pt_index, simplex, transform):
                 self.delete_simplex(simplex)
-                todo_points = set(simplex) - done_points
+                todo_points = set(simplex)
                 done_points.update(simplex)
 
-                if len(todo_points):
-                    neighbours = set.union(*[self.vertex_to_simplices[p]
-                                             for p in todo_points])
-                    queue.update(neighbours - done_simplices)
-
                 bad_triangles.add(simplex)
+                if len(todo_points) == 0:
+                    continue
+                neighbours = set.union(*[self.vertex_to_simplices[p]
+                                            for p in todo_points])
+                neighbours = neighbours - done_simplices
+                neighbours = set(simpl for simpl in neighbours if len(set(simpl) & done_points) >= self.dim)
+                queue.update(neighbours)
+
 
         faces = list(self.faces(simplices=bad_triangles))
 
