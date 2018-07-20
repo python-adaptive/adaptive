@@ -313,6 +313,8 @@ class LearnerND(BaseLearner):
         r = np.array([self._random.random() for _ in range(self.ndim)])
         p = r * a + b
         p = tuple(p)
+
+        self._tell_pending(p)
         return p, np.inf
 
     def _pop_highest_existing_simplex(self):
@@ -364,7 +366,7 @@ class LearnerND(BaseLearner):
             # we have no known simplices
             return self._ask_point_without_known_simplices()  # O(1)
 
-        return self._ask_best_point()  # O(??)
+        return self._ask_best_point()  # O(log N)
 
     def update_losses(self, to_delete: set, to_add: set):
         # XXX: add the points outside the triangulation to this as well
