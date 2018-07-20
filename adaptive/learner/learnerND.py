@@ -12,7 +12,7 @@ from .base_learner import BaseLearner
 from .triangulation import Triangulation, point_in_simplex, \
                            circumsphere, simplex_volume_in_embedding
 import random
-from sortedcontainers import SortedList
+import heapq
 
 
 def volume(simplex, ys=None):
@@ -179,14 +179,9 @@ class LearnerND(BaseLearner):
         # create a private random number generator with fixed seed
         self._random = random.Random(1)
 
-        # All real triangles
-        # list of tuple (loss, simplex)
-        self._losses_list = SortedList()
-
-        # all real triangles that have not been subdivided and the pending triangles
-        # list of tuple (loss, real simplex, sub_simplex or None)
-        self._losses_combined_list = SortedList()
-        self._sub_losses = dict()  # map the other way around
+        # all real triangles that have not been subdivided and the pending 
+        # triangles heap of tuples (-loss, real simplex, sub_simplex or None)
+        self._losses_combined = [] # heap
 
     @property
     def npoints(self):
@@ -209,11 +204,6 @@ class LearnerND(BaseLearner):
     def ip(self):
         # XXX: take our own triangulation into account when generating the ip
         return interpolate.LinearNDInterpolator(self.points, self.values)
-
-    def _get_loss(self, simplex, subsimplex=None):
-        if subsimplex is None:
-            return self._losses[simplex]
-        return self._sub_losses[(simplex, subsimplex)]
 
     @property
     def tri(self):
@@ -289,26 +279,19 @@ class LearnerND(BaseLearner):
             if simpl not in self._subtriangulations:
                 vertices = self.tri.get_vertices(simpl)
                 tr = self._subtriangulations[simpl] = Triangulation(vertices)
-                todel, toadd = tr.add_point(point, next(iter(tr.simplices)))
+                _, toadd = tr.add_point(point, next(iter(tr.simplices)))
             else:
-                todel, toadd = self._subtriangulations[simpl].add_point(point)
-
-            for subsimplex in todel:
-                if subsimplex == tuple(range(self.ndim + 1)):
-                    continue
-                subloss = self._sub_losses.pop((simpl, subsimplex))
-                self._losses_combined_list.discard((subloss, simpl, subsimplex))
+                _, toadd = self._subtriangulations[simpl].add_point(point)
 
             loss = self._losses[simpl]
-            self._losses_combined_list.discard((loss, simpl, None))
 
-            loss = self._losses[simpl]
             loss_density = loss / self.tri.volume(simpl)
             subtriangulation = self._subtriangulations[simpl]
             for subsimplex in toadd:
                 subloss = subtriangulation.volume(subsimplex) * loss_density
-                self._losses_combined_list.add((subloss, simpl, subsimplex))
-                self._sub_losses[(simpl, subsimplex)] = subloss
+                heapq.heappush(self._losses_combined, 
+                               (-subloss, simpl, subsimplex))
+                
 
     def ask(self, n=1):
         xs, losses = zip(*(self._ask() for _ in range(n)))
@@ -332,12 +315,26 @@ class LearnerND(BaseLearner):
         p = tuple(p)
         return p, np.inf
 
+    def _pop_highest_existing_simplex(self):
+        # find the simplex with the highest loss, we do need to check that the
+        # simplex hasn't been deleted yet
+        while True:
+            loss, simplex, subsimplex = heapq.heappop(self._losses_combined) 
+            if (subsimplex is None and 
+                    simplex in self.tri.simplices and 
+                    simplex not in self._subtriangulations):
+                return abs(loss), simplex, subsimplex
+            if (simplex in self._subtriangulations and
+                    simplex in self.tri.simplices and 
+                    subsimplex in self._subtriangulations[simplex].simplices):
+                return abs(loss), simplex, subsimplex
+
+
     def _ask_best_point(self):
         assert not self._bounds_available
         assert self.tri is not None
 
-        # _losses_combined is a SortedList. pop() will give us the highest loss
-        loss, simplex, subsimplex = self._losses_combined_list.pop()  # O(log N)
+        loss, simplex, subsimplex = self._pop_highest_existing_simplex()
 
         if subsimplex is None:
             # We found a real simplex and want to subdivide it
@@ -375,16 +372,9 @@ class LearnerND(BaseLearner):
 
         for simplex in to_delete:
             loss = self._losses.pop(simplex, None)
-            self._losses_list.discard((loss, simplex))
-            self._losses_combined_list.discard((loss, simplex, None))
             subtri = self._subtriangulations.pop(simplex, None)
-            if subtri is None:
-                continue
-
-            pending_points_unbound.update(subtri.vertices)
-            for subsimplex in subtri.simplices:
-                subloss = self._sub_losses[(simplex, subsimplex)]
-                self._losses_combined_list.discard((subloss, simplex, subsimplex))
+            if subtri is not None:
+                pending_points_unbound.update(subtri.vertices)
 
         pending_points_unbound = set(p for p in pending_points_unbound
                                      if p not in self.data)
@@ -394,7 +384,6 @@ class LearnerND(BaseLearner):
             values = [self.data[tuple(v)] for v in vertices]
             loss = float(self.loss_per_simplex(vertices, values))
             self._losses[simplex] = float(loss)
-            self._losses_list.add((loss, simplex))
 
             for p in pending_points_unbound:
                 # try to insert it
@@ -409,15 +398,15 @@ class LearnerND(BaseLearner):
                 self._pending_to_simplex[p] = simplex
 
             if simplex not in self._subtriangulations:
-                self._losses_combined_list.add((loss, simplex, None))
+                heapq.heappush(self._losses_combined, (-loss, simplex, None))
                 continue
 
             loss_density = loss / self.tri.volume(simplex)
             subtriangulation = self._subtriangulations[simplex]
             for subsimplex in subtriangulation.simplices:
                 subloss = subtriangulation.volume(subsimplex) * loss_density
-                self._losses_combined_list.add((subloss, simplex, subsimplex))
-                self._sub_losses[(simplex, subsimplex)] = subloss
+                heapq.heappush(self._losses_combined, 
+                               (-subloss, simplex, subsimplex))
 
     def losses(self):
         """Get the losses of each simplex in the current triangulation, as dict
