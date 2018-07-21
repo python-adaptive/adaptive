@@ -14,17 +14,6 @@ from .triangulation import Triangulation
 import random
 
 
-def find_initial_simplex(pts, ndim):
-    origin = pts[0]
-    vecs = pts[1:] - origin
-    if np.linalg.matrix_rank(vecs) < ndim:
-        return None  # all points are coplanar
-
-    tri = scipy.spatial.Delaunay(pts)
-    simplex = tri.simplices[0]  # take a random simplex from tri
-    return simplex
-
-
 def volume(simplex, ys=None):
     # Notice the parameter ys is there so you can use this volume method as
     # as loss function
@@ -200,17 +189,11 @@ class LearnerND(BaseLearner):
 
         if len(self.data) < 2:
             return None
-
-        initial_simplex = find_initial_simplex(self.points, self.ndim)
-        if initial_simplex is None:
+        
+        try:
+            self._tri = Triangulation(self.points)
+        except ValueError:
             return None
-        pts = self.points[initial_simplex]
-        self._tri = Triangulation([tuple(p) for p in pts])
-        to_add = [p for i, p in enumerate(self.points)
-                  if i not in initial_simplex]
-
-        for p in to_add:
-            self._tri.add_point(p, transform=self._transform)
         # XXX: also compute losses of initial simplex
 
     @property
