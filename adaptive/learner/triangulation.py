@@ -178,8 +178,8 @@ class Triangulation:
         if dim == 1:
             raise ValueError("Triangulation class only supports dim >= 2")
 
-        if len(coords) != dim + 1:
-            raise ValueError("Can only add one simplex on initialization")
+        if len(coords) < dim + 1:
+            raise ValueError("Provide at least one simplex")
 
         coords = list(map(tuple, coords))
         vectors = np.subtract(coords[1:], coords[0])

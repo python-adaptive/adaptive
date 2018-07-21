@@ -192,6 +192,7 @@ class LearnerND(BaseLearner):
         
         try:
             self._tri = Triangulation(self.points)
+            return self._tri
         except ValueError:
             return None
         # XXX: also compute losses of initial simplex
@@ -207,22 +208,24 @@ class LearnerND(BaseLearner):
     def tell(self, point, value):
         point = tuple(point)
 
-        if point in self.data:
-            return
+        if point in self.data: 
+            return # we already know about the point
 
         if value is None:
             return self._tell_pending(point)
 
         self._pending.discard(point)
+        tri = self.tri
         self.data[point] = value
-
-        if self.tri is not None:
+        
+        if tri is not None:
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = None
-            to_delete, to_add = self._tri.add_point(
+            to_delete, to_add = tri.add_point(
                 point, simplex, transform=self._transform)
             self.update_losses(to_delete, to_add)
+        
 
     def _simplex_exists(self, simplex):
         simplex = tuple(sorted(simplex))
