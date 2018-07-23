@@ -49,9 +49,9 @@ def std_loss(simplex, ys):
 def default_loss(simplex, ys):
     # return std_loss(simplex, ys)
     if isinstance(ys[0], Iterable):
-        pts = [(*s, *ys[i]) for i, s in enumerate(simplex)]
+        pts = [(*x, *y) for x, y in zip(simplex, ys)]
     else:
-        pts = [(*s, ys[i]) for i, s in enumerate(simplex)]
+        pts = [(*x, y) for x, y in zip(simplex, ys)]
     return simplex_volume_in_embedding(pts)
 
 
