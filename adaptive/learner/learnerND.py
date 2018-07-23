@@ -209,7 +209,7 @@ class LearnerND(BaseLearner):
     def tell(self, point, value):
         point = tuple(point)
 
-        if point in self.data: 
+        if point in self.data:
             return # we already know about the point
 
         if value is None:
