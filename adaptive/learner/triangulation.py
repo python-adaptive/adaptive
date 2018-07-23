@@ -217,7 +217,7 @@ def simplex_volume_in_embedding(vertices) -> float:
     vol_square = np.linalg.det(sq_dists_mat) / coeff
 
     if vol_square <= 0:
-        raise ValueError('Provided vertices do not form a tetrahedron')
+        raise ValueError('Provided vertices do not form a simplex')
 
     return np.sqrt(vol_square)
 
