@@ -166,10 +166,10 @@ class Triangulation:
 
     def __init__(self, coords):
         if not is_iterable_and_sized(coords):
-            raise ValueError("Please provide a 2-dimensional list of points")
+            raise TypeError("Please provide a 2-dimensional list of points")
         coords = list(coords)
         if not all(is_iterable_and_sized(coord) for coord in coords):
-            raise ValueError("Please provide a 2-dimensional list of points")
+            raise TypeError("Please provide a 2-dimensional list of points")
         if len(coords) == 0:
             raise ValueError("Please provide at least one simplex") 
             # raise now because otherwise the next line will raise a less
