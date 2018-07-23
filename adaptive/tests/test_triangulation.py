@@ -75,7 +75,7 @@ def test_triangulation_raises_exception_for_1d_list():
     # We could support 1d, but we don't for now, because it is not relevant
     # so a user has to be aware
     pts = [0, 1]
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         Triangulation(pts)
 
 
