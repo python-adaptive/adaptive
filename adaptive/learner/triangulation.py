@@ -4,6 +4,7 @@ from itertools import combinations, chain
 import numpy as np
 import math
 import scipy.spatial
+from math import factorial
 
 
 def fast_norm(v):
@@ -172,6 +173,53 @@ def orientation(face, origin):
 
 def is_iterable_and_sized(obj):
     return isinstance(obj, Iterable) and isinstance(obj, Sized)
+
+
+def simplex_volume_in_embedding(vertices) -> float:
+    """Calculate the volume of a simplex in a higher dimensional embedding.
+    That is: dim > len(vertices) - 1. For example if you would like to know the 
+    surface area of a triangle in a 3d space.
+
+    Parameters
+    ----------
+    vertices: arraylike (2 dimensional)
+        array of points
+
+    Returns
+    -------
+    volume: int
+        the volume of the simplex with given vertices.
+
+    Raises
+    ------
+    ValueError:
+        if the vertices do not form a simplex (for example,
+        because they are coplanar, colinear or coincident).
+
+    Warning: this algorithm has not been tested for numerical stability.
+    """
+
+    # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
+    # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
+
+    # β_ij = |v_i - v_k|²
+    vertices = np.array(vertices, dtype=float)
+    sq_dists = scipy.spatial.distance.pdist(vertices, metric='sqeuclidean')
+
+    # Add border while compressed
+    num_verts = scipy.spatial.distance.num_obs_y(sq_dists)
+    bordered = np.concatenate((np.ones(num_verts), sq_dists))
+
+    # Make matrix and find volume
+    sq_dists_mat = scipy.spatial.distance.squareform(bordered)
+
+    coeff = - (-2) ** (num_verts-1) * factorial(num_verts-1) ** 2
+    vol_square = np.linalg.det(sq_dists_mat) / coeff
+
+    if vol_square <= 0:
+        raise ValueError('Provided vertices do not form a tetrahedron')
+
+    return np.sqrt(vol_square)
 
 
 class Triangulation:
