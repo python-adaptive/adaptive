@@ -202,8 +202,16 @@ def simplex_volume_in_embedding(vertices) -> float:
     # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
     # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
 
-    # β_ij = |v_i - v_k|²
+    
     vertices = np.array(vertices, dtype=float)
+    dim = len(vertices[0])
+    if dim == 2:
+        # Heron's formula
+        a, b, c = scipy.spatial.distance.pdist(vertices, metric='euclidean')
+        s = 0.5 * (a + b + c)
+        return math.sqrt(s*(s-a)*(s-b)*(s-c))
+
+    # β_ij = |v_i - v_k|²
     sq_dists = scipy.spatial.distance.pdist(vertices, metric='sqeuclidean')
 
     # Add border while compressed
