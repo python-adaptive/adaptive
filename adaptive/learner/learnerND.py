@@ -14,6 +14,9 @@ from .triangulation import Triangulation, point_in_simplex, \
                            circumsphere, simplex_volume_in_embedding
 import random
 
+import rtree
+import math
+
 
 def find_initial_simplex(pts, ndim):
     origin = pts[0]
@@ -165,7 +168,7 @@ class LearnerND(BaseLearner):
     children based on volume.
     """
 
-    def __init__(self, func, bounds, loss_per_simplex=None):
+    def __init__(self, func, bounds, loss_per_simplex=None, anisotropic=False):
         self.ndim = len(bounds)
         self._vdim = None
         self.loss_per_simplex = loss_per_simplex or default_loss
@@ -184,11 +187,15 @@ class LearnerND(BaseLearner):
         # triangulation of the pending points inside a specific simplex
         self._subtriangulations = dict()  # simplex -> triangulation
 
-        self._transform = np.linalg.inv(np.diag(np.diff(bounds).flat))
+        self._scale_matrix = np.linalg.inv(np.diag(np.diff(bounds).flat))
 
         # create a private random number generator with fixed seed
         self._random = random.Random(1)
 
+        props = rtree.index.Property(dimension=self.ndim)
+        self._point_tree = rtree.index.Index(properties=props)
+        self.anisotripic = anisotropic
+        
     @property
     def npoints(self):
         return len(self.data)
@@ -228,7 +235,7 @@ class LearnerND(BaseLearner):
                   if i not in initial_simplex]
 
         for p in to_add:
-            self._tri.add_point(p, transform=self._transform)
+            self._tri.add_point(p, transform=self._scale_matrix)
         # XXX: also compute losses of initial simplex
 
     @property
@@ -241,7 +248,7 @@ class LearnerND(BaseLearner):
 
     def tell(self, point, value):
         point = tuple(point)
-
+        print(point)
         if point in self.data:
             return
 
@@ -249,15 +256,63 @@ class LearnerND(BaseLearner):
             return self._tell_pending(point)
 
         self._pending.discard(point)
+        # Insert the point into our Rtree
+        scaled_point = tuple(np.dot(self._scale_matrix, point))
+        # print(scaled_point)
+        self._point_tree.insert(self.npoints, scaled_point)  
         self.data[point] = value
 
         if self.tri is not None:
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = None
+            transform = self.get_local_transform_matrix(point)
             to_delete, to_add = self._tri.add_point(
-                point, simplex, transform=self._transform)
+                point, simplex, transform=transform)
             self.update_losses(to_delete, to_add)
+
+    def get_local_transform_matrix(self, point):
+        scale = self._scale_matrix
+        if self.tri is None or not self.anisotripic:
+            return scale
+        
+        # Get some points in the neighbourhood
+        scaled_point = tuple(np.dot(scale, point))
+        indices = self._point_tree.nearest(scaled_point, 10)
+        
+        points = [self.points[i] for i in indices]
+        values = [self.data[tuple(p)] for p in points]
+
+        if isinstance(values[0], Iterable):
+            raise ValueError("Anisotropic learner only works with 1D output")
+
+        # Do a linear least square fit
+        # A x = B, find x
+        ones = np.ones((len(points), 1))
+        A = np.hstack((points, ones))
+        B = np.array(values, dtype=float)
+        fit, *_ = np.linalg.lstsq(A, B, rcond=None)
+        *gradient, _constant = fit
+        
+        # we do not need the constant
+        # gradient is a vector of the amount of the slope in each direction
+        magnitude = np.linalg.norm(gradient)
+
+        if np.isclose(magnitude, 0):
+            return scale  # there is no noticable gradient
+
+        # Make it a 2d numpy array and normalise it.
+        gradient = np.array([gradient], dtype=float) / magnitude
+        projection_matrix = (gradient.T @ gradient)
+        identity = np.eye(self.ndim)
+
+        factor = math.sqrt(magnitude ** 2 + 1) / 10
+
+        scale_along_gradient = projection_matrix * factor + identity
+        m = np.dot(scale_along_gradient, scale)
+        print("m:", m)
+        return m
+
 
     def _simplex_exists(self, simplex):
         simplex = tuple(sorted(simplex))
@@ -359,7 +414,7 @@ class LearnerND(BaseLearner):
                     loss = pend_loss
 
             point_new = tuple(choose_point_in_simplex(
-                points, transform=self._transform))
+                points, transform=self._scale_matrix))
             self._pending_to_simplex[point_new] = simplex
 
             new_points.append(point_new)
@@ -502,7 +557,7 @@ class LearnerND(BaseLearner):
             p = hv.Path((x, y))
 
             # Plot with 5% margins such that the boundary points are visible
-            margin = 0.05 / self._transform[ind, ind]
+            margin = 0.05 / self._scale_matrix[ind, ind]
             plot_bounds = (x.min() - margin, x.max() + margin)
             return p.redim(x=dict(range=plot_bounds))
 
