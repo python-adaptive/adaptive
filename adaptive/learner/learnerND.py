@@ -10,9 +10,9 @@ import scipy.spatial
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
-from .triangulation import Triangulation, point_in_simplex, circumsphere
+from .triangulation import Triangulation, point_in_simplex, \
+                           circumsphere, simplex_volume_in_embedding
 import random
-from math import factorial
 
 
 def find_initial_simplex(pts, ndim):
@@ -57,60 +57,13 @@ def std_loss(simplex, ys):
     return r.flat * np.power(vol, 1. / dim) + vol
 
 
-def simplex_volume(vertices) -> float:
-    """Calculate the volume of a simplex in a higher dimensional embedding.
-    That is: dim > len(vertices) - 1. For example if you would like to know the 
-    surface area of a triangle in a 3d space.
-
-    Parameters
-    ----------
-    vertices: arraylike (2 dimensional)
-        array of points
-
-    Returns
-    -------
-    volume: int
-        the volume of the simplex with given vertices.
-
-    Raises
-    ------
-    ValueError:
-        if the vertices do not form a simplex (for example,
-        because they are coplanar, colinear or coincident).
-
-    Warning: this algorithm has not been tested for numerical stability.
-    """
-
-    # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
-    # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
-
-    # β_ij = |v_i - v_k|²
-    vertices = np.array(vertices, dtype=float)
-    sq_dists = scipy.spatial.distance.pdist(vertices, metric='sqeuclidean')
-
-    # Add border while compressed
-    num_verts = scipy.spatial.distance.num_obs_y(sq_dists)
-    bordered = np.concatenate((np.ones(num_verts), sq_dists))
-
-    # Make matrix and find volume
-    sq_dists_mat = scipy.spatial.distance.squareform(bordered)
-
-    coeff = - (-2) ** (num_verts-1) * factorial(num_verts-1) ** 2
-    vol_square = np.linalg.det(sq_dists_mat) / coeff
-
-    if vol_square <= 0:
-        raise ValueError('Provided vertices do not form a tetrahedron')
-
-    return np.sqrt(vol_square)
-
-
 def default_loss(simplex, ys):
     # return std_loss(simplex, ys)
     if isinstance(ys[0], Iterable):
         pts = [(*s, *ys[i]) for i, s in enumerate(simplex)]
     else:
         pts = [(*s, ys[i]) for i, s in enumerate(simplex)]
-    return simplex_volume(pts)
+    return simplex_volume_in_embedding(pts)
 
 
 def choose_point_in_simplex(simplex, transform=None):
@@ -133,12 +86,11 @@ def choose_point_in_simplex(simplex, transform=None):
         The coordinates of the suggested new point.
     """
 
-    # XXX: find a better selection algorithm
     if transform is not None:
         simplex = np.dot(simplex, transform)
 
     # choose center if and only if the shape of the simplex is nice,
-    # otherwise: the longest edge
+    # otherwise: the center the longest edge
     center, _radius = circumsphere(simplex)
     if point_in_simplex(center, simplex):
         point = np.average(simplex, axis=0)
