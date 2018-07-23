@@ -191,11 +191,11 @@ class LearnerND(BaseLearner):
             self._tri = Triangulation(self.points)
             return self._tri
         except ValueError:
-            # A ValueError is raised if we do not have enough points or 
+            # A ValueError is raised if we do not have enough points or
             # the provided points are coplanar, so we need more points to create
             # a valid triangulation
             return None
-        
+
         # XXX: also compute losses of initial simplex
 
     @property
@@ -210,7 +210,7 @@ class LearnerND(BaseLearner):
         point = tuple(point)
 
         if point in self.data:
-            return # we already know about the point
+            return  # we already know about the point
 
         if value is None:
             return self._tell_pending(point)
@@ -218,7 +218,7 @@ class LearnerND(BaseLearner):
         self._pending.discard(point)
         tri = self.tri
         self.data[point] = value
-        
+
         if tri is not None:
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
@@ -226,7 +226,6 @@ class LearnerND(BaseLearner):
             to_delete, to_add = tri.add_point(
                 point, simplex, transform=self._transform)
             self.update_losses(to_delete, to_add)
-        
 
     def _simplex_exists(self, simplex):
         simplex = tuple(sorted(simplex))
@@ -300,14 +299,16 @@ class LearnerND(BaseLearner):
             if len(losses):
                 loss, simplex = heapq.heappop(losses)
 
-                assert self._simplex_exists(simplex), "all simplices in the heap should exist"
+                assert self._simplex_exists(
+                    simplex), "all simplices in the heap should exist"
 
                 if simplex in self._subtriangulations:
                     subtri = self._subtriangulations[simplex]
                     loss_density = loss / self.tri.volume(simplex)
                     for pend_simplex in subtri.simplices:
                         pend_loss = subtri.volume(pend_simplex) * loss_density
-                        heapq.heappush(pending_losses, (pend_loss, simplex, pend_simplex))
+                        heapq.heappush(
+                            pending_losses, (pend_loss, simplex, pend_simplex))
                     continue
             else:
                 loss = 0
@@ -337,7 +338,8 @@ class LearnerND(BaseLearner):
         return new_points[0], new_loss_improvements[0]
 
     def update_losses(self, to_delete: set, to_add: set):
-        pending_points_unbound = set()  # XXX: add the points outside the triangulation to this as well
+        # XXX: add the points outside the triangulation to this as well
+        pending_points_unbound = set()
 
         for simplex in to_delete:
             self._losses.pop(simplex, None)
@@ -402,8 +404,8 @@ class LearnerND(BaseLearner):
             raise NotImplementedError('holoviews currently does not support',
                                       '3D surface plots in bokeh.')
         if len(self.bounds) != 2:
-           raise NotImplementedError("Only 2D plots are implemented: You can "
-                                     "plot a 2D slice with 'plot_slice'.")
+            raise NotImplementedError("Only 2D plots are implemented: You can "
+                                      "plot a 2D slice with 'plot_slice'.")
         x, y = self.bounds
         lbrt = x[0], y[0], x[1], y[1]
 
