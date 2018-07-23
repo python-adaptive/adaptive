@@ -170,6 +170,9 @@ class Triangulation:
         coords = list(coords)
         if not all(is_iterable_and_sized(coord) for coord in coords):
             raise ValueError("Please provide a 2-dimensional list of points")
+        if len(coords) == 0:
+            raise ValueError("Please provide at least one simplex") 
+            # raise now because otherwise the next line will raise a less
 
         dim = len(coords[0])
         if any(len(coord) != dim for coord in coords):
@@ -179,7 +182,7 @@ class Triangulation:
             raise ValueError("Triangulation class only supports dim >= 2")
 
         if len(coords) < dim + 1:
-            raise ValueError("Provide at least one simplex")
+            raise ValueError("Please provide at least one simplex")
 
         coords = list(map(tuple, coords))
         vectors = np.subtract(coords[1:], coords[0])

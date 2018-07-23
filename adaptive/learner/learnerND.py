@@ -187,14 +187,15 @@ class LearnerND(BaseLearner):
         if self._tri is not None:
             return self._tri
 
-        if len(self.data) < 2:
-            return None
-        
         try:
             self._tri = Triangulation(self.points)
             return self._tri
         except ValueError:
+            # A ValueError is raised if we do not have enough points or 
+            # the provided points are coplanar, so we need more points to create
+            # a valid triangulation
             return None
+        
         # XXX: also compute losses of initial simplex
 
     @property
