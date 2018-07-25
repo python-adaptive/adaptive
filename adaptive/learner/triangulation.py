@@ -485,10 +485,9 @@ class Triangulation:
                     continue
                 neighbours = set.union(*[self.vertex_to_simplices[p]
                                             for p in todo_points])
-                neighbours = neighbours - done_simplices
-                neighbours = set(simpl for simpl in neighbours if len(set(simpl) & done_points) >= self.dim)
+                neighbours = neighbours - done_simplices - queue
+                neighbours = set(simpl for simpl in neighbours if len(set(simpl) & set(simplex)) >= self.dim)
                 queue.update(neighbours)
-
 
         faces = list(self.faces(simplices=bad_triangles))
 
@@ -502,7 +501,18 @@ class Triangulation:
                 self.add_simplex((*face, pt_index))
 
         new_triangles = self.vertex_to_simplices[pt_index]
-        return bad_triangles - new_triangles, new_triangles - bad_triangles
+        deleted_simplices = bad_triangles - new_triangles
+        new_simplices = new_triangles - bad_triangles
+
+        if not np.isclose(sum([self.volume(s) for s in deleted_simplices]),
+                          sum([self.volume(s) for s in new_simplices])):
+            print("vertices = ", self.vertices, "\n\n\n")
+            print("simplices = ", self.simplices, "\n\n\n")
+            print("new_s = ", new_simplices)
+            print("old_s = ", deleted_simplices)
+            print("holes_faces = ", hole_faces)
+            raise AssertionError("debug me")
+        return deleted_simplices, new_simplices
 
     def add_point(self, point, simplex=None, transform=None):
         """Add a new vertex and create simplices as appropriate.

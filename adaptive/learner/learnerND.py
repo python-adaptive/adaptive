@@ -240,6 +240,7 @@ class LearnerND(BaseLearner):
         for p in to_add:
             self._tri.add_point(p, transform=self._scale_matrix)
         # XXX: also compute losses of initial simplex
+        self.update_losses(set(), self._tri.simplices)
 
     @property
     def values(self):
@@ -251,7 +252,6 @@ class LearnerND(BaseLearner):
 
     def tell(self, point, value):
         point = tuple(point)
-        print(point)
         if point in self.data:
             return
 
@@ -276,6 +276,7 @@ class LearnerND(BaseLearner):
 
     def get_local_transform_matrix(self, point):
         scale = self._scale_matrix
+
         if self.tri is None or not self.anisotripic:
             return scale
         
@@ -283,7 +284,7 @@ class LearnerND(BaseLearner):
         scaled_point = tuple(np.dot(scale, point))
         indices = self._point_tree.nearest(scaled_point, 10)
         
-        points = [self.points[i] for i in indices]
+        points = np.array([self.points[i] for i in indices])
         values = [self.data[tuple(p)] for p in points]
 
         if isinstance(values[0], Iterable):
@@ -291,12 +292,13 @@ class LearnerND(BaseLearner):
 
         # Do a linear least square fit
         # A x = B, find x
+        points = np.dot(scale, points.T).T
         ones = np.ones((len(points), 1))
         A = np.hstack((points, ones))
         B = np.array(values, dtype=float)
         fit, *_ = np.linalg.lstsq(A, B, rcond=None)
         *gradient, _constant = fit
-        
+
         # we do not need the constant
         # gradient is a vector of the amount of the slope in each direction
         magnitude = np.linalg.norm(gradient)
@@ -309,13 +311,12 @@ class LearnerND(BaseLearner):
         projection_matrix = (gradient.T @ gradient)
         identity = np.eye(self.ndim)
 
-        factor = math.sqrt(magnitude ** 2 + 1) / 10
+        factor = math.sqrt(magnitude ** 2 + 1) - 1
+        factor = min(factor, 2)
 
-        scale_along_gradient = projection_matrix * factor + identity
+        scale_along_gradient = projection_matrix * factor * 1 + identity
         m = np.dot(scale_along_gradient, scale)
-        print("m:", m)
-        return m
-
+        return m.T
 
     def _simplex_exists(self, simplex):
         simplex = tuple(sorted(simplex))
@@ -358,7 +359,6 @@ class LearnerND(BaseLearner):
                 subloss = subtriangulation.volume(subsimplex) * loss_density
                 heapq.heappush(self._losses_combined, 
                                (-subloss, simpl, subsimplex))
-                
 
     def ask(self, n=1):
         xs, losses = zip(*(self._ask() for _ in range(n)))
@@ -412,8 +412,8 @@ class LearnerND(BaseLearner):
             subtri = self._subtriangulations[simplex]
             points = subtri.get_vertices(subsimplex)
 
-        point_new = tuple(choose_point_in_simplex(points,
-                                                  transform=self._scale_matrix))
+        transform = self.get_local_transform_matrix(points[0])
+        point_new = tuple(choose_point_in_simplex(points, transform=transform))
 
         self._pending_to_simplex[point_new] = simplex
         self._tell_pending(point_new, simplex)  # O(??)
