@@ -11,6 +11,8 @@ def fast_norm(v):
     # notice this method can be even more optimised
     if len(v) == 2:
         return math.sqrt(v[0] * v[0] + v[1] * v[1])
+    if len(v) == 3:
+        return math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
     return math.sqrt(np.dot(v, v))
 
 
@@ -94,8 +96,11 @@ def fast_3d_circumcircle(points):
     points = np.array(points)
     pts = points[1:] - points[0]
 
-    l1, l2, l3 = [np.dot(p, p) for p in pts]  # length squared
     (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) = pts
+
+    l1 = x1 * x1 + y1 * y1 + z1 * z1
+    l2 = x2 * x2 + y2 * y2 + z2 * z2
+    l3 = x3 * x3 + y3 * y3 + z3 * z3
 
     # Compute some determinants:
     dx = (+ l1 * (y2 * z3 - z2 * y3)
@@ -112,11 +117,13 @@ def fast_3d_circumcircle(points):
           + x3 * (y1 * z2 - z1 * y2))
     a = 2 * aa
 
-    center = [dx / a, -dy / a, dz / a]
+    center = (dx / a, -dy / a, dz / a)
     radius = fast_norm(center)
-    center = np.add(center, points[0])
+    center = (center[0] + points[0][0],
+              center[1] + points[0][1],
+              center[2] + points[0][2])
 
-    return tuple(center), radius
+    return center, radius
 
 
 def circumsphere(pts):
@@ -470,15 +477,18 @@ class Triangulation:
 
             if self.point_in_cicumcircle(pt_index, simplex, transform):
                 self.delete_simplex(simplex)
-                todo_points = set(simplex) - done_points
+                todo_points = set(simplex)
                 done_points.update(simplex)
 
-                if len(todo_points):
-                    neighbours = set.union(*[self.vertex_to_simplices[p]
-                                             for p in todo_points])
-                    queue.update(neighbours - done_simplices)
-
                 bad_triangles.add(simplex)
+                if len(todo_points) == 0:
+                    continue
+                neighbours = set.union(*[self.vertex_to_simplices[p]
+                                            for p in todo_points])
+                neighbours = neighbours - done_simplices
+                neighbours = set(simpl for simpl in neighbours if len(set(simpl) & done_points) >= self.dim)
+                queue.update(neighbours)
+
 
         faces = list(self.faces(simplices=bad_triangles))
 
@@ -546,7 +556,7 @@ class Triangulation:
         prefactor = np.math.factorial(self.dim)
         vertices = np.array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
-        return abs(np.linalg.det(vectors)) / prefactor
+        return float(abs(np.linalg.det(vectors)) / prefactor)
 
     def volumes(self):
         return [self.volume(sim) for sim in self.simplices]
