@@ -3,6 +3,7 @@ from itertools import combinations, chain
 
 import numpy as np
 import math
+import scipy.spatial
 
 
 def fast_norm(v):
@@ -142,7 +143,7 @@ class Triangulation:
     Parameters
     ----------
     coords : 2d array-like of floats
-        Coordinates of vertices of the first simplex.
+        Coordinates of vertices.
 
     Attributes
     ----------
@@ -155,14 +156,23 @@ class Triangulation:
         index of the list.
     hull : set of int
         Exterior vertices
+
+    Raises
+    ------
+    ValueError
+        if the list of coordinates is incorrect or the points do not form one 
+        or more simplices in the 
     """
 
     def __init__(self, coords):
         if not is_iterable_and_sized(coords):
-            raise ValueError("Please provide a 2-dimensional list of points")
+            raise TypeError("Please provide a 2-dimensional list of points")
         coords = list(coords)
         if not all(is_iterable_and_sized(coord) for coord in coords):
-            raise ValueError("Please provide a 2-dimensional list of points")
+            raise TypeError("Please provide a 2-dimensional list of points")
+        if len(coords) == 0:
+            raise ValueError("Please provide at least one simplex") 
+            # raise now because otherwise the next line will raise a less
 
         dim = len(coords[0])
         if any(len(coord) != dim for coord in coords):
@@ -171,12 +181,12 @@ class Triangulation:
         if dim == 1:
             raise ValueError("Triangulation class only supports dim >= 2")
 
-        if len(coords) != dim + 1:
-            raise ValueError("Can only add one simplex on initialization")
+        if len(coords) < dim + 1:
+            raise ValueError("Please provide at least one simplex")
 
         coords = list(map(tuple, coords))
         vectors = np.subtract(coords[1:], coords[0])
-        if np.linalg.det(vectors) == 0:
+        if np.linalg.matrix_rank(vectors) < dim:
             raise ValueError("Initial simplex has zero volumes "
                              "(the points are linearly dependent)")
 
@@ -184,7 +194,12 @@ class Triangulation:
         self.simplices = set()
         # initialise empty set for each vertex
         self.vertex_to_simplices = [set() for _ in coords]
-        self.add_simplex(range(len(self.vertices)))
+
+        # find a Delaunay triangulation to start with, then we will throw it 
+        # away and continue with our own algorithm
+        initial_tri = scipy.spatial.Delaunay(coords)
+        for simplex in initial_tri.simplices:
+            self.add_simplex(simplex)
 
     def delete_simplex(self, simplex):
         simplex = tuple(sorted(simplex))
