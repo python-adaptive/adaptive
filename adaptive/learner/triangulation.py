@@ -1,19 +1,10 @@
-from collections import Counter, Sized, Iterable
+import pyximport; pyximport.install()
+from collections import defaultdict, Counter, Sized, Iterable
 from itertools import combinations, chain
 
 import numpy as np
 import math
-import scipy.spatial
-from math import factorial
-
-
-def fast_norm(v):
-    # notice this method can be even more optimised
-    if len(v) == 2:
-        return math.sqrt(v[0] * v[0] + v[1] * v[1])
-    if len(v) == 3:
-        return math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
-    return math.sqrt(np.dot(v, v))
+from .fasthelper import *
 
 
 def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
