@@ -3,7 +3,7 @@ from collections import defaultdict, Counter, Sized, Iterable
 from itertools import combinations, chain
 
 import numpy as np
-import math
+# import math
 from .fasthelper import *
 
 
@@ -22,53 +22,6 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
                           - p0y * p1x + (p1x - p0x) * py)
 
     return (t >= -eps) and (s + t <= 1 + eps)
-
-
-def point_in_simplex(point, simplex, eps=1e-8):
-    if len(point) == 2:
-        return fast_2d_point_in_simplex(point, simplex, eps)
-
-    x0 = np.array(simplex[0], dtype=float)
-    vectors = np.array(simplex[1:], dtype=float) - x0
-    alpha = np.linalg.solve(vectors.T, point - x0)
-
-    return all(alpha > -eps) and sum(alpha) < 1 + eps
-
-
-def fast_2d_circumcircle(points):
-    """Compute the center and radius of the circumscribed circle of a triangle
-
-    Parameters
-    ----------
-    points: 2D array-like
-        the points of the triangle to investigate
-
-    Returns
-    -------
-    tuple
-        (center point : tuple(int), radius: int)
-    """
-    points = np.array(points)
-    # transform to relative coordinates
-    pts = points[1:] - points[0]
-
-    (x1, y1), (x2, y2) = pts
-    # compute the length squared
-    l1 = x1 * x1 + y1 * y1
-    l2 = x2 * x2 + y2 * y2
-
-    # compute some determinants
-    dx = + l1 * y2 - l2 * y1
-    dy = - l1 * x2 + l2 * x1
-    aa = + x1 * y2 - x2 * y1
-    a = 2 * aa
-
-    # compute center
-    x = dx / a
-    y = dy / a
-    radius = math.sqrt(x*x + y*y)  # radius = norm([x, y])
-
-    return (x + points[0][0], y + points[0][1]), radius
 
 
 def fast_3d_circumcircle(points):
@@ -436,7 +389,7 @@ class Triangulation:
         center, radius = self.circumscribed_circle(simplex, transform)
         pt = np.dot(self.get_vertices([pt_index]), transform)[0]
 
-        return np.linalg.norm(center - pt) < (radius * (1 + eps))
+        return fast_norm(center - pt) < (radius * (1 + eps))
 
     @property
     def default_transform(self):
