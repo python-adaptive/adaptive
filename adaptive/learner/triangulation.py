@@ -24,78 +24,6 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
     return (t >= -eps) and (s + t <= 1 + eps)
 
 
-def fast_3d_circumcircle(points):
-    """Compute the center and radius of the circumscribed shpere of a simplex.
-
-    Parameters
-    ----------
-    points: 2D array-like
-        the points of the triangle to investigate
-
-    Returns
-    -------
-    tuple
-        (center point : tuple(int), radius: int)
-    """
-    points = np.array(points)
-    pts = points[1:] - points[0]
-
-    (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) = pts
-
-    l1 = x1 * x1 + y1 * y1 + z1 * z1
-    l2 = x2 * x2 + y2 * y2 + z2 * z2
-    l3 = x3 * x3 + y3 * y3 + z3 * z3
-
-    # Compute some determinants:
-    dx = (+ l1 * (y2 * z3 - z2 * y3)
-          - l2 * (y1 * z3 - z1 * y3)
-          + l3 * (y1 * z2 - z1 * y2))
-    dy = (+ l1 * (x2 * z3 - z2 * x3)
-          - l2 * (x1 * z3 - z1 * x3)
-          + l3 * (x1 * z2 - z1 * x2))
-    dz = (+ l1 * (x2 * y3 - y2 * x3)
-          - l2 * (x1 * y3 - y1 * x3)
-          + l3 * (x1 * y2 - y1 * x2))
-    aa = (+ x1 * (y2 * z3 - z2 * y3)
-          - x2 * (y1 * z3 - z1 * y3)
-          + x3 * (y1 * z2 - z1 * y2))
-    a = 2 * aa
-
-    center = (dx / a, -dy / a, dz / a)
-    radius = fast_norm(center)
-    center = (center[0] + points[0][0],
-              center[1] + points[0][1],
-              center[2] + points[0][2])
-
-    return center, radius
-
-
-def circumsphere(pts):
-    dim = len(pts) - 1
-    if dim == 2:
-        return fast_2d_circumcircle(pts)
-    if dim == 3:
-        return fast_3d_circumcircle(pts)
-
-    # Modified method from http://mathworld.wolfram.com/Circumsphere.html
-    mat = [[np.sum(np.square(pt)), *pt, 1] for pt in pts]
-
-    center = []
-    for i in range(1, len(pts)):
-        r = np.delete(mat, i, 1)
-        factor = (-1) ** (i + 1)
-        center.append(factor * np.linalg.det(r))
-
-    a = np.linalg.det(np.delete(mat, 0, 1))
-    center = [x / (2 * a) for x in center]
-
-    x0 = pts[0]
-    vec = np.subtract(center, x0)
-    radius = fast_norm(vec)
-
-    return tuple(center), radius
-
-
 def orientation(face, origin):
     """Compute the orientation of the face with respect to a point, origin.
 
@@ -506,6 +434,10 @@ class Triangulation:
             return self.bowyer_watson(pt_index, actual_simplex, transform)
 
     def volume(self, simplex):
+        if self.dim == 2:
+            return fast_volume_2d(self.get_vertices(simplex))
+        if self.dim == 3:
+            return fast_volume_3d(self.get_vertices(simplex))
         prefactor = np.math.factorial(self.dim)
         vertices = np.array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
