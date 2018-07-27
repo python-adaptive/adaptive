@@ -180,30 +180,28 @@ def simplex_volume_in_embedding(vertices) -> float:
     That is: dim > len(vertices) - 1. For example if you would like to know the
     surface area of a triangle in a 3d space.
 
+    This algorithm has not been tested for numerical stability.
+
     Parameters
     ----------
-    vertices: arraylike (2 dimensional)
-        array of points
+    vertices : 2D arraylike of floats
 
     Returns
     -------
-    volume: int
+    volume : int
         the volume of the simplex with given vertices.
 
     Raises
     ------
-    ValueError:
+    ValueError
         if the vertices do not form a simplex (for example,
         because they are coplanar, colinear or coincident).
-
-    Warning: this algorithm has not been tested for numerical stability.
     """
 
     # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
     # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
 
-    
-    vertices = np.array(vertices, dtype=float)
+    vertices = np.asarray(vertices, dtype=float)
     dim = len(vertices[0])
     if dim == 2:
         # Heron's formula
