@@ -331,7 +331,6 @@ class LearnerND(BaseLearner):
                     subsimplex in self._subtriangulations[simplex].simplices):
                 return abs(loss), simplex, subsimplex
 
-
     def _ask_best_point(self):
         assert not self._bounds_available
         assert self.tri is not None
@@ -356,7 +355,8 @@ class LearnerND(BaseLearner):
 
     @property
     def _bounds_available(self):
-        return any((p not in self._pending and p not in self.data) for p in self._bounds_points)
+        return any((p not in self._pending and p not in self.data)
+                   for p in self._bounds_points)
 
     def _ask(self):
         if self._bounds_available:
