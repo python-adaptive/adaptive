@@ -1,9 +1,10 @@
-from collections import defaultdict, Counter, Sized, Iterable
+from collections import Counter, Sized, Iterable
 from itertools import combinations, chain
 
 import numpy as np
 import math
 import scipy.spatial
+from math import factorial
 
 
 def fast_norm(v):
@@ -28,6 +29,17 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
                           - p0y * p1x + (p1x - p0x) * py)
 
     return (t >= -eps) and (s + t <= 1 + eps)
+
+
+def point_in_simplex(point, simplex, eps=1e-8):
+    if len(point) == 2:
+        return fast_2d_point_in_simplex(point, simplex, eps)
+
+    x0 = np.array(simplex[0], dtype=float)
+    vectors = np.array(simplex[1:], dtype=float) - x0
+    alpha = np.linalg.solve(vectors.T, point - x0)
+
+    return all(alpha > -eps) and sum(alpha) < 1 + eps
 
 
 def fast_2d_circumcircle(points):
@@ -107,6 +119,32 @@ def fast_3d_circumcircle(points):
     return tuple(center), radius
 
 
+def circumsphere(pts):
+    dim = len(pts) - 1
+    if dim == 2:
+        return fast_2d_circumcircle(pts)
+    if dim == 3:
+        return fast_3d_circumcircle(pts)
+
+    # Modified method from http://mathworld.wolfram.com/Circumsphere.html
+    mat = [[np.sum(np.square(pt)), *pt, 1] for pt in pts]
+
+    center = []
+    for i in range(1, len(pts)):
+        r = np.delete(mat, i, 1)
+        factor = (-1) ** (i + 1)
+        center.append(factor * np.linalg.det(r))
+
+    a = np.linalg.det(np.delete(mat, 0, 1))
+    center = [x / (2 * a) for x in center]
+
+    x0 = pts[0]
+    vec = np.subtract(center, x0)
+    radius = fast_norm(vec)
+
+    return tuple(center), radius
+
+
 def orientation(face, origin):
     """Compute the orientation of the face with respect to a point, origin.
 
@@ -137,6 +175,59 @@ def is_iterable_and_sized(obj):
     return isinstance(obj, Iterable) and isinstance(obj, Sized)
 
 
+def simplex_volume_in_embedding(vertices) -> float:
+    """Calculate the volume of a simplex in a higher dimensional embedding.
+    That is: dim > len(vertices) - 1. For example if you would like to know the
+    surface area of a triangle in a 3d space.
+
+    This algorithm has not been tested for numerical stability.
+
+    Parameters
+    ----------
+    vertices : 2D arraylike of floats
+
+    Returns
+    -------
+    volume : int
+        the volume of the simplex with given vertices.
+
+    Raises
+    ------
+    ValueError
+        if the vertices do not form a simplex (for example,
+        because they are coplanar, colinear or coincident).
+    """
+
+    # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
+    # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
+
+    vertices = np.asarray(vertices, dtype=float)
+    dim = len(vertices[0])
+    if dim == 2:
+        # Heron's formula
+        a, b, c = scipy.spatial.distance.pdist(vertices, metric='euclidean')
+        s = 0.5 * (a + b + c)
+        return math.sqrt(s*(s-a)*(s-b)*(s-c))
+
+    # β_ij = |v_i - v_k|²
+    sq_dists = scipy.spatial.distance.pdist(vertices, metric='sqeuclidean')
+
+    # Add border while compressed
+    num_verts = scipy.spatial.distance.num_obs_y(sq_dists)
+    bordered = np.concatenate((np.ones(num_verts), sq_dists))
+
+    # Make matrix and find volume
+    sq_dists_mat = scipy.spatial.distance.squareform(bordered)
+
+    coeff = - (-2) ** (num_verts-1) * factorial(num_verts-1) ** 2
+    vol_square = np.linalg.det(sq_dists_mat) / coeff
+
+    if vol_square <= 0:
+        raise ValueError('Provided vertices do not form a simplex')
+
+    return np.sqrt(vol_square)
+
+
 class Triangulation:
     """A triangulation object.
 
@@ -160,8 +251,8 @@ class Triangulation:
     Raises
     ------
     ValueError
-        if the list of coordinates is incorrect or the points do not form one 
-        or more simplices in the 
+        if the list of coordinates is incorrect or the points do not form one
+        or more simplices in the
     """
 
     def __init__(self, coords):
@@ -171,7 +262,7 @@ class Triangulation:
         if not all(is_iterable_and_sized(coord) for coord in coords):
             raise TypeError("Please provide a 2-dimensional list of points")
         if len(coords) == 0:
-            raise ValueError("Please provide at least one simplex") 
+            raise ValueError("Please provide at least one simplex")
             # raise now because otherwise the next line will raise a less
 
         dim = len(coords[0])
@@ -195,7 +286,7 @@ class Triangulation:
         # initialise empty set for each vertex
         self.vertex_to_simplices = [set() for _ in coords]
 
-        # find a Delaunay triangulation to start with, then we will throw it 
+        # find a Delaunay triangulation to start with, then we will throw it
         # away and continue with our own algorithm
         initial_tri = scipy.spatial.Delaunay(coords)
         for simplex in initial_tri.simplices:
@@ -242,15 +333,8 @@ class Triangulation:
         return [simplex[i] for i in result]
 
     def point_in_simplex(self, point, simplex, eps=1e-8):
-        if self.dim == 2:
-            vertices = self.get_vertices(simplex)
-            return fast_2d_point_in_simplex(point, vertices, eps)
-        elif self.dim == 3:
-            # XXX: Better to write a separate function for this
-            return len(self.get_reduced_simplex(point, simplex, eps)) > 0
-        else:
-            # XXX: Better to write a separate function for this
-            return len(self.get_reduced_simplex(point, simplex, eps)) > 0
+        vertices = self.get_vertices(simplex)
+        return point_in_simplex(point, vertices, eps)
 
     def locate_point(self, point):
         """Find to which simplex the point belongs.
@@ -345,28 +429,7 @@ class Triangulation:
             The center and radius of the circumscribed circle
         """
         pts = np.dot(self.get_vertices(simplex), transform)
-        if self.dim == 2:
-            return fast_2d_circumcircle(pts)
-        if self.dim == 3:
-            return fast_3d_circumcircle(pts)
-
-        # Modified method from http://mathworld.wolfram.com/Circumsphere.html
-        mat = [[np.sum(np.square(pt)), *pt, 1] for pt in pts]
-
-        center = []
-        for i in range(1, len(simplex)):
-            r = np.delete(mat, i, 1)
-            factor = (-1) ** (i+1)
-            center.append(factor * np.linalg.det(r))
-
-        a = np.linalg.det(np.delete(mat, 0, 1))
-        center = [x / (2*a) for x in center]
-
-        x0 = self.vertices[next(iter(simplex))]
-        vec = np.subtract(center, x0)
-        radius = fast_norm(vec)
-
-        return tuple(center), radius
+        return circumsphere(pts)
 
     def point_in_cicumcircle(self, pt_index, simplex, transform):
         # return self.fast_point_in_circumcircle(pt_index, simplex, transform)

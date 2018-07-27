@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict
+from collections import OrderedDict, Iterable
 import itertools
 import heapq
 
@@ -10,7 +10,8 @@ import scipy.spatial
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
-from .triangulation import Triangulation
+from .triangulation import Triangulation, point_in_simplex, \
+                           circumsphere, simplex_volume_in_embedding
 import random
 
 
@@ -28,7 +29,7 @@ def volume(simplex, ys=None):
 def orientation(simplex):
     matrix = np.subtract(simplex[:-1], simplex[-1])
     # See https://www.jstor.org/stable/2315353
-    sign, logdet = np.linalg.slogdet(matrix)
+    sign, _logdet = np.linalg.slogdet(matrix)
     return sign
 
 
@@ -46,13 +47,20 @@ def std_loss(simplex, ys):
 
 
 def default_loss(simplex, ys):
-    return std_loss(simplex, ys)
+    # return std_loss(simplex, ys)
+    if isinstance(ys[0], Iterable):
+        pts = [(*x, *y) for x, y in zip(simplex, ys)]
+    else:
+        pts = [(*x, y) for x, y in zip(simplex, ys)]
+    return simplex_volume_in_embedding(pts)
 
 
 def choose_point_in_simplex(simplex, transform=None):
     """Choose a new point in inside a simplex.
 
-    Pick the center of the longest edge of this simplex
+    Pick the center of the simplex if the shape is nice (that is, the 
+    circumcenter lies within the simplex). Otherwise take the middle of the 
+    longest edge.
 
     Parameters
     ----------
@@ -63,20 +71,30 @@ def choose_point_in_simplex(simplex, transform=None):
 
     Returns
     -------
-    point : numpy array
+    point : numpy array of length N
         The coordinates of the suggested new point.
     """
 
-    # XXX: find a better selection algorithm
     if transform is not None:
         simplex = np.dot(simplex, transform)
 
-    distances = scipy.spatial.distance.pdist(simplex)
-    distance_matrix = scipy.spatial.distance.squareform(distances)
-    i, j = np.unravel_index(np.argmax(distance_matrix), distance_matrix.shape)
+    # choose center if and only if the shape of the simplex is nice,
+    # otherwise: the center the longest edge
+    center, _radius = circumsphere(simplex)
+    if point_in_simplex(center, simplex):
+        point = np.average(simplex, axis=0)
+    else:
+        distances = scipy.spatial.distance.pdist(simplex)
+        distance_matrix = scipy.spatial.distance.squareform(distances)
+        i, j = np.unravel_index(np.argmax(distance_matrix),
+                                distance_matrix.shape)
 
-    point = (simplex[i, :] + simplex[j, :]) / 2
-    return np.linalg.solve(transform, point)
+        point = (simplex[i, :] + simplex[j, :]) / 2
+
+    if transform is not None:
+        point = np.linalg.solve(transform, point)  # undo the transform
+        
+    return point
 
 
 class LearnerND(BaseLearner):
@@ -299,8 +317,8 @@ class LearnerND(BaseLearner):
             if len(losses):
                 loss, simplex = heapq.heappop(losses)
 
-                assert self._simplex_exists(
-                    simplex), "all simplices in the heap should exist"
+                assert self._simplex_exists(simplex), \
+                    "all simplices in the heap should exist"
 
                 if simplex in self._subtriangulations:
                     subtri = self._subtriangulations[simplex]
