@@ -177,7 +177,7 @@ def is_iterable_and_sized(obj):
 
 def simplex_volume_in_embedding(vertices) -> float:
     """Calculate the volume of a simplex in a higher dimensional embedding.
-    That is: dim > len(vertices) - 1. For example if you would like to know the 
+    That is: dim > len(vertices) - 1. For example if you would like to know the
     surface area of a triangle in a 3d space.
 
     Parameters
@@ -253,8 +253,8 @@ class Triangulation:
     Raises
     ------
     ValueError
-        if the list of coordinates is incorrect or the points do not form one 
-        or more simplices in the 
+        if the list of coordinates is incorrect or the points do not form one
+        or more simplices in the
     """
 
     def __init__(self, coords):
@@ -264,7 +264,7 @@ class Triangulation:
         if not all(is_iterable_and_sized(coord) for coord in coords):
             raise TypeError("Please provide a 2-dimensional list of points")
         if len(coords) == 0:
-            raise ValueError("Please provide at least one simplex") 
+            raise ValueError("Please provide at least one simplex")
             # raise now because otherwise the next line will raise a less
 
         dim = len(coords[0])
@@ -288,7 +288,7 @@ class Triangulation:
         # initialise empty set for each vertex
         self.vertex_to_simplices = [set() for _ in coords]
 
-        # find a Delaunay triangulation to start with, then we will throw it 
+        # find a Delaunay triangulation to start with, then we will throw it
         # away and continue with our own algorithm
         initial_tri = scipy.spatial.Delaunay(coords)
         for simplex in initial_tri.simplices:
