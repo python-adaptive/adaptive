@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, Iterable
+import heapq
 import itertools
+import random
 
 import numpy as np
 from scipy import interpolate
@@ -11,8 +13,6 @@ from .base_learner import BaseLearner
 
 from .triangulation import Triangulation, point_in_simplex, \
                            circumsphere, simplex_volume_in_embedding
-import random
-import heapq
 
 
 def volume(simplex, ys=None):
@@ -279,19 +279,18 @@ class LearnerND(BaseLearner):
             if simpl not in self._subtriangulations:
                 vertices = self.tri.get_vertices(simpl)
                 tr = self._subtriangulations[simpl] = Triangulation(vertices)
-                _, toadd = tr.add_point(point, next(iter(tr.simplices)))
+                _, to_add = tr.add_point(point, next(iter(tr.simplices)))
             else:
-                _, toadd = self._subtriangulations[simpl].add_point(point)
+                _, to_add = self._subtriangulations[simpl].add_point(point)
 
             loss = self._losses[simpl]
 
             loss_density = loss / self.tri.volume(simpl)
             subtriangulation = self._subtriangulations[simpl]
-            for subsimplex in toadd:
+            for subsimplex in to_add:
                 subloss = subtriangulation.volume(subsimplex) * loss_density
                 heapq.heappush(self._losses_combined, 
                                (-subloss, simpl, subsimplex))
-                
 
     def ask(self, n=1):
         xs, losses = zip(*(self._ask() for _ in range(n)))
@@ -332,7 +331,6 @@ class LearnerND(BaseLearner):
                 return abs(loss), simplex, subsimplex
 
     def _ask_best_point(self):
-        assert not self._bounds_available
         assert self.tri is not None
 
         loss, simplex, subsimplex = self._pop_highest_existing_simplex()
