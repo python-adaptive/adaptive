@@ -1,9 +1,11 @@
 import pyximport; pyximport.install()
 from collections import defaultdict, Counter, Sized, Iterable
 from itertools import combinations, chain
-
+import scipy
+import scipy.spatial
 import numpy as np
-# import math
+import math
+
 from .fasthelper import *
 
 
@@ -33,6 +35,32 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
                           - p0y * p1x + (p1x - p0x) * py)
 
     return (t >= -eps) and (s + t <= 1 + eps)
+
+
+def circumsphere(pts):
+    dim = len(pts) - 1
+    if dim == 2:
+        return fast_2d_circumcircle(pts)
+    if dim == 3:
+        return fast_3d_circumcircle(pts)
+
+    # Modified method from http://mathworld.wolfram.com/Circumsphere.html
+    mat = [[np.sum(np.square(pt)), *pt, 1] for pt in pts]
+
+    center = []
+    for i in range(1, len(pts)):
+        r = np.delete(mat, i, 1)
+        factor = (-1) ** (i + 1)
+        center.append(factor * np.linalg.det(r))
+
+    a = np.linalg.det(np.delete(mat, 0, 1))
+    center = [x / (2 * a) for x in center]
+
+    x0 = pts[0]
+    vec = np.subtract(center, x0)
+    radius = fast_norm(vec)
+
+    return tuple(center), radius
 
 
 def orientation(face, origin):
@@ -109,7 +137,7 @@ def simplex_volume_in_embedding(vertices) -> float:
     # Make matrix and find volume
     sq_dists_mat = scipy.spatial.distance.squareform(bordered)
 
-    coeff = - (-2) ** (num_verts-1) * factorial(num_verts-1) ** 2
+    coeff = - (-2) ** (num_verts-1) * math.factorial(num_verts-1) ** 2
     vol_square = np.linalg.det(sq_dists_mat) / coeff
 
     if vol_square <= 0:
