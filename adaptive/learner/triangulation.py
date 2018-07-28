@@ -7,6 +7,17 @@ import numpy as np
 from .fasthelper import *
 
 
+def point_in_simplex(point, simplex, eps=1e-8):
+    if len(point) == 2:
+        return fast_2d_point_in_simplex(point, simplex, eps)
+
+    x0 = np.array(simplex[0], dtype=float)
+    vectors = np.array(simplex[1:], dtype=float) - x0
+    alpha = np.linalg.solve(vectors.T, point - x0)
+
+    return all(alpha > -eps) and sum(alpha) < 1 + eps
+
+
 def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
     (p0x, p0y), (p1x, p1y), (p2x, p2y) = simplex
     px, py = point
