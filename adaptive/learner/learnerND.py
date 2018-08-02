@@ -412,7 +412,7 @@ class LearnerND(BaseLearner):
                 continue
 
             self._update_subsimplex_losses(simplex,
-                                           self._subtriangulations[simplex])
+                                self._subtriangulations[simplex].simplices)
 
     def losses(self):
         """Get the losses of each simplex in the current triangulation, as dict
