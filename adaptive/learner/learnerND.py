@@ -297,9 +297,9 @@ class LearnerND(BaseLearner):
         return list(xs), list(losses)
 
     def _ask_bound_point(self):
-        bounds_to_do = [p for p in self._bounds_points
-                        if p not in self.data and p not in self._pending]
-        new_point = bounds_to_do[0]
+        # get the next bound point that is still available
+        new_point = next(p for p in self._bounds_points
+                         if p not in self.data and p not in self._pending)
         self._tell_pending(new_point)
         return new_point, np.inf
 
