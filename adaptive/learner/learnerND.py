@@ -181,7 +181,16 @@ class LearnerND(BaseLearner):
 
         # all real triangles that have not been subdivided and the pending 
         # triangles heap of tuples (-loss, real simplex, sub_simplex or None)
-        self._losses_combined = [] # heap
+
+        # _losses_combined is a heap of tuples (-loss, real_simplex, sub_simplex)
+        # It contains all real and pending simplices except for real simplices
+        # that have been subdivided.
+        # _losses_combined may contain simplices that have been deleted, this is
+        #  because deleting those items from the heap is an expensive operation,
+        # so when popping an item, you should check that the simplex that has
+        # been returned has not been deleted. This checking is done by
+        # _pop_highest_existing_simplex
+        self._losses_combined = []  # heap
 
     @property
     def npoints(self):
