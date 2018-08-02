@@ -321,13 +321,13 @@ class LearnerND(BaseLearner):
         # simplex hasn't been deleted yet
         while True:
             loss, simplex, subsimplex = heapq.heappop(self._losses_combined) 
-            if (subsimplex is None and 
-                    simplex in self.tri.simplices and 
-                    simplex not in self._subtriangulations):
+            if (subsimplex is None
+                    and simplex in self.tri.simplices
+                    and simplex not in self._subtriangulations):
                 return abs(loss), simplex, subsimplex
-            if (simplex in self._subtriangulations and
-                    simplex in self.tri.simplices and 
-                    subsimplex in self._subtriangulations[simplex].simplices):
+            if (simplex in self._subtriangulations
+                    and simplex in self.tri.simplices
+                    and subsimplex in self._subtriangulations[simplex].simplices):
                 return abs(loss), simplex, subsimplex
 
     def _ask_best_point(self):
