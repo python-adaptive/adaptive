@@ -273,24 +273,32 @@ class LearnerND(BaseLearner):
         # Neighbours also includes the simplex itself
 
         for simpl in neighbours:
-            if not self.tri.point_in_simplex(point, simpl):
-                continue  # point not in simplex
+            _, to_add = self._try_adding_pending_point_to_simplex(point, simpl)
+            if to_add is None:
+                continue
+            self._update_subsimplex_losses(simpl, to_add)
 
-            if simpl not in self._subtriangulations:
-                vertices = self.tri.get_vertices(simpl)
-                tr = self._subtriangulations[simpl] = Triangulation(vertices)
-                _, to_add = tr.add_point(point, next(iter(tr.simplices)))
-            else:
-                _, to_add = self._subtriangulations[simpl].add_point(point)
+    def _try_adding_pending_point_to_simplex(self, point, simplex):
+        # try to insert it
+        if not self.tri.point_in_simplex(point, simplex):
+            return None, None
 
-            loss = self._losses[simpl]
+        if simplex not in self._subtriangulations:
+            vertices = self.tri.get_vertices(simplex)
+            self._subtriangulations[simplex] = Triangulation(vertices)
 
-            loss_density = loss / self.tri.volume(simpl)
-            subtriangulation = self._subtriangulations[simpl]
-            for subsimplex in to_add:
-                subloss = subtriangulation.volume(subsimplex) * loss_density
-                heapq.heappush(self._losses_combined, 
-                               (-subloss, simpl, subsimplex))
+        self._pending_to_simplex[p] = simplex
+        return self._subtriangulations[simplex].add_point(point)
+
+    def _update_subsimplex_losses(self, simplex, new_subsimplices):
+        loss = self._losses[simplex]
+
+        loss_density = loss / self.tri.volume(simplex)
+        subtriangulation = self._subtriangulations[simplex]
+        for subsimplex in new_subsimplices:
+            subloss = subtriangulation.volume(subsimplex) * loss_density
+            heapq.heappush(self._losses_combined,
+                           (-subloss, simplex, subsimplex))
 
     def ask(self, n=1):
         xs, losses = zip(*(self._ask() for _ in range(n)))
@@ -388,27 +396,14 @@ class LearnerND(BaseLearner):
             self._losses[simplex] = float(loss)
 
             for p in pending_points_unbound:
-                # try to insert it
-                if not self.tri.point_in_simplex(p, simplex):
-                    continue
-
-                if simplex not in self._subtriangulations:
-                    vertices = self.tri.get_vertices(simplex)
-                    self._subtriangulations[simplex] = Triangulation(vertices)
-
-                self._subtriangulations[simplex].add_point(p)
-                self._pending_to_simplex[p] = simplex
+                self._try_adding_pending_point_to_simplex(p, simplex)
 
             if simplex not in self._subtriangulations:
                 heapq.heappush(self._losses_combined, (-loss, simplex, None))
                 continue
 
-            loss_density = loss / self.tri.volume(simplex)
-            subtriangulation = self._subtriangulations[simplex]
-            for subsimplex in subtriangulation.simplices:
-                subloss = subtriangulation.volume(subsimplex) * loss_density
-                heapq.heappush(self._losses_combined, 
-                               (-subloss, simplex, subsimplex))
+            self._update_subsimplex_losses(simplex,
+                                           self._subtriangulations[simplex])
 
     def losses(self):
         """Get the losses of each simplex in the current triangulation, as dict
