@@ -361,7 +361,9 @@ class LearnerND(BaseLearner):
             return self._ask_bound_point()  # O(1)
 
         if self.tri is None:
-            # we have no known simplices
+            # All bound points are pending or have been evaluated, but we do not
+            # have enough evaluated points to construct a triangulation, so we
+            # pick a random point
             return self._ask_point_without_known_simplices()  # O(1)
 
         return self._ask_best_point()  # O(log N)
