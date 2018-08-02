@@ -296,7 +296,7 @@ class LearnerND(BaseLearner):
             vertices = self.tri.get_vertices(simplex)
             self._subtriangulations[simplex] = Triangulation(vertices)
 
-        self._pending_to_simplex[p] = simplex
+        self._pending_to_simplex[point] = simplex
         return self._subtriangulations[simplex].add_point(point)
 
     def _update_subsimplex_losses(self, simplex, new_subsimplices):
