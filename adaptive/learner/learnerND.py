@@ -13,8 +13,6 @@ from .triangulation import Triangulation, point_in_simplex, \
                            circumsphere, simplex_volume_in_embedding
 import random
 import heapq
-
-import rtree
 import math
 
 
@@ -190,9 +188,6 @@ class LearnerND(BaseLearner):
 
         # create a private random number generator with fixed seed
         self._random = random.Random(1)
-
-        props = rtree.index.Property(dimension=self.ndim)
-        self._point_tree = rtree.index.Index(properties=props)
         self.anisotripic = anisotropic
         
         # all real triangles that have not been subdivided and the pending
@@ -259,31 +254,26 @@ class LearnerND(BaseLearner):
             return self._tell_pending(point)
 
         self._pending.discard(point)
-        # Insert the point into our Rtree
-        scaled_point = tuple(np.dot(self._scale_matrix, point))
-        # print(scaled_point)
-        self._point_tree.insert(self.npoints, scaled_point)  
         self.data[point] = value
 
         if self.tri is not None:
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
-                simplex = None
-            transform = self.get_local_transform_matrix(point)
+                simplex = self.tri.locate_point(point)
+            transform = self.get_local_transform_matrix(simplex)
             to_delete, to_add = self._tri.add_point(
                 point, simplex, transform=transform)
             self.update_losses(to_delete, to_add)
 
-    def get_local_transform_matrix(self, point):
+    def get_local_transform_matrix(self, simplex):
         scale = self._scale_matrix
 
-        if self.tri is None or not self.anisotripic:
+        if simplex is None or self.tri is None or not self.anisotripic:
             return scale
         
-        # Get some points in the neighbourhood
-        scaled_point = tuple(np.dot(scale, point))
-        indices = self._point_tree.nearest(scaled_point, 10)
-        
+        neighbours = set.union(*[self.tri.vertex_to_simplices[i] for i in simplex])
+        indices = set.union(set(), *neighbours)
+
         points = np.array([self.points[i] for i in indices])
         values = [self.data[tuple(p)] for p in points]
 
@@ -298,8 +288,8 @@ class LearnerND(BaseLearner):
         B = np.array(values, dtype=float)
         fit, *_ = np.linalg.lstsq(A, B, rcond=None)
         *gradient, _constant = fit
+        # we do not need the constant, only the gradient
 
-        # we do not need the constant
         # gradient is a vector of the amount of the slope in each direction
         magnitude = np.linalg.norm(gradient)
 
@@ -312,9 +302,8 @@ class LearnerND(BaseLearner):
         identity = np.eye(self.ndim)
 
         factor = math.sqrt(magnitude ** 2 + 1) - 1
-        # factor = min(factor, 2)
 
-        scale_along_gradient = projection_matrix * factor * 1 + identity
+        scale_along_gradient = projection_matrix * factor + identity
         m = np.dot(scale_along_gradient, scale)
         return m.T
 
@@ -412,7 +401,7 @@ class LearnerND(BaseLearner):
             subtri = self._subtriangulations[simplex]
             points = subtri.get_vertices(subsimplex)
 
-        transform = self.get_local_transform_matrix(points[0])
+        transform = self.get_local_transform_matrix(simplex)
         point_new = tuple(choose_point_in_simplex(points, transform=transform))
 
         self._pending_to_simplex[point_new] = simplex

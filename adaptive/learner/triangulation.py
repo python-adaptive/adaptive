@@ -504,14 +504,6 @@ class Triangulation:
         deleted_simplices = bad_triangles - new_triangles
         new_simplices = new_triangles - bad_triangles
 
-        if not np.isclose(sum([self.volume(s) for s in deleted_simplices]),
-                          sum([self.volume(s) for s in new_simplices])):
-            print("vertices = ", self.vertices, "\n\n\n")
-            print("simplices = ", self.simplices, "\n\n\n")
-            print("new_s = ", new_simplices)
-            print("old_s = ", deleted_simplices)
-            print("holes_faces = ", hole_faces)
-            raise AssertionError("debug me")
         return deleted_simplices, new_simplices
 
     def add_point(self, point, simplex=None, transform=None):
