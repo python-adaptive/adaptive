@@ -182,15 +182,15 @@ class LearnerND(BaseLearner):
         # all real triangles that have not been subdivided and the pending 
         # triangles heap of tuples (-loss, real simplex, sub_simplex or None)
 
-        # _losses_combined is a heap of tuples (-loss, real_simplex, sub_simplex)
+        # _simplex_queue is a heap of tuples (-loss, real_simplex, sub_simplex)
         # It contains all real and pending simplices except for real simplices
         # that have been subdivided.
-        # _losses_combined may contain simplices that have been deleted, this is
+        # _simplex_queue may contain simplices that have been deleted, this is
         #  because deleting those items from the heap is an expensive operation,
         # so when popping an item, you should check that the simplex that has
         # been returned has not been deleted. This checking is done by
         # _pop_highest_existing_simplex
-        self._losses_combined = []  # heap
+        self._simplex_queue = []  # heap
 
     @property
     def npoints(self):
@@ -306,7 +306,7 @@ class LearnerND(BaseLearner):
         subtriangulation = self._subtriangulations[simplex]
         for subsimplex in new_subsimplices:
             subloss = subtriangulation.volume(subsimplex) * loss_density
-            heapq.heappush(self._losses_combined,
+            heapq.heappush(self._simplex_queue,
                            (-subloss, simplex, subsimplex))
 
     def ask(self, n=1):
@@ -336,8 +336,8 @@ class LearnerND(BaseLearner):
     def _pop_highest_existing_simplex(self):
         # find the simplex with the highest loss, we do need to check that the
         # simplex hasn't been deleted yet
-        while len(self._losses_combined):
-            loss, simplex, subsimplex = heapq.heappop(self._losses_combined) 
+        while len(self._simplex_queue):
+            loss, simplex, subsimplex = heapq.heappop(self._simplex_queue) 
             if (subsimplex is None
                     and simplex in self.tri.simplices
                     and simplex not in self._subtriangulations):
@@ -415,7 +415,7 @@ class LearnerND(BaseLearner):
                 self._try_adding_pending_point_to_simplex(p, simplex)
 
             if simplex not in self._subtriangulations:
-                heapq.heappush(self._losses_combined, (-loss, simplex, None))
+                heapq.heappush(self._simplex_queue, (-loss, simplex, None))
                 continue
 
             self._update_subsimplex_losses(simplex,
