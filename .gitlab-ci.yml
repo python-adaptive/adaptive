@@ -7,18 +7,3 @@ test:
   artifacts:
     paths:
       - htmlcov
-
-mirror repository:
-  allow_failure: true
-  variables:
-    REPO: "git@github.com:python-adaptive/adaptive.git"
-  before_script:
-    - mkdir ~/.ssh && chmod 700 ~/.ssh
-    - ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
-    - echo "$DEPLOY_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
-  after_script:
-    - rm -rf ~/.ssh
-  script:
-    - ORIGIN_URL=$(git config --get remote.origin.url)
-    - cd $(mktemp -d); git clone --bare $ORIGIN_URL .
-    - git push --mirror $REPO
