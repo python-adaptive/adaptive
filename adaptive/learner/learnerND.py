@@ -336,7 +336,7 @@ class LearnerND(BaseLearner):
     def _pop_highest_existing_simplex(self):
         # find the simplex with the highest loss, we do need to check that the
         # simplex hasn't been deleted yet
-        while True:
+        while len(self._losses_combined):
             loss, simplex, subsimplex = heapq.heappop(self._losses_combined) 
             if (subsimplex is None
                     and simplex in self.tri.simplices
@@ -346,6 +346,13 @@ class LearnerND(BaseLearner):
                     and simplex in self.tri.simplices
                     and subsimplex in self._subtriangulations[simplex].simplices):
                 return abs(loss), simplex, subsimplex
+
+        # Could not find a simplex, this code should never be reached
+        assert self.tri is not None
+        raise AssertionError(
+            """Could not find a simplex to. Yet there should always be a simplex 
+            available if LearnerND.tri() is not None"""
+        )
 
     def _ask_best_point(self):
         assert self.tri is not None
