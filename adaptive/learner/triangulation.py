@@ -472,8 +472,6 @@ class Triangulation:
         else:
             queue.add(containing_simplex)
 
-        done_points = {pt_index}
-
         bad_triangles = set()
 
         while len(queue):
@@ -483,17 +481,20 @@ class Triangulation:
             if self.point_in_cicumcircle(pt_index, simplex, transform):
                 self.delete_simplex(simplex)
                 todo_points = set(simplex)
-                done_points.update(simplex)
-
                 bad_triangles.add(simplex)
-                if len(todo_points) == 0:
-                    continue
+
+                # Get all simplices that share at least a point with the simplex
                 neighbours = set.union(*[self.vertex_to_simplices[p]
                                             for p in todo_points])
+                # Filter out the already evaluated simplices
                 neighbours = neighbours - done_simplices
-                neighbours = set(simpl for simpl in neighbours if len(set(simpl) & done_points) >= self.dim)
-                queue.update(neighbours)
 
+                # Keep only the simplices sharing a whole face with the current simplex
+                neighbours = set(
+                    simpl for simpl in neighbours 
+                    if len(set(simpl) & set(simplex)) == self.dim  # they share a face
+                )
+                queue.update(neighbours)
 
         faces = list(self.faces(simplices=bad_triangles))
 
