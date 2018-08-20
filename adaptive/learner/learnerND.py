@@ -312,7 +312,7 @@ class LearnerND(BaseLearner):
         identity = np.eye(self.ndim)
 
         factor = math.sqrt(magnitude ** 2 + 1) - 1
-        factor = min(factor, 2)
+        # factor = min(factor, 2)
 
         scale_along_gradient = projection_matrix * factor * 1 + identity
         m = np.dot(scale_along_gradient, scale)
