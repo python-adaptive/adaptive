@@ -266,11 +266,9 @@ class Learner1D(BaseLearner):
 
         if missing_bounds:
             loss_improvements = [np.inf] * n
+            # XXX: should check if points are present in self.data or self.pending_points
             points = np.linspace(*self.bounds, n + 2 - len(missing_bounds)).tolist()
             if len(missing_bounds) == 1:
-                # If we previously returned just self.bounds[0] we exclude that point.
-                # In the rare case in which self.bounds[1] is present before self.bounds[1]
-                # we exclude that point.
                 points = points[1:] if missing_bounds[0] == self.bounds[1] else points[:-1]
         else:
             def xs(x_left, x_right, n):
