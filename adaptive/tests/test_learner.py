@@ -363,7 +363,7 @@ def test_learner1d_first_iteration():
     """Edge cases where we ask for a few points at the start."""
     learner = Learner1D(lambda x: None, (-1, 1))
     points, loss_improvements = learner.ask(2)
-    assert set(points) == set([-1, 1])
+    assert set(points) == set(learner.bounds)
 
     learner = Learner1D(lambda x: None, (-1, 1))
     points, loss_improvements = learner.ask(3)
@@ -371,16 +371,26 @@ def test_learner1d_first_iteration():
 
     learner = Learner1D(lambda x: None, (-1, 1))
     points, loss_improvements = learner.ask(1)
-    assert len(points) == 1 and points[0] in [-1, 1]
+    assert len(points) == 1 and points[0] in learner.bounds
     rest = set([-1, 0, 1]) - set(points)
     points, loss_improvements = learner.ask(2)
     assert set(points) == set(rest)
 
     learner = Learner1D(lambda x: None, (-1, 1))
     points, loss_improvements = learner.ask(1)
-    to_see = set([-1, 1]) - set(points)
+    to_see = set(learner.bounds) - set(points)
     points, loss_improvements = learner.ask(1)
     assert set(points) == set(to_see)
+
+    learner = Learner1D(lambda x: None, (-1, 1))
+    learner.tell(1, 0)
+    points, loss_improvements = learner.ask(1)
+    assert points == [-1]
+
+    learner = Learner1D(lambda x: None, (-1, 1))
+    learner.tell(-1, 0)
+    points, loss_improvements = learner.ask(1)
+    assert points == [1]
 
 
 def _run_on_discontinuity(x_0, bounds):
