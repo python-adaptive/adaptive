@@ -261,22 +261,22 @@ class Learner1D(BaseLearner):
             return [], []
 
         # If the bounds have not been chosen yet, we choose them first.
-        points = [b for b in self.bounds if b not in self.data
-                  and b not in self.pending_points]
+        missing_bounds = [b for b in self.bounds if b not in self.data
+                          and b not in self.pending_points]
 
-        if len(points) == 2:
+        if len(missing_bounds) == 2:
             # First time
             loss_improvements = [np.inf] * n
             points = np.linspace(*self.bounds, n).tolist()
-        elif len(points) == 1:
+        elif len(missing_bounds) == 1:
             loss_improvements = [np.inf] * n
-            _points = np.linspace(*self.bounds, n + 1).tolist()
-            if points[0] == self.bounds[1]:
+            points = np.linspace(*self.bounds, n + 1).tolist()
+            if missing_bounds[0] == self.bounds[1]:
                 # Second time, if we previously returned just self.bounds[0]
-                points = _points[1:]
+                points = points[1:]
             else:
                 # Rare case in which self.bounds[1] is present before self.bounds[1]
-                points = _points[:1]
+                points = points[:1]
         else:
             def xs(x_left, x_right, n):
                 if n == 1:
@@ -310,6 +310,7 @@ class Learner1D(BaseLearner):
             self.tell_many(points, itertools.repeat(None))
 
         return points, loss_improvements
+
 
     def plot(self):
         hv = ensure_holoviews()
