@@ -269,9 +269,14 @@ class Learner1D(BaseLearner):
             loss_improvements = [np.inf] * n
             points = np.linspace(*self.bounds, n).tolist()
         elif len(points) == 1:
-            # Second time, if we previously returned just self.bounds[0]
             loss_improvements = [np.inf] * n
-            points = np.linspace(*self.bounds, n + 1)[1:].tolist()
+            _points = np.linspace(*self.bounds, n + 1).tolist()
+            if points[0] == self.bounds[1]:
+                # Second time, if we previously returned just self.bounds[0]
+                points = _points[1:]
+            else:
+                # Rare case in which self.bounds[1] is present before self.bounds[1]
+                points = _points[:1]
         else:
             def xs(x_left, x_right, n):
                 if n == 1:
