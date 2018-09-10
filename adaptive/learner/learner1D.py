@@ -261,17 +261,15 @@ class Learner1D(BaseLearner):
             return [], []
 
         # If the bounds have not been chosen yet, we choose them first.
-        points = [b for b in self.bounds if b not in self.data
-                  and b not in self.pending_points]
+        missing_bounds = [b for b in self.bounds if b not in self.data
+                          and b not in self.pending_points]
 
-        if len(points) == 2:
-            # First time
+        if missing_bounds:
             loss_improvements = [np.inf] * n
-            points = np.linspace(*self.bounds, n).tolist()
-        elif len(points) == 1:
-            # Second time, if we previously returned just self.bounds[0]
-            loss_improvements = [np.inf] * n
-            points = np.linspace(*self.bounds, n + 1)[1:].tolist()
+            # XXX: should check if points are present in self.data or self.pending_points
+            points = np.linspace(*self.bounds, n + 2 - len(missing_bounds)).tolist()
+            if len(missing_bounds) == 1:
+                points = points[1:] if missing_bounds[0] == self.bounds[1] else points[:-1]
         else:
             def xs(x_left, x_right, n):
                 if n == 1:
