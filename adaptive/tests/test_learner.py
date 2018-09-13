@@ -393,6 +393,23 @@ def test_learner1d_first_iteration():
     assert points == [1]
 
 
+def test_learner1d_loss_interpolation():
+    learner = Learner1D(lambda _: 0, bounds=(-1, 1))
+
+    learner.tell(-1, 0)
+    learner.tell(1, 0)
+    for i in range(100):
+        # Add a 100 points with either None or 0
+        if random.random() < 0.9:
+            learner.tell(random.uniform(-1, 1), None)
+        else:
+            learner.tell(random.uniform(-1, 1), 0)
+
+    for (x1, x2), loss in learner.losses_combined.items():
+        expected_loss = (x2 - x1) / 2
+        assert abs(expected_loss - loss) < 1e-15, (expected_loss, loss)
+
+
 def _run_on_discontinuity(x_0, bounds):
 
     def f(x):
@@ -438,7 +455,6 @@ def test_loss_at_machine_precision_interval_is_zero():
 
 
 def small_deviations(x):
-    import random
     return 0 if x <= 1 else 1 + 10**(-random.randint(12, 14))
 
 
