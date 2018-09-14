@@ -438,6 +438,24 @@ def test_termination_on_discontinuities():
     assert smallest_interval >= 0.5E3 * np.finfo(float).eps
 
 
+def test_order_adding_points():
+    # and https://gitlab.kwant-project.org/qt/adaptive/issues/98
+    l = Learner1D(lambda x: x, (0, 1))
+    l.tell_many([1, 0, 0.5], [0, 0, 0])
+    assert l.losses_combined == {(0, 0.5): 0.5, (0.5, 1): 0.5}
+    assert l.losses == {(0, 0.5): 0.5, (0.5, 1): 0.5}
+    l.ask(1)
+
+
+def test_order_adding_points2():
+    # See https://gitlab.kwant-project.org/qt/adaptive/issues/97
+    l = Learner1D(lambda x: x, (0, 4))
+    l.tell(0, 0)
+    l.tell(1, 0)
+    l.tell(2, 0)
+    l.tell(1, None)
+
+
 def test_loss_at_machine_precision_interval_is_zero():
     """The loss of an interval smaller than _dx_eps
     should be set to zero."""
