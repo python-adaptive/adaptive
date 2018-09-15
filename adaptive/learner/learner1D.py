@@ -153,6 +153,12 @@ class Learner1D(BaseLearner):
             self.update_interpolated_loss_in_interval(x, x_right)
             self.losses.pop((x_left, x_right), None)
             self.losses_combined.pop((x_left, x_right), None)
+            a, b = self.find_neighbors(x, self.neighbors_combined)
+            self.losses_combined.pop((a, b), None)
+            if x_left is None and a is not None:
+                self.losses_combined[x, b] = float('inf')
+            if x_right is None and b is not None:
+                self.losses_combined[x, b] = float('inf')
         else:
             losses_combined = self.losses_combined
             x_left, x_right = self.find_neighbors(x, self.neighbors)
