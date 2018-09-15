@@ -140,8 +140,8 @@ class Learner1D(BaseLearner):
             start = self.neighbors_combined.bisect_right(x_left)
             end = self.neighbors_combined.bisect_left(x_right)
             for i in range(start, end):
-                a, b = (self.neighbors_combined.iloc[i],
-                        self.neighbors_combined.iloc[i + 1])
+                keys = self.neighbors_combined.keys()
+                a, b = (keys[i], keys[i + 1])
                 self.losses_combined[a, b] = (b - a) * loss / dx
             if start == end:
                 self.losses_combined[x_left, x_right] = loss
@@ -174,8 +174,9 @@ class Learner1D(BaseLearner):
         if x in neighbors:
             return neighbors[x]
         pos = neighbors.bisect_left(x)
-        x_left = neighbors.iloc[pos - 1] if pos != 0 else None
-        x_right = neighbors.iloc[pos] if pos != len(neighbors) else None
+        keys = neighbors.keys()
+        x_left = keys[pos - 1] if pos != 0 else None
+        x_right = keys[pos] if pos != len(neighbors) else None
         return x_left, x_right
 
     def update_neighbors(self, x, neighbors):
