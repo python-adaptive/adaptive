@@ -188,6 +188,14 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
     assert max(distances) < math.sqrt(dx**2 + dy**2)
 
 
+def test_learner1D_accepts_lists():
+    def f(x):
+        return [0, 1]
+
+    learner = Learner1D(f, bounds=(-1, 1))
+    simple(learner, goal=lambda l: l.npoints > 10)
+
+
 @run_with(xfail(Learner1D), Learner2D, LearnerND)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
