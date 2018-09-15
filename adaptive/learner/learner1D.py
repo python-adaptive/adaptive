@@ -137,7 +137,7 @@ class Learner1D(BaseLearner):
                                               self._scale, self.data)
             self.losses[x_left, x_right] = loss
 
-            start = self.neighbors_combined.bisect_right(x_left)
+            start = self.neighbors_combined.bisect_left(x_left)
             end = self.neighbors_combined.bisect_left(x_right)
             for i in range(start, end):
                 keys = self.neighbors_combined.keys()
