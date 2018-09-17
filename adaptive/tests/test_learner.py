@@ -447,7 +447,7 @@ def test_order_adding_points():
     l.ask(1)
 
 
-def test_order_adding_points2():
+def test_adding_existing_point_passes_silently():
     # See https://gitlab.kwant-project.org/qt/adaptive/issues/97
     l = Learner1D(lambda x: x, (0, 4))
     l.tell(0, 0)
