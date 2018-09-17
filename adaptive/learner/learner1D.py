@@ -156,7 +156,7 @@ class Learner1D(BaseLearner):
             a, b = self.find_neighbors(x, self.neighbors_combined)
             self.losses_combined.pop((a, b), None)
             if x_left is None and a is not None:
-                self.losses_combined[x, b] = float('inf')
+                self.losses_combined[a, x] = float('inf')
             if x_right is None and b is not None:
                 self.losses_combined[x, b] = float('inf')
         else:
