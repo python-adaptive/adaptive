@@ -147,38 +147,36 @@ class Learner1D(BaseLearner):
                 self.losses_combined[x_left, x_right] = loss
 
     def update_losses(self, x, real=True):
-        a, b = self.find_neighbors(x, self.neighbors_combined)
         x_left, x_right = self.find_neighbors(x, self.neighbors)
-        losses_combined = self.losses_combined
+        a, b = self.find_neighbors(x, self.neighbors_combined)
 
+        self.losses_combined.pop((a, b), None) # since x is going in-between
+        
         if real:
             self.update_interpolated_loss_in_interval(x_left, x)
             self.update_interpolated_loss_in_interval(x, x_right)
             self.losses.pop((x_left, x_right), None)
             self.losses_combined.pop((x_left, x_right), None)
-            a, b = self.find_neighbors(x, self.neighbors_combined)
-            self.losses_combined.pop((a, b), None)
-
-            if x_left is None and a is not None:
-                losses_combined[a, x] = float('inf')
-            if x_right is None and b is not None:
-                losses_combined[x, b] = float('inf')
         else:
             if x_left is not None and x_right is not None:
                 dx = x_right - x_left
                 loss = self.losses[x_left, x_right]
-                losses_combined[a, x] = (x - a) * loss / dx
-                losses_combined[x, b] = (b - x) * loss / dx
-        
-        real_left = real and x_left is None
-        real_right = real and x_right is None
-        not_real = (not real) and (x_left is None or x_right is None)
-        if (a is not None) and (real_left or not_real):
-            losses_combined[a, x] = float('inf')
-        if (b is not None) and (real_right or not_real):
-            losses_combined[x, b] = float('inf')
+                self.losses_combined[a, x] = (x - a) * loss / dx
+                self.losses_combined[x, b] = (b - x) * loss / dx
 
-        losses_combined.pop((a, b), None)
+        # (no real point left of x) or (no real point right of a)
+        left_loss_is_unknown = (x_left is None) or
+                               (not real and x_right is None)
+        if (a is not None) and left_loss_is_unknown:
+            self.losses_combined[a, x] = float('inf')
+
+        # (no real point right of x) or (no real point left of b)
+        right_loss_is_unknown = (x_right is None) or
+                                (not real and x_left is None)
+        if (b is not None) and right_loss_is_unknown:
+            self.losses_combined[x, b] = float('inf')
+
+        
 
     def find_neighbors(self, x, neighbors):
         if x in neighbors:
