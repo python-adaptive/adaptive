@@ -213,8 +213,11 @@ class Learner1D(BaseLearner):
                 self._scale[1] = self._bbox[1][1] - self._bbox[1][0]
 
     def tell(self, x, y):
-        real = y is not None
+        if x in self.data:
+            # The point is already evaluated before
+            return
 
+        real = y is not None
         if real:
             # Add point to the real data dict
             self.data[x] = y
@@ -227,9 +230,6 @@ class Learner1D(BaseLearner):
                 except TypeError:
                     self._vdim = 1
         else:
-            if x in self.data:
-                # The point is already evaluated before
-                return
             # The keys of pending_points are the unknown points
             self.pending_points.add(x)
 
