@@ -175,14 +175,14 @@ class Learner1D(BaseLearner):
                 self.losses_combined[x, b] = (b - x) * loss / dx
 
         # (no real point left of x) or (no real point right of a)
-        left_loss_is_unknown = (x_left is None) or
-                               (not real and x_right is None)
+        left_loss_is_unknown = ((x_left is None) or
+                                (not real and x_right is None))
         if (a is not None) and left_loss_is_unknown:
             self.losses_combined[a, x] = float('inf')
 
         # (no real point right of x) or (no real point left of b)
-        right_loss_is_unknown = (x_right is None) or
-                                (not real and x_left is None)
+        right_loss_is_unknown = ((x_right is None) or
+                                 (not real and x_left is None))
         if (b is not None) and right_loss_is_unknown:
             self.losses_combined[x, b] = float('inf')
 
