@@ -170,10 +170,12 @@ class Learner1D(BaseLearner):
                 losses_combined[a, x] = (x - a) * loss / dx
                 losses_combined[x, b] = (b - x) * loss / dx
 
-        not_real_cond = ((not real) and (x_left is None or x_right is None))
-        if (a is not None) and ((real and x_left is None) or not_real_cond):
+        real_left = real and x_left is None
+        real_right = real and x_right is None
+        not_real = (not real) and (x_left is None or x_right is None)
+        if (a is not None) and (real_left or not_real):
             losses_combined[a, x] = float('inf')
-        if (b is not None) and ((real and x_right is None) or not_real_cond):
+        if (b is not None) and (real_right or not_real):
             losses_combined[x, b] = float('inf')
 
         losses_combined.pop((a, b), None)
