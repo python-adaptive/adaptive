@@ -163,7 +163,7 @@ def test_uniform_sampling1D(learner_type, f, learner_kwargs):
     assert max(ivals) / min(ivals) < 2 + 1e-8
 
 
-def test_learnerND_as_described_in_issue_99():
+def test_learner1D_as_described_in_issue_99():
     # https://gitlab.kwant-project.org/qt/adaptive/issues/99
     l = Learner1D(lambda x: x, (0, 4))
 
@@ -175,7 +175,7 @@ def test_learnerND_as_described_in_issue_99():
     assert l.losses == {(0, 1): 0.25, (1, 2): 0.25}
     assert l.losses_combined == {(0, 1): 0.25, (1, 2): 0.25, (2, 4.0): np.inf}
 
-    # assert l.ask(1) == ([3], [np.inf])
+    # assert l.ask(1) == ([3], [np.inf])  # XXX: This doesn't return np.inf as loss_improvement...
     l.ask(1)
     assert l.losses == {(0, 1): 0.25, (1, 2): 0.25}
     assert l.losses_combined == {(0, 1): 0.25, (1, 2): 0.25, (2, 3.0): np.inf, (3.0, 4.0): np.inf}
@@ -185,7 +185,7 @@ def test_learnerND_as_described_in_issue_99():
     assert l.losses_combined == {(0, 1): 0.25, (1, 2): 0.25, (2, 3): 0.25, (3, 4): 0.25}
 
 
-def test_learnerND_as_described_in_issue_99_comment():
+def test_learner1D_as_described_in_issue_99_comment():
     # https://gitlab.kwant-project.org/qt/adaptive/issues/99
     l = Learner1D(lambda x: x, (0, 4))
 
