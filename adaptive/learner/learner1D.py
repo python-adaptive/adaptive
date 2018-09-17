@@ -219,6 +219,10 @@ class Learner1D(BaseLearner):
 
         real = y is not None
         if real:
+            # either it is a float/int, if not, try casting to a np.array
+            if not isinstance(y, (float, int)):
+                y = np.asarray(y, dtype=float)
+
             # Add point to the real data dict
             self.data[x] = y
             # remove from set of pending points

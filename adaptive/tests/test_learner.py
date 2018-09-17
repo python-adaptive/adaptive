@@ -188,6 +188,19 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
     assert max(distances) < math.sqrt(dx**2 + dy**2)
 
 
+@pytest.mark.parametrize('learner_type, bounds', [
+    (Learner1D, (-1, 1)),
+    (Learner2D, [(-1, 1), (-1, 1)]),
+    (LearnerND, [(-1, 1), (-1, 1), (-1, 1)]),
+])
+def test_learner_accepts_lists(learner_type, bounds):
+    def f(x):
+        return [0, 1]
+
+    learner = learner_type(f, bounds=bounds)
+    simple(learner, goal=lambda l: l.npoints > 10)
+
+
 @run_with(xfail(Learner1D), Learner2D, LearnerND)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
