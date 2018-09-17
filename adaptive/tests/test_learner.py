@@ -188,11 +188,16 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
     assert max(distances) < math.sqrt(dx**2 + dy**2)
 
 
-def test_learner1D_accepts_lists():
+@pytest.mark.parametrize('learner_type, bounds', [
+    (Learner1D, (-1, 1)),
+    (Learner2D, [(-1, 1), (-1, 1)]),
+    (LearnerND, [(-1, 1), (-1, 1), (-1, 1)]),
+])
+def test_learner_accepts_lists(learner_type, bounds):
     def f(x):
         return [0, 1]
 
-    learner = Learner1D(f, bounds=(-1, 1))
+    learner = learner_type(f, bounds=bounds)
     simple(learner, goal=lambda l: l.npoints > 10)
 
 
