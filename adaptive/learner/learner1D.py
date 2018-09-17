@@ -137,13 +137,20 @@ class Learner1D(BaseLearner):
                                               self._scale, self.data)
             self.losses[x_left, x_right] = loss
 
+            # Iterate over all interpolated intervals in between
+            # x_left and x_right and set the newly interpolated loss.
+            a, b = x_left, None
+            while b != x_right:
+                b = self.neighbors_combined[a][1]
+                self.losses_combined[a, b] = (b - a) * loss / dx
+                a = b
+
             start = self.neighbors_combined.bisect_left(x_left)
             end = self.neighbors_combined.bisect_left(x_right)
-            for i in range(start, end):
-                keys = self.neighbors_combined.keys()
-                a, b = (keys[i], keys[i + 1])
-                self.losses_combined[a, b] = (b - a) * loss / dx
             if start == end:
+                # XXX: I don't know what is happening here or how
+                # it happens. Removing this code doesn't break
+                # tests (Bas).
                 self.losses_combined[x_left, x_right] = loss
 
     def update_losses(self, x, real=True):
