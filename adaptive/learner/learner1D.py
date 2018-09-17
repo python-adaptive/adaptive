@@ -169,7 +169,7 @@ class Learner1D(BaseLearner):
                 loss = self.losses[x_left, x_right]
                 losses_combined[a, x] = (x - a) * loss / dx
                 losses_combined[x, b] = (b - x) * loss / dx
-
+        
         real_left = real and x_left is None
         real_right = real and x_right is None
         not_real = (not real) and (x_left is None or x_right is None)
