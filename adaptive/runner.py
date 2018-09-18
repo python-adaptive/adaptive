@@ -78,6 +78,12 @@ class BaseRunner:
         If True, shutdown the executor when the runner has completed. If
         'executor' is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
+    retries : int, default: 0
+        Maximum amount of retries of a certain point 'x' in
+        'learner.function(x)'. After 'retries' is reached for 'x' the
+        point is present in 'runner.failed'.
+    raise_if_retries_exceeded : bool, default: True
+        Raise the error after a point 'x' failed 'retries'.
 
     Attributes
     ----------
@@ -86,6 +92,10 @@ class BaseRunner:
     log : list or None
         Record of the method calls made to the learner, in the format
         '(method_name, *args)'.
+    to_retry : dict
+        Mapping of {point: n_fails, ...}. When a point has failed
+        'runner.retries' times it is removed but will be present
+        in 'runner.tracebacks'.
     tracebacks : dict
         A mapping of point to the traceback if that point failed.
     pending_points : dict
@@ -97,11 +107,17 @@ class BaseRunner:
         The overhead in percent of using Adaptive. This includes the
         overhead of the executor. Essentially, this is
         100 * (1 - total_elapsed_function_time / self.elapsed_time()).
+
+    Properties
+    ----------
+    failed : set
+        Set of points that failed 'retries' times.
     """
 
     def __init__(self, learner, goal, *,
                  executor=None, ntasks=None, log=False,
-                 shutdown_executor=False):
+                 shutdown_executor=False, retries=0,
+                 raise_if_retries_exceeded=True):
 
         self.executor = _ensure_executor(executor)
         self.goal = goal
@@ -124,7 +140,10 @@ class BaseRunner:
         self._elapsed_function_time = 0
 
         # Error handling attributes
-        self.tracebacks = None
+        self.retries = retries
+        self.raise_if_retries_exceeded = raise_if_retries_exceeded
+        self.to_retry = {}
+        self.tracebacks = {}
 
     def max_tasks(self):
         return self._max_tasks or _get_ncores(self.executor)
@@ -140,6 +159,16 @@ class BaseRunner:
     @property
     def do_log(self):
         return self.log is not None
+
+    def _ask(self, n):
+        points = [p for p in self.to_retry.keys()
+                  if p not in self.pending_points.values()][:n]
+        loss_improvements = len(points) * [float('inf')]
+        if len(points) < n:
+            p, l = self.learner.ask(n - len(points))
+            points += p
+            loss_improvements += l
+        return points, loss_improvements
 
     def overhead(self):
         """Overhead of using Adaptive and the executor in percent.
@@ -165,13 +194,20 @@ class BaseRunner:
             x = self.pending_points.pop(fut)
             try:
                 y, t = fut.result()
-                self._elapsed_function_time += t / _get_ncores(self.executor)
             except Exception as e:
                 self.tracebacks[x] = traceback.format_exc()
-                self._do_raise(e, x)
-            if self.do_log:
-                self.log.append(('tell', x, y))
-            self.learner.tell(x, y)
+                self.to_retry[x] = self.to_retry.get(x, 0) + 1
+                if self.to_retry[x] > self.retries:
+                    self.to_retry.pop(x)
+                    if self.raise_if_retries_exceeded:
+                        self._do_raise(e, x)
+            else:
+                self._elapsed_function_time += t / _get_ncores(self.executor)
+                self.to_retry.pop(x, None)
+                self.tracebacks.pop(x, None)
+                if self.do_log:
+                    self.log.append(('tell', x, y))
+                self.learner.tell(x, y)
 
     def _get_futures(self):
         # Launch tasks to replace the ones that completed
@@ -182,7 +218,7 @@ class BaseRunner:
         if self.do_log:
             self.log.append(('ask', n_new_tasks))
 
-        points, _ = self.learner.ask(n_new_tasks)
+        points, _ = self._ask(n_new_tasks)
 
         for x in points:
             self.pending_points[self._submit(x)] = x
@@ -204,6 +240,12 @@ class BaseRunner:
         if self.shutdown_executor:
             self.executor.shutdown(wait=False)
         self.end_time = time.time()
+
+    @property
+    def failed(self):
+        """Set of points that failed 'self.retries' times."""
+        return set(self.tracebacks) - set(self.to_retry)
+    
 
 class BlockingRunner(BaseRunner):
     """Run a learner synchronously in an executor.
@@ -230,6 +272,12 @@ class BlockingRunner(BaseRunner):
         If True, shutdown the executor when the runner has completed. If
         'executor' is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
+    retries : int, default: 0
+        Maximum amount of retries of a certain point 'x' in
+        'learner.function(x)'. After 'retries' is reached for 'x' the
+        point is present in 'runner.failed'.
+    raise_if_retries_exceeded : bool, default: True
+        Raise the error after a point 'x' failed 'retries'.
 
     Attributes
     ----------
@@ -238,6 +286,10 @@ class BlockingRunner(BaseRunner):
     log : list or None
         Record of the method calls made to the learner, in the format
         '(method_name, *args)'.
+    to_retry : dict
+        Mapping of {point: n_fails, ...}. When a point has failed
+        'runner.retries' times it is removed but will be present
+        in 'runner.tracebacks'.
     tracebacks : dict
         A mapping of point to the traceback if that point failed.
     pending_points : dict
@@ -252,16 +304,24 @@ class BlockingRunner(BaseRunner):
         The overhead in percent of using Adaptive. This includes the
         overhead of the executor. Essentially, this is
         100 * (1 - total_elapsed_function_time / self.elapsed_time()).
+
+    Properties
+    ----------
+    failed : set
+        Set of points that failed 'retries' times.
     """
 
     def __init__(self, learner, goal, *,
                  executor=None, ntasks=None, log=False,
-                 shutdown_executor=False):
+                 shutdown_executor=False, retries=0,
+                 raise_if_retries_exceeded=True):
         if inspect.iscoroutinefunction(learner.function):
             raise ValueError("Coroutine functions can only be used "
                              "with 'AsyncRunner'.")
         super().__init__(learner, goal, executor=executor, ntasks=ntasks,
-                         log=log, shutdown_executor=shutdown_executor)
+                         log=log, shutdown_executor=shutdown_executor,
+                         retries=retries,
+                         raise_if_retries_exceeded=raise_if_retries_exceeded)
         self._run()
 
     def _submit(self, x):
@@ -322,6 +382,12 @@ class AsyncRunner(BaseRunner):
     ioloop : asyncio.AbstractEventLoop, optional
         The ioloop in which to run the learning algorithm. If not provided,
         the default event loop is used.
+    retries : int, default: 0
+        Maximum amount of retries of a certain point 'x' in
+        'learner.function(x)'. After 'retries' is reached for 'x' the
+        point is present in 'runner.failed'.
+    raise_if_retries_exceeded : bool, default: True
+        Raise the error after a point 'x' failed 'retries'.
 
     Attributes
     ----------
@@ -332,6 +398,10 @@ class AsyncRunner(BaseRunner):
     log : list or None
         Record of the method calls made to the learner, in the format
         '(method_name, *args)'.
+    to_retry : dict
+        Mapping of {point: n_fails, ...}. When a point has failed
+        'runner.retries' times it is removed but will be present
+        in 'runner.tracebacks'.
     tracebacks : dict
         A mapping of point to the traceback if that point failed.
     pending_points : dict
@@ -347,6 +417,11 @@ class AsyncRunner(BaseRunner):
         overhead of the executor. Essentially, this is
         100 * (1 - total_elapsed_function_time / self.elapsed_time()).
 
+    Properties
+    ----------
+    failed : set
+        Set of points that failed 'retries' times.
+
     Notes
     -----
     This runner can be used when an async function (defined with
@@ -356,14 +431,17 @@ class AsyncRunner(BaseRunner):
 
     def __init__(self, learner, goal=None, *,
                  executor=None, ntasks=None, log=False,
-                 shutdown_executor=False, ioloop=None):
+                 shutdown_executor=False, ioloop=None,
+                 retries=0, raise_if_retries_exceeded=True):
 
         if goal is None:
             def goal(_):
                 return False
 
         super().__init__(learner, goal, executor=executor, ntasks=ntasks,
-                         log=log, shutdown_executor=shutdown_executor)
+                         log=log, shutdown_executor=shutdown_executor,
+                         retries=retries,
+                         raise_if_retries_exceeded=raise_if_retries_exceeded)
         self.ioloop = ioloop or asyncio.get_event_loop()
         self.task = None
 
