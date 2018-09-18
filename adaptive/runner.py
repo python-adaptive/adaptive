@@ -63,14 +63,17 @@ class BaseRunner:
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
-    executor : concurrent.futures.Executor, or ipyparallel.Client, optional
+    executor : concurrent.futures.Executor, distributed.Client,
+               or ipyparallel.Client, optional
         The executor in which to evaluate the function to be learned.
-        If not provided, a new ProcessPoolExecutor is used.
+        If not provided, a new `ProcessPoolExecutor` is used on Unix systems
+        while on Windows a `distributed.Client` is used if `distributed` is
+        installed.
     ntasks : int, optional
         The number of concurrent function evaluations. Defaults to the number
         of cores available in 'executor'.
     log : bool, default: False
-        If True, record the method calls made to the learner by this runner
+        If True, record the method calls made to the learner by this runner.
     shutdown_executor : Bool, default: False
         If True, shutdown the executor when the runner has completed. If
         'executor' is not provided then the executor created internally
@@ -79,10 +82,21 @@ class BaseRunner:
     Attributes
     ----------
     learner : Learner
-        The underlying learner. May be queried for its state
+        The underlying learner. May be queried for its state.
     log : list or None
         Record of the method calls made to the learner, in the format
         '(method_name, *args)'.
+    tracebacks : dict
+        A mapping of point to the traceback if that point failed.
+    pending_points : dict
+        A mapping of 'concurrent.Future's to points, {Future: point, ...}.
+
+    Methods
+    -------
+    overhead : callable
+        The overhead in percent of using Adaptive. This includes the
+        overhead of the executor. Essentially, this is
+        100 * (1 - total_elapsed_function_time / self.elapsed_time()).
     """
 
     def __init__(self, learner, goal, *,
@@ -94,17 +108,102 @@ class BaseRunner:
 
         self._max_tasks = ntasks
 
+        self.pending_points = {}
+
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
         self.shutdown_executor = shutdown_executor or (executor is None)
 
         self.learner = learner
         self.log = [] if log else None
-        self.task = None
+
+        # Function timing
+        self.function = functools.partial(timed, self.learner.function)
+        self.start_time = time.time()
+        self.end_time = None
+        self._elapsed_function_time = 0
+
+        # Error handling attributes
+        self.tracebacks = None
 
     def max_tasks(self):
         return self._max_tasks or _get_ncores(self.executor)
 
+    def _do_raise(self, e, x):
+        tb = self.tracebacks[x]
+        raise RuntimeError(
+            'An error occured while evaluating '
+            f'"learner.function({x})". '
+            f'See the traceback for details.:\n\n{tb}'
+        ) from e
+
+    @property
+    def do_log(self):
+        return self.log is not None
+
+    def overhead(self):
+        """Overhead of using Adaptive and the executor in percent.
+
+        This is measured as 100 * (1 - t_function / t_elapsed).
+
+        Notes
+        -----
+        This includes the overhead of the executor that is being used.
+        The slower your function is, the lower the overhead will be. The
+        learners take ~5-50 ms to suggest a point and sending that point to
+        the executor also takes about ~5 ms, so you will benefit from using
+        Adaptive whenever executing the function takes longer than 100 ms.
+        This of course depends on the type of executor and the type of learner
+        but is a rough rule of thumb.
+        """
+        t_function = self._elapsed_function_time
+        t_total = self.elapsed_time()
+        return (1 - t_function / t_total) * 100
+
+    def _process_futures(self, done_futs):
+        for fut in done_futs:
+            x = self.pending_points.pop(fut)
+            try:
+                y, t = fut.result()
+                self._elapsed_function_time += t / _get_ncores(self.executor)
+            except Exception as e:
+                self.tracebacks[x] = traceback.format_exc()
+                self._do_raise(e, x)
+            if self.do_log:
+                self.log.append(('tell', x, y))
+            self.learner.tell(x, y)
+
+    def _get_futures(self):
+        # Launch tasks to replace the ones that completed
+        # on the last iteration, making sure to fill workers
+        # that have started since the last iteration.
+        n_new_tasks = max(0, self.max_tasks() - len(self.pending_points))
+
+        if self.do_log:
+            self.log.append(('ask', n_new_tasks))
+
+        points, _ = self.learner.ask(n_new_tasks)
+
+        for x in points:
+            self.pending_points[self._submit(x)] = x
+
+        # Collect and results and add them to the learner
+        futures = list(self.pending_points.keys())
+        return futures
+
+    def _remove_unfinished(self):
+        # remove points with 'None' values from the learner
+        self.learner.remove_unfinished()
+        # cancel any outstanding tasks
+        remaining = list(self.pending_points.keys())
+        for fut in remaining:
+            fut.cancel()
+        return remaining
+
+    def _cleanup(self):
+        if self.shutdown_executor:
+            self.executor.shutdown(wait=False)
+        self.end_time = time.time()
 
 class BlockingRunner(BaseRunner):
     """Run a learner synchronously in an executor.
@@ -126,7 +225,7 @@ class BlockingRunner(BaseRunner):
         The number of concurrent function evaluations. Defaults to the number
         of cores available in 'executor'.
     log : bool, default: False
-        If True, record the method calls made to the learner by this runner
+        If True, record the method calls made to the learner by this runner.
     shutdown_executor : Bool, default: False
         If True, shutdown the executor when the runner has completed. If
         'executor' is not provided then the executor created internally
@@ -135,10 +234,24 @@ class BlockingRunner(BaseRunner):
     Attributes
     ----------
     learner : Learner
-        The underlying learner. May be queried for its state
+        The underlying learner. May be queried for its state.
     log : list or None
         Record of the method calls made to the learner, in the format
         '(method_name, *args)'.
+    tracebacks : dict
+        A mapping of point to the traceback if that point failed.
+    pending_points : dict
+        A mapping of 'concurrent.Future's to points, {Future: point, ...}.
+
+    Methods
+    -------
+    elapsed_time : callable
+        A method that returns the time elapsed since the runner
+        was started.
+    overhead : callable
+        The overhead in percent of using Adaptive. This includes the
+        overhead of the executor. Essentially, this is
+        100 * (1 - total_elapsed_function_time / self.elapsed_time()).
     """
 
     def __init__(self, learner, goal, *,
@@ -152,61 +265,32 @@ class BlockingRunner(BaseRunner):
         self._run()
 
     def _submit(self, x):
-        return self.executor.submit(self.learner.function, x)
+        return self.executor.submit(self.function, x)
 
     def _run(self):
         first_completed = concurrent.FIRST_COMPLETED
-        xs = dict()
-        do_log = self.log is not None
 
         if self.max_tasks() < 1:
             raise RuntimeError('Executor has no workers')
 
         try:
             while not self.goal(self.learner):
-                # Launch tasks to replace the ones that completed
-                # on the last iteration, making sure to fill workers
-                # that have started since the last iteration.
-                n_new_tasks = max(0, self.max_tasks() - len(xs))
-
-                if do_log:
-                    self.log.append(('ask', n_new_tasks))
-
-                points, _ = self.learner.ask(n_new_tasks)
-
-                for x in points:
-                    xs[self._submit(x)] = x
-
-                # Collect and results and add them to the learner
-                futures = list(xs.keys())
+                futures = self._get_futures()
                 done, _ = concurrent.wait(futures,
                                           return_when=first_completed)
-                for fut in done:
-                    x = xs.pop(fut)
-                    try:
-                        y = fut.result()
-                    except Exception as e:
-                        tb = traceback.format_exc()
-                        raise RuntimeError(
-                            'An error occured while evaluating '
-                            f'"learner.function({x})". '
-                            f'See the traceback for details.:\n\n{tb}'
-                        ) from e
-                    if do_log:
-                        self.log.append(('tell', x, y))
-                    self.learner.tell(x, y)
-
+                self._process_futures(done)
         finally:
-            # remove points with 'None' values from the learner
-            self.learner.remove_unfinished()
-            # cancel any outstanding tasks
-            remaining = list(xs.keys())
+            remaining = self._remove_unfinished()
             if remaining:
-                for fut in remaining:
-                    fut.cancel()
                 concurrent.wait(remaining)
-            if self.shutdown_executor:
-                self.executor.shutdown()
+            self._cleanup()
+
+    def elapsed_time(self):
+        if self.end_time is None:
+            # This shouldn't happen if the BlockingRunner
+            # correctly finished.
+            self.end_time = time.time()
+        return self.end_time - self.start_time
 
 
 class AsyncRunner(BaseRunner):
@@ -230,7 +314,7 @@ class AsyncRunner(BaseRunner):
         The number of concurrent function evaluations. Defaults to the number
         of cores available in 'executor'.
     log : bool, default: False
-        If True, record the method calls made to the learner by this runner
+        If True, record the method calls made to the learner by this runner.
     shutdown_executor : Bool, default: False
         If True, shutdown the executor when the runner has completed. If
         'executor' is not provided then the executor created internally
@@ -248,6 +332,20 @@ class AsyncRunner(BaseRunner):
     log : list or None
         Record of the method calls made to the learner, in the format
         '(method_name, *args)'.
+    tracebacks : dict
+        A mapping of point to the traceback if that point failed.
+    pending_points : dict
+        A mapping of 'concurrent.Future's to points, {Future: point, ...}.
+
+    Methods
+    -------
+    elapsed_time : callable
+        A method that returns the time elapsed since the runner
+        was started.
+    overhead : callable
+        The overhead in percent of using Adaptive. This includes the
+        overhead of the executor. Essentially, this is
+        100 * (1 - total_elapsed_function_time / self.elapsed_time()).
 
     Notes
     -----
@@ -258,7 +356,7 @@ class AsyncRunner(BaseRunner):
 
     def __init__(self, learner, goal=None, *,
                  executor=None, ntasks=None, log=False,
-                 ioloop=None, shutdown_executor=False):
+                 shutdown_executor=False, ioloop=None):
 
         if goal is None:
             def goal(_):
@@ -268,11 +366,6 @@ class AsyncRunner(BaseRunner):
                          log=log, shutdown_executor=shutdown_executor)
         self.ioloop = ioloop or asyncio.get_event_loop()
         self.task = None
-
-        self.start_time = time.time()
-        self.end_time = None
-        self.elapsed_function_time = 0
-        self.function = functools.partial(timed, self.learner.function)
 
         # When the learned function is 'async def', we run it
         # directly on the event loop, and not in the executor.
@@ -295,28 +388,6 @@ class AsyncRunner(BaseRunner):
                           "event loop is not running! If you are "
                           "in a Jupyter notebook, remember to run "
                           "'adaptive.notebook_extension()'")
-
-    def elapsed_time(self):
-        if self.task.done():
-            end_time = self.end_time
-            if end_time is None:
-                # task was cancelled before it began
-                assert self.task.cancelled()
-                return 0
-        else:
-            end_time = time.time()
-        return end_time - self.start_time
-
-    def overhead(self):
-        """Returns the overhead in % of using adaptive and the executor.
-
-        This is measured as `(1 - elapsed_function_time / elapsed_time)`.
-        Note that this overhead includes the overhead of the executor that
-        is used.
-        """
-        t_function = self.elapsed_function_time
-        t_total = self.elapsed_time()
-        return (1 - t_function / t_total) * 100
 
     def status(self):
         """Return the runner status as a string.
@@ -376,59 +447,33 @@ class AsyncRunner(BaseRunner):
 
     async def _run(self):
         first_completed = asyncio.FIRST_COMPLETED
-        xs = dict()  # The points we are waiting for
-        do_log = self.log is not None
 
         if self.max_tasks() < 1:
             raise RuntimeError('Executor has no workers')
 
         try:
             while not self.goal(self.learner):
-                # Launch tasks to replace the ones that completed
-                # on the last iteration, making sure to fill workers
-                # that have started since the last iteration.
-                n_new_tasks = max(0, self.max_tasks() - len(xs))
-
-                if do_log:
-                    self.log.append(('ask', n_new_tasks))
-
-                points, _ = self.learner.ask(n_new_tasks)
-                for x in points:
-                    xs[self._submit(x)] = x
-
-                # Collect and results and add them to the learner
-                futures = list(xs.keys())
+                futures = self._get_futures()
                 done, _ = await asyncio.wait(futures,
                                              return_when=first_completed,
                                              loop=self.ioloop)
-                for fut in done:
-                    x = xs.pop(fut)
-                    try:
-                        y, t = fut.result()
-                        self.elapsed_function_time += t / _get_ncores(self.executor)
-                    except Exception as e:
-                        tb = traceback.format_exc()
-                        raise RuntimeError(
-                            'An error occured while evaluating '
-                            f'"learner.function({x})". '
-                            f'See the traceback for details.:\n\n{tb}'
-                        ) from e
-                    if do_log:
-                        self.log.append(('tell', x, y))
-                    self.learner.tell(x, y)
+                self._process_futures(done)
         finally:
-            # remove points with 'None' values from the learner
-            self.learner.remove_unfinished()
-            # cancel any outstanding tasks
-            remaining = list(xs.keys())
+            remaining = self._remove_unfinished()
             if remaining:
-                for fut in remaining:
-                    fut.cancel()
                 await asyncio.wait(remaining)
-            if self.shutdown_executor:
-                self.executor.shutdown(wait=False)
-            self.end_time = time.time()
+            self._cleanup()
 
+    def elapsed_time(self):
+        if self.task.done():
+            end_time = self.end_time
+            if end_time is None:
+                # task was cancelled before it began
+                assert self.task.cancelled()
+                return 0
+        else:
+            end_time = time.time()
+        return end_time - self.start_time
 
 # Default runner
 Runner = AsyncRunner
