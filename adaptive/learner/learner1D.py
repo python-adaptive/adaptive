@@ -145,14 +145,6 @@ class Learner1D(BaseLearner):
                 self.losses_combined[a, b] = (b - a) * loss / dx
                 a = b
 
-            start = self.neighbors_combined.bisect_left(x_left)
-            end = self.neighbors_combined.bisect_left(x_right)
-            if start == end:
-                # XXX: I don't know what is happening here or how
-                # it happens. Removing this code doesn't break
-                # tests (Bas).
-                self.losses_combined[x_left, x_right] = loss
-
     def update_losses(self, x, real=True):
         # when we add a new point x, we should update the losses
         x_left, x_right = self.find_neighbors(x, self.neighbors)
