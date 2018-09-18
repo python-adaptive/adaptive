@@ -64,21 +64,24 @@ class BalancingLearner(BaseLearner):
 
     def _ask_and_tell(self, n):
         points = []
+        loss_improvements = []
         for _ in range(n):
-            loss_improvements = []
+            improvements_per_learner = []
             pairs = []
             for index, learner in enumerate(self.learners):
                 if index not in self._points:
                     self._points[index] = learner.ask(
                         n=1, add_data=False)
                 point, loss_improvement = self._points[index]
-                loss_improvements.append(loss_improvement[0])
+                improvements_per_learner.append(loss_improvement[0])
                 pairs.append((index, point[0]))
-            x, _ = max(zip(pairs, loss_improvements), key=itemgetter(1))
+            x, l = max(zip(pairs, improvements_per_learner),
+                       key=itemgetter(1))
             points.append(x)
+            loss_improvements.append(l)
             self.tell(x, None)
 
-        return points, None
+        return points, loss_improvements
 
     def ask(self, n, add_data=True):
         """Chose points for learners."""
