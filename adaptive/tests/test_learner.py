@@ -163,6 +163,42 @@ def test_uniform_sampling1D(learner_type, f, learner_kwargs):
     assert max(ivals) / min(ivals) < 2 + 1e-8
 
 
+def test_learner1D_loss_interpolation_for_unasked_point():
+    # https://gitlab.kwant-project.org/qt/adaptive/issues/99
+    l = Learner1D(lambda x: x, (0, 4))
+
+    l.tell(0, 0)
+    l.tell(1, 0)
+    l.tell(2, 0)
+
+    assert l.ask(1) == ([4], [np.inf])
+    assert l.losses == {(0, 1): 0.25, (1, 2): 0.25}
+    assert l.losses_combined == {(0, 1): 0.25, (1, 2): 0.25, (2, 4.0): np.inf}
+
+    # assert l.ask(1) == ([3], [np.inf])  # XXX: This doesn't return np.inf as loss_improvement...
+    l.ask(1)
+    assert l.losses == {(0, 1): 0.25, (1, 2): 0.25}
+    assert l.losses_combined == {(0, 1): 0.25, (1, 2): 0.25, (2, 3.0): np.inf, (3.0, 4.0): np.inf}
+
+    l.tell(4, 0)
+
+    assert l.losses_combined == {(0, 1): 0.25, (1, 2): 0.25, (2, 3): 0.25, (3, 4): 0.25}
+
+
+def test_learner1D_pending_loss_intervals():
+    # https://gitlab.kwant-project.org/qt/adaptive/issues/99
+    l = Learner1D(lambda x: x, (0, 4))
+
+    l.tell(0, 0)
+    l.tell(1, 0)
+    l.tell(2, 0)
+    assert set(l.losses_combined.keys()) == {(0, 1), (1, 2)}
+    l.ask(1)
+    assert set(l.losses_combined.keys()) == {(0, 1), (1, 2), (2, 4)}
+    l.tell(3.5, 0)
+    assert set(l.losses_combined.keys()) == {(0, 1), (1, 2), (2, 3.5), (3.5, 4.0)}
+
+
 @pytest.mark.xfail
 @run_with(Learner2D, LearnerND)
 def test_uniform_sampling2D(learner_type, f, learner_kwargs):
