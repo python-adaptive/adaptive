@@ -146,28 +146,31 @@ class Learner1D(BaseLearner):
                 a = b
 
     def update_losses(self, x, real=True):
-        # when we add a new point x, we should update the losses
+        # When we add a new point x, we should update the losses
+        # (x_left, x_right) are the "real" neighbors of 'x'.
         x_left, x_right = self.find_neighbors(x, self.neighbors)
+        # (a, b) are the neighbors of the combined interpolated
+        # and "real" intervals.
         a, b = self.find_neighbors(x, self.neighbors_combined)
 
-        # if (a, b) exists, then (a, b) is splitted into (a, x) and (x, b) 
-        self.losses_combined.pop((a, b), None)  # so we get rid of (a, b)
-        
+        # (a, b) is splitted into (a, x) and (x, b) so if (a, b) exists
+        self.losses_combined.pop((a, b), None)  # we get rid of (a, b).
+
         if real:
-            # We need to update all interpolated losses in the interval 
-            # (x_left, x) and (x, x_right). Since the addition of the point x 
-            # could change their loss
+            # We need to update all interpolated losses in the interval
+            # (x_left, x) and (x, x_right). Since the addition of the point
+            # 'x' could change their loss.
             self.update_interpolated_loss_in_interval(x_left, x)
             self.update_interpolated_loss_in_interval(x, x_right)
 
-            # since x goes in between (x_left, x_right), 
-            # we get rid of the interval 
+            # Since 'x' is in between (x_left, x_right),
+            # we get rid of the interval.
             self.losses.pop((x_left, x_right), None)
             self.losses_combined.pop((x_left, x_right), None)
         else:
             if x_left is not None and x_right is not None:
-                # x happens to be in between two real points, 
-                # so we can interpolate the losses
+                # 'x' happens to be in between two real points,
+                # so we can interpolate the losses.
                 dx = x_right - x_left
                 loss = self.losses[x_left, x_right]
                 self.losses_combined[a, x] = (x - a) * loss / dx
@@ -184,8 +187,6 @@ class Learner1D(BaseLearner):
                                  (not real and x_left is None))
         if (b is not None) and right_loss_is_unknown:
             self.losses_combined[x, b] = float('inf')
-
-        
 
     def find_neighbors(self, x, neighbors):
         if x in neighbors:
