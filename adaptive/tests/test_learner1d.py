@@ -7,7 +7,7 @@ from ..learner import Learner1D
 from ..runner import simple, replay_log
 
 
-def test_learner1D_pending_loss_intervals():
+def test_pending_loss_intervals():
     # https://gitlab.kwant-project.org/qt/adaptive/issues/99
     l = Learner1D(lambda x: x, (0, 4))
 
@@ -22,7 +22,7 @@ def test_learner1D_pending_loss_intervals():
         (0, 1), (1, 2), (2, 3.5), (3.5, 4.0)}
 
 
-def test_learner1D_loss_interpolation_for_unasked_point():
+def test_loss_interpolation_for_unasked_point():
     # https://gitlab.kwant-project.org/qt/adaptive/issues/99
     l = Learner1D(lambda x: x, (0, 4))
 
@@ -46,7 +46,7 @@ def test_learner1D_loss_interpolation_for_unasked_point():
         (0, 1): 0.25, (1, 2): 0.25, (2, 3): 0.25, (3, 4): 0.25}
 
 
-def test_learner1d_first_iteration():
+def test_first_iteration():
     """Edge cases where we ask for a few points at the start."""
     learner = Learner1D(lambda x: None, (-1, 1))
     points, loss_improvements = learner.ask(2)
@@ -80,7 +80,7 @@ def test_learner1d_first_iteration():
     assert points == [1]
 
 
-def test_learner1d_loss_interpolation():
+def test_loss_interpolation():
     learner = Learner1D(lambda _: 0, bounds=(-1, 1))
 
     learner.tell(-1, 0)
