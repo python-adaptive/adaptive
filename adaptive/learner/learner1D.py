@@ -55,6 +55,18 @@ def default_loss(interval, scale, function_values):
     return loss
 
 
+def linspace(x_left, x_right, n):
+    """This is equivalent to
+    'np.linspace(x_left, x_right, n, endpoint=False)[1:]',
+    but it is 15-30 times faster for small 'n'."""
+    if n == 1:
+        # This is just an optimization
+        return []
+    else:
+        step = (x_right - x_left) / n
+        return [x_left + step * i for i in range(1, n)]
+
+
 class Learner1D(BaseLearner):
     """Learns and predicts a function 'f:ℝ → ℝ^N'.
 
@@ -167,14 +179,13 @@ class Learner1D(BaseLearner):
             # we get rid of the interval.
             self.losses.pop((x_left, x_right), None)
             self.losses_combined.pop((x_left, x_right), None)
-        else:
-            if x_left is not None and x_right is not None:
-                # 'x' happens to be in between two real points,
-                # so we can interpolate the losses.
-                dx = x_right - x_left
-                loss = self.losses[x_left, x_right]
-                self.losses_combined[a, x] = (x - a) * loss / dx
-                self.losses_combined[x, b] = (b - x) * loss / dx
+        elif x_left is not None and x_right is not None:
+            # 'x' happens to be in between two real points,
+            # so we can interpolate the losses.
+            dx = x_right - x_left
+            loss = self.losses[x_left, x_right]
+            self.losses_combined[a, x] = (x - a) * loss / dx
+            self.losses_combined[x, b] = (b - x) * loss / dx
 
         # (no real point left of x) or (no real point right of a)
         left_loss_is_unknown = ((x_left is None) or
@@ -279,13 +290,25 @@ class Learner1D(BaseLearner):
 
     def ask(self, n, tell_pending=True):
         """Return n points that are expected to maximally reduce the loss."""
+        points, loss_improvements = self._ask_points_without_adding(n)
+
+        if tell_pending:
+            for p in points:
+                self.tell_pending(p)
+
+        return points, loss_improvements
+
+    def _ask_points_without_adding(self, n):
+        """Return n points that are expected to maximally reduce the loss.
+        Without altering the state of the learner"""
         # Find out how to divide the n points over the intervals
         # by finding  positive integer n_i that minimize max(L_i / n_i) subject
         # to a constraint that sum(n_i) = n + N, with N the total number of
         # intervals.
-
         # Return equally spaced points within each interval to which points
         # will be added.
+
+        # XXX: when is this used and could we safely remove it without impacting performance?
         if n == 0:
             return [], []
 
@@ -293,44 +316,59 @@ class Learner1D(BaseLearner):
         missing_bounds = [b for b in self.bounds if b not in self.data
                           and b not in self.pending_points]
 
-        if missing_bounds:
-            loss_improvements = [np.inf] * n
-            # XXX: should check if points are present in self.data or self.pending_points
-            points = np.linspace(*self.bounds, n + 2 - len(missing_bounds)).tolist()
-            if len(missing_bounds) == 1:
-                points = points[1:] if missing_bounds[0] == self.bounds[1] else points[:-1]
-        else:
-            def xs(x_left, x_right, n):
-                if n == 1:
-                    # This is just an optimization
-                    return []
-                else:
-                    step = (x_right - x_left) / n
-                    return [x_left + step * i for i in range(1, n)]
+        if len(missing_bounds) >= n:
+            return missing_bounds[:n], [np.inf] * n
 
-            # Calculate how many points belong to each interval.
-            x_scale = self._scale[0]
-            quals = [((-loss if not math.isinf(loss) else -(x[1] - x[0]) / x_scale, x, 1))
-                     for x, loss in self.losses_combined.items()]
-            heapq.heapify(quals)
+        def finite_loss(loss, xs):
+            # If the loss is infinite we return the
+            # distance between the two points.
+            return (loss if not math.isinf(loss)
+                else (xs[1] - xs[0]) / self._scale[0])
 
-            for point_number in range(n):
-                quality, x, n = quals[0]
-                if abs(x[1] - x[0]) / (n + 1) <= self._dx_eps:
-                    # The interval is too small and should not be subdivided
-                    quality = np.inf
-                heapq.heapreplace(quals, (quality * n / (n + 1), x, n + 1))
+        quals = [(-finite_loss(loss, x), x, 1)
+                 for x, loss in self.losses_combined.items()]
 
-            points = list(itertools.chain.from_iterable(
-                xs(*x, n) for quality, x, n in quals))
+        # Add bound intervals to quals if bounds were missing.
+        if len(self.data) + len(self.pending_points) == 0:
+            # We don't have any points, so return a linspace with 'n' points.
+            return np.linspace(*self.bounds, n).tolist(), [np.inf] * n
+        elif len(missing_bounds) > 0:
+            # There is at least one point in between the bounds.
+            all_points = list(self.data.keys()) + list(self.pending_points)
+            intervals = [(self.bounds[0], min(all_points)),
+                         (max(all_points), self.bounds[1])]
+            for interval, bound in zip(intervals, self.bounds):
+                if bound in missing_bounds:
+                    qual = (-finite_loss(np.inf, interval), interval, 1)
+                    quals.append(qual)
 
-            loss_improvements = list(itertools.chain.from_iterable(
-                                     itertools.repeat(-quality, n - 1)
-                                     for quality, x, n in quals))
+        # Calculate how many points belong to each interval.
+        points, loss_improvements = self._subdivide_quals(
+            quals, n - len(missing_bounds))
 
-        if tell_pending:
-            for p in points:
-                self.tell_pending(p)
+        points = missing_bounds + points
+        loss_improvements = [np.inf] * len(missing_bounds) + loss_improvements
+
+        return points, loss_improvements
+
+    def _subdivide_quals(self, quals, n):
+        # Calculate how many points belong to each interval.
+        heapq.heapify(quals)
+
+        for _ in range(n):
+            quality, x, n = quals[0]
+            if abs(x[1] - x[0]) / (n + 1) <= self._dx_eps:
+                # The interval is too small and should not be subdivided.
+                quality = np.inf
+                # XXX: see https://gitlab.kwant-project.org/qt/adaptive/issues/104
+            heapq.heapreplace(quals, (quality * n / (n + 1), x, n + 1))
+
+        points = list(itertools.chain.from_iterable(
+            linspace(*interval, n) for quality, interval, n in quals))
+
+        loss_improvements = list(itertools.chain.from_iterable(
+            itertools.repeat(-quality, n - 1)
+            for quality, interval, n in quals))
 
         return points, loss_improvements
 
