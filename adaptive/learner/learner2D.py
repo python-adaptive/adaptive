@@ -166,6 +166,9 @@ class Learner2D(BaseLearner):
     ----------
     data : dict
         Sampled points and values.
+    pending_points : set
+        Points that still have to be evaluated and are currently
+        interpolated, see `data_combined`.
     stack_size : int, default 10
         The size of the new candidate points stack. Set it to 1
         to recalculate the best points at each call to `ask`.
@@ -180,7 +183,7 @@ class Learner2D(BaseLearner):
     -------
     data_combined : dict
         Sampled points and values so far including
-        the unknown interpolated ones.
+        the unknown interpolated points in `pending_points`.
 
     Notes
     -----
@@ -217,7 +220,7 @@ class Learner2D(BaseLearner):
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
         self.data = OrderedDict()
         self._stack = OrderedDict()
-        self._interp = set()
+        self.pending_points = set()
 
         self.xy_mean = np.mean(self.bounds, axis=1)
         self._xy_scale = np.ptp(self.bounds, axis=1)
@@ -263,14 +266,14 @@ class Learner2D(BaseLearner):
 
     @property
     def bounds_are_done(self):
-        return not any((p in self._interp or p in self._stack)
+        return not any((p in self.pending_points or p in self._stack)
                        for p in self._bounds_points)
 
     def data_combined(self):
         # Interpolate the unfinished points
         data_combined = copy(self.data)
-        if self._interp:
-            points_interp = list(self._interp)
+        if self.pending_points:
+            points_interp = list(self.pending_points)
             if self.bounds_are_done:
                 values_interp = self.ip()(self._scale(points_interp))
             else:
@@ -303,17 +306,17 @@ class Learner2D(BaseLearner):
         point = tuple(point)
 
         if value is None:
-            self._interp.add(point)
+            self.pending_points.add(point)
             self._ip_combined = None
         else:
             self.data[point] = value
-            self._interp.discard(point)
+            self.pending_points.discard(point)
             self._ip = None
 
         self._stack.pop(point, None)
 
     def _fill_stack(self, stack_till=1):
-        if len(self.data) + len(self._interp) < self.ndim + 1:
+        if len(self.data) + len(self.pending_points) < self.ndim + 1:
             raise ValueError("too few points...")
 
         # Interpolate
@@ -366,7 +369,7 @@ class Learner2D(BaseLearner):
             self._stack = OrderedDict(zip(points[:self.stack_size],
                                           loss_improvements))
             for point in points[:n]:
-                self._interp.discard(point)
+                self.pending_points.discard(point)
 
         return points[:n], loss_improvements[:n]
 
@@ -379,7 +382,7 @@ class Learner2D(BaseLearner):
         return self._loss
 
     def remove_unfinished(self):
-        self._interp = set()
+        self.pending_points = set()
         for p in self._bounds_points:
             if p not in self.data:
                 self._stack[p] = np.inf
