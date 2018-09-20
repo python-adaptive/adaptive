@@ -71,7 +71,7 @@ class BalancingLearner(BaseLearner):
             for index, learner in enumerate(self.learners):
                 if index not in self._points:
                     self._points[index] = learner.ask(
-                        n=1, add_data=False)
+                        n=1, tell_pending=False)
                 point, loss_improvement = self._points[index]
                 improvements_per_learner.append(loss_improvement[0])
                 pairs.append((index, point[0]))
@@ -79,13 +79,13 @@ class BalancingLearner(BaseLearner):
                        key=itemgetter(1))
             points.append(x)
             loss_improvements.append(l)
-            self.tell(x, None)
+            self.tell_pending(x)
 
         return points, loss_improvements
 
-    def ask(self, n, add_data=True):
+    def ask(self, n, tell_pending=True):
         """Chose points for learners."""
-        if not add_data:
+        if not tell_pending:
             with restore(*self.learners):
                 return self._ask_and_tell(n)
         else:
@@ -96,6 +96,12 @@ class BalancingLearner(BaseLearner):
         self._points.pop(index, None)
         self._loss.pop(index, None)
         self.learners[index].tell(x, y)
+
+    def tell_pending(self, x):
+        index, x = x
+        self._points.pop(index, None)
+        self._loss.pop(index, None)
+        self.learners[index].tell_pending(x)
 
     def loss(self, real=True):
         losses = []
