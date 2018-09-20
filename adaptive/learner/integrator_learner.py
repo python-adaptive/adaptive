@@ -393,6 +393,9 @@ class IntegratorLearner(BaseLearner):
                         assert ival in self.ivals
                         self.priority_split.append(ival)
 
+    def tell_pending(self):
+        pass
+
     def propagate_removed(self, ival):
         def _propagate_removed_down(ival):
             ival.removed = True
@@ -414,8 +417,8 @@ class IntegratorLearner(BaseLearner):
                 self._stack.append(x)
         self.ivals.add(ival)
 
-    def ask(self, n, add_data=True):
-        if not add_data:
+    def ask(self, n, tell_pending=True):
+        if not tell_pending:
             raise NotImplementedError(
                 "Asking points irreversibly changes the learner's data structure.")
         points, loss_improvements = self.pop_from_stack(n)
