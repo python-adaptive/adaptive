@@ -50,7 +50,7 @@ class AverageLearner(BaseLearner):
     def n_requested(self):
         return len(self.data) + len(self.pending_points)
 
-    def ask(self, n, add_data=True):
+    def ask(self, n, tell_pending=True):
         points = list(range(self.n_requested, self.n_requested + n))
 
         if any(p in self.data or p in self.pending_points for p in points):
@@ -60,8 +60,9 @@ class AverageLearner(BaseLearner):
                           - set(self.pending_points))[:n]
 
         loss_improvements = [self.loss_improvement(n) / n] * n
-        if add_data:
-            self.tell_many(points, itertools.repeat(None))
+        if tell_pending:
+            for p in points:
+                self.tell_pending(p)
         return points, loss_improvements
 
     def tell(self, n, value):
@@ -69,14 +70,14 @@ class AverageLearner(BaseLearner):
             # The point has already been added before.
             return
 
-        if value is None:
-            self.pending_points.add(n)
-        else:
-            self.data[n] = value
-            self.pending_points.discard(n)
-            self.sum_f += value
-            self.sum_f_sq += value**2
-            self.npoints += 1
+        self.data[n] = value
+        self.pending_points.discard(n)
+        self.sum_f += value
+        self.sum_f_sq += value**2
+        self.npoints += 1
+
+    def tell_pending(self, n):
+        self.pending_points.add(n)
 
     @property
     def mean(self):
