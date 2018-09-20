@@ -15,6 +15,7 @@ from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
                                 ndiv_max, min_sep, eps, xi, V_inv,
                                 Vcond, alpha, gamma)
 from ..notebook_integration import ensure_holoviews
+from ..utils import restore
 
 
 def _downdate(c, nans, depth):
@@ -417,10 +418,16 @@ class IntegratorLearner(BaseLearner):
                 self._stack.append(x)
         self.ivals.add(ival)
 
+
     def ask(self, n, tell_pending=True):
+        """Choose points for learners."""
         if not tell_pending:
-            raise NotImplementedError(
-                "Asking points irreversibly changes the learner's data structure.")
+            with restore(self):
+                return self._ask_and_tell_pending(n)
+        else:
+            return self._ask_and_tell_pending(n)
+
+    def _ask_and_tell_pending(self, n):
         points, loss_improvements = self.pop_from_stack(n)
         n_left = n - len(points)
         while n_left > 0:
