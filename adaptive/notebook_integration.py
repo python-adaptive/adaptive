@@ -3,6 +3,7 @@ import importlib
 import asyncio
 from contextlib import suppress
 import datetime
+import random
 import warnings
 
 
@@ -150,6 +151,24 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     return dm
 
 
+def should_update(status):
+    try:
+        # Get the length of the write buffer size
+        buffer_size = len(status.comm.kernel.iopub_thread._events)
+
+        # Make sure to only keep all the messages when the notebook
+        # is viewed, this means 'buffer_size == 1'. However, when not
+        # viewing the notebook the buffer fills up. When this happens
+        # we decide to only add messages to it when a certain probability.
+        # i.e. we're offline for 12h, with an update_interval of 0.5s,
+        # and without the reduced probability, we have buffer_size=86400.
+        # With the correction this is np.log(86400) / np.log(1.1) = 119.2
+        return 1.1**buffer_size * random.random() < 1
+    except Exception:
+        # We catch any Exception because we are using a private API.
+        return True
+
+
 def live_info(runner, *, update_interval=0.5):
     """Display live information about the runner.
 
@@ -172,7 +191,12 @@ def live_info(runner, *, update_interval=0.5):
     async def update():
         while not runner.task.done():
             await asyncio.sleep(update_interval)
-            status.value = _info_html(runner)
+
+            if should_update(status):
+                status.value = _info_html(runner)
+            else:
+                await asyncio.sleep(0.05)
+
         status.value = _info_html(runner)
         cancel.layout.display = 'none'
 
