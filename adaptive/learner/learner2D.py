@@ -304,15 +304,15 @@ class Learner2D(BaseLearner):
 
     def tell(self, point, value):
         point = tuple(point)
+        self.data[point] = value
+        self.pending_points.discard(point)
+        self._ip = None
+        self._stack.pop(point, None)
 
-        if value is None:
-            self.pending_points.add(point)
-            self._ip_combined = None
-        else:
-            self.data[point] = value
-            self.pending_points.discard(point)
-            self._ip = None
-
+    def tell_pending(self, point):
+        point = tuple(point)
+        self.pending_points.add(point)
+        self._ip_combined = None
         self._stack.pop(point, None)
 
     def _fill_stack(self, stack_till=1):
@@ -345,13 +345,14 @@ class Learner2D(BaseLearner):
 
         return points_new, losses_new
 
-    def ask(self, n, add_data=True):
-        # Even if add_data is False we add the point such that _fill_stack
+    def ask(self, n, tell_pending=True):
+        # Even if tell_pending is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
         points = list(self._stack.keys())
         loss_improvements = list(self._stack.values())
         n_left = n - len(points)
-        self.tell_many(points[:n], itertools.repeat(None))
+        for p in points[:n]:
+            self.tell_pending(p)
 
         while n_left > 0:
             # The while loop is needed because `stack_till` could be larger
@@ -359,13 +360,14 @@ class Learner2D(BaseLearner):
             # it could fill up till a length smaller than `stack_till`.
             new_points, new_loss_improvements = self._fill_stack(
                 stack_till=max(n_left, self.stack_size))
-            self.tell_many(new_points[:n_left], itertools.repeat(None))
+            for p in points[:n_left]:
+                self.tell_pending(p)
             n_left -= len(new_points)
 
             points += new_points
             loss_improvements += new_loss_improvements
 
-        if not add_data:
+        if not tell_pending:
             self._stack = OrderedDict(zip(points[:self.stack_size],
                                           loss_improvements))
             for point in points[:n]:
