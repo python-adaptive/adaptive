@@ -253,6 +253,9 @@ class Learner1D(BaseLearner):
             except TypeError:
                 self._vdim = 1
 
+        if not self.bounds[0] <= x <= self.bounds[1]:
+            return
+
         self.update_neighbors(x, self.neighbors_combined)
         self.update_neighbors(x, self.neighbors)
         self.update_scale(x, y)
