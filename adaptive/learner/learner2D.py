@@ -269,48 +269,74 @@ class Learner2D(BaseLearner):
         return not any((p in self.pending_points or p in self._stack)
                        for p in self._bounds_points)
 
-    def data_combined(self):
-        # Interpolate the unfinished points
-        data_combined = copy(self.data)
+    def _data_in_bounds(self):
+        if self.data:
+            points = np.array(list(self.data.keys()))
+            values = np.array(list(self.data.values()), dtype=float)
+            ll, ur = np.reshape(self.bounds, (2, 2)).T
+            inds = np.all(np.logical_and(ll <= points, points <= ur), axis=1)
+            return points[inds], values[inds].reshape(-1, self.vdim)
+        return np.zeros((0, 2)), np.zeros((0, self.vdim), dtype=float)
+
+    def _data_interp(self):
         if self.pending_points:
-            points_interp = list(self.pending_points)
+            points = list(self.pending_points)
             if self.bounds_are_done:
-                values_interp = self.ip()(self._scale(points_interp))
+                values = self.ip()(self._scale(points))
             else:
                 # Without the bounds the interpolation cannot be done properly,
                 # so we just set everything to zero.
-                values_interp = np.zeros((len(points_interp), self.vdim))
+                values = np.zeros((len(points), self.vdim))
+            return points, values
+        return np.zeros((0, 2)), np.zeros((0, self.vdim), dtype=float)
 
-            for point, value in zip(points_interp, values_interp):
-                data_combined[point] = value
+    def _data_combined(self):
+        points, values = self._data_in_bounds()
+        if not self.pending_points:
+            return points, values
+        points_interp, values_interp = self._data_interp()
+        points_combined = np.vstack([points, points_interp])
+        values_combined = np.vstack([values, values_interp])
+        return points_combined, values_combined
 
-        return data_combined
+    def data_combined(self):
+        # Interpolate the unfinished points
+        points, values = self._data_combined()
+        return {tuple(k): v for k, v in zip(points, values)}
 
     def ip(self):
         if self._ip is None:
-            points = self._scale(list(self.data.keys()))
-            values = np.array(list(self.data.values()), dtype=float)
+            points, values = self._data_in_bounds()
+            points = self._scale(points)
             self._ip = interpolate.LinearNDInterpolator(points, values)
         return self._ip
 
     def ip_combined(self):
         if self._ip_combined is None:
-            data_combined = self.data_combined()
-            points = self._scale(list(data_combined.keys()))
-            values = np.array(list(data_combined.values()), dtype=float)
+            points, values = self._data_combined()
+            points = self._scale(points)
             self._ip_combined = interpolate.LinearNDInterpolator(points,
                                                                  values)
         return self._ip_combined
 
+    def inside_bounds(self, xy):
+        x, y = xy
+        (xmin, xmax), (ymin, ymax) = self.bounds
+        return xmin <= x <= xmax and ymin <= y <= ymax
+
     def tell(self, point, value):
         point = tuple(point)
         self.data[point] = value
+        if not self.inside_bounds(point):
+            return
         self.pending_points.discard(point)
         self._ip = None
         self._stack.pop(point, None)
 
     def tell_pending(self, point):
         point = tuple(point)
+        if not self.inside_bounds(point):
+            return
         self.pending_points.add(point)
         self._ip_combined = None
         self._stack.pop(point, None)
