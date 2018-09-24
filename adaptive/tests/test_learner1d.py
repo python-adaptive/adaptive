@@ -196,3 +196,42 @@ def test_small_deviations():
             # If this condition is met, the learner can't return any
             # more points.
             break
+
+
+def test_uniform_sampling1D_v2():
+    def check(known, expect):
+        def f(x): return x
+        learner = Learner1D(f, bounds=(-1, 1))
+        for x in known:
+            learner.tell(x, f(x))
+        pts, _ = learner.ask(len(expect))
+        assert set(pts) == expect
+
+    check([-1, 0, 1], {-0.5, 0.5})
+    check([-1, -0.5, 1], {0, 0.5})
+    check([-1, 0.5, 1], {-0.5, 0})
+    check([-1, 0], {1})
+    # although the following test might be unexpected, this is indeed correct
+    # given the default loss function
+    check([-1, 0], {-.5, 1})
+    check([-1, -.5], {-.75, 1})
+    check([-1, -.5], {-.75, .25, 1})
+
+
+def test_add_data_unordered():
+    # see https://gitlab.kwant-project.org/qt/adaptive/issues/95
+    learner = Learner1D(lambda x: x, bounds=(-1, 1))
+    xs = [-1, 1, 0]
+
+    ys = [learner.function(x) for x in xs]
+    for x, y in zip(xs, ys):
+        learner.tell(x, y)
+
+    learner.ask(3)
+
+
+def test_ask_does_not_return_known_points_when_returning_bounds():
+    learner = Learner1D(lambda x: None, (-1, 1))
+    learner.tell(0, 0)
+    points, _ = learner.ask(3)
+    assert 0 not in points
