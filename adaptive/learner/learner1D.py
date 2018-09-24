@@ -140,7 +140,17 @@ class Learner1D(BaseLearner):
 
     @property
     def vdim(self):
-        return 1 if self._vdim is None else self._vdim
+        if self._vdim is None:
+            if self.data:
+                y = next(iter(self.data.values()))
+                try:
+                    self._vdim = len(np.squeeze(y))
+                except TypeError:
+                    # Means we are taking the length of a float
+                    self._vdim = 1
+            else:
+                return 1
+        return self._vdim
 
     @property
     def npoints(self):
@@ -268,12 +278,6 @@ class Learner1D(BaseLearner):
 
         # remove from set of pending points
         self.pending_points.discard(x)
-
-        if self._vdim is None:
-            try:
-                self._vdim = len(np.squeeze(y))
-            except TypeError:
-                self._vdim = 1
 
         if not self.bounds[0] <= x <= self.bounds[1]:
             return
