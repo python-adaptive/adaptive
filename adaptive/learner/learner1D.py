@@ -459,8 +459,7 @@ class Learner1D(BaseLearner):
         elif not self.vdim > 1:
             p = hv.Scatter(self.data) * hv.Path([])
         else:
-            xs = list(self.data.keys())
-            ys = list(self.data.values())
+            xs, ys = zip(*sorted(self.data.items()))
             p = hv.Path((xs, ys)) * hv.Scatter([])
 
         # Plot with 5% empty margins such that the boundary points are visible
