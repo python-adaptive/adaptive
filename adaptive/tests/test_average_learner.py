@@ -10,7 +10,7 @@ def test_only_returns_new_points():
     for i in range(5, 10):
         learner.tell(i, 1)
 
-    learner.tell(0, None)  # This means it shouldn't return 0 anymore
+    learner.tell_pending(0)  # This means it shouldn't return 0 anymore
 
     assert learner.ask(1)[0][0] == 1
     assert learner.ask(1)[0][0] == 2

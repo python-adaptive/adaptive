@@ -188,7 +188,8 @@ class Learner1D(BaseLearner):
         if (b is not None) and right_loss_is_unknown:
             self.losses_combined[x, b] = float('inf')
 
-    def find_neighbors(self, x, neighbors):
+    @staticmethod
+    def find_neighbors(x, neighbors):
         if x in neighbors:
             return neighbors[x]
         pos = neighbors.bisect_left(x)
@@ -212,7 +213,7 @@ class Learner1D(BaseLearner):
 
         When the function returns a vector the learners y-scale is set by
         the level with the the largest peak-to-peak value.
-         """
+        """
         self._bbox[0][0] = min(self._bbox[0][0], x)
         self._bbox[0][1] = max(self._bbox[0][1], x)
         self._scale[0] = self._bbox[0][1] - self._bbox[0][0]
@@ -236,36 +237,29 @@ class Learner1D(BaseLearner):
             # The point is already evaluated before
             return
 
-        real = y is not None
-        if real:
-            # either it is a float/int, if not, try casting to a np.array
-            if not isinstance(y, (float, int)):
-                y = np.asarray(y, dtype=float)
+        # either it is a float/int, if not, try casting to a np.array
+        if not isinstance(y, (float, int)):
+            y = np.asarray(y, dtype=float)
 
-            # Add point to the real data dict
-            self.data[x] = y
-            # remove from set of pending points
-            self.pending_points.discard(x)
+        # Add point to the real data dict
+        self.data[x] = y
 
-            if self._vdim is None:
-                try:
-                    self._vdim = len(np.squeeze(y))
-                except TypeError:
-                    self._vdim = 1
-        else:
-            # The keys of pending_points are the unknown points
-            self.pending_points.add(x)
+        # remove from set of pending points
+        self.pending_points.discard(x)
 
-        # Update the neighbors
+        if self._vdim is None:
+            try:
+                self._vdim = len(np.squeeze(y))
+            except TypeError:
+                self._vdim = 1
+
+        if not self.bounds[0] <= x <= self.bounds[1]:
+            return
+
         self.update_neighbors(x, self.neighbors_combined)
-        if real:
-            self.update_neighbors(x, self.neighbors)
-
-        # Update the scale
+        self.update_neighbors(x, self.neighbors)
         self.update_scale(x, y)
-
-        # Update the losses
-        self.update_losses(x, real)
+        self.update_losses(x, real=True)
 
         # If the scale has increased enough, recompute all losses.
         if self._scale[1] > self._oldscale[1] * 2:
@@ -275,7 +269,15 @@ class Learner1D(BaseLearner):
 
             self._oldscale = deepcopy(self._scale)
 
-    def ask(self, n, add_data=True):
+    def tell_pending(self, x):
+        if x in self.data:
+            # The point is already evaluated before
+            return
+        self.pending_points.add(x)
+        self.update_neighbors(x, self.neighbors_combined)
+        self.update_losses(x, real=False)
+
+    def ask(self, n, tell_pending=True):
         """Return n points that are expected to maximally reduce the loss."""
         # Find out how to divide the n points over the intervals
         # by finding  positive integer n_i that minimize max(L_i / n_i) subject
@@ -326,8 +328,9 @@ class Learner1D(BaseLearner):
                                      itertools.repeat(-quality, n - 1)
                                      for quality, x, n in quals))
 
-        if add_data:
-            self.tell_many(points, itertools.repeat(None))
+        if tell_pending:
+            for p in points:
+                self.tell_pending(p)
 
         return points, loss_improvements
 

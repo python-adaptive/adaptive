@@ -8,11 +8,12 @@ import numpy as np
 from scipy import interpolate
 import scipy.spatial
 
-from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
-from .triangulation import Triangulation, point_in_simplex, \
-                           circumsphere, simplex_volume_in_embedding
+from ..notebook_integration import ensure_holoviews
+from .triangulation import (Triangulation, point_in_simplex,
+                            circumsphere, simplex_volume_in_embedding)
+from ..utils import restore
 
 
 def volume(simplex, ys=None):
@@ -245,7 +246,7 @@ class LearnerND(BaseLearner):
             return  # we already know about the point
 
         if value is None:
-            return self._tell_pending(point)
+            return self.tell_pending(point)
 
         self._pending.discard(point)
         tri = self.tri
@@ -263,7 +264,7 @@ class LearnerND(BaseLearner):
         simplex = tuple(sorted(simplex))
         return simplex in self.tri.simplices
 
-    def _tell_pending(self, point, simplex=None):
+    def tell_pending(self, point, *, simplex=None):
         point = tuple(point)
         self._pending.add(point)
 
@@ -309,15 +310,23 @@ class LearnerND(BaseLearner):
             heapq.heappush(self._simplex_queue,
                            (-subloss, simplex, subsimplex))
 
-    def ask(self, n=1):
+    def _ask_and_tell_pending(self, n=1):
         xs, losses = zip(*(self._ask() for _ in range(n)))
         return list(xs), list(losses)
+
+    def ask(self, n, tell_pending=True):
+        """Chose points for learners."""
+        if not tell_pending:
+            with restore(self):
+                return self._ask_and_tell_pending(n)
+        else:
+            return self._ask_and_tell_pending(n)
 
     def _ask_bound_point(self):
         # get the next bound point that is still available
         new_point = next(p for p in self._bounds_points
                          if p not in self.data and p not in self._pending)
-        self._tell_pending(new_point)
+        self.tell_pending(new_point)
         return new_point, np.inf
 
     def _ask_point_without_known_simplices(self):
@@ -330,7 +339,7 @@ class LearnerND(BaseLearner):
         p = r * a + b
         p = tuple(p)
 
-        self._tell_pending(p)
+        self.tell_pending(p)
         return p, np.inf
 
     def _pop_highest_existing_simplex(self):
@@ -350,8 +359,8 @@ class LearnerND(BaseLearner):
         # Could not find a simplex, this code should never be reached
         assert self.tri is not None
         raise AssertionError(
-            """Could not find a simplex to. Yet there should always be a simplex 
-            available if LearnerND.tri() is not None"""
+            "Could not find a simplex to. Yet there should always be a simplex "
+            "available if LearnerND.tri() is not None"
         )
 
     def _ask_best_point(self):
@@ -371,7 +380,7 @@ class LearnerND(BaseLearner):
                                                   transform=self._transform))
 
         self._pending_to_simplex[point_new] = simplex
-        self._tell_pending(point_new, simplex)  # O(??)
+        self.tell_pending(point_new, simplex=simplex)  # O(??)
 
         return point_new, loss
 

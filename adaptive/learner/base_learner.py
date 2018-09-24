@@ -45,6 +45,12 @@ class BaseLearner(metaclass=abc.ABCMeta):
             self.tell(x, y)
 
     @abc.abstractmethod
+    def tell_pending(self, x):
+        """Tell the learner that 'x' has been requested such
+        that it's not suggested again."""
+        pass
+
+    @abc.abstractmethod
     def remove_unfinished(self):
         """Remove uncomputed data from the learner."""
         pass
@@ -62,14 +68,14 @@ class BaseLearner(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def ask(self, n, add_data=True):
+    def ask(self, n, tell_pending=True):
         """Choose the next 'n' points to evaluate.
 
         Parameters
         ----------
         n : int
             The number of points to choose.
-        add_data : bool, default: True
+        tell_pending : bool, default: True
             If True, add the chosen points to this
             learner's 'data' with 'None' for the 'y'
             values. Set this to False if you do not

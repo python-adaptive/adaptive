@@ -351,7 +351,7 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     assert abs(learner.loss() - control.loss()) / learner.loss() < 1e-11
 
 
-# XXX: the LearnerND currently fails because there is no `add_data=False` argument in ask.
+# XXX: The LearnerND shouldn't fail, see https://gitlab.kwant-project.org/qt/adaptive/issues/105
 @run_with(Learner1D, Learner2D, xfail(LearnerND), AverageLearner)
 def test_balancing_learner(learner_type, f, learner_kwargs):
     """Test if the BalancingLearner works with the different types of learners."""
@@ -366,7 +366,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     for i in range(100):
         n = random.randint(1, 10)
         m = random.randint(0, n)
-        xs, _ = learner.ask(n, add_data=False)
+        xs, _ = learner.ask(n, tell_pending=False)
 
         # Save 'm' random points out of `xs` for later
         random.shuffle(xs)
