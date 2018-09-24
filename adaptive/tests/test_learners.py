@@ -288,7 +288,9 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     np.testing.assert_almost_equal(sorted(pls), sorted(cpls))
 
 
-@run_with(Learner1D, Learner2D, LearnerND, AverageLearner)
+# XXX: the Learner2D fails with ~50% chance
+# see https://gitlab.kwant-project.org/qt/adaptive/issues/84
+@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner)
 def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, learner_kwargs):
     """The estimated loss improvement can never be greater than the total loss."""
     f = generate_random_parametrization(f)
