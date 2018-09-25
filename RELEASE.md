@@ -19,8 +19,8 @@ bumped.
 #### Ensure that all tests pass
 
 For major and minor releases we will be tagging the ``master`` branch.
-This should be as simple as verifying that the 
-[latest CI pipeline](https://gitlab.kwant-project.org/qt/adaptive/pipelines) 
+This should be as simple as verifying that the
+[latest CI pipeline](https://gitlab.kwant-project.org/qt/adaptive/pipelines)
 succeeded.
 
 
@@ -50,7 +50,7 @@ rm -fr build dist
 python setup.py sdist bdist_wheel
 ```
 
-This creates the file `dist/adaptive-<version>.tar.gz`.  It is a good idea to unpack it 
+This creates the file `dist/adaptive-<version>.tar.gz`.  It is a good idea to unpack it
 and check that the tests run:
 ```
 tar xzf dist/adaptive*.tar.gz
@@ -58,11 +58,31 @@ cd adaptive-*
 py.test .
 ```
 
-## Upload to PyPI
+### Create an empty commit for new development and tag it
+```
+git commit --allow-empty -m 'start development towards v<version+1>'
+git tag -am 'Start development towards v<version+1>' v<version+1>-dev
+```
+
+Where `<version+1>` is `<version>` with the minor version incremented
+(or major version incremented and minor and patch versions then reset to 0).
+This is necessary so that the reported version for any further commits is
+`<version+1>-devX` and not `<version>-devX`.
+
+
+## Publish the release
+
+### Push the tags
+```
+git push origin v<version> v<version+1>-dev
+```
+
+### Upload to PyPI
 
 ```
 twine upload dist/*
 ```
+
 
 
 ## Update the [conda-forge recipe](https://github.com/conda-forge/adaptive-feedstock)
