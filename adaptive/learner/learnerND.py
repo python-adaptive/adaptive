@@ -222,14 +222,13 @@ class LearnerND(BaseLearner):
 
         try:
             self._tri = Triangulation(self.points)
+            self.update_losses(set(), self._tri.simplices)
             return self._tri
         except ValueError:
             # A ValueError is raised if we do not have enough points or
             # the provided points are coplanar, so we need more points to create
             # a valid triangulation
             return None
-
-        # XXX: also compute losses of initial simplex
 
     @property
     def values(self):
@@ -359,8 +358,8 @@ class LearnerND(BaseLearner):
         # Could not find a simplex, this code should never be reached
         assert self.tri is not None
         raise AssertionError(
-            "Could not find a simplex to. Yet there should always be a simplex "
-            "available if LearnerND.tri() is not None"
+            "Could not find a simplex to subdivide. Yet there should always be" 
+            "a simplex available if LearnerND.tri() is not None."
         )
 
     def _ask_best_point(self):
