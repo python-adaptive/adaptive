@@ -251,6 +251,9 @@ class LearnerND(BaseLearner):
         tri = self.tri
         self.data[point] = value
 
+        if not self.inside_bounds(point):
+            return
+
         if tri is not None:
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
@@ -263,8 +266,14 @@ class LearnerND(BaseLearner):
         simplex = tuple(sorted(simplex))
         return simplex in self.tri.simplices
 
+    def inside_bounds(self, point):
+        return all(mn <= p <= mx for p, (mn, mx) in zip(point, self.bounds))
+            
     def tell_pending(self, point, *, simplex=None):
         point = tuple(point)
+        if not self.inside_bounds(point):
+            return
+
         self._pending.add(point)
 
         if self.tri is None:
