@@ -1,30 +1,19 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, Iterable
+import heapq
 import itertools
+import random
 
 import numpy as np
 from scipy import interpolate
 import scipy.spatial
 
-from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 
-from .triangulation import Triangulation, point_in_simplex, \
-                           circumsphere, simplex_volume_in_embedding
-import random
-import heapq
-import math
-
-
-def find_initial_simplex(pts, ndim):
-    origin = pts[0]
-    vecs = pts[1:] - origin
-    if np.linalg.matrix_rank(vecs) < ndim:
-        return None  # all points are coplanar
-
-    tri = scipy.spatial.Delaunay(pts)
-    simplex = tri.simplices[0]  # take a random simplex from tri
-    return simplex
+from ..notebook_integration import ensure_holoviews
+from .triangulation import (Triangulation, point_in_simplex,
+                            circumsphere, simplex_volume_in_embedding)
+from ..utils import restore
 
 
 def volume(simplex, ys=None):
@@ -184,6 +173,8 @@ class LearnerND(BaseLearner):
 
         # triangulation of the pending points inside a specific simplex
         self._subtriangulations = dict()  # simplex -> triangulation
+
+        # scale to unit
         self._scale_matrix = np.linalg.inv(np.diag(np.diff(bounds).flat))
 
         # create a private random number generator with fixed seed
@@ -193,6 +184,19 @@ class LearnerND(BaseLearner):
         # all real triangles that have not been subdivided and the pending
         # triangles heap of tuples (-loss, real simplex, sub_simplex or None)
         self._losses_combined = [] # heap
+
+        # all real triangles that have not been subdivided and the pending 
+        # triangles heap of tuples (-loss, real simplex, sub_simplex or None)
+
+        # _simplex_queue is a heap of tuples (-loss, real_simplex, sub_simplex)
+        # It contains all real and pending simplices except for real simplices
+        # that have been subdivided.
+        # _simplex_queue may contain simplices that have been deleted, this is
+        #  because deleting those items from the heap is an expensive operation,
+        # so when popping an item, you should check that the simplex that has
+        # been returned has not been deleted. This checking is done by
+        # _pop_highest_existing_simplex
+        self._simplex_queue = []  # heap
 
     @property
     def npoints(self):
@@ -221,21 +225,15 @@ class LearnerND(BaseLearner):
         if self._tri is not None:
             return self._tri
 
-        if len(self.data) < 2:
+        try:
+            self._tri = Triangulation(self.points)
+            self.update_losses(set(), self._tri.simplices)
+            return self._tri
+        except ValueError:
+            # A ValueError is raised if we do not have enough points or
+            # the provided points are coplanar, so we need more points to create
+            # a valid triangulation
             return None
-
-        initial_simplex = find_initial_simplex(self.points, self.ndim)
-        if initial_simplex is None:
-            return None
-        pts = self.points[initial_simplex]
-        self._tri = Triangulation([tuple(p) for p in pts])
-        to_add = [p for i, p in enumerate(self.points)
-                  if i not in initial_simplex]
-
-        for p in to_add:
-            self._tri.add_point(p, transform=self._scale_matrix)
-        # XXX: also compute losses of initial simplex
-        self.update_losses(set(), self._tri.simplices)
 
     @property
     def values(self):
@@ -248,15 +246,19 @@ class LearnerND(BaseLearner):
     def tell(self, point, value):
         point = tuple(point)
         if point in self.data:
-            return
+            return  # we already know about the point
 
         if value is None:
-            return self._tell_pending(point)
+            return self.tell_pending(point)
 
         self._pending.discard(point)
+        tri = self.tri
         self.data[point] = value
 
-        if self.tri is not None:
+        if not self.inside_bounds(point):
+            return
+
+        if tri is not None:
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = self.tri.locate_point(point)
@@ -311,8 +313,14 @@ class LearnerND(BaseLearner):
         simplex = tuple(sorted(simplex))
         return simplex in self.tri.simplices
 
-    def _tell_pending(self, point, simplex=None):
+    def inside_bounds(self, point):
+        return all(mn <= p <= mx for p, (mn, mx) in zip(point, self.bounds))
+            
+    def tell_pending(self, point, *, simplex=None):
         point = tuple(point)
+        if not self.inside_bounds(point):
+            return
+
         self._pending.add(point)
 
         if self.tri is None:
@@ -330,34 +338,50 @@ class LearnerND(BaseLearner):
         # Neighbours also includes the simplex itself
 
         for simpl in neighbours:
-            if not self.tri.point_in_simplex(point, simpl):
-                continue  # point not in simplex
+            _, to_add = self._try_adding_pending_point_to_simplex(point, simpl)
+            if to_add is None:
+                continue
+            self._update_subsimplex_losses(simpl, to_add)
 
-            if simpl not in self._subtriangulations:
-                vertices = self.tri.get_vertices(simpl)
-                tr = self._subtriangulations[simpl] = Triangulation(vertices)
-                _, toadd = tr.add_point(point, next(iter(tr.simplices)))
-            else:
-                _, toadd = self._subtriangulations[simpl].add_point(point)
+    def _try_adding_pending_point_to_simplex(self, point, simplex):
+        # try to insert it
+        if not self.tri.point_in_simplex(point, simplex):
+            return None, None
 
-            loss = self._losses[simpl]
+        if simplex not in self._subtriangulations:
+            vertices = self.tri.get_vertices(simplex)
+            self._subtriangulations[simplex] = Triangulation(vertices)
 
-            loss_density = loss / self.tri.volume(simpl)
-            subtriangulation = self._subtriangulations[simpl]
-            for subsimplex in toadd:
-                subloss = subtriangulation.volume(subsimplex) * loss_density
-                heapq.heappush(self._losses_combined, 
-                               (-subloss, simpl, subsimplex))
+        self._pending_to_simplex[point] = simplex
+        return self._subtriangulations[simplex].add_point(point)
 
-    def ask(self, n=1):
+    def _update_subsimplex_losses(self, simplex, new_subsimplices):
+        loss = self._losses[simplex]
+
+        loss_density = loss / self.tri.volume(simplex)
+        subtriangulation = self._subtriangulations[simplex]
+        for subsimplex in new_subsimplices:
+            subloss = subtriangulation.volume(subsimplex) * loss_density
+            heapq.heappush(self._simplex_queue,
+                           (-subloss, simplex, subsimplex))
+
+    def _ask_and_tell_pending(self, n=1):
         xs, losses = zip(*(self._ask() for _ in range(n)))
         return list(xs), list(losses)
 
+    def ask(self, n, tell_pending=True):
+        """Chose points for learners."""
+        if not tell_pending:
+            with restore(self):
+                return self._ask_and_tell_pending(n)
+        else:
+            return self._ask_and_tell_pending(n)
+
     def _ask_bound_point(self):
-        bounds_to_do = [p for p in self._bounds_points
-                        if p not in self.data and p not in self._pending]
-        new_point = bounds_to_do[0]
-        self._tell_pending(new_point)
+        # get the next bound point that is still available
+        new_point = next(p for p in self._bounds_points
+                         if p not in self.data and p not in self._pending)
+        self.tell_pending(new_point)
         return new_point, np.inf
 
     def _ask_point_without_known_simplices(self):
@@ -370,25 +394,31 @@ class LearnerND(BaseLearner):
         p = r * a + b
         p = tuple(p)
 
-        self._tell_pending(p)
+        self.tell_pending(p)
         return p, np.inf
 
     def _pop_highest_existing_simplex(self):
         # find the simplex with the highest loss, we do need to check that the
         # simplex hasn't been deleted yet
-        while True:
-            loss, simplex, subsimplex = heapq.heappop(self._losses_combined) 
-            if (subsimplex is None and 
-                    simplex in self.tri.simplices and 
-                    simplex not in self._subtriangulations):
+        while len(self._simplex_queue):
+            loss, simplex, subsimplex = heapq.heappop(self._simplex_queue) 
+            if (subsimplex is None
+                    and simplex in self.tri.simplices
+                    and simplex not in self._subtriangulations):
                 return abs(loss), simplex, subsimplex
-            if (simplex in self._subtriangulations and
-                    simplex in self.tri.simplices and 
-                    subsimplex in self._subtriangulations[simplex].simplices):
+            if (simplex in self._subtriangulations
+                    and simplex in self.tri.simplices
+                    and subsimplex in self._subtriangulations[simplex].simplices):
                 return abs(loss), simplex, subsimplex
 
+        # Could not find a simplex, this code should never be reached
+        assert self.tri is not None
+        raise AssertionError(
+            "Could not find a simplex to subdivide. Yet there should always be" 
+            "a simplex available if LearnerND.tri() is not None."
+        )
+
     def _ask_best_point(self):
-        assert not self._bounds_available
         assert self.tri is not None
 
         loss, simplex, subsimplex = self._pop_highest_existing_simplex()
@@ -405,19 +435,23 @@ class LearnerND(BaseLearner):
         point_new = tuple(choose_point_in_simplex(points, transform=transform))
 
         self._pending_to_simplex[point_new] = simplex
-        self._tell_pending(point_new, simplex)  # O(??)
+        self.tell_pending(point_new, simplex=simplex)  # O(??)
+
         return point_new, loss
 
     @property
     def _bounds_available(self):
-        return any((p not in self._pending and p not in self.data) for p in self._bounds_points)
+        return any((p not in self._pending and p not in self.data)
+                   for p in self._bounds_points)
 
     def _ask(self):
         if self._bounds_available:
             return self._ask_bound_point()  # O(1)
 
         if self.tri is None:
-            # we have no known simplices
+            # All bound points are pending or have been evaluated, but we do not
+            # have enough evaluated points to construct a triangulation, so we
+            # pick a random point
             return self._ask_point_without_known_simplices()  # O(1)
 
         return self._ask_best_point()  # O(log N)
@@ -442,27 +476,14 @@ class LearnerND(BaseLearner):
             self._losses[simplex] = float(loss)
 
             for p in pending_points_unbound:
-                # try to insert it
-                if not self.tri.point_in_simplex(p, simplex):
-                    continue
-
-                if simplex not in self._subtriangulations:
-                    vertices = self.tri.get_vertices(simplex)
-                    self._subtriangulations[simplex] = Triangulation(vertices)
-
-                self._subtriangulations[simplex].add_point(p)
-                self._pending_to_simplex[p] = simplex
+                self._try_adding_pending_point_to_simplex(p, simplex)
 
             if simplex not in self._subtriangulations:
-                heapq.heappush(self._losses_combined, (-loss, simplex, None))
+                heapq.heappush(self._simplex_queue, (-loss, simplex, None))
                 continue
 
-            loss_density = loss / self.tri.volume(simplex)
-            subtriangulation = self._subtriangulations[simplex]
-            for subsimplex in subtriangulation.simplices:
-                subloss = subtriangulation.volume(subsimplex) * loss_density
-                heapq.heappush(self._losses_combined, 
-                               (-subloss, simplex, subsimplex))
+            self._update_subsimplex_losses(simplex,
+                                self._subtriangulations[simplex].simplices)
 
     def losses(self):
         """Get the losses of each simplex in the current triangulation, as dict

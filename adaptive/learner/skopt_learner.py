@@ -27,11 +27,13 @@ class SKOptLearner(Optimizer, BaseLearner):
         self.function = function
         super().__init__(**kwargs)
 
-    def tell(self, x, y, fit=True):
-        if y is not None:
-            # 'skopt.Optimizer' takes care of points we
-            # have not got results for.
-            super().tell([x], y, fit)
+    def tell(self, x, y, fit=True):    
+        super().tell([x], y, fit)
+
+    def tell_pending(self, x):
+        # 'skopt.Optimizer' takes care of points we
+        # have not got results for.
+        pass
 
     def remove_unfinished(self):
         pass
@@ -46,7 +48,10 @@ class SKOptLearner(Optimizer, BaseLearner):
             # estimator of loss, but it is the cheapest.
             return 1 - model.score(self.Xi, self.yi)
 
-    def ask(self, n, add_data=True):
+    def ask(self, n, tell_pending=True):
+        if not tell_pending:
+            raise NotImplementedError('Asking points is an irreversible '
+                'action, so use `ask(n, tell_pending=True`.')
         points = super().ask(n)
         # TODO: Choose a better estimate for the loss improvement.
         if self.space.n_dims > 1:

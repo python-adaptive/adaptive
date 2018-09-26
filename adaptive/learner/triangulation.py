@@ -184,22 +184,23 @@ def is_iterable_and_sized(obj):
 
 def simplex_volume_in_embedding(vertices) -> float:
     """Calculate the volume of a simplex in a higher dimensional embedding.
-    That is: dim > len(vertices) - 1. For example if you would like to know the 
+    That is: dim > len(vertices) - 1. For example if you would like to know the
     surface area of a triangle in a 3d space.
+
+    This algorithm has not been tested for numerical stability.
 
     Parameters
     ----------
-    vertices: arraylike (2 dimensional)
-        array of points
+    vertices : 2D arraylike of floats
 
     Returns
     -------
-    volume: int
+    volume : int
         the volume of the simplex with given vertices.
 
     Raises
     ------
-    ValueError:
+    ValueError
         if the vertices do not form a simplex (for example,
         because they are coplanar, colinear or coincident).
 
@@ -209,8 +210,7 @@ def simplex_volume_in_embedding(vertices) -> float:
     # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
     # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
 
-    
-    vertices = np.array(vertices, dtype=float)
+    vertices = np.asarray(vertices, dtype=float)
     dim = len(vertices[0])
     if dim == 2:
         # Heron's formula
@@ -243,7 +243,7 @@ class Triangulation:
     Parameters
     ----------
     coords : 2d array-like of floats
-        Coordinates of vertices of the first simplex.
+        Coordinates of vertices.
 
     Attributes
     ----------
@@ -256,14 +256,23 @@ class Triangulation:
         index of the list.
     hull : set of int
         Exterior vertices
+
+    Raises
+    ------
+    ValueError
+        if the list of coordinates is incorrect or the points do not form one
+        or more simplices in the
     """
 
     def __init__(self, coords):
         if not is_iterable_and_sized(coords):
-            raise ValueError("Please provide a 2-dimensional list of points")
+            raise TypeError("Please provide a 2-dimensional list of points")
         coords = list(coords)
         if not all(is_iterable_and_sized(coord) for coord in coords):
-            raise ValueError("Please provide a 2-dimensional list of points")
+            raise TypeError("Please provide a 2-dimensional list of points")
+        if len(coords) == 0:
+            raise ValueError("Please provide at least one simplex")
+            # raise now because otherwise the next line will raise a less
 
         dim = len(coords[0])
         if any(len(coord) != dim for coord in coords):
@@ -272,12 +281,12 @@ class Triangulation:
         if dim == 1:
             raise ValueError("Triangulation class only supports dim >= 2")
 
-        if len(coords) != dim + 1:
-            raise ValueError("Can only add one simplex on initialization")
+        if len(coords) < dim + 1:
+            raise ValueError("Please provide at least one simplex")
 
         coords = list(map(tuple, coords))
         vectors = np.subtract(coords[1:], coords[0])
-        if np.linalg.det(vectors) == 0:
+        if np.linalg.matrix_rank(vectors) < dim:
             raise ValueError("Initial simplex has zero volumes "
                              "(the points are linearly dependent)")
 
@@ -285,7 +294,12 @@ class Triangulation:
         self.simplices = set()
         # initialise empty set for each vertex
         self.vertex_to_simplices = [set() for _ in coords]
-        self.add_simplex(range(len(self.vertices)))
+
+        # find a Delaunay triangulation to start with, then we will throw it
+        # away and continue with our own algorithm
+        initial_tri = scipy.spatial.Delaunay(coords)
+        for simplex in initial_tri.simplices:
+            self.add_simplex(simplex)
 
     def delete_simplex(self, simplex):
         simplex = tuple(sorted(simplex))
@@ -467,8 +481,6 @@ class Triangulation:
         else:
             queue.add(containing_simplex)
 
-        done_points = {pt_index}
-
         bad_triangles = set()
 
         while len(queue):
@@ -478,15 +490,19 @@ class Triangulation:
             if self.point_in_cicumcircle(pt_index, simplex, transform):
                 self.delete_simplex(simplex)
                 todo_points = set(simplex)
-                done_points.update(simplex)
-
                 bad_triangles.add(simplex)
-                if len(todo_points) == 0:
-                    continue
+
+                # Get all simplices that share at least a point with the simplex
                 neighbours = set.union(*[self.vertex_to_simplices[p]
                                             for p in todo_points])
-                neighbours = neighbours - done_simplices - queue
-                neighbours = set(simpl for simpl in neighbours if len(set(simpl) & set(simplex)) >= self.dim)
+                # Filter out the already evaluated simplices
+                neighbours = neighbours - done_simplices
+
+                # Keep only the simplices sharing a whole face with the current simplex
+                neighbours = set(
+                    simpl for simpl in neighbours 
+                    if len(set(simpl) & set(simplex)) == self.dim  # they share a face
+                )
                 queue.update(neighbours)
 
         faces = list(self.faces(simplices=bad_triangles))

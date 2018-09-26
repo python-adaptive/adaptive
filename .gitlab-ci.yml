@@ -1,4 +1,5 @@
 image: quantumtinkerer/research
+
 test:
   script:
     - pip install -r test-requirements.txt
@@ -8,17 +9,8 @@ test:
     paths:
       - htmlcov
 
-mirror repository:
-  allow_failure: true
-  variables:
-    REPO: "git@github.com:python-adaptive/adaptive.git"
-  before_script:
-    - mkdir ~/.ssh && chmod 700 ~/.ssh
-    - ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
-    - echo "$DEPLOY_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
-  after_script:
-    - rm -rf ~/.ssh
+authors check:
   script:
-    - ORIGIN_URL=$(git config --get remote.origin.url)
-    - cd $(mktemp -d); git clone --bare $ORIGIN_URL .
-    - git push --mirror $REPO
+    - MISSING_AUTHORS=$(git shortlog -s HEAD | sed -e "s/^[0-9\t ]*//"| xargs -i sh -c 'grep -q "{}" AUTHORS.md || echo "{} missing from authors"')
+    - if [ ! -z "$MISSING_AUTHORS" ]; then { echo $MISSING_AUTHORS; exit 1; }; fi
+  allow_failure: true

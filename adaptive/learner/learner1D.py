@@ -55,6 +55,18 @@ def default_loss(interval, scale, function_values):
     return loss
 
 
+def linspace(x_left, x_right, n):
+    """This is equivalent to
+    'np.linspace(x_left, x_right, n, endpoint=False)[1:]',
+    but it is 15-30 times faster for small 'n'."""
+    if n == 1:
+        # This is just an optimization
+        return []
+    else:
+        step = (x_right - x_left) / n
+        return [x_left + step * i for i in range(1, n)]
+
+
 class Learner1D(BaseLearner):
     """Learns and predicts a function 'f:ℝ → ℝ^N'.
 
@@ -137,44 +149,64 @@ class Learner1D(BaseLearner):
                                               self._scale, self.data)
             self.losses[x_left, x_right] = loss
 
-            start = self.neighbors_combined.bisect_right(x_left)
-            end = self.neighbors_combined.bisect_left(x_right)
-            for i in range(start, end):
-                a, b = (self.neighbors_combined.iloc[i],
-                        self.neighbors_combined.iloc[i + 1])
+            # Iterate over all interpolated intervals in between
+            # x_left and x_right and set the newly interpolated loss.
+            a, b = x_left, None
+            while b != x_right:
+                b = self.neighbors_combined[a][1]
                 self.losses_combined[a, b] = (b - a) * loss / dx
-            if start == end:
-                self.losses_combined[x_left, x_right] = loss
+                a = b
 
     def update_losses(self, x, real=True):
+        # When we add a new point x, we should update the losses
+        # (x_left, x_right) are the "real" neighbors of 'x'.
+        x_left, x_right = self.find_neighbors(x, self.neighbors)
+        # (a, b) are the neighbors of the combined interpolated
+        # and "real" intervals.
+        a, b = self.find_neighbors(x, self.neighbors_combined)
+
+        # (a, b) is splitted into (a, x) and (x, b) so if (a, b) exists
+        self.losses_combined.pop((a, b), None)  # we get rid of (a, b).
+
         if real:
-            x_left, x_right = self.find_neighbors(x, self.neighbors)
+            # We need to update all interpolated losses in the interval
+            # (x_left, x) and (x, x_right). Since the addition of the point
+            # 'x' could change their loss.
             self.update_interpolated_loss_in_interval(x_left, x)
             self.update_interpolated_loss_in_interval(x, x_right)
+
+            # Since 'x' is in between (x_left, x_right),
+            # we get rid of the interval.
             self.losses.pop((x_left, x_right), None)
-        else:
-            losses_combined = self.losses_combined
-            x_left, x_right = self.find_neighbors(x, self.neighbors)
-            a, b = self.find_neighbors(x, self.neighbors_combined)
-            if x_left is not None and x_right is not None:
-                dx = x_right - x_left
-                loss = self.losses[x_left, x_right]
-                losses_combined[a, x] = (x - a) * loss / dx
-                losses_combined[x, b] = (b - x) * loss / dx
-            else:
-                if a is not None:
-                    losses_combined[a, x] = float('inf')
-                if b is not None:
-                    losses_combined[x, b] = float('inf')
+            self.losses_combined.pop((x_left, x_right), None)
+        elif x_left is not None and x_right is not None:
+            # 'x' happens to be in between two real points,
+            # so we can interpolate the losses.
+            dx = x_right - x_left
+            loss = self.losses[x_left, x_right]
+            self.losses_combined[a, x] = (x - a) * loss / dx
+            self.losses_combined[x, b] = (b - x) * loss / dx
 
-            losses_combined.pop((a, b), None)
+        # (no real point left of x) or (no real point right of a)
+        left_loss_is_unknown = ((x_left is None) or
+                                (not real and x_right is None))
+        if (a is not None) and left_loss_is_unknown:
+            self.losses_combined[a, x] = float('inf')
 
-    def find_neighbors(self, x, neighbors):
+        # (no real point right of x) or (no real point left of b)
+        right_loss_is_unknown = ((x_right is None) or
+                                 (not real and x_left is None))
+        if (b is not None) and right_loss_is_unknown:
+            self.losses_combined[x, b] = float('inf')
+
+    @staticmethod
+    def find_neighbors(x, neighbors):
         if x in neighbors:
             return neighbors[x]
         pos = neighbors.bisect_left(x)
-        x_left = neighbors.iloc[pos - 1] if pos != 0 else None
-        x_right = neighbors.iloc[pos] if pos != len(neighbors) else None
+        keys = neighbors.keys()
+        x_left = keys[pos - 1] if pos != 0 else None
+        x_right = keys[pos] if pos != len(neighbors) else None
         return x_left, x_right
 
     def update_neighbors(self, x, neighbors):
@@ -192,7 +224,7 @@ class Learner1D(BaseLearner):
 
         When the function returns a vector the learners y-scale is set by
         the level with the the largest peak-to-peak value.
-         """
+        """
         self._bbox[0][0] = min(self._bbox[0][0], x)
         self._bbox[0][1] = max(self._bbox[0][1], x)
         self._scale[0] = self._bbox[0][1] - self._bbox[0][0]
@@ -212,33 +244,33 @@ class Learner1D(BaseLearner):
                 self._scale[1] = self._bbox[1][1] - self._bbox[1][0]
 
     def tell(self, x, y):
-        real = y is not None
+        if x in self.data:
+            # The point is already evaluated before
+            return
 
-        if real:
-            # Add point to the real data dict
-            self.data[x] = y
-            # remove from set of pending points
-            self.pending_points.discard(x)
+        # either it is a float/int, if not, try casting to a np.array
+        if not isinstance(y, (float, int)):
+            y = np.asarray(y, dtype=float)
 
-            if self._vdim is None:
-                try:
-                    self._vdim = len(np.squeeze(y))
-                except TypeError:
-                    self._vdim = 1
-        else:
-            # The keys of pending_points are the unknown points
-            self.pending_points.add(x)
+        # Add point to the real data dict
+        self.data[x] = y
 
-        # Update the neighbors
+        # remove from set of pending points
+        self.pending_points.discard(x)
+
+        if self._vdim is None:
+            try:
+                self._vdim = len(np.squeeze(y))
+            except TypeError:
+                self._vdim = 1
+
+        if not self.bounds[0] <= x <= self.bounds[1]:
+            return
+
         self.update_neighbors(x, self.neighbors_combined)
-        if real:
-            self.update_neighbors(x, self.neighbors)
-
-        # Update the scale
+        self.update_neighbors(x, self.neighbors)
         self.update_scale(x, y)
-
-        # Update the losses
-        self.update_losses(x, real)
+        self.update_losses(x, real=True)
 
         # If the scale has increased enough, recompute all losses.
         if self._scale[1] > self._oldscale[1] * 2:
@@ -248,61 +280,95 @@ class Learner1D(BaseLearner):
 
             self._oldscale = deepcopy(self._scale)
 
-    def ask(self, n, add_data=True):
+    def tell_pending(self, x):
+        if x in self.data:
+            # The point is already evaluated before
+            return
+        self.pending_points.add(x)
+        self.update_neighbors(x, self.neighbors_combined)
+        self.update_losses(x, real=False)
+
+    def ask(self, n, tell_pending=True):
         """Return n points that are expected to maximally reduce the loss."""
+        points, loss_improvements = self._ask_points_without_adding(n)
+
+        if tell_pending:
+            for p in points:
+                self.tell_pending(p)
+
+        return points, loss_improvements
+
+    def _ask_points_without_adding(self, n):
+        """Return n points that are expected to maximally reduce the loss.
+        Without altering the state of the learner"""
         # Find out how to divide the n points over the intervals
         # by finding  positive integer n_i that minimize max(L_i / n_i) subject
         # to a constraint that sum(n_i) = n + N, with N the total number of
         # intervals.
-
         # Return equally spaced points within each interval to which points
         # will be added.
+
+        # XXX: when is this used and could we safely remove it without impacting performance?
         if n == 0:
             return [], []
 
         # If the bounds have not been chosen yet, we choose them first.
-        points = [b for b in self.bounds if b not in self.data
-                  and b not in self.pending_points]
+        missing_bounds = [b for b in self.bounds if b not in self.data
+                          and b not in self.pending_points]
 
-        if len(points) == 2:
-            # First time
-            loss_improvements = [np.inf] * n
-            points = np.linspace(*self.bounds, n).tolist()
-        elif len(points) == 1:
-            # Second time, if we previously returned just self.bounds[0]
-            loss_improvements = [np.inf] * n
-            points = np.linspace(*self.bounds, n + 1)[1:].tolist()
-        else:
-            def xs(x_left, x_right, n):
-                if n == 1:
-                    # This is just an optimization
-                    return []
-                else:
-                    step = (x_right - x_left) / n
-                    return [x_left + step * i for i in range(1, n)]
+        if len(missing_bounds) >= n:
+            return missing_bounds[:n], [np.inf] * n
 
-            # Calculate how many points belong to each interval.
-            x_scale = self._scale[0]
-            quals = [((-loss if not math.isinf(loss) else -(x[1] - x[0]) / x_scale, x, 1))
-                     for x, loss in self.losses_combined.items()]
-            heapq.heapify(quals)
+        def finite_loss(loss, xs):
+            # If the loss is infinite we return the
+            # distance between the two points.
+            return (loss if not math.isinf(loss)
+                else (xs[1] - xs[0]) / self._scale[0])
 
-            for point_number in range(n):
-                quality, x, n = quals[0]
-                if abs(x[1] - x[0]) / (n + 1) <= self._dx_eps:
-                    # The interval is too small and should not be subdivided
-                    quality = np.inf
-                heapq.heapreplace(quals, (quality * n / (n + 1), x, n + 1))
+        quals = [(-finite_loss(loss, x), x, 1)
+                 for x, loss in self.losses_combined.items()]
 
-            points = list(itertools.chain.from_iterable(
-                xs(*x, n) for quality, x, n in quals))
+        # Add bound intervals to quals if bounds were missing.
+        if len(self.data) + len(self.pending_points) == 0:
+            # We don't have any points, so return a linspace with 'n' points.
+            return np.linspace(*self.bounds, n).tolist(), [np.inf] * n
+        elif len(missing_bounds) > 0:
+            # There is at least one point in between the bounds.
+            all_points = list(self.data.keys()) + list(self.pending_points)
+            intervals = [(self.bounds[0], min(all_points)),
+                         (max(all_points), self.bounds[1])]
+            for interval, bound in zip(intervals, self.bounds):
+                if bound in missing_bounds:
+                    qual = (-finite_loss(np.inf, interval), interval, 1)
+                    quals.append(qual)
 
-            loss_improvements = list(itertools.chain.from_iterable(
-                                     itertools.repeat(-quality, n - 1)
-                                     for quality, x, n in quals))
+        # Calculate how many points belong to each interval.
+        points, loss_improvements = self._subdivide_quals(
+            quals, n - len(missing_bounds))
 
-        if add_data:
-            self.tell_many(points, itertools.repeat(None))
+        points = missing_bounds + points
+        loss_improvements = [np.inf] * len(missing_bounds) + loss_improvements
+
+        return points, loss_improvements
+
+    def _subdivide_quals(self, quals, n):
+        # Calculate how many points belong to each interval.
+        heapq.heapify(quals)
+
+        for _ in range(n):
+            quality, x, n = quals[0]
+            if abs(x[1] - x[0]) / (n + 1) <= self._dx_eps:
+                # The interval is too small and should not be subdivided.
+                quality = np.inf
+                # XXX: see https://gitlab.kwant-project.org/qt/adaptive/issues/104
+            heapq.heapreplace(quals, (quality * n / (n + 1), x, n + 1))
+
+        points = list(itertools.chain.from_iterable(
+            linspace(*interval, n) for quality, interval, n in quals))
+
+        loss_improvements = list(itertools.chain.from_iterable(
+            itertools.repeat(-quality, n - 1)
+            for quality, interval, n in quals))
 
         return points, loss_improvements
 

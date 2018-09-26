@@ -32,9 +32,12 @@ class DataSaver:
         return getattr(self.learner, attr)
 
     def tell(self, x, result):
-        y = self.arg_picker(result) if result is not None else None
+        y = self.arg_picker(result)
         self.extra_data[x] = result
         self.learner.tell(x, y)
+
+    def tell_pending(self, x):
+        self.learner.tell_pending(x)
 
 
 def _ds(learner_type, arg_picker, *args, **kwargs):

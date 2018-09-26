@@ -14,12 +14,6 @@ import pytest
 from ..learner import *
 from ..runner import simple, replay_log
 
-try:
-    import skopt
-    with_scikit_optimize = True
-except ModuleNotFoundError:
-    with_scikit_optimize = False
-
 
 def generate_random_parametrization(f):
     """Return a realization of 'f' with parameters bound to random values.
@@ -108,7 +102,8 @@ def run_with(*learner_types):
             # Check if learner was marked with our `xfail` decorator
             # XXX: doesn't work when feeding kwargs to xfail.
             if is_xfail:
-                pars.append(pytest.param(l, f, dict(k), marks=[pytest.mark.xfail]))
+                pars.append(pytest.param(l, f, dict(k),
+                                         marks=[pytest.mark.xfail]))
             else:
                 pars.append((l, f, dict(k)))
     return pytest.mark.parametrize('learner_type, f, learner_kwargs', pars)
@@ -128,23 +123,7 @@ def ask_randomly(learner, rounds, points):
     return xs, ls
 
 
-@pytest.mark.skipif(not with_scikit_optimize,
-                    reason='scikit-optimize is not installed')
-def test_skopt_learner_runs():
-    """The SKOptLearner provides very few guarantees about its
-       behaviour, so we only test the most basic usage
-    """
-
-    def g(x, noise_level=0.1):
-        return (np.sin(5 * x) * (1 - np.tanh(x ** 2))
-                + np.random.randn() * noise_level)
-
-    learner = SKOptLearner(g, dimensions=[(-2., 2.)])
-
-    for _ in range(11):
-        (x,), _ = learner.ask(1)
-        learner.tell(x, learner.function(x))
-
+# Tests
 
 @run_with(Learner1D)
 def test_uniform_sampling1D(learner_type, f, learner_kwargs):
@@ -186,6 +165,19 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
 
     distances, neighbors = tree.query(list(it.product(xs, ys)), k=1)
     assert max(distances) < math.sqrt(dx**2 + dy**2)
+
+
+@pytest.mark.parametrize('learner_type, bounds', [
+    (Learner1D, (-1, 1)),
+    (Learner2D, [(-1, 1), (-1, 1)]),
+    (LearnerND, [(-1, 1), (-1, 1), (-1, 1)]),
+])
+def test_learner_accepts_lists(learner_type, bounds):
+    def f(x):
+        return [0, 1]
+
+    learner = learner_type(f, bounds=bounds)
+    simple(learner, goal=lambda l: l.npoints > 10)
 
 
 @run_with(xfail(Learner1D), Learner2D, LearnerND)
@@ -296,7 +288,9 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     np.testing.assert_almost_equal(sorted(pls), sorted(cpls))
 
 
-@run_with(Learner1D, Learner2D, LearnerND, AverageLearner)
+# XXX: the Learner2D fails with ~50% chance
+# see https://gitlab.kwant-project.org/qt/adaptive/issues/84
+@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner)
 def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, learner_kwargs):
     """The estimated loss improvement can never be greater than the total loss."""
     f = generate_random_parametrization(f)
@@ -359,112 +353,37 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     assert abs(learner.loss() - control.loss()) / learner.loss() < 1e-11
 
 
-def test_learner1d_first_iteration():
-    """Edge cases where we ask for a few points at the start."""
-    learner = Learner1D(lambda x: None, (-1, 1))
-    points, loss_improvements = learner.ask(2)
-    assert set(points) == set([-1, 1])
+@run_with(Learner1D, Learner2D, LearnerND, AverageLearner)
+def test_balancing_learner(learner_type, f, learner_kwargs):
+    """Test if the BalancingLearner works with the different types of learners."""
+    learners = [learner_type(generate_random_parametrization(f), **learner_kwargs)
+                for i in range(4)]
 
-    learner = Learner1D(lambda x: None, (-1, 1))
-    points, loss_improvements = learner.ask(3)
-    assert set(points) == set([-1, 0, 1])
+    learner = BalancingLearner(learners)
 
-    learner = Learner1D(lambda x: None, (-1, 1))
-    points, loss_improvements = learner.ask(1)
-    assert len(points) == 1 and points[0] in [-1, 1]
-    rest = set([-1, 0, 1]) - set(points)
-    points, loss_improvements = learner.ask(2)
-    assert set(points) == set(rest)
-
-    learner = Learner1D(lambda x: None, (-1, 1))
-    points, loss_improvements = learner.ask(1)
-    to_see = set([-1, 1]) - set(points)
-    points, loss_improvements = learner.ask(1)
-    assert set(points) == set(to_see)
-
-
-def _run_on_discontinuity(x_0, bounds):
-
-    def f(x):
-        return -1 if x < x_0 else +1
-
-    learner = Learner1D(f, bounds)
-    while learner.loss() > 0.1:
-        (x,), _ = learner.ask(1)
-        learner.tell(x, learner.function(x))
-
-    return learner
-
-
-def test_termination_on_discontinuities():
-
-    learner = _run_on_discontinuity(0, (-1, 1))
-    smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
-    assert smallest_interval >= np.finfo(float).eps
-
-    learner = _run_on_discontinuity(1, (-2, 2))
-    smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
-    assert smallest_interval >= np.finfo(float).eps
-
-    learner = _run_on_discontinuity(0.5E3, (-1E3, 1E3))
-    smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
-    assert smallest_interval >= 0.5E3 * np.finfo(float).eps
-
-
-def test_loss_at_machine_precision_interval_is_zero():
-    """The loss of an interval smaller than _dx_eps
-    should be set to zero."""
-    def f(x):
-        return 1 if x == 0 else 0
-
-    def goal(l):
-        return l.loss() < 0.01 or l.npoints >= 1000
-
-    learner = Learner1D(f, bounds=(-1, 1))
-    simple(learner, goal=goal)
-
-    # this means loss < 0.01 was reached
-    assert learner.npoints != 1000
-
-
-def small_deviations(x):
-    import random
-    return 0 if x <= 1 else 1 + 10**(-random.randint(12, 14))
-
-
-def test_small_deviations():
-    """This tests whether the Learner1D can handle small deviations.
-    See https://gitlab.kwant-project.org/qt/adaptive/merge_requests/73 and
-    https://gitlab.kwant-project.org/qt/adaptive/issues/61."""
-
-    eps = 5e-14
-    learner = Learner1D(small_deviations, bounds=(1 - eps, 1 + eps))
-
-    # Some non-determinism is needed to make this test fail so we keep
-    # a list of points that will be evaluated later to emulate
-    # parallel execution
+    # Emulate parallel execution
     stash = []
 
     for i in range(100):
-        xs, _ = learner.ask(10)
+        n = random.randint(1, 10)
+        m = random.randint(0, n)
+        xs, _ = learner.ask(n, tell_pending=False)
 
-        # Save 5 random points out of `xs` for later
+        # Save 'm' random points out of `xs` for later
         random.shuffle(xs)
-        for _ in range(5):
+        for _ in range(m):
             stash.append(xs.pop())
 
         for x in xs:
             learner.tell(x, learner.function(x))
 
-        # Evaluate and add 5 random points from `stash`
+        # Evaluate and add 'm' random points from `stash`
         random.shuffle(stash)
-        for _ in range(5):
-            learner.tell(stash.pop(), learner.function(x))
+        for _ in range(m):
+            x = stash.pop()
+            learner.tell(x, learner.function(x))
 
-        if learner.loss() == 0:
-            # If this condition is met, the learner can't return any
-            # more points.
-            break
+    assert all(l.npoints > 10 for l in learner.learners), [l.npoints for l in learner.learners]
 
 
 @pytest.mark.xfail
@@ -486,22 +405,3 @@ def test_learner_subdomain(learner_type, f, learner_kwargs):
        perform 'similarly' to learners defined on that subdomain only."""
     # XXX: not sure how to implement this. How do we measure "performance"?
     raise NotImplementedError()
-
-
-def test_faiure_case_LearnerND():
-    log = [
-        ('ask', 4),
-        ('tell', (-1, -1, -1), 1.607873907219222e-101),
-        ('tell', (-1, -1, 1), 1.607873907219222e-101),
-        ('ask', 2),
-        ('tell', (-1, 1, -1), 1.607873907219222e-101),
-        ('tell', (-1, 1, 1), 1.607873907219222e-101),
-        ('ask', 2),
-        ('tell', (1, -1, 1), 2.0),
-        ('tell', (1, -1, -1), 2.0),
-        ('ask', 2),
-        ('tell', (0.0, 0.0, 0.0), 4.288304431237686e-06),
-        ('tell', (1, 1, -1), 2.0)
-    ]
-    learner = LearnerND(lambda *x: x, bounds=[(-1, 1), (-1, 1), (-1, 1)])
-    replay_log(learner, log)
