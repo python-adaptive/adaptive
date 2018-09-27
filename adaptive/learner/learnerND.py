@@ -218,9 +218,9 @@ class LearnerND(BaseLearner):
         return all(p in self.data for p in self._bounds_points)
 
     def ip(self):
-        fd = FakeDelaunay(self.tri.vertices, self.tri.simplices)
-        values = list(map(lambda k: self.data[k], self.tri.vertices))
-        return interpolate.LinearNDInterpolator(fd, values) 
+        tri = FakeDelaunay(self.tri.vertices, self.tri.simplices)
+        values = [self.data[k] for k in self.tri.vertices]
+        return interpolate.LinearNDInterpolator(tri, values)
 
     @property
     def tri(self):
@@ -290,7 +290,7 @@ class LearnerND(BaseLearner):
         ones = np.ones((len(points), 1))
         A = np.hstack((points, ones))
         B = np.array(values, dtype=float)
-        fit, *_ = np.linalg.lstsq(A, B, rcond=None)
+        fit = np.linalg.lstsq(A, B, rcond=None)[0]
         *gradient, _constant = fit
         # we do not need the constant, only the gradient
 
