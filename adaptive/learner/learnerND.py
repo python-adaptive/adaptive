@@ -12,8 +12,9 @@ from .base_learner import BaseLearner
 
 from ..notebook_integration import ensure_holoviews
 from .triangulation import (Triangulation, point_in_simplex,
-                            circumsphere, simplex_volume_in_embedding)
+                            circumsphere, simplex_volume_in_embedding, FakeDelaunay)
 from ..utils import restore
+import math
 
 
 def volume(simplex, ys=None):
@@ -217,8 +218,9 @@ class LearnerND(BaseLearner):
         return all(p in self.data for p in self._bounds_points)
 
     def ip(self):
-        # XXX: take our own triangulation into account when generating the ip
-        return interpolate.LinearNDInterpolator(self.points, self.values)
+        fd = FakeDelaunay(self.tri.vertices, self.tri.simplices)
+        values = list(map(lambda k: self.data[k], self.tri.vertices))
+        return interpolate.LinearNDInterpolator(fd, values) 
 
     @property
     def tri(self):
