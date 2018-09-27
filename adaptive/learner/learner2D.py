@@ -386,7 +386,7 @@ class Learner2D(BaseLearner):
             # it could fill up till a length smaller than `stack_till`.
             new_points, new_loss_improvements = self._fill_stack(
                 stack_till=max(n_left, self.stack_size))
-            for p in points[:n_left]:
+            for p in new_points[:n_left]:
                 self.tell_pending(p)
             n_left -= len(new_points)
 
