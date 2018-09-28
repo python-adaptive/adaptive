@@ -235,3 +235,107 @@ def test_ask_does_not_return_known_points_when_returning_bounds():
     learner.tell(0, 0)
     points, _ = learner.ask(3)
     assert 0 not in points
+
+
+def test_tell_many():
+    def f(x, offset=0.123214):
+        a = 0.01
+        return (np.sin(x**2) + np.sin(x**5)
+            + a**2 / (a**2 + (x - offset)**2)
+            + x**2 + 1e-5 * x**3)
+
+    def f_vec(x, offset=0.123214):
+        a = 0.01
+        y = x + a**2 / (a**2 + (x - offset)**2)
+        return [y, 0.5 * y, y**2]
+
+    def assert_equal_dicts(d1, d2):
+        xs1, ys1 = zip(*sorted(d1.items()))
+        xs2, ys2 = zip(*sorted(d2.items()))
+        ys1 = np.array(ys1, dtype=np.float)
+        ys2 = np.array(ys2, dtype=np.float)
+        np.testing.assert_almost_equal(xs1, xs2)
+        np.testing.assert_almost_equal(ys1, ys2)
+
+    def test_equal(l1, l2):
+        assert_equal_dicts(l1.neighbors, l2.neighbors)
+        assert_equal_dicts(l1.neighbors_combined, l2.neighbors_combined)
+        assert_equal_dicts(l1.data, l2.data)
+        assert_equal_dicts(l2.losses, l1.losses)
+        assert_equal_dicts(l2.losses_combined, l1.losses_combined)
+        np.testing.assert_almost_equal(sorted(l1.pending_points),
+                                       sorted(l2.pending_points))
+        np.testing.assert_almost_equal(l1._bbox[1], l1._bbox[1])
+        assert l1._scale == l2._scale
+        assert l1._bbox[0] == l2._bbox[0]
+
+    for function in [f, f_vec]:
+        learner = Learner1D(function, bounds=(-1, 1))
+        learner2 = Learner1D(function, bounds=(-1, 1))
+        simple(learner, goal=lambda l: l.npoints > 200)
+        xs, ys = zip(*learner.data.items())
+
+        # Make the scale huge to no get a scale doubling
+        x = 1e-6
+        max_value = 1e6 if learner.vdim == 1 else np.array(learner.vdim * [1e6])
+        learner.tell(x, max_value)
+        learner2.tell(x, max_value)
+
+        for x in xs:
+            learner2.tell_pending(x)
+
+        learner2.tell_many(xs, ys)
+        test_equal(learner, learner2)
+
+    # Test non-determinism. We keep a list of points that will be
+    # evaluated later to emulate parallel execution.
+    def _random_run(learner, learner2, scale_doubling=True):
+        if not scale_doubling:
+            # Make the scale huge to no get a scale doubling
+            x = 1e-6
+            max_value = 1e6
+            learner.tell(x, max_value)
+            learner2.tell(x, max_value)
+
+        stash = []
+        for i in range(10):
+            xs, _ = learner.ask(10)
+            for x in xs:
+                learner2.tell_pending(x)
+
+            # Save 5 random points out of `xs` for later
+            random.shuffle(xs)
+            for _ in range(5):
+                stash.append(xs.pop())
+
+            ys = [learner.function(x) for x in xs]
+
+            learner.tell_many(xs, ys, force=True)
+            for x, y in zip(xs, ys):
+                learner2.tell(x, y)
+
+            # Evaluate and add N random points from `stash`
+            random.shuffle(stash)
+            xs = [stash.pop() for _ in range(random.randint(1, 5))]
+            ys = [learner.function(x) for x in xs]
+
+            learner.tell_many(xs, ys, force=True)
+            for x, y in zip(xs, ys):
+                learner2.tell(x, y)
+
+        if scale_doubling:
+            # Double the scale to trigger the loss updates
+            max_value = max(learner.data.values())
+            x = 1e-6
+            learner.tell(x, max_value * 10)
+            learner2.tell(x, max_value * 10)
+
+    learner = Learner1D(f, bounds=(-1, 1))
+    learner2 = Learner1D(f, bounds=(-1, 1))
+    _random_run(learner, learner2, scale_doubling=False)
+    test_equal(learner, learner2)
+
+    learner = Learner1D(f, bounds=(-1, 1))
+    learner2 = Learner1D(f, bounds=(-1, 1))
+    _random_run(learner, learner2, scale_doubling=True)
+    test_equal(learner, learner2)
