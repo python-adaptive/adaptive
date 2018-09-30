@@ -520,6 +520,10 @@ class Triangulation:
         deleted_simplices = bad_triangles - new_triangles
         new_simplices = new_triangles - bad_triangles
 
+        old_vol = sum([self.volume(simplex) for simplex in deleted_simplices])
+        new_vol = sum([self.volume(simplex) for simplex in new_simplices])
+        assert np.isclose(old_vol, new_vol), f"{old_vol} !== {new_vol}"
+
         return deleted_simplices, new_simplices
 
     def add_point(self, point, simplex=None, transform=None):
