@@ -315,8 +315,8 @@ class LearnerND(BaseLearner):
         simplex = tuple(sorted(simplex))
         return simplex in self.tri.simplices
 
-    def inside_bounds(self, point):
-        return all(mn <= p <= mx for p, (mn, mx) in zip(point, self.bounds))
+    def inside_bounds(self, point, eps = 1e-8):
+        return all((mn - eps) <= p <= (mx + eps) for p, (mn, mx) in zip(point, self.bounds))
             
     def tell_pending(self, point, *, simplex=None):
         point = tuple(point)
