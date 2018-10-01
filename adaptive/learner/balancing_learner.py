@@ -114,7 +114,7 @@ class BalancingLearner(BaseLearner):
                 loss_dict[index] = learner.loss(real)
             losses.append(loss_dict[index])
 
-        return losses        
+        return losses
 
     def loss(self, real=True):
         losses = self.losses(real)
