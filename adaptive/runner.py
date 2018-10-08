@@ -449,6 +449,7 @@ class AsyncRunner(BaseRunner):
                                              self.function)
 
         self.task = self.ioloop.create_task(self._run())
+        self.saving_task = None
         if in_ipynb() and not self.ioloop.is_running():
             warnings.warn("The runner has been scheduled, but the asyncio "
                           "event loop is not running! If you are "
@@ -540,6 +541,31 @@ class AsyncRunner(BaseRunner):
         else:
             end_time = time.time()
         return end_time - self.start_time
+
+    def start_periodic_saving(self, save_kwargs, interval):
+        """Periodically save the learner's data.
+
+        Parameters
+        ----------
+        save_kwargs : dict
+            Key-word arguments for 'learner.save(**save_kwargs)'.
+        interval : int
+            Number of seconds between saving the learner.
+
+        Example
+        -------
+        >>> runner = Runner(learner)
+        >>> runner.start_periodic_saving(
+        ...     save_kwargs=dict(fname='data/test.pickle'),
+        ...     interval=600)
+        """
+        async def _saver(save_kwargs=save_kwargs, interval=interval):
+            while self.status() == 'running':
+                self.learner.save(**save_kwargs)
+                await asyncio.sleep(interval)
+            self.learner.save(**save_kwargs)  # one last time
+        self.saving_task = self.ioloop.create_task(_saver())
+        return self.saving_task
 
 
 # Default runner

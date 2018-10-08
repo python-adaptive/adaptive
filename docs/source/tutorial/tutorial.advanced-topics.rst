@@ -17,19 +17,96 @@ Advanced Topics
     import adaptive
     adaptive.notebook_extension()
 
+    import asyncio
     from functools import partial
     import random
 
     offset = random.uniform(-0.5, 0.5)
 
-    def f(x, offset=offset, wait=True):
-        from time import sleep
-        from random import random
-
+    def f(x, offset=offset):
         a = 0.01
-        if wait:
-            sleep(random())
         return x + a**2 / (a**2 + (x - offset)**2)
+
+
+Saving and loading learners
+---------------------------
+
+Every learner has a `~adaptive.BaseLearner.save` and `~adaptive.BaseLearner.load`
+method that can be used to save and load **only** the data of a learner.
+
+There are **two ways** of naming the files: 1. Using the ``fname``
+argument in ``learner.save(fname=...)`` 2. Setting the ``fname``
+attribute, like ``learner.fname = 'data/example.p`` and then
+``learner.save()``
+
+The second way *must be used* when saving the ``learner``\s of a
+`~adaptive.BalancingLearner`.
+
+By default the resulting pickle files are compressed, to turn this off
+use ``learner.save(fname=..., compress=False)``
+
+.. execute::
+
+    # Let's create two learners and run only one.
+    learner = adaptive.Learner1D(f, bounds=(-1, 1))
+    control = adaptive.Learner1D(f, bounds=(-1, 1))
+
+    # Let's only run the learner
+    runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+
+.. execute::
+    :hide-code:
+
+    await runner.task  # This is not needed in a notebook environment!
+
+.. execute::
+
+    runner.live_info()
+
+.. execute::
+
+    fname = 'data/example_file.p'
+    learner.save(fname)
+    control.load(fname)
+
+    (learner.plot().relabel('saved learner')
+     + control.plot().relabel('loaded learner'))
+
+Or just (without saving):
+
+.. execute::
+
+    control = adaptive.Learner1D(f, bounds=(-1, 1))
+    control.copy_from(learner)
+
+One can also periodically save the learner while running in a
+`~adaptive.Runner`. Use it like:
+
+.. execute::
+
+    def slow_f(x):
+        from time import sleep
+        sleep(5)
+        return x
+
+    learner = adaptive.Learner1D(slow_f, bounds=[0, 1])
+    runner = adaptive.Runner(learner, goal=lambda l: l.npoints > 100)
+    runner.start_periodic_saving(save_kwargs=dict(fname='data/periodic_example.p'), interval=6)
+
+.. execute::
+    :hide-code:
+
+    await asyncio.sleep(6)  # This is not needed in a notebook environment!
+    runner.cancel()
+
+.. execute::
+
+    runner.live_info()  # we cancelled it after 6 seconds
+
+.. execute::
+
+    # See the data 6 later seconds with
+    !ls -lah data  # only works on macOS and Linux systems
 
 
 A watched pot never boils!
@@ -62,7 +139,7 @@ The simplest way to accomplish this is to use
 
 .. execute::
 
-    learner = adaptive.Learner1D(partial(f, wait=False), bounds=(-1, 1))
+    learner = adaptive.Learner1D(f, bounds=(-1, 1))
     adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
     # This will only get run after the runner has finished
     learner.plot()
@@ -89,7 +166,7 @@ learner:
 
 .. execute::
 
-    learner = adaptive.Learner1D(partial(f, wait=False), bounds=(-1, 1))
+    learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
     # blocks until completion
     adaptive.runner.simple(learner, goal=lambda l: l.loss() < 0.01)
@@ -107,7 +184,7 @@ non-blocking `adaptive.Runner`, you can use the
 
     from adaptive.runner import SequentialExecutor
 
-    learner = adaptive.Learner1D(partial(f, wait=False), bounds=(-1, 1))
+    learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
     runner = adaptive.Runner(learner, executor=SequentialExecutor(), goal=lambda l: l.loss() < 0.01)
 
@@ -146,12 +223,11 @@ the runner. You can also stop the runner programatically using
 .. execute::
     :hide-code:
 
-    import asyncio
-    await asyncio.sleep(3)  # This is not needed in the notebook!
+    await asyncio.sleep(0.1)  # This is not needed in the notebook!
 
 .. execute::
 
-    runner.cancel()  # Let's execute this after 3 seconds
+    runner.cancel()  # Let's execute this after 0.1 seconds
 
 .. execute::
 
@@ -195,7 +271,6 @@ will raise an exception 10% of the time.
 .. execute::
     :hide-code:
 
-    import asyncio
     await asyncio.sleep(4)  # in 4 seconds it will surely have failed
 
 .. execute::

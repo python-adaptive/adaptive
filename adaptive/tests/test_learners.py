@@ -1,17 +1,22 @@
 # -*- coding: utf-8 -*-
 
 import collections
+import functools as ft
 import inspect
 import itertools as it
-import functools as ft
-import random
 import math
+import operator
+import os
+import random
+import shutil
+import tempfile
+
 import numpy as np
+import pytest
 import scipy.spatial
 
-import pytest
-
-from ..learner import AverageLearner, BalancingLearner, Learner1D, Learner2D, LearnerND
+from ..learner import (AverageLearner, BalancingLearner, DataSaver,
+    IntegratorLearner, Learner1D, Learner2D, LearnerND, SKOptLearner)
 from ..runner import simple
 
 
@@ -384,6 +389,77 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
             learner.tell(x, learner.function(x))
 
     assert all(l.npoints > 10 for l in learner.learners), [l.npoints for l in learner.learners]
+
+
+@run_with(Learner1D, Learner2D, LearnerND, AverageLearner, SKOptLearner,
+    IntegratorLearner)
+def test_saving(learner_type, f, learner_kwargs):
+    f = generate_random_parametrization(f)
+    learner = learner_type(f, **learner_kwargs)
+    control = learner_type(f, **learner_kwargs)
+    simple(learner, lambda l: l.npoints > 100)
+    fd, path = tempfile.mkstemp()
+    try:
+        learner.save(path)
+        control.load(path)
+        if learner_type is not Learner1D:
+            # Because different scales result in differnt losses
+            np.testing.assert_almost_equal(learner.loss(), control.loss())
+
+        # Try if the control is runnable
+        simple(control, lambda l: l.npoints > 200)
+    finally:
+        os.remove(path)
+
+
+@run_with(Learner1D, Learner2D, LearnerND, AverageLearner, SKOptLearner,
+    IntegratorLearner)
+def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
+    f = generate_random_parametrization(f)
+    learner = BalancingLearner([learner_type(f, **learner_kwargs)])
+    control = BalancingLearner([learner_type(f, **learner_kwargs)])
+
+    # set fnames
+    learner.learners[0].fname = 'test'
+    control.learners[0].fname = 'test'
+
+    simple(learner, lambda l: l.learners[0].npoints > 100)
+    folder = tempfile.mkdtemp()
+    try:
+        learner.save(folder=folder)
+        control.load(folder=folder)
+        if learner_type is not Learner1D:
+            # Because different scales result in differnt losses
+            np.testing.assert_almost_equal(learner.loss(), control.loss())
+
+        # Try if the control is runnable
+        simple(control, lambda l: l.learners[0].npoints > 200)
+    finally:
+        shutil.rmtree(folder)
+
+
+@run_with(Learner1D, Learner2D, LearnerND, AverageLearner, SKOptLearner,
+    IntegratorLearner)
+def test_saving_with_datasaver(learner_type, f, learner_kwargs):
+    f = generate_random_parametrization(f)
+    g = lambda x: {'y': f(x), 't': random.random()}
+    arg_picker = operator.itemgetter('y')
+    learner = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
+    control = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
+    simple(learner, lambda l: l.npoints > 100)
+    fd, path = tempfile.mkstemp()
+    try:
+        learner.save(path)
+        control.load(path)
+        if learner_type is not Learner1D:
+            # Because different scales result in differnt losses
+            np.testing.assert_almost_equal(learner.loss(), control.loss())
+        assert learner.extra_data == control.extra_data
+
+        # Try if the control is runnable
+        simple(control, lambda l: l.npoints > 200)
+    finally:
+        os.remove(path)
 
 
 @pytest.mark.xfail

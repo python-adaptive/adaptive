@@ -485,3 +485,9 @@ class Learner1D(BaseLearner):
         self.pending_points = set()
         self.losses_combined = deepcopy(self.losses)
         self.neighbors_combined = deepcopy(self.neighbors)
+
+    def _get_data(self):
+        return self.data
+
+    def _set_data(self, data):
+        self.tell_many(*zip(*data.items()))

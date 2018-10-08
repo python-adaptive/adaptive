@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
+from copy import copy
 import itertools
 from math import sqrt
 
@@ -522,3 +523,13 @@ class Learner2D(BaseLearner):
         no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
 
         return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
+
+    def _get_data(self):
+        return self.data
+
+    def _set_data(self, data):
+        self.data = data
+        # Remove points from stack if they already exist
+        for point in copy(self._stack):
+            if point in self.data:
+                self._stack.pop(point)

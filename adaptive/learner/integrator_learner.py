@@ -525,3 +525,30 @@ class IntegratorLearner(BaseLearner):
         xs, ys = zip(*[(x, y) for ival in ivals
                        for x, y in sorted(ival.done_points.items())])
         return hv.Path((xs, ys))
+
+    def _get_data(self):
+        # Change the defaultdict of SortedSets to a normal dict of sets.
+        x_mapping = {k: set(v) for k, v in self.x_mapping.items()}
+
+        return (self.priority_split,
+                self.done_points,
+                self.pending_points,
+                self._stack,
+                x_mapping,
+                self.ivals,
+                self.first_ival)
+
+    def _set_data(self, data):
+        self.priority_split, self.done_points, self.pending_points, \
+            self._stack, x_mapping, self.ivals, self.first_ival = data
+
+        # Add the pending_points to the _stack such that they are evaluated again
+        for x in self.pending_points:
+            if x not in self._stack:
+                self._stack.append(x)
+
+        # x_mapping is a data structure that can't easily be saved
+        # so we recreate it here
+        self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
+        for k, _set in x_mapping.items():
+            self.x_mapping[k].update(_set)

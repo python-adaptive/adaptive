@@ -572,3 +572,9 @@ class LearnerND(BaseLearner):
             return im.opts(style=dict(cmap='viridis'))
         else:
             raise ValueError("Only 1 or 2-dimensional plots can be generated.")
+
+    def _get_data(self):
+        return self.data
+
+    def _set_data(self, data):
+        self.tell_many(*zip(*data.items()))

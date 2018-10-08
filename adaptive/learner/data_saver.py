@@ -2,6 +2,9 @@
 from collections import OrderedDict
 import functools
 
+from .base_learner import BaseLearner
+from ..utils import copy_docstring_from
+
 
 class DataSaver:
     """Save extra data associated with the values that need to be learned.
@@ -39,6 +42,25 @@ class DataSaver:
 
     def tell_pending(self, x):
         self.learner.tell_pending(x)
+
+    def _get_data(self):
+        return self.learner._get_data(), self.extra_data
+
+    def _set_data(self, data):
+        learner_data, self.extra_data = data
+        self.learner._set_data(learner_data)
+
+    @copy_docstring_from(BaseLearner.save)
+    def save(self, fname=None, compress=True):
+        # We copy this method because the 'DataSaver' is not a
+        # subclass of the 'BaseLearner'.
+        BaseLearner.save(self, fname, compress)
+
+    @copy_docstring_from(BaseLearner.load)
+    def load(self, fname=None, compress=True):
+        # We copy this method because the 'DataSaver' is not a
+        # subclass of the 'BaseLearner'.
+        BaseLearner.load(self, fname, compress)
 
 
 def _ds(learner_type, arg_picker, *args, **kwargs):
