@@ -7,8 +7,9 @@ import math
 import numpy as np
 import sortedcontainers
 
-from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
+from ..notebook_integration import ensure_holoviews
+from ..utils import cache_latest
 
 
 def uniform_loss(interval, scale, function_values):
@@ -156,6 +157,7 @@ class Learner1D(BaseLearner):
     def npoints(self):
         return len(self.data)
 
+    @cache_latest
     def loss(self, real=True):
         losses = self.losses if real else self.losses_combined
         return max(losses.values()) if len(losses) > 0 else float('inf')

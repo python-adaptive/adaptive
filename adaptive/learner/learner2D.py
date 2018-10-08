@@ -7,8 +7,9 @@ from math import sqrt
 import numpy as np
 from scipy import interpolate
 
-from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
+from ..notebook_integration import ensure_holoviews
+from ..utils import cache_latest
 
 
 # Learner2D and helper functions.
@@ -267,7 +268,6 @@ class Learner2D(BaseLearner):
         self._stack.update({p: np.inf for p in self._bounds_points})
         self.function = function
         self._ip = self._ip_combined = None
-        self._loss = np.inf
 
         self.stack_size = 10
 
@@ -438,13 +438,13 @@ class Learner2D(BaseLearner):
 
         return points[:n], loss_improvements[:n]
 
+    @cache_latest
     def loss(self, real=True):
         if not self.bounds_are_done:
             return np.inf
         ip = self.ip() if real else self.ip_combined()
         losses = self.loss_per_triangle(ip)
-        self._loss = losses.max()
-        return self._loss
+        return losses.max()
 
     def remove_unfinished(self):
         self.pending_points = set()

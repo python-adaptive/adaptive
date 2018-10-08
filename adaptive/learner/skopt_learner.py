@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-
 import numpy as np
-
-from ..notebook_integration import ensure_holoviews
-from .base_learner import BaseLearner
-
 from skopt import Optimizer
+
+from .base_learner import BaseLearner
+from ..notebook_integration import ensure_holoviews
+from ..utils import restore, cache_latest
 
 
 class SKOptLearner(Optimizer, BaseLearner):
@@ -38,6 +37,7 @@ class SKOptLearner(Optimizer, BaseLearner):
     def remove_unfinished(self):
         pass
 
+    @cache_latest
     def loss(self, real=True):
         if not self.models:
             return np.inf
