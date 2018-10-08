@@ -409,8 +409,10 @@ class Triangulation:
             if orientation_inside == -orientation_new_point:
                 # if the orientation of the new vertex is zero or directed
                 # towards the center, do not add the simplex
-                self.add_simplex((*face, pt_index))
-                new_simplices.add((*face, pt_index))
+                simplex = (*face, pt_index)
+                if not self._simplex_is_almost_flat(simplex):
+                    self.add_simplex(simplex)
+                    new_simplices.add(simplex)
 
         if len(new_simplices) == 0:
             # We tried to add an internal point, revert and raise.
@@ -510,12 +512,26 @@ class Triangulation:
 
         for face in hole_faces:
             if pt_index not in face:
-                if self.volume((*face, pt_index)) < 1e-8:
-                    continue
-                self.add_simplex((*face, pt_index))
+                simplex = (*face, pt_index)
+                if not self._simplex_is_almost_flat(simplex):
+                    self.add_simplex(simplex)
 
         new_triangles = self.vertex_to_simplices[pt_index]
         return bad_triangles - new_triangles, new_triangles - bad_triangles
+
+    def _simplex_is_almost_flat(self, simplex):
+        return self._relative_volume(simplex) < 1e-8
+
+    def _relative_volume(self, simplex):
+        """Compute the volume of a simplex divided by the average (Manhattan)
+        distance of its vertices. The advantage of this is that the relative
+        volume is only dependent on the shape of the simplex and not on the
+        absolute size. Due to the weird scaling, the only use of this method
+        is to check that a simplex is almost flat."""
+        vertices = np.array(self.get_vertices(simplex))
+        vectors = vertices[1:] - vertices[0]
+        average_edge_length = np.mean(np.abs(vectors))
+        return self.volume(simplex) / (average_edge_length ** self.dim)
 
     def add_point(self, point, simplex=None, transform=None):
         """Add a new vertex and create simplices as appropriate.
