@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from contextlib import contextmanager
+from functools import wraps
 from itertools import product
 import time
 
@@ -24,3 +25,16 @@ def restore(*learners):
     finally:
         for state, learner in zip(states, learners):
             learner.__setstate__(state)
+
+
+def cache_latest(f):
+    """Cache the latest return value of the function and add it
+    as 'self._cache[f.__name__]'."""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        self = args[0]
+        if not hasattr(self, '_cache'):
+            self._cache = {}
+        self._cache[f.__name__] = f(*args, **kwargs)
+        return self._cache[f.__name__]
+    return wrapper
