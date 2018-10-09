@@ -1,0 +1,18 @@
+name: adaptive
+
+channels:
+- conda-forge
+
+dependencies:
+  - python=3.6
+  - sortedcontainers
+  - scipy
+  - holoviews
+  - ipyparallel
+  - distributed
+  - ipykernel>=4.8*
+  - jupyter_client>=5.2.2
+  - ipywidgets
+  - pip:
+      - sphinx_rtd_theme
+      - recommonmark
