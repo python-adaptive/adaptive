@@ -99,6 +99,43 @@ def resolution_loss(ip, min_distance=0, max_distance=1):
     return loss
 
 
+def minimize_triangle_surface_loss(ip):
+    """Loss function that is similar to the default loss function in the
+    `Learner1D`. The loss is the area spanned by the 3D vectors of the
+    vertices.
+
+    Works with `~adaptive.Learner2D` only.
+
+    Examples
+    --------
+    >>> from adaptive.learner.learner2D import minimize_triangle_surface_loss 
+    >>> def f(xy):
+    ...     x, y = xy
+    ...     return x**2 + y**2
+    >>>
+    >>> learner = adaptive.Learner2D(f, bounds=[(-1, -1), (1, 1)],
+    ...     loss_per_triangle=minimize_triangle_surface_loss)
+    >>>
+    """
+    tri = ip.tri
+    points = tri.points[tri.vertices]
+    values = ip.values[tri.vertices]
+    values = values / (ip.values.ptp(axis=0).max() or 1)
+
+    def _get_vectors(points):
+        delta = points - points[:, -1, :][:, None, :]
+        vectors = delta[:, :2, :]
+        return vectors[:, 0, :], vectors[:, 1, :]
+
+    a_xy, b_xy = _get_vectors(points)
+    a_z, b_z = _get_vectors(values)
+
+    a = np.hstack([a_xy, a_z])
+    b = np.hstack([b_xy, b_z])
+
+    return np.linalg.norm(np.cross(a, b) / 2, axis=1)
+
+
 def default_loss(ip):
     dev = np.sum(deviations(ip), axis=0)
     A = areas(ip)
