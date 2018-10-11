@@ -60,7 +60,8 @@ def make_datasaver(learner_type, arg_picker):
     Imagine we have a function that returns a dictionary
     of the form: `{'y': y, 'err_est': err_est}`.
 
-    >>> DataSaver = make(Learner1D, arg_picker=operator.itemgetter('y'))
+    >>> DataSaver = make_datasaver(Learner1D,
+    ...     arg_picker=operator.itemgetter('y'))
     >>> learner = DataSaver(function=f, bounds=(-1.0, 1.0))
 
     Or when using `BalacingLearner.from_product`:
