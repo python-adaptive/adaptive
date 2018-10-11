@@ -174,6 +174,9 @@ def _info_html(runner):
     with suppress(Exception):
         info.append(('# of points', runner.learner.npoints))
 
+    with suppress(Exception):
+        info.append(('latest loss', f'{runner.learner._cache["loss"]:.3f}'))
+
     template = '<dt>{}</dt><dd>{}</dd>'
     table = '\n'.join(template.format(k, v) for k, v in info)
 

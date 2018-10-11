@@ -4,8 +4,9 @@ from math import sqrt
 
 import numpy as np
 
-from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
+from ..notebook_integration import ensure_holoviews
+from ..utils import cache_latest
 
 
 class AverageLearner(BaseLearner):
@@ -90,6 +91,7 @@ class AverageLearner(BaseLearner):
             return np.inf
         return sqrt((self.sum_f_sq - n * self.mean**2) / (n - 1))
 
+    @cache_latest
     def loss(self, real=True, *, n=None):
         if n is None:
             n = self.npoints if real else self.n_requested

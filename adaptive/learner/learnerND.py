@@ -13,7 +13,7 @@ from .base_learner import BaseLearner
 from ..notebook_integration import ensure_holoviews
 from .triangulation import (Triangulation, point_in_simplex,
                             circumsphere, simplex_volume_in_embedding)
-from ..utils import restore
+from ..utils import restore, cache_latest
 
 
 def volume(simplex, ys=None):
@@ -452,6 +452,7 @@ class LearnerND(BaseLearner):
 
         return self._losses
 
+    @cache_latest
     def loss(self, real=True):
         losses = self.losses()  # XXX: compute pending loss if real == False
         return max(losses.values()) if losses else float('inf')

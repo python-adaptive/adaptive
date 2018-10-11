@@ -6,7 +6,7 @@ from operator import itemgetter
 
 from .base_learner import BaseLearner
 from ..notebook_integration import ensure_holoviews
-from ..utils import restore, named_product
+from ..utils import cache_latest, named_product, restore
 
 
 def dispatch(child_functions, arg):
@@ -116,6 +116,7 @@ class BalancingLearner(BaseLearner):
 
         return losses
 
+    @cache_latest
     def loss(self, real=True):
         losses = self.losses(real)
         return max(losses)
