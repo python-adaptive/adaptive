@@ -36,10 +36,10 @@ class BalancingLearner(BaseLearner):
             >>> cdims = (['A', 'B'], itertools.product([True, False], [0, 1]))
             >>> cdims = (['A', 'B'], [(True, 0), (True, 1),
             ...                       (False, 0), (False, 1)])
-    strategy : 'loss_improvements' (default) or 'loss'
-        The points that the 'BalancingLearner' choses can be either based on
-        the best 'loss_improvements' or the smallest total 'loss' of the
-        child learners.
+    strategy : 'loss_improvements' (default), 'loss', or 'npoints'
+        The points that the 'BalancingLearner' choses can be either based on:
+        the best 'loss_improvements', the smallest total 'loss' of the
+        child learners, or the number of points per learner, using 'npoints'.
 
     Notes
     -----
@@ -73,9 +73,11 @@ class BalancingLearner(BaseLearner):
             self._ask_and_tell = self._ask_and_tell_based_on_loss_improvements
         elif strategy == 'loss':
             self._ask_and_tell = self._ask_and_tell_based_on_loss
+        elif strategy == 'npoints':
+            self._ask_and_tell = self._ask_and_tell_based_on_npoints
         else:
-            raise ValueError('Only strategy="loss_improvements" or'
-                             ' strategy="loss" is implemented.')
+            raise ValueError('Only strategy="loss_improvements",'
+                ' strategy="loss", or strategy="npoints" is implemented.')
 
     def _ask_and_tell_based_on_loss_improvements(self, n):
         points = []
@@ -106,6 +108,21 @@ class BalancingLearner(BaseLearner):
             max_ind = np.argmax(losses)
             xs, ls = self.learners[max_ind].ask(1)
             points.append((max_ind, xs[0]))
+            loss_improvements.append(ls[0])
+        return points, loss_improvements
+
+    def _ask_and_tell_based_on_npoints(self, n):
+        points = []
+        loss_improvements = []
+        npoints = [l.npoints + len(l.pending_points)
+                   for l in self.learners]
+        n_left = n
+        while n_left > 0:
+            i = np.argmin(npoints)
+            xs, ls = self.learners[i].ask(1)
+            npoints[i] += 1
+            n_left -= 1
+            points.append((i, xs[0]))
             loss_improvements.append(ls[0])
         return points, loss_improvements
 
