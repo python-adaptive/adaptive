@@ -24,15 +24,17 @@ class SKOptLearner(Optimizer, BaseLearner):
 
     def __init__(self, function, **kwargs):
         self.function = function
+        self.pending_points = set()
         super().__init__(**kwargs)
 
-    def tell(self, x, y, fit=True):    
+    def tell(self, x, y, fit=True):
+        self.pending_points.discard(x)
         super().tell([x], y, fit)
 
     def tell_pending(self, x):
         # 'skopt.Optimizer' takes care of points we
         # have not got results for.
-        pass
+        self.pending_points.add(x)
 
     def remove_unfinished(self):
         pass
@@ -97,3 +99,10 @@ class SKOptLearner(Optimizer, BaseLearner):
         plot_bounds = (bounds[0] - margin, bounds[1] + margin)
 
         return p.redim(x=dict(range=plot_bounds))
+
+    def _get_data(self):
+        return [x[0] for x in self.Xi], self.yi
+
+    def _set_data(self, data):
+        xs, ys = data
+        self.tell_many(xs, ys)
