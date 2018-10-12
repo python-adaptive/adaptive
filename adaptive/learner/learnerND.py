@@ -161,7 +161,7 @@ class LearnerND(BaseLearner):
         self.loss_per_simplex = loss_per_simplex or default_loss
         self.bounds = tuple(tuple(map(float, b)) for b in bounds)
         self.data = OrderedDict()
-        self._pending = set()
+        self.pending_points = set()
 
         self._bounds_points = list(map(tuple, itertools.product(*bounds)))
 
@@ -247,7 +247,7 @@ class LearnerND(BaseLearner):
         if value is None:
             return self.tell_pending(point)
 
-        self._pending.discard(point)
+        self.pending_points.discard(point)
         tri = self.tri
         self.data[point] = value
 
@@ -274,7 +274,7 @@ class LearnerND(BaseLearner):
         if not self.inside_bounds(point):
             return
 
-        self._pending.add(point)
+        self.pending_points.add(point)
 
         if self.tri is None:
             return
@@ -333,7 +333,7 @@ class LearnerND(BaseLearner):
     def _ask_bound_point(self):
         # get the next bound point that is still available
         new_point = next(p for p in self._bounds_points
-                         if p not in self.data and p not in self._pending)
+                         if p not in self.data and p not in self.pending_points)
         self.tell_pending(new_point)
         return new_point, np.inf
 
@@ -394,7 +394,7 @@ class LearnerND(BaseLearner):
 
     @property
     def _bounds_available(self):
-        return any((p not in self._pending and p not in self.data)
+        return any((p not in self.pending_points and p not in self.data)
                    for p in self._bounds_points)
 
     def _ask(self):
@@ -459,7 +459,7 @@ class LearnerND(BaseLearner):
 
     def remove_unfinished(self):
         # XXX: implement this method
-        self._pending = set()
+        self.pending_points = set()
         self._subtriangulations = dict()
         self._pending_to_simplex = dict()
 
