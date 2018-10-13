@@ -40,6 +40,8 @@ class BalancingLearner(BaseLearner):
         The points that the 'BalancingLearner' choses can be either based on:
         the best 'loss_improvements', the smallest total 'loss' of the
         child learners, or the number of points per learner, using 'npoints'.
+        One can dynamically change the strategy while the simulation is
+        running by changing the 'learner.strategy' attribute.
 
     Notes
     -----
@@ -69,6 +71,15 @@ class BalancingLearner(BaseLearner):
             raise TypeError('A BalacingLearner can handle only one type'
                             ' of learners.')
 
+        self.strategy = strategy
+
+    @property
+    def strategy(self):
+        return self._strategy
+    
+    @strategy.setter
+    def strategy(self, strategy):
+        self._strategy = strategy
         if strategy == 'loss_improvements':
             self._ask_and_tell = self._ask_and_tell_based_on_loss_improvements
         elif strategy == 'loss':
