@@ -146,7 +146,7 @@ class BalancingLearner(BaseLearner):
         losses = self.losses(real)
         return max(losses)
 
-    def plot(self, cdims=None, plotter=None):
+    def plot(self, cdims=None, plotter=None, dynamic=True):
         """Returns a DynamicMap with sliders.
 
         Parameters
@@ -166,10 +166,16 @@ class BalancingLearner(BaseLearner):
         plotter : callable, optional
             A function that takes the learner as a argument and returns a
             holoviews object. By default learner.plot() will be called.
+        dynamic : bool, default True
+            Return a holoviews.DynamicMap if True, else a holoviews.HoloMap.
+            The DynamicMap is rendered as the sliders change and can therefore
+            not be exported to html. The HoloMap does not have this problem.
+
         Returns
         -------
-        dm : holoviews.DynamicMap object
-            A DynamicMap with sliders that are defined by 'cdims'.
+        dm : holoviews.DynamicMap object (default) or holoviews.HoloMap object
+            A DynamicMap (dynamic=True) or HoloMap (dynamic=False) with
+            sliders that are defined by 'cdims'.
         """
         hv = ensure_holoviews()
         cdims = cdims or self._cdims_default
@@ -194,7 +200,15 @@ class BalancingLearner(BaseLearner):
                 return learner.plot() if plotter is None else plotter(learner)
 
         dm = hv.DynamicMap(plot_function, kdims=list(d.keys()))
-        return dm.redim.values(**d)
+        dm = dm.redim.values(**d)
+
+        if dynamic:
+            return dm
+        else:
+            # XXX: change when https://github.com/ioam/holoviews/issues/3085
+            # is fixed.
+            vals = {d.name: d.values for d in dm.dimensions() if d.values}
+            return hv.HoloMap(dm.select(**vals))
 
     def remove_unfinished(self):
         """Remove uncomputed data from the learners."""
