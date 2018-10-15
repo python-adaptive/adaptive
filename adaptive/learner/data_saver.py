@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import functools
 
+
 class DataSaver:
     """Save extra data associated with the values that need to be learned.
 

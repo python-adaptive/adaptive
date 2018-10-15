@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
-from copy import copy
 import itertools
 from math import sqrt
 
@@ -86,13 +85,13 @@ def resolution_loss(ip, min_distance=0, max_distance=1):
     """
     A = areas(ip)
     dev = np.sum(deviations(ip), axis=0)
-    
+
     # similar to the default_loss
     loss = np.sqrt(A) * dev + A
-    
+
     # Setting areas with a small area to zero such that they won't be chosen again
-    loss[A < min_distance**2] = 0 
-    
+    loss[A < min_distance**2] = 0
+
     # Setting triangles that have a size larger than max_distance to infinite loss
     # such that these triangles will be picked
     loss[A > max_distance**2] = np.inf
@@ -109,7 +108,7 @@ def minimize_triangle_surface_loss(ip):
 
     Examples
     --------
-    >>> from adaptive.learner.learner2D import minimize_triangle_surface_loss 
+    >>> from adaptive.learner.learner2D import minimize_triangle_surface_loss
     >>> def f(xy):
     ...     x, y = xy
     ...     return x**2 + y**2

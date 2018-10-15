@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import abc
-import collections
 from copy import deepcopy
 
 

@@ -206,7 +206,7 @@ class _Interval:
         div = (self.parent.c00 and self.c00 / self.parent.c00 > 2)
         self.ndiv += div
 
-        if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
+        if self.ndiv > ndiv_max and 2 * self.ndiv > self.rdepth:
             raise DivergentIntegralError
 
         if div:
@@ -215,7 +215,7 @@ class _Interval:
 
     def update_ndiv_recursively(self):
         self.ndiv += 1
-        if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
+        if self.ndiv > ndiv_max and 2 * self.ndiv > self.rdepth:
             raise DivergentIntegralError
 
         for child in self.children:
@@ -417,7 +417,6 @@ class IntegratorLearner(BaseLearner):
                 self.pending_points.add(x)
                 self._stack.append(x)
         self.ivals.add(ival)
-
 
     def ask(self, n, tell_pending=True):
         """Choose points for learners."""

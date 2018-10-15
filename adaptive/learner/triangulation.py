@@ -214,7 +214,7 @@ def simplex_volume_in_embedding(vertices) -> float:
         # Heron's formula
         a, b, c = scipy.spatial.distance.pdist(vertices, metric='euclidean')
         s = 0.5 * (a + b + c)
-        return math.sqrt(s*(s-a)*(s-b)*(s-c))
+        return math.sqrt(s * (s - a) * (s - b) * (s - c))
 
     # β_ij = |v_i - v_k|²
     sq_dists = scipy.spatial.distance.pdist(vertices, metric='sqeuclidean')
@@ -494,13 +494,13 @@ class Triangulation:
 
                 # Get all simplices that share at least a point with the simplex
                 neighbours = set.union(*[self.vertex_to_simplices[p]
-                                            for p in todo_points])
+                                         for p in todo_points])
                 # Filter out the already evaluated simplices
                 neighbours = neighbours - done_simplices
 
                 # Keep only the simplices sharing a whole face with the current simplex
                 neighbours = set(
-                    simpl for simpl in neighbours 
+                    simpl for simpl in neighbours
                     if len(set(simpl) & set(simplex)) == self.dim  # they share a face
                 )
                 queue.update(neighbours)
@@ -568,7 +568,7 @@ class Triangulation:
         else:
             reduced_simplex = self.get_reduced_simplex(point, simplex)
             if not reduced_simplex:
-                self.vertex_to_simplices.pop() # revert adding vertex
+                self.vertex_to_simplices.pop()  # revert adding vertex
                 raise ValueError('Point lies outside of the specified simplex.')
             else:
                 simplex = reduced_simplex

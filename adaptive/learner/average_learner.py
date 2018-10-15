@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import itertools
 from math import sqrt
 
 import numpy as np

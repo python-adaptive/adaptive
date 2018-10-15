@@ -4,7 +4,7 @@ from skopt import Optimizer
 
 from .base_learner import BaseLearner
 from ..notebook_integration import ensure_holoviews
-from ..utils import restore, cache_latest
+from ..utils import cache_latest
 
 
 class SKOptLearner(Optimizer, BaseLearner):

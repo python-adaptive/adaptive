@@ -59,8 +59,8 @@ def default_loss(simplex, ys):
 def choose_point_in_simplex(simplex, transform=None):
     """Choose a new point in inside a simplex.
 
-    Pick the center of the simplex if the shape is nice (that is, the 
-    circumcenter lies within the simplex). Otherwise take the middle of the 
+    Pick the center of the simplex if the shape is nice (that is, the
+    circumcenter lies within the simplex). Otherwise take the middle of the
     longest edge.
 
     Parameters
@@ -94,7 +94,7 @@ def choose_point_in_simplex(simplex, transform=None):
 
     if transform is not None:
         point = np.linalg.solve(transform, point)  # undo the transform
-        
+
     return point
 
 
@@ -180,7 +180,7 @@ class LearnerND(BaseLearner):
         # create a private random number generator with fixed seed
         self._random = random.Random(1)
 
-        # all real triangles that have not been subdivided and the pending 
+        # all real triangles that have not been subdivided and the pending
         # triangles heap of tuples (-loss, real simplex, sub_simplex or None)
 
         # _simplex_queue is a heap of tuples (-loss, real_simplex, sub_simplex)
@@ -268,7 +268,7 @@ class LearnerND(BaseLearner):
 
     def inside_bounds(self, point):
         return all(mn <= p <= mx for p, (mn, mx) in zip(point, self.bounds))
-            
+
     def tell_pending(self, point, *, simplex=None):
         point = tuple(point)
         if not self.inside_bounds(point):
@@ -354,21 +354,21 @@ class LearnerND(BaseLearner):
         # find the simplex with the highest loss, we do need to check that the
         # simplex hasn't been deleted yet
         while len(self._simplex_queue):
-            loss, simplex, subsimplex = heapq.heappop(self._simplex_queue) 
+            loss, simplex, subsimplex = heapq.heappop(self._simplex_queue)
             if (subsimplex is None
-                    and simplex in self.tri.simplices
-                    and simplex not in self._subtriangulations):
+                and simplex in self.tri.simplices
+                and simplex not in self._subtriangulations):
                 return abs(loss), simplex, subsimplex
             if (simplex in self._subtriangulations
-                    and simplex in self.tri.simplices
-                    and subsimplex in self._subtriangulations[simplex].simplices):
+                and simplex in self.tri.simplices
+                and subsimplex in self._subtriangulations[simplex].simplices):
                 return abs(loss), simplex, subsimplex
 
         # Could not find a simplex, this code should never be reached
         assert self.tri is not None
         raise AssertionError(
-            "Could not find a simplex to subdivide. Yet there should always be" 
-            "a simplex available if LearnerND.tri() is not None."
+            "Could not find a simplex to subdivide. Yet there should always"
+            "  be a simplex available if LearnerND.tri() is not None."
         )
 
     def _ask_best_point(self):
@@ -435,8 +435,8 @@ class LearnerND(BaseLearner):
                 heapq.heappush(self._simplex_queue, (-loss, simplex, None))
                 continue
 
-            self._update_subsimplex_losses(simplex,
-                                self._subtriangulations[simplex].simplices)
+            self._update_subsimplex_losses(
+                simplex, self._subtriangulations[simplex].simplices)
 
     def losses(self):
         """Get the losses of each simplex in the current triangulation, as dict

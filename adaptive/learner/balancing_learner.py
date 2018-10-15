@@ -76,7 +76,7 @@ class BalancingLearner(BaseLearner):
     @property
     def strategy(self):
         return self._strategy
-    
+
     @strategy.setter
     def strategy(self, strategy):
         self._strategy = strategy
@@ -87,8 +87,9 @@ class BalancingLearner(BaseLearner):
         elif strategy == 'npoints':
             self._ask_and_tell = self._ask_and_tell_based_on_npoints
         else:
-            raise ValueError('Only strategy="loss_improvements",'
-                ' strategy="loss", or strategy="npoints" is implemented.')
+            raise ValueError(
+                'Only strategy="loss_improvements", strategy="loss", or'
+                ' strategy="npoints" is implemented.')
 
     def _ask_and_tell_based_on_loss_improvements(self, n):
         points = []

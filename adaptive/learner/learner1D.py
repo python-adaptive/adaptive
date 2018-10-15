@@ -49,7 +49,7 @@ def default_loss(interval, scale, function_values):
     else:
         dy = (y_right - y_left) / y_scale
         try:
-            _ = len(dy)
+            len(dy)
             loss = np.hypot(dx, dy).max()
         except TypeError:
             loss = math.hypot(dx, dy)
@@ -409,7 +409,7 @@ class Learner1D(BaseLearner):
             # If the loss is infinite we return the
             # distance between the two points.
             return (loss if not math.isinf(loss)
-                else (xs[1] - xs[0]) / self._scale[0])
+                    else (xs[1] - xs[0]) / self._scale[0])
 
         quals = [(-finite_loss(loss, x), x, 1)
                  for x, loss in self.losses_combined.items()]
