@@ -89,7 +89,11 @@ class AverageLearner(BaseLearner):
         n = self.npoints
         if n < 2:
             return np.inf
-        return sqrt((self.sum_f_sq - n * self.mean**2) / (n - 1))
+        numerator = self.sum_f_sq - n * self.mean**2
+        if numerator < 0:
+            # in this case the numerator ~ -1e-15
+            return 0
+        return sqrt(numerator / (n - 1))
 
     @cache_latest
     def loss(self, real=True, *, n=None):
