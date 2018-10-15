@@ -16,8 +16,15 @@ import pytest
 import scipy.spatial
 
 from ..learner import (AverageLearner, BalancingLearner, DataSaver,
-    IntegratorLearner, Learner1D, Learner2D, LearnerND, SKOptLearner)
+    IntegratorLearner, Learner1D, Learner2D, LearnerND)
 from ..runner import simple
+
+
+try:
+    import skopt
+    from ..learner import SKOptLearner
+except ModuleNotFoundError:
+    SKOptLearner = None
 
 
 def generate_random_parametrization(f):
@@ -60,6 +67,10 @@ def xfail(learner):
     return pytest.mark.xfail, learner
 
 
+def maybe_skip(learner):
+    return (pytest.mark.skip, learner) if learner is None else learner
+
+
 # All parameters except the first must be annotated with a callable that
 # returns a random value for that parameter.
 
@@ -100,15 +111,15 @@ def gaussian(n):
 def run_with(*learner_types):
     pars = []
     for l in learner_types:
-        is_xfail = isinstance(l, tuple)
-        if is_xfail:
-            xfail, l = l
+        has_marker = isinstance(l, tuple)
+        if has_marker:
+            marker, l = l
         for f, k in learner_function_combos[l]:
             # Check if learner was marked with our `xfail` decorator
             # XXX: doesn't work when feeding kwargs to xfail.
-            if is_xfail:
+            if has_marker:
                 pars.append(pytest.param(l, f, dict(k),
-                                         marks=[pytest.mark.xfail]))
+                                         marks=[marker]))
             else:
                 pars.append((l, f, dict(k)))
     return pytest.mark.parametrize('learner_type, f, learner_kwargs', pars)
@@ -391,8 +402,8 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     assert all(l.npoints > 10 for l in learner.learners), [l.npoints for l in learner.learners]
 
 
-@run_with(Learner1D, Learner2D, LearnerND, AverageLearner, SKOptLearner,
-    IntegratorLearner)
+@run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
+    maybe_skip(SKOptLearner), IntegratorLearner)
 def test_saving(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
@@ -412,8 +423,8 @@ def test_saving(learner_type, f, learner_kwargs):
         os.remove(path)
 
 
-@run_with(Learner1D, Learner2D, LearnerND, AverageLearner, SKOptLearner,
-    IntegratorLearner)
+@run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
+    maybe_skip(SKOptLearner), IntegratorLearner)
 def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = BalancingLearner([learner_type(f, **learner_kwargs)])
@@ -438,8 +449,8 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
         shutil.rmtree(folder)
 
 
-@run_with(Learner1D, Learner2D, LearnerND, AverageLearner, SKOptLearner,
-    IntegratorLearner)
+@run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
+    maybe_skip(SKOptLearner), IntegratorLearner)
 def test_saving_with_datasaver(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     g = lambda x: {'y': f(x), 't': random.random()}
