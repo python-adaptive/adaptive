@@ -3,7 +3,6 @@ import importlib
 import asyncio
 from contextlib import suppress
 import datetime
-from pkg_resources import parse_version
 import warnings
 
 

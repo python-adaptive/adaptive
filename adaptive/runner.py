@@ -245,7 +245,7 @@ class BaseRunner:
     def failed(self):
         """Set of points that failed 'self.retries' times."""
         return set(self.tracebacks) - set(self.to_retry)
-    
+
 
 class BlockingRunner(BaseRunner):
     """Run a learner synchronously in an executor.
@@ -552,6 +552,7 @@ class AsyncRunner(BaseRunner):
         else:
             end_time = time.time()
         return end_time - self.start_time
+
 
 # Default runner
 Runner = AsyncRunner
