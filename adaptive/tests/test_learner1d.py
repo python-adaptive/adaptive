@@ -4,7 +4,7 @@ import random
 import numpy as np
 
 from ..learner import Learner1D
-from ..runner import simple, replay_log
+from ..runner import simple
 
 
 def test_pending_loss_intervals():
@@ -200,7 +200,8 @@ def test_small_deviations():
 
 def test_uniform_sampling1D_v2():
     def check(known, expect):
-        def f(x): return x
+        def f(x):
+            return x
         learner = Learner1D(f, bounds=(-1, 1))
         for x in known:
             learner.tell(x, f(x))
@@ -241,8 +242,8 @@ def test_tell_many():
     def f(x, offset=0.123214):
         a = 0.01
         return (np.sin(x**2) + np.sin(x**5)
-            + a**2 / (a**2 + (x - offset)**2)
-            + x**2 + 1e-5 * x**3)
+                + a**2 / (a**2 + (x - offset)**2)
+                + x**2 + 1e-5 * x**3)
 
     def f_vec(x, offset=0.123214):
         a = 0.01

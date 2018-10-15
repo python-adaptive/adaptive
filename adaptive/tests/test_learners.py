@@ -11,8 +11,8 @@ import scipy.spatial
 
 import pytest
 
-from ..learner import *
-from ..runner import simple, replay_log
+from ..learner import AverageLearner, BalancingLearner, Learner1D, Learner2D, LearnerND
+from ..runner import simple
 
 
 def generate_random_parametrization(f):

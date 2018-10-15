@@ -13,14 +13,6 @@ from .algorithm_4 import DivergentIntegralError as A4DivergentIntegralError
 eps = np.spacing(1)
 
 
-def rolling_shuffle(nums, size):
-    for i in range(len(nums) - size):
-        x = nums[i:i+size+1]
-        random.shuffle(x)
-        nums[i:i+size+1] = x
-    return nums
-
-
 def run_integrator_learner(f, a, b, tol, n):
     learner = IntegratorLearner(f, bounds=(a, b), tol=tol)
     for _ in range(n):
@@ -72,6 +64,7 @@ def same_ivals(f, a, b, tol):
               'err difference', learner.err - err)
 
         return equal_ivals(learner.ivals, ivals, verbose=True)
+
 
 # XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
 @pytest.mark.xfail
@@ -162,7 +155,6 @@ def test_adding_points_and_skip_one_point():
     np.testing.assert_almost_equal(learner.igral, learner2.igral)
 
 
-
 # XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
 @pytest.mark.xfail
 def test_tell_in_random_order(first_add_33=False):
@@ -222,7 +214,6 @@ def test_tell_in_random_order(first_add_33=False):
         # Check that the errors are finite
         for l in learners:
             assert np.isfinite(l.err)
-
 
 
 # XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)

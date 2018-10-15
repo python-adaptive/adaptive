@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import concurrent.futures as concurrent
 import asyncio
 
 from ..learner import Learner2D

@@ -30,7 +30,7 @@ def test_avg_std_and_npoints():
         # This will add 5000 points at random values of n.
         # It could try to readd already evaluated points.
 
-        n = random.randint(0, 2*300)
+        n = random.randint(0, 2 * 300)
         value = random.random()
 
         # With 10% chance None is added to simulate asking that point.

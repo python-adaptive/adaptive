@@ -1,4 +1,4 @@
-from collections import defaultdict, Counter
+from collections import Counter
 from math import factorial
 import itertools
 import pytest
@@ -297,7 +297,7 @@ def test_triangulation_is_deterministic(dim):
 @with_dimension
 def test_initialisation_raises_when_not_enough_points(dim):
     deficient_simplex = _make_standard_simplex(dim)[:-1]
-    
+
     with pytest.raises(ValueError):
         Triangulation(deficient_simplex)
 
@@ -305,12 +305,12 @@ def test_initialisation_raises_when_not_enough_points(dim):
 @with_dimension
 def test_initialisation_raises_when_points_coplanar(dim):
     zero_volume_simplex = _make_standard_simplex(dim)[:-1]
-    
+
     new_point1 = np.average(zero_volume_simplex, axis=0)
     new_point2 = np.sum(zero_volume_simplex, axis=0)
-    zero_volume_simplex = np.vstack((zero_volume_simplex, 
+    zero_volume_simplex = np.vstack((zero_volume_simplex,
                                      new_point1, new_point2))
-    
+
     with pytest.raises(ValueError):
         Triangulation(zero_volume_simplex)
 
@@ -326,6 +326,6 @@ def test_initialisation_accepts_more_than_one_simplex(dim):
     simplex1 = tuple(range(dim+1))
     simplex2 = tuple(range(1, dim+2))
 
-    _check_triangulation_is_valid(tri)    
-    
+    _check_triangulation_is_valid(tri)
+
     assert tri.simplices == {simplex1, simplex2}
