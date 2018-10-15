@@ -17,9 +17,8 @@ with suppress(ImportError):
     from .learner import SKOptLearner
 
 from .runner import Runner, BlockingRunner
-from . import version
 
-__version__ = version.version
+from ._version import __version__
+del _version
 
 del notebook_integration  # to avoid confusion with `notebook_extension`
-del version
