@@ -34,7 +34,7 @@ def notebook_extension():
 def ensure_holoviews():
     try:
         return importlib.import_module('holoviews')
-    except ModuleNotFounderror:
+    except ModuleNotFoundError:
         raise RuntimeError('holoviews is not installed; plotting is disabled.')
 
 
