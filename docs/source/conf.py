@@ -42,14 +42,14 @@ release = adaptive.__version__
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
 ]
 
-source_parsers = {
-   '.md': 'recommonmark.parser.CommonMarkParser',
-}
+source_parsers = {}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -114,3 +114,12 @@ html_static_path = ['_static']
 htmlhelp_basename = 'adaptivedoc'
 
 # -- Extension configuration -------------------------------------------------
+
+default_role = 'autolink'
+
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
+                       'distributed': ('https://distributed.readthedocs.io/en/stable/', None),
+                       'holoviews': ('https://holoviews.org/', None),
+                       'ipyparallel': ('https://ipyparallel.readthedocs.io/en/stable/', None),
+                       'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+}

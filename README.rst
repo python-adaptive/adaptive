@@ -10,7 +10,7 @@ chat at https://gitter.im/python-adaptive/adaptive|
 
 **Tools for adaptive parallel sampling of mathematical functions.**
 
-``adaptive`` is an `open-source <LICENSE>`_ Python library designed to
+``adaptive`` is an open-source Python library designed to
 make adaptive parallel function evaluation simple. With ``adaptive`` you
 just supply a function with its bounds, and it will be evaluated at the
 “best” points in parameter space. With just a few lines of code you can
@@ -18,7 +18,7 @@ evaluate functions on a computing cluster, live-plot the data as it
 returns, and fine-tune the adaptive sampling algorithm.
 
 Check out the ``adaptive`` example notebook
-`learner.ipynb <learner.ipynb>`_ (or run it `live on
+`learner.ipynb <https://github.com/python-adaptive/adaptive/blob/master/learner.ipynb>`_ (or run it `live on
 Binder <https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb>`_)
 to see examples of how to use ``adaptive``.
 
@@ -127,7 +127,7 @@ We would like to give credits to the following people:
   Mathematical Software, 37 (3), art. no. 26, 2010.
 - Pauli Virtanen for his ``AdaptiveTriSampling`` script (no longer
   available online since SciPy Central went down) which served as
-  inspiration for the `Learner2D <adaptive/learner/learner2D.py>`_.
+  inspiration for the ``~adaptive.Learner2D``.
 
 For general discussion, we have a `Gitter chat
 channel <https://gitter.im/python-adaptive/adaptive>`_. If you find any

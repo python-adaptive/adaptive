@@ -94,17 +94,24 @@ class Learner1D(BaseLearner):
         If not provided, then a default is used, which uses the scaled distance
         in the x-y plane as the loss. See the notes for more details.
 
+    Attributes
+    ----------
+    data : dict
+        Sampled points and values.
+    pending_points : set
+        Points that still have to be evaluated.
+
     Notes
     -----
-    'loss_per_interval' takes 3 parameters: interval, scale, and function_values,
-    and returns a scalar; the loss over the interval.
+    `loss_per_interval` takes 3 parameters: ``interval``,  ``scale``, and
+    ``function_values``, and returns a scalar; the loss over the interval.
 
     interval : (float, float)
         The bounds of the interval.
     scale : (float, float)
         The x and y scale over all the intervals, useful for rescaling the
         interval loss.
-    function_values : dict(float -> float)
+    function_values : dict(float → float)
         A map containing evaluated function values. It is guaranteed
         to have values for both of the points in 'interval'.
     """
@@ -363,7 +370,7 @@ class Learner1D(BaseLearner):
                 x_left, x_right = ival
                 a, b = to_interpolate[-1] if to_interpolate else (None, None)
                 if b == x_left and (a, b) not in self.losses:
-                    # join (a, b) and (x_left, x_right) --> (a, x_right)
+                    # join (a, b) and (x_left, x_right) → (a, x_right)
                     to_interpolate[-1] = (a, x_right)
                 else:
                     to_interpolate.append((x_left, x_right))

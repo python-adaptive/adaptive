@@ -330,7 +330,7 @@ class IntegratorLearner(BaseLearner):
             The integral value in `self.bounds`.
         err : float
             The absolute error associated with `self.igral`.
-        max_ivals : int, default 1000
+        max_ivals : int, default: 1000
             Maximum number of intervals that can be present in the calculation
             of the integral. If this amount exceeds max_ivals, the interval
             with the smallest error will be discarded.
