@@ -87,6 +87,7 @@ pygments_style = 'sphinx'
 #
 html_theme = 'sphinx_rtd_theme'
 
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -128,38 +129,22 @@ intersphinx_mapping = {
 }
 
 
-# -- Add Holoviews js and css ------------------------------------------------
+def get_holoviews_js_css():
+    from holoviews.plotting import Renderer
+    dependencies = {**Renderer.core_dependencies,
+                    **Renderer.extra_dependencies}
+    required = ['jQueryUI', 'jQuery', 'require']
+    js = [url for name in required for url in dependencies[name].get('js', [])]
+    css = [url for name in required for url in dependencies[name].get('css', [])]
+    return js, css
+
+
+js, css = get_holoviews_js_css()
+html_context = {'holoviews_js_files': js}
+
 
 def setup(app):
-    from holoviews.plotting import Renderer
-
-    hv_js, hv_css = Renderer.html_assets(
-        extras=False, backends=[], script=True)
-
-    fname_css = 'holoviews.css'
-    fname_js = 'holoviews.js'
-    static_dir = 'source/_static'
-
-    os.makedirs(static_dir, exist_ok=True)
-
-    with open(f'{static_dir}/{fname_css}', 'w') as f:
-        hv_css = hv_css.split('<style>')[1].replace('</style>', '')
-        f.write(hv_css)
-
-    with open(f'{static_dir}/{fname_js}', 'w') as f:
-        f.write(hv_js)
-
-    app.add_stylesheet(fname_css)
-    app.add_javascript(fname_js)
-
-    dependencies = {**Renderer.core_dependencies, **Renderer.extra_dependencies}
-    for name, type_url in dependencies.items():
-        if name in ['bootstrap']:
-            continue
-
-        for url in type_url.get('js', []):
-            app.add_javascript(url)
-        for url in type_url.get('css', []):
-            app.add_stylesheet(url)
+    for url in css:
+        app.add_stylesheet(url)
 
     app.add_javascript("https://unpkg.com/@jupyter-widgets/html-manager@0.14.4/dist/embed-amd.js")
