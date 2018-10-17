@@ -17,7 +17,7 @@ class DataSaver:
     -------
     Imagine we have a function that returns a dictionary
     of the form: ``{'y': y, 'err_est': err_est}``.
-    
+
     >>> from operator import itemgetter
     >>> _learner = Learner1D(f, bounds=(-1.0, 1.0))
     >>> learner = DataSaver(_learner, arg_picker=itemgetter('y'))
