@@ -264,7 +264,7 @@ class BlockingRunner(BaseRunner):
         of cores available in `executor`.
     log : bool, default: False
         If True, record the method calls made to the learner by this runner.
-    shutdown_executor : Bool, default: False
+    shutdown_executor : bool, default: False
         If True, shutdown the executor when the runner has completed. If
         `executor` is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
@@ -367,7 +367,7 @@ class AsyncRunner(BaseRunner):
         of cores available in `executor`.
     log : bool, default: False
         If True, record the method calls made to the learner by this runner.
-    shutdown_executor : Bool, default: False
+    shutdown_executor : bool, default: False
         If True, shutdown the executor when the runner has completed. If
         `executor` is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.

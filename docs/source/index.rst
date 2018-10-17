@@ -17,4 +17,5 @@
    :hidden:
 
    rest_of_readme
+   tutorial/tutorial
    reference/adaptive

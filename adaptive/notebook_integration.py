@@ -20,7 +20,7 @@ def notebook_extension():
     try:
         import ipywidgets
         import holoviews
-        holoviews.notebook_extension('bokeh')
+        holoviews.notebook_extension('bokeh', logo=False)
         _plotting_enabled = True
     except ModuleNotFoundError:
         warnings.warn("holoviews and (or) ipywidgets are not installed; plotting "

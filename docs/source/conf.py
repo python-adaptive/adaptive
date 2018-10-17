@@ -47,6 +47,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
+    'jupyter_sphinx.execute',
 ]
 
 source_parsers = {}
@@ -113,13 +114,52 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'adaptivedoc'
 
+
 # -- Extension configuration -------------------------------------------------
 
 default_role = 'autolink'
 
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
-                       'distributed': ('https://distributed.readthedocs.io/en/stable/', None),
-                       'holoviews': ('https://holoviews.org/', None),
-                       'ipyparallel': ('https://ipyparallel.readthedocs.io/en/stable/', None),
-                       'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'distributed': ('https://distributed.readthedocs.io/en/stable/', None),
+    'holoviews': ('https://holoviews.org/', None),
+    'ipyparallel': ('https://ipyparallel.readthedocs.io/en/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
 }
+
+
+# -- Add Holoviews js and css ------------------------------------------------
+
+def setup(app):
+    from holoviews.plotting import Renderer
+
+    hv_js, hv_css = Renderer.html_assets(
+        extras=False, backends=[], script=True)
+
+    fname_css = 'holoviews.css'
+    fname_js = 'holoviews.js'
+    static_dir = 'source/_static'
+
+    os.makedirs(static_dir, exist_ok=True)
+
+    with open(f'{static_dir}/{fname_css}', 'w') as f:
+        hv_css = hv_css.split('<style>')[1].replace('</style>', '')
+        f.write(hv_css)
+
+    with open(f'{static_dir}/{fname_js}', 'w') as f:
+        f.write(hv_js)
+
+    app.add_stylesheet(fname_css)
+    app.add_javascript(fname_js)
+
+    dependencies = {**Renderer.core_dependencies, **Renderer.extra_dependencies}
+    for name, type_url in dependencies.items():
+        if name in ['bootstrap']:
+            continue
+
+        for url in type_url.get('js', []):
+            app.add_javascript(url)
+        for url in type_url.get('css', []):
+            app.add_stylesheet(url)
+
+    app.add_javascript("https://unpkg.com/@jupyter-widgets/html-manager@0.14.4/dist/embed-amd.js")
