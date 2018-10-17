@@ -8,7 +8,7 @@ class DataSaver:
 
     Parameters
     ----------
-    learner : Learner object
+    learner : `~adaptive.BaseLearner` instance
         The learner that needs to be wrapped.
     arg_picker : function
         Function that returns the argument that needs to be learned.
@@ -16,10 +16,11 @@ class DataSaver:
     Example
     -------
     Imagine we have a function that returns a dictionary
-    of the form: `{'y': y, 'err_est': err_est}`.
-
+    of the form: ``{'y': y, 'err_est': err_est}``.
+    
+    >>> from operator import itemgetter
     >>> _learner = Learner1D(f, bounds=(-1.0, 1.0))
-    >>> learner = DataSaver(_learner, arg_picker=operator.itemgetter('y'))
+    >>> learner = DataSaver(_learner, arg_picker=itemgetter('y'))
     """
 
     def __init__(self, learner, arg_picker):
@@ -46,12 +47,12 @@ def _ds(learner_type, arg_picker, *args, **kwargs):
 
 
 def make_datasaver(learner_type, arg_picker):
-    """Create a DataSaver of a `learner_type` that can be instantiated
+    """Create a `DataSaver` of a `learner_type` that can be instantiated
     with the `learner_type`'s key-word arguments.
 
     Parameters
     ----------
-    learner_type : BaseLearner
+    learner_type : `~adaptive.BaseLearner` type
         The learner type that needs to be wrapped.
     arg_picker : function
         Function that returns the argument that needs to be learned.
@@ -59,15 +60,16 @@ def make_datasaver(learner_type, arg_picker):
     Example
     -------
     Imagine we have a function that returns a dictionary
-    of the form: `{'y': y, 'err_est': err_est}`.
+    of the form: ``{'y': y, 'err_est': err_est}``.
 
-    >>> DataSaver = make_datasaver(Learner1D,
-    ...     arg_picker=operator.itemgetter('y'))
+    >>> from operator import itemgetter
+    >>> DataSaver = make_datasaver(Learner1D, arg_picker=itemgetter('y'))
     >>> learner = DataSaver(function=f, bounds=(-1.0, 1.0))
 
-    Or when using `BalacingLearner.from_product`:
+    Or when using `adaptive.BalancingLearner.from_product`:
+
     >>> learner_type = make_datasaver(adaptive.Learner1D,
-    ...     arg_picker=operator.itemgetter('y'))
+    ...     arg_picker=itemgetter('y'))
     >>> learner = adaptive.BalancingLearner.from_product(
     ...     jacobi, learner_type, dict(bounds=(0, 1)), combos)
     """

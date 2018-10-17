@@ -11,14 +11,16 @@ class BaseLearner(metaclass=abc.ABCMeta):
     function : callable: X → Y
         The function to learn.
     data : dict: X → Y
-        'function' evaluated at certain points.
+        `function` evaluated at certain points.
         The values can be 'None', which indicates that the point
         will be evaluated, but that we do not have the result yet.
     npoints : int, optional
         The number of evaluated points that have been added to the learner.
         Subclasses do not *have* to implement this attribute.
 
-    Subclasses may define a 'plot' method that takes no parameters
+    Notes
+    -----
+    Subclasses may define a ``plot`` method that takes no parameters
     and returns a holoviews plot.
     """
 
@@ -75,9 +77,8 @@ class BaseLearner(metaclass=abc.ABCMeta):
         n : int
             The number of points to choose.
         tell_pending : bool, default: True
-            If True, add the chosen points to this
-            learner's 'data' with 'None' for the 'y'
-            values. Set this to False if you do not
+            If True, add the chosen points to this learner's
+            `pending_points`. Set this to False if you do not
             want to modify the state of the learner.
         """
         pass

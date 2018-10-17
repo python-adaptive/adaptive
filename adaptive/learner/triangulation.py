@@ -612,7 +612,7 @@ class Triangulation:
 
         Parameters
         ----------
-        check : bool, default True
+        check : bool, default: True
             Whether to raise an error if the computed hull is different from
             stored.
 

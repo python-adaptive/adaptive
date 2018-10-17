@@ -58,60 +58,56 @@ class BaseRunner:
 
     Parameters
     ----------
-    learner : adaptive.learner.BaseLearner
+    learner : `~adaptive.BaseLearner` instance
     goal : callable
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
-    executor : concurrent.futures.Executor, distributed.Client,
-               or ipyparallel.Client, optional
+    executor : `concurrent.futures.Executor`, `distributed.Client`,\
+               or `ipyparallel.Client`, optional
         The executor in which to evaluate the function to be learned.
-        If not provided, a new `ProcessPoolExecutor` is used on Unix systems
-        while on Windows a `distributed.Client` is used if `distributed` is
-        installed.
+        If not provided, a new `~concurrent.futures.ProcessPoolExecutor`
+        is used on Unix systems while on Windows a `distributed.Client`
+        is used if `distributed` is installed.
     ntasks : int, optional
         The number of concurrent function evaluations. Defaults to the number
-        of cores available in 'executor'.
+        of cores available in `executor`.
     log : bool, default: False
         If True, record the method calls made to the learner by this runner.
-    shutdown_executor : Bool, default: False
+    shutdown_executor : bool, default: False
         If True, shutdown the executor when the runner has completed. If
-        'executor' is not provided then the executor created internally
+        `executor` is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
     retries : int, default: 0
-        Maximum amount of retries of a certain point 'x' in
-        'learner.function(x)'. After 'retries' is reached for 'x' the
-        point is present in 'runner.failed'.
+        Maximum amount of retries of a certain point ``x`` in
+        ``learner.function(x)``. After `retries` is reached for ``x``
+        the point is present in ``runner.failed``.
     raise_if_retries_exceeded : bool, default: True
-        Raise the error after a point 'x' failed 'retries'.
+        Raise the error after a point ``x`` failed `retries`.
 
     Attributes
     ----------
-    learner : Learner
+    learner : `~adaptive.BaseLearner` instance
         The underlying learner. May be queried for its state.
     log : list or None
         Record of the method calls made to the learner, in the format
-        '(method_name, *args)'.
+        ``(method_name, *args)``.
     to_retry : dict
-        Mapping of {point: n_fails, ...}. When a point has failed
-        'runner.retries' times it is removed but will be present
-        in 'runner.tracebacks'.
+        Mapping of ``{point: n_fails, ...}``. When a point has failed
+        ``runner.retries`` times it is removed but will be present
+        in ``runner.tracebacks``.
     tracebacks : dict
         A mapping of point to the traceback if that point failed.
     pending_points : dict
-        A mapping of 'concurrent.Future's to points, {Future: point, ...}.
+        A mapping of `~concurrent.futures.Future`\s to points.
 
     Methods
     -------
     overhead : callable
         The overhead in percent of using Adaptive. This includes the
         overhead of the executor. Essentially, this is
-        100 * (1 - total_elapsed_function_time / self.elapsed_time()).
+        ``100 * (1 - total_elapsed_function_time / self.elapsed_time())``.
 
-    Properties
-    ----------
-    failed : set
-        Set of points that failed 'retries' times.
     """
 
     def __init__(self, learner, goal, *,
@@ -145,7 +141,7 @@ class BaseRunner:
         self.to_retry = {}
         self.tracebacks = {}
 
-    def max_tasks(self):
+    def _get_max_tasks(self):
         return self._max_tasks or _get_ncores(self.executor)
 
     def _do_raise(self, e, x):
@@ -173,7 +169,7 @@ class BaseRunner:
     def overhead(self):
         """Overhead of using Adaptive and the executor in percent.
 
-        This is measured as 100 * (1 - t_function / t_elapsed).
+        This is measured as ``100 * (1 - t_function / t_elapsed)``.
 
         Notes
         -----
@@ -213,7 +209,7 @@ class BaseRunner:
         # Launch tasks to replace the ones that completed
         # on the last iteration, making sure to fill workers
         # that have started since the last iteration.
-        n_new_tasks = max(0, self.max_tasks() - len(self.pending_points))
+        n_new_tasks = max(0, self._get_max_tasks() - len(self.pending_points))
 
         if self.do_log:
             self.log.append(('ask', n_new_tasks))
@@ -243,7 +239,7 @@ class BaseRunner:
 
     @property
     def failed(self):
-        """Set of points that failed 'self.retries' times."""
+        """Set of points that failed ``runner.retries`` times."""
         return set(self.tracebacks) - set(self.to_retry)
 
 
@@ -252,48 +248,48 @@ class BlockingRunner(BaseRunner):
 
     Parameters
     ----------
-    learner : adaptive.learner.BaseLearner
+    learner : `~adaptive.BaseLearner` instance
     goal : callable
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
-    executor : concurrent.futures.Executor, distributed.Client,
-               or ipyparallel.Client, optional
+    executor : `concurrent.futures.Executor`, `distributed.Client`,\
+               or `ipyparallel.Client`, optional
         The executor in which to evaluate the function to be learned.
-        If not provided, a new `ProcessPoolExecutor` is used on Unix systems
-        while on Windows a `distributed.Client` is used if `distributed` is
-        installed.
+        If not provided, a new `~concurrent.futures.ProcessPoolExecutor`
+        is used on Unix systems while on Windows a `distributed.Client`
+        is used if `distributed` is installed.
     ntasks : int, optional
         The number of concurrent function evaluations. Defaults to the number
-        of cores available in 'executor'.
+        of cores available in `executor`.
     log : bool, default: False
         If True, record the method calls made to the learner by this runner.
     shutdown_executor : Bool, default: False
         If True, shutdown the executor when the runner has completed. If
-        'executor' is not provided then the executor created internally
+        `executor` is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
     retries : int, default: 0
-        Maximum amount of retries of a certain point 'x' in
-        'learner.function(x)'. After 'retries' is reached for 'x' the
-        point is present in 'runner.failed'.
+        Maximum amount of retries of a certain point ``x`` in
+        ``learner.function(x)``. After `retries` is reached for ``x``
+        the point is present in ``runner.failed``.
     raise_if_retries_exceeded : bool, default: True
-        Raise the error after a point 'x' failed 'retries'.
+        Raise the error after a point ``x`` failed `retries`.
 
     Attributes
     ----------
-    learner : Learner
+    learner : `~adaptive.BaseLearner` instance
         The underlying learner. May be queried for its state.
     log : list or None
         Record of the method calls made to the learner, in the format
-        '(method_name, *args)'.
+        ``(method_name, *args)``.
     to_retry : dict
-        Mapping of {point: n_fails, ...}. When a point has failed
-        'runner.retries' times it is removed but will be present
-        in 'runner.tracebacks'.
+        Mapping of ``{point: n_fails, ...}``. When a point has failed
+        ``runner.retries`` times it is removed but will be present
+        in ``runner.tracebacks``.
     tracebacks : dict
         A mapping of point to the traceback if that point failed.
     pending_points : dict
-        A mapping of 'concurrent.Future's to points, {Future: point, ...}.
+        A mapping of `~concurrent.futures.Future`\to points.
 
     Methods
     -------
@@ -303,12 +299,8 @@ class BlockingRunner(BaseRunner):
     overhead : callable
         The overhead in percent of using Adaptive. This includes the
         overhead of the executor. Essentially, this is
-        100 * (1 - total_elapsed_function_time / self.elapsed_time()).
+        ``100 * (1 - total_elapsed_function_time / self.elapsed_time())``.
 
-    Properties
-    ----------
-    failed : set
-        Set of points that failed 'retries' times.
     """
 
     def __init__(self, learner, goal, *,
@@ -330,7 +322,7 @@ class BlockingRunner(BaseRunner):
     def _run(self):
         first_completed = concurrent.FIRST_COMPLETED
 
-        if self.max_tasks() < 1:
+        if self._get_max_tasks() < 1:
             raise RuntimeError('Executor has no workers')
 
         try:
@@ -358,54 +350,54 @@ class AsyncRunner(BaseRunner):
 
     Parameters
     ----------
-    learner : adaptive.learner.BaseLearner
+    learner : `~adaptive.BaseLearner` instance
     goal : callable, optional
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points. If not provided, the runner will run
-        forever, or until 'self.task.cancel()' is called.
-    executor : concurrent.futures.Executor, distributed.Client,
-               or ipyparallel.Client, optional
+        forever, or until ``self.task.cancel()`` is called.
+    executor : `concurrent.futures.Executor`, `distributed.Client`,\
+               or `ipyparallel.Client`, optional
         The executor in which to evaluate the function to be learned.
-        If not provided, a new `ProcessPoolExecutor` is used on Unix systems
-        while on Windows a `distributed.Client` is used if `distributed` is
-        installed.
+        If not provided, a new `~concurrent.futures.ProcessPoolExecutor`
+        is used on Unix systems while on Windows a `distributed.Client`
+        is used if `distributed` is installed.
     ntasks : int, optional
         The number of concurrent function evaluations. Defaults to the number
-        of cores available in 'executor'.
+        of cores available in `executor`.
     log : bool, default: False
         If True, record the method calls made to the learner by this runner.
     shutdown_executor : Bool, default: False
         If True, shutdown the executor when the runner has completed. If
-        'executor' is not provided then the executor created internally
+        `executor` is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
-    ioloop : asyncio.AbstractEventLoop, optional
+    ioloop : ``asyncio.AbstractEventLoop``, optional
         The ioloop in which to run the learning algorithm. If not provided,
         the default event loop is used.
     retries : int, default: 0
-        Maximum amount of retries of a certain point 'x' in
-        'learner.function(x)'. After 'retries' is reached for 'x' the
-        point is present in 'runner.failed'.
+        Maximum amount of retries of a certain point ``x`` in
+        ``learner.function(x)``. After `retries` is reached for ``x``
+        the point is present in ``runner.failed``.
     raise_if_retries_exceeded : bool, default: True
-        Raise the error after a point 'x' failed 'retries'.
+        Raise the error after a point ``x`` failed `retries`.
 
     Attributes
     ----------
-    task : asyncio.Task
+    task : `asyncio.Task`
         The underlying task. May be cancelled in order to stop the runner.
-    learner : Learner
+    learner : `~adaptive.BaseLearner` instance
         The underlying learner. May be queried for its state.
     log : list or None
         Record of the method calls made to the learner, in the format
-        '(method_name, *args)'.
+        ``(method_name, *args)``.
     to_retry : dict
-        Mapping of {point: n_fails, ...}. When a point has failed
-        'runner.retries' times it is removed but will be present
-        in 'runner.tracebacks'.
+        Mapping of ``{point: n_fails, ...}``. When a point has failed
+        ``runner.retries`` times it is removed but will be present
+        in ``runner.tracebacks``.
     tracebacks : dict
         A mapping of point to the traceback if that point failed.
     pending_points : dict
-        A mapping of 'concurrent.Future's to points, {Future: point, ...}.
+        A mapping of `~concurrent.futures.Future`\s to points.
 
     Methods
     -------
@@ -415,17 +407,13 @@ class AsyncRunner(BaseRunner):
     overhead : callable
         The overhead in percent of using Adaptive. This includes the
         overhead of the executor. Essentially, this is
-        100 * (1 - total_elapsed_function_time / self.elapsed_time()).
+        ``100 * (1 - total_elapsed_function_time / self.elapsed_time())``.
 
-    Properties
-    ----------
-    failed : set
-        Set of points that failed 'retries' times.
 
     Notes
     -----
     This runner can be used when an async function (defined with
-    'async def') has to be learned. In this case the function will be
+    ``async def``) has to be learned. In this case the function will be
     run directly on the event loop (and not in the executor).
     """
 
@@ -486,7 +474,7 @@ class AsyncRunner(BaseRunner):
     def cancel(self):
         """Cancel the runner.
 
-        This is equivalent to calling `runner.task.cancel()`.
+        This is equivalent to calling ``runner.task.cancel()``.
         """
         self.task.cancel()
 
@@ -495,21 +483,21 @@ class AsyncRunner(BaseRunner):
 
         Parameters
         ----------
-        runner : Runner
+        runner : `Runner`
         plotter : function
             A function that takes the learner as a argument and returns a
-            holoviews object. By default learner.plot() will be called.
+            holoviews object. By default ``learner.plot()`` will be called.
         update_interval : int
             Number of second between the updates of the plot.
         name : hasable
             Name for the `live_plot` task in `adaptive.active_plotting_tasks`.
-            By default the name is `None` and if another task with the same name
-            already exists that other live_plot is canceled.
+            By default the name is None and if another task with the same name
+            already exists that other `live_plot` is canceled.
 
         Returns
         -------
-        dm : holoviews.DynamicMap
-            The plot that automatically updates every update_interval.
+        dm : `holoviews.core.DynamicMap`
+            The plot that automatically updates every `update_interval`.
         """
         return live_plot(self, plotter=plotter,
                          update_interval=update_interval,
@@ -526,7 +514,7 @@ class AsyncRunner(BaseRunner):
     async def _run(self):
         first_completed = asyncio.FIRST_COMPLETED
 
-        if self.max_tasks() < 1:
+        if self._get_max_tasks() < 1:
             raise RuntimeError('Executor has no workers')
 
         try:

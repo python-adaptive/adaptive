@@ -21,27 +21,32 @@ class BalancingLearner(BaseLearner):
 
     Parameters
     ----------
-    learners : sequence of BaseLearner
+    learners : sequence of `BaseLearner`
         The learners from which to choose. These must all have the same type.
     cdims : sequence of dicts, or (keys, iterable of values), optional
         Constant dimensions; the parameters that label the learners. Used
         in `plot`.
         Example inputs that all give identical results:
+
         - sequence of dicts:
+
             >>> cdims = [{'A': True, 'B': 0},
             ...          {'A': True, 'B': 1},
             ...          {'A': False, 'B': 0},
             ...          {'A': False, 'B': 1}]`
+
         - tuple with (keys, iterable of values):
+
             >>> cdims = (['A', 'B'], itertools.product([True, False], [0, 1]))
             >>> cdims = (['A', 'B'], [(True, 0), (True, 1),
             ...                       (False, 0), (False, 1)])
+
     strategy : 'loss_improvements' (default), 'loss', or 'npoints'
-        The points that the 'BalancingLearner' choses can be either based on:
+        The points that the `BalancingLearner` choses can be either based on:
         the best 'loss_improvements', the smallest total 'loss' of the
         child learners, or the number of points per learner, using 'npoints'.
         One can dynamically change the strategy while the simulation is
-        running by changing the 'learner.strategy' attribute.
+        running by changing the ``learner.strategy`` attribute.
 
     Notes
     -----
@@ -50,7 +55,7 @@ class BalancingLearner(BaseLearner):
     compared*. For the moment we enforce this restriction by requiring that
     all learners are the same type but (depending on the internals of the
     learner) it may be that the loss cannot be compared *even between learners
-    of the same type*. In this case the BalancingLearner will behave in an
+    of the same type*. In this case the `BalancingLearner` will behave in an
     undefined way.
     """
 
@@ -183,28 +188,34 @@ class BalancingLearner(BaseLearner):
         cdims : sequence of dicts, or (keys, iterable of values), optional
             Constant dimensions; the parameters that label the learners.
             Example inputs that all give identical results:
+
             - sequence of dicts:
+
                 >>> cdims = [{'A': True, 'B': 0},
                 ...          {'A': True, 'B': 1},
                 ...          {'A': False, 'B': 0},
                 ...          {'A': False, 'B': 1}]`
+
             - tuple with (keys, iterable of values):
+
                 >>> cdims = (['A', 'B'], itertools.product([True, False], [0, 1]))
                 >>> cdims = (['A', 'B'], [(True, 0), (True, 1),
                 ...                       (False, 0), (False, 1)])
+
         plotter : callable, optional
             A function that takes the learner as a argument and returns a
-            holoviews object. By default learner.plot() will be called.
+            holoviews object. By default ``learner.plot()`` will be called.
         dynamic : bool, default True
-            Return a holoviews.DynamicMap if True, else a holoviews.HoloMap.
-            The DynamicMap is rendered as the sliders change and can therefore
-            not be exported to html. The HoloMap does not have this problem.
+            Return a `holoviews.core.DynamicMap` if True, else a
+            `holoviews.core.HoloMap`. The `~holoviews.core.DynamicMap` is
+            rendered as the sliders change and can therefore not be exported
+            to html. The `~holoviews.core.HoloMap` does not have this problem.
 
         Returns
         -------
-        dm : holoviews.DynamicMap object (default) or holoviews.HoloMap object
-            A DynamicMap (dynamic=True) or HoloMap (dynamic=False) with
-            sliders that are defined by 'cdims'.
+        dm : `holoviews.core.DynamicMap` (default) or `holoviews.core.HoloMap`
+            A `DynamicMap` (dynamic=True) or `HoloMap` (dynamic=False) with
+            sliders that are defined by `cdims`.
         """
         hv = ensure_holoviews()
         cdims = cdims or self._cdims_default
@@ -248,13 +259,13 @@ class BalancingLearner(BaseLearner):
     def from_product(cls, f, learner_type, learner_kwargs, combos):
         """Create a `BalancingLearner` with learners of all combinations of
         named variables’ values. The `cdims` will be set correctly, so calling
-        `learner.plot` will be a `holoviews.HoloMap` with the correct labels.
+        `learner.plot` will be a `holoviews.core.HoloMap` with the correct labels.
 
         Parameters
         ----------
         f : callable
             Function to learn, must take arguments provided in in `combos`.
-        learner_type : BaseLearner
+        learner_type : `BaseLearner`
             The learner that should wrap the function. For example `Learner1D`.
         learner_kwargs : dict
             Keyword argument for the `learner_type`. For example `dict(bounds=[0, 1])`.

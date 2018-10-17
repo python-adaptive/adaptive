@@ -124,15 +124,8 @@ class LearnerND(BaseLearner):
         Coordinates of the currently known points
     values : numpy array
         The values of each of the known points
-
-    Methods
-    -------
-    plot(n)
-        If dim == 2, this method will plot the function being learned.
-    plot_slice(cut_mapping, n)
-        plot a slice of the function using interpolation of the current data.
-        the cut_mapping contains the fixed parameters, the other parameters are
-        used as axes for plotting.
+    pending_points : set
+        Points that still have to be evaluated.
 
     Notes
     -----
@@ -169,10 +162,10 @@ class LearnerND(BaseLearner):
         self._tri = None
         self._losses = dict()
 
-        self._pending_to_simplex = dict()  # vertex -> simplex
+        self._pending_to_simplex = dict()  # vertex → simplex
 
         # triangulation of the pending points inside a specific simplex
-        self._subtriangulations = dict()  # simplex -> triangulation
+        self._subtriangulations = dict()  # simplex → triangulation
 
         # scale to unit
         self._transform = np.linalg.inv(np.diag(np.diff(bounds).flat))
@@ -217,6 +210,8 @@ class LearnerND(BaseLearner):
 
     @property
     def tri(self):
+        """A `adaptive.learner.Triangulation` instance with all the points
+        of the learner."""
         if self._tri is not None:
             return self._tri
 
@@ -517,13 +512,14 @@ class LearnerND(BaseLearner):
         return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
 
     def plot_slice(self, cut_mapping, n=None):
-        """Plot a 1d or 2d interpolated slice of a N-dimensional function.
+        """Plot a 1D or 2D interpolated slice of a N-dimensional function.
 
         Parameters
         ----------
-        cut_mapping : dict (int -> float)
+        cut_mapping : dict (int → float)
             for each fixed dimension the value, the other dimensions
-            are interpolated
+            are interpolated. e.g. ``cut_mapping = {0: 1}``, so from
+            dimension 0 ('x') to value 1.
         n : int
             the number of boxes in the interpolation grid along each axis
         """

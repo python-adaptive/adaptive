@@ -8,15 +8,15 @@ from . import learner
 from . import runner
 from . import utils
 
-from .learner import (Learner1D, Learner2D, LearnerND, AverageLearner,
-                      BalancingLearner, make_datasaver, DataSaver,
-                      IntegratorLearner)
+from .learner import (BaseLearner, Learner1D, Learner2D, LearnerND,
+                      AverageLearner, BalancingLearner, make_datasaver,
+                      DataSaver, IntegratorLearner)
 
 with suppress(ImportError):
     # Only available if 'scikit-optimize' is installed
     from .learner import SKOptLearner
 
-from .runner import Runner, BlockingRunner
+from .runner import Runner, AsyncRunner, BlockingRunner
 
 from ._version import __version__
 del _version

@@ -17,9 +17,9 @@ class AverageLearner(BaseLearner):
     Parameters
     ----------
     atol : float
-        Desired absolute tolerance
+        Desired absolute tolerance.
     rtol : float
-        Desired relative tolerance
+        Desired relative tolerance.
 
     Attributes
     ----------
