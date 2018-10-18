@@ -22,6 +22,7 @@ Runners
     adaptive.runner.Runner
     adaptive.runner.AsyncRunner
     adaptive.runner.BlockingRunner
+    adaptive.runner.extras
 
 Other
 -----

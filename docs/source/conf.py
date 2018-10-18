@@ -47,6 +47,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
+    'jupyter_sphinx.execute',
 ]
 
 source_parsers = {}
@@ -86,6 +87,7 @@ pygments_style = 'sphinx'
 #
 html_theme = 'sphinx_rtd_theme'
 
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -113,13 +115,36 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'adaptivedoc'
 
+
 # -- Extension configuration -------------------------------------------------
 
 default_role = 'autolink'
 
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
-                       'distributed': ('https://distributed.readthedocs.io/en/stable/', None),
-                       'holoviews': ('https://holoviews.org/', None),
-                       'ipyparallel': ('https://ipyparallel.readthedocs.io/en/stable/', None),
-                       'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'distributed': ('https://distributed.readthedocs.io/en/stable/', None),
+    'holoviews': ('https://holoviews.org/', None),
+    'ipyparallel': ('https://ipyparallel.readthedocs.io/en/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
 }
+
+
+def get_holoviews_js_css():
+    from holoviews.plotting import Renderer
+    dependencies = {**Renderer.core_dependencies,
+                    **Renderer.extra_dependencies}
+    required = ['jQueryUI', 'jQuery', 'require']
+    js = [url for name in required for url in dependencies[name].get('js', [])]
+    css = [url for name in required for url in dependencies[name].get('css', [])]
+    return js, css
+
+
+js, css = get_holoviews_js_css()
+html_context = {'holoviews_js_files': js}
+
+
+def setup(app):
+    for url in css:
+        app.add_stylesheet(url)
+
+    app.add_javascript("https://unpkg.com/@jupyter-widgets/html-manager@0.14.4/dist/embed-amd.js")
