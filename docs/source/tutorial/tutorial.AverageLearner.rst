@@ -8,11 +8,10 @@ Tutorial `~adaptive.AverageLearner`
 
 .. seealso::
     The complete source code of this tutorial can be found in
-    :jupyter-download:notebook:`AverageLearner`
+    :jupyter-download:notebook:`tutorial.AverageLearner`
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
-    :new-notebook: AverageLearner
 
     import adaptive
     adaptive.notebook_extension()
@@ -25,7 +24,7 @@ the learner must formally take a single parameter, which should be used
 like a “seed” for the (pseudo-) random variable (although in the current
 implementation the seed parameter can be ignored by the function).
 
-.. execute::
+.. jupyter-execute::
 
     def g(n):
         import random
@@ -38,20 +37,20 @@ implementation the seed parameter can be ignored by the function).
         random.setstate(state)
         return val
 
-.. execute::
+.. jupyter-execute::
 
     learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
     runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 2)
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     await runner.task  # This is not needed in a notebook environment!
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_info()
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_plot(update_interval=0.1)

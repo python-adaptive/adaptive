@@ -8,11 +8,10 @@ Tutorial `~adaptive.BalancingLearner`
 
 .. seealso::
     The complete source code of this tutorial can be found in
-    :jupyter-download:notebook:`BalancingLearner`
+    :jupyter-download:notebook:`tutorial.BalancingLearner`
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
-    :new-notebook: BalancingLearner
 
     import adaptive
     adaptive.notebook_extension()
@@ -30,7 +29,7 @@ improvement.
 The balancing learner can for example be used to implement a poor-man’s
 2D learner by using the `~adaptive.Learner1D`.
 
-.. execute::
+.. jupyter-execute::
 
     def h(x, offset=0):
         a = 0.01
@@ -42,16 +41,16 @@ The balancing learner can for example be used to implement a poor-man’s
     bal_learner = adaptive.BalancingLearner(learners)
     runner = adaptive.Runner(bal_learner, goal=lambda l: l.loss() < 0.01)
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     await runner.task  # This is not needed in a notebook environment!
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_info()
 
-.. execute::
+.. jupyter-execute::
 
     plotter = lambda learner: hv.Overlay([L.plot() for L in learner.learners])
     runner.live_plot(plotter=plotter, update_interval=0.1)
@@ -61,7 +60,7 @@ product of parameters. For that particular case we’ve added a
 ``classmethod`` called ``~adaptive.BalancingLearner.from_product``.
 See how it works below
 
-.. execute::
+.. jupyter-execute::
 
     from scipy.special import eval_jacobi
 

@@ -8,11 +8,10 @@ Custom adaptive logic for 1D and 2D
 
 .. seealso::
     The complete source code of this tutorial can be found in
-    :jupyter-download:notebook:`custom-loss-function`
+    :jupyter-download:notebook:`tutorial.custom-loss-function`
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
-    :new-notebook: custom-loss-function
 
     import adaptive
     adaptive.notebook_extension()
@@ -59,7 +58,7 @@ Uniform sampling
 Say we want to properly sample a function that contains divergences. A
 simple (but naive) strategy is to *uniformly* sample the domain:
 
-.. execute::
+.. jupyter-execute::
 
     def uniform_sampling_1d(interval, scale, function_values):
         # Note that we never use 'function_values'; the loss is just the size of the subdomain
@@ -75,7 +74,7 @@ simple (but naive) strategy is to *uniformly* sample the domain:
     runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
     learner.plot().select(y=(0, 10000))
 
-.. execute::
+.. jupyter-execute::
 
     %%opts EdgePaths (color='w') Image [logz=True colorbar=True]
 
@@ -95,16 +94,16 @@ simple (but naive) strategy is to *uniformly* sample the domain:
     # this takes a while, so use the async Runner so we know *something* is happening
     runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.02)
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     await runner.task  # This is not needed in a notebook environment!
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_info()
 
-.. execute::
+.. jupyter-execute::
 
     plotter = lambda l: l.plot(tri_alpha=0.3).relabel(
             '1 / (x^2 + y^2) in log scale')
@@ -132,7 +131,7 @@ subdomains are appropriately small it will prioritise places where the
 function is very nonlinear, but will ignore subdomains that are too
 small (0 loss).
 
-.. execute::
+.. jupyter-execute::
 
     %%opts EdgePaths (color='w') Image [logz=True colorbar=True]
 

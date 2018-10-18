@@ -8,11 +8,10 @@ Tutorial `~adaptive.LearnerND`
 
 .. seealso::
     The complete source code of this tutorial can be found in
-    :jupyter-download:notebook:`LearnerND`
+    :jupyter-download:notebook:`tutorial.LearnerND`
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
-    :new-notebook: LearnerND
 
     import adaptive
     adaptive.notebook_extension()
@@ -33,7 +32,7 @@ Do keep in mind the speed and
 `effectiveness <https://en.wikipedia.org/wiki/Curse_of_dimensionality>`__
 of the learner drops quickly with increasing number of dimensions.
 
-.. execute::
+.. jupyter-execute::
 
     # this step takes a lot of time, it will finish at about 3300 points, which can take up to 6 minutes
     def sphere(xyz):
@@ -44,18 +43,18 @@ of the learner drops quickly with increasing number of dimensions.
     learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
     runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     await runner.task  # This is not needed in a notebook environment!
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_info()
 
 Let’s plot 2D slices of the 3D function
 
-.. execute::
+.. jupyter-execute::
 
     def plot_cut(x, direction, learner=learner):
         cut_mapping = {'XYZ'.index(direction): x}
@@ -70,7 +69,7 @@ Let’s plot 2D slices of the 3D function
 
 Or we can plot 1D slices
 
-.. execute::
+.. jupyter-execute::
 
     %%opts Path {+framewise}
     def plot_cut(x1, x2, directions, learner=learner):

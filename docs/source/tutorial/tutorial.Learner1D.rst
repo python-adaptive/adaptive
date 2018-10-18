@@ -8,11 +8,10 @@ Tutorial `~adaptive.Learner1D`
 
 .. seealso::
     The complete source code of this tutorial can be found in
-    :jupyter-download:notebook:`Learner1D`
+    :jupyter-download:notebook:`tutorial.Learner1D`
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
-    :new-notebook: Learner1D
 
     import adaptive
     adaptive.notebook_extension()
@@ -30,7 +29,7 @@ We start with the most common use-case: sampling a 1D function
 We will use the following function, which is a smooth (linear)
 background with a sharp peak at a random location:
 
-.. execute::
+.. jupyter-execute::
 
     offset = random.uniform(-0.5, 0.5)
 
@@ -47,7 +46,7 @@ We start by initializing a 1D “learner”, which will suggest points to
 evaluate, and adapt its suggestions as more and more points are
 evaluated.
 
-.. execute::
+.. jupyter-execute::
 
     learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
@@ -61,13 +60,13 @@ On Windows systems the runner will try to use a `distributed.Client`
 if `distributed` is installed. A `~concurrent.futures.ProcessPoolExecutor`
 cannot be used on Windows for reasons.
 
-.. execute::
+.. jupyter-execute::
 
     # The end condition is when the "loss" is less than 0.1. In the context of the
     # 1D learner this means that we will resolve features in 'func' with width 0.1 or wider.
     runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     await runner.task  # This is not needed in a notebook environment!
@@ -76,23 +75,23 @@ When instantiated in a Jupyter notebook the runner does its job in the
 background and does not block the IPython kernel. We can use this to
 create a plot that updates as new data arrives:
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_info()
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_plot(update_interval=0.1)
 
 We can now compare the adaptive sampling to a homogeneous sampling with
 the same number of points:
 
-.. execute::
+.. jupyter-execute::
 
     if not runner.task.done():
         raise RuntimeError('Wait for the runner to finish before executing the cells below!')
 
-.. execute::
+.. jupyter-execute::
 
     learner2 = adaptive.Learner1D(f, bounds=learner.bounds)
 
@@ -107,7 +106,7 @@ vector output: ``f:ℝ → ℝ^N``
 
 Sometimes you may want to learn a function with vector output:
 
-.. execute::
+.. jupyter-execute::
 
     random.seed(0)
     offsets = [random.uniform(-0.8, 0.8) for _ in range(3)]
@@ -121,20 +120,20 @@ Sometimes you may want to learn a function with vector output:
 ``adaptive`` has you covered! The ``Learner1D`` can be used for such
 functions:
 
-.. execute::
+.. jupyter-execute::
 
     learner = adaptive.Learner1D(f_levels, bounds=(-1, 1))
     runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     await runner.task  # This is not needed in a notebook environment!
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_info()
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_plot(update_interval=0.1)

@@ -8,11 +8,10 @@ Tutorial `~adaptive.DataSaver`
 
 .. seealso::
     The complete source code of this tutorial can be found in
-    :jupyter-download:notebook:`DataSaver`
+    :jupyter-download:notebook:`tutorial.DataSaver`
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
-    :new-notebook: DataSaver
 
     import adaptive
     adaptive.notebook_extension()
@@ -23,7 +22,7 @@ metadata, you can wrap your learner in an `adaptive.DataSaver`.
 In the following example the function to be learned returns its result
 and the execution time in a dictionary:
 
-.. execute::
+.. jupyter-execute::
 
     from operator import itemgetter
 
@@ -48,20 +47,20 @@ and the execution time in a dictionary:
 ``learner.learner`` is the original learner, so
 ``learner.learner.loss()`` will call the correct loss method.
 
-.. execute::
+.. jupyter-execute::
 
     runner = adaptive.Runner(learner, goal=lambda l: l.learner.loss() < 0.1)
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     await runner.task  # This is not needed in a notebook environment!
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_info()
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_plot(plotter=lambda l: l.learner.plot(), update_interval=0.1)
 
@@ -69,6 +68,6 @@ Now the ``DataSavingLearner`` will have an dictionary attribute
 ``extra_data`` that has ``x`` as key and the data that was returned by
 ``learner.function`` as values.
 
-.. execute::
+.. jupyter-execute::
 
     learner.extra_data

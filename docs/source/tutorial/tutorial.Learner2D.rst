@@ -8,11 +8,10 @@ Tutorial `~adaptive.Learner2D`
 
 .. seealso::
     The complete source code of this tutorial can be found in
-    :jupyter-download:notebook:`Learner2D`
+    :jupyter-download:notebook:`tutorial.Learner2D`
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
-    :new-notebook: Learner2D
 
     import adaptive
     adaptive.notebook_extension()
@@ -23,7 +22,7 @@ Tutorial `~adaptive.Learner2D`
 Besides 1D functions, we can also learn 2D functions:
 :math:`\ f: ℝ^2 → ℝ`.
 
-.. execute::
+.. jupyter-execute::
 
     def ring(xy, wait=True):
         import numpy as np
@@ -37,20 +36,20 @@ Besides 1D functions, we can also learn 2D functions:
 
     learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
 
-.. execute::
+.. jupyter-execute::
 
     runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     await runner.task  # This is not needed in a notebook environment!
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_info()
 
-.. execute::
+.. jupyter-execute::
 
     def plot(learner):
         plot = learner.plot(tri_alpha=0.2)
@@ -58,7 +57,7 @@ Besides 1D functions, we can also learn 2D functions:
 
     runner.live_plot(plotter=plot, update_interval=0.1)
 
-.. execute::
+.. jupyter-execute::
 
     %%opts EdgePaths (color='w')
 

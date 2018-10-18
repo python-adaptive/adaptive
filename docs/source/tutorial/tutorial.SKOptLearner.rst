@@ -8,11 +8,10 @@ Tutorial `~adaptive.SKOptLearner`
 
 .. seealso::
     The complete source code of this tutorial can be found in
-    :jupyter-download:notebook:`SKOptLearner`
+    :jupyter-download:notebook:`tutorial.SKOptLearner`
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
-    :new-notebook: SKOptLearner
 
     import adaptive
     adaptive.notebook_extension()
@@ -33,13 +32,13 @@ Although ``SKOptLearner`` can optimize functions of arbitrary
 dimensionality, we can only plot the learner if a 1D function is being
 learned.
 
-.. execute::
+.. jupyter-execute::
 
     def F(x, noise_level=0.1):
         return (np.sin(5 * x) * (1 - np.tanh(x ** 2))
                 + np.random.randn() * noise_level)
 
-.. execute::
+.. jupyter-execute::
 
     learner = adaptive.SKOptLearner(F, dimensions=[(-2., 2.)],
                                     base_estimator="GP",
@@ -48,16 +47,16 @@ learned.
                                    )
     runner = adaptive.Runner(learner, ntasks=1, goal=lambda l: l.npoints > 40)
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     await runner.task  # This is not needed in a notebook environment!
 
-.. execute::
+.. jupyter-execute::
 
     runner.live_info()
 
-.. execute::
+.. jupyter-execute::
 
     %%opts Overlay [legend_position='top']
     xs = np.linspace(*learner.space.bounds[0])

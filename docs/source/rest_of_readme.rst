@@ -36,7 +36,7 @@ Examples
 Here are some examples of how Adaptive samples vs. homogeneous sampling. Click
 on the *Play* :fa:`play` button or move the sliders.
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     import itertools
@@ -52,7 +52,7 @@ on the *Play* :fa:`play` button or move the sliders.
 `adaptive.Learner1D`
 ~~~~~~~~~~~~~~~~~~~~
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     %%opts Layout [toolbar=None]
@@ -87,7 +87,7 @@ on the *Play* :fa:`play` button or move the sliders.
 `adaptive.Learner2D`
 ~~~~~~~~~~~~~~~~~~~~
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     def ring(xy):
@@ -116,7 +116,7 @@ on the *Play* :fa:`play` button or move the sliders.
 `adaptive.AverageLearner`
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. execute::
+.. jupyter-execute::
     :hide-code:
 
     def g(n):
