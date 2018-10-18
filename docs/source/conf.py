@@ -17,7 +17,7 @@ import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
 import adaptive
-
+import sphinx_fontawesome
 
 # -- Project information -----------------------------------------------------
 
@@ -48,6 +48,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'jupyter_sphinx.execute',
+    'sphinx_fontawesome',
 ]
 
 source_parsers = {}

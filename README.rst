@@ -26,7 +26,7 @@ to see examples of how to use ``adaptive`` or visit the
 
 **WARNING: adaptive is still in a beta development stage**
 
-.. implemented-algorithms-start
+.. not-in-documentation-start
 
 Implemented algorithms
 ----------------------
@@ -60,8 +60,6 @@ with built-in support for
 `ipyparallel <https://ipyparallel.readthedocs.io/en/latest/>`_ and
 `distributed <https://distributed.readthedocs.io/en/latest/>`_.
 
-.. implemented-algorithms-end
-
 Examples
 --------
 
@@ -69,6 +67,7 @@ Examples
 
   <img src="https://user-images.githubusercontent.com/6897215/38739170-6ac7c014-3f34-11e8-9e8f-93b3a3a3d61b.gif" width='20%'> </img> <img src="https://user-images.githubusercontent.com/6897215/35219611-ac8b2122-ff73-11e7-9332-adffab64a8ce.gif" width='40%'> </img>
 
+.. not-in-documentation-end
 
 Installation
 ------------
