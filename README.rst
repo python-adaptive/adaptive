@@ -6,7 +6,7 @@
 =================
 
 |PyPI| |Conda| |Downloads| |pipeline status| |DOI| |Binder| |Join the
-chat at https://gitter.im/python-adaptive/adaptive|
+chat at https://gitter.im/python-adaptive/adaptive| |Documentation Status|
 
 **Tools for adaptive parallel sampling of mathematical functions.**
 
@@ -17,10 +17,10 @@ just supply a function with its bounds, and it will be evaluated at the
 evaluate functions on a computing cluster, live-plot the data as it
 returns, and fine-tune the adaptive sampling algorithm.
 
-Check out the ``adaptive`` example notebook
-`learner.ipynb <https://github.com/python-adaptive/adaptive/blob/master/learner.ipynb>`_ (or run it `live on
-Binder <https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb>`_)
-to see examples of how to use ``adaptive``.
+Run the ``adaptive`` example notebook `live on
+Binder <https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb>`_
+to see examples of how to use ``adaptive`` or visit the
+`tutorial on Read the Docs <https://adaptive.readthedocs.io/en/latest/tutorial/tutorial.html>`__.
 
 .. summary-end
 
@@ -152,4 +152,6 @@ request <https://gitlab.kwant-project.org/qt/adaptive/merge_requests>`_.
    :target: https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb
 .. |Join the chat at https://gitter.im/python-adaptive/adaptive| image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
    :target: https://gitter.im/python-adaptive/adaptive
+.. |Documentation Status| image:: https://readthedocs.org/projects/adaptive/badge/?version=latest
+   :target: https://adaptive.readthedocs.io/en/latest/?badge=latest
 .. references-end

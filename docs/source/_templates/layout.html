@@ -1,6 +1,6 @@
 {% extends "!layout.html" %}
 {% block extrahead %}
-      {%- for scriptfile in holoviews_js_files %}
-        {{ js_tag(scriptfile) }}
-      {%- endfor %}
+  {%- for scriptfile in holoviews_js_files %}
+    {{ js_tag(scriptfile) }}
+  {%- endfor %}
 {% endblock %}

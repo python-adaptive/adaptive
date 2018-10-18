@@ -14,6 +14,8 @@ dependencies:
   - jupyter_client>=5.2.2
   - ipywidgets
   - scikit-optimize
+  - nbconvert>=5.4*  # because my jupyter-sphinx branch depends on it
   - pip:
       - sphinx_rtd_theme
       - git+https://github.com/basnijholt/jupyter-sphinx.git@widgets_execute
+      - git+https://github.com/python-adaptive/adaptive.git@master  # temporary solution because jupyter-sphinx doesn't use the adaptive from the repo

@@ -1,11 +1,6 @@
 Tutorial Adaptive
 =================
 
-.. warning::
-    This documentation is not functional yet! Whenever
-    `this Pull Request <https://github.com/jupyter-widgets/jupyter-sphinx/pull/22/>`__.
-    is done, the documentation will be correctly build.
-
 `Adaptive <https://gitlab.kwant-project.org/qt/adaptive-evaluation>`__
 is a package for adaptively sampling functions with support for parallel
 evaluation.
