@@ -49,6 +49,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'jupyter_sphinx.execute',
     'sphinx_fontawesome',
+    'm2r'
 ]
 
 source_parsers = {}

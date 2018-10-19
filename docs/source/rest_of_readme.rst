@@ -140,3 +140,9 @@ see more in the :ref:`Tutorial Adaptive`.
 
 .. include:: ../../README.rst
     :start-after: not-in-documentation-end
+
+
+Authors
+-------
+
+.. mdinclude:: ../../AUTHORS.md
