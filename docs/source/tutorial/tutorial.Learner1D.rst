@@ -39,7 +39,7 @@ background with a sharp peak at a random location:
 
         a = 0.01
         if wait:
-            sleep(random())
+            sleep(random() / 10)
         return x + a**2 / (a**2 + (x - offset)**2)
 
 We start by initializing a 1D “learner”, which will suggest points to

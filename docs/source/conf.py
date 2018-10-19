@@ -148,4 +148,5 @@ def setup(app):
     for url in css:
         app.add_stylesheet(url)
 
+    app.add_stylesheet('custom.css')  # For the `live_info` widget
     app.add_javascript("https://unpkg.com/@jupyter-widgets/html-manager@0.14.4/dist/embed-amd.js")

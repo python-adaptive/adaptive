@@ -176,7 +176,7 @@ def _info_html(runner):
     with suppress(Exception):
         info.append(('latest loss', f'{runner.learner._cache["loss"]:.3f}'))
 
-    template = '<dt>{}</dt><dd>{}</dd>'
+    template = '<dt class="ignore-css">{}</dt><dd>{}</dd>'
     table = '\n'.join(template.format(k, v) for k, v in info)
 
     return f'''
