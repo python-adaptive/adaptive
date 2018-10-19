@@ -54,7 +54,7 @@ else:
 
 
 class BaseRunner:
-    """Base class for runners that use concurrent.futures.Executors.
+    """Base class for runners that use `concurrent.futures.Executors`.
 
     Parameters
     ----------
@@ -346,7 +346,7 @@ class BlockingRunner(BaseRunner):
 
 
 class AsyncRunner(BaseRunner):
-    """Run a learner asynchronously in an executor using asyncio.
+    """Run a learner asynchronously in an executor using `asyncio`.
 
     Parameters
     ----------
@@ -548,7 +548,7 @@ class AsyncRunner(BaseRunner):
         Parameters
         ----------
         save_kwargs : dict
-            Key-word arguments for 'learner.save(**save_kwargs)'.
+            Key-word arguments for ``learner.save(**save_kwargs)``.
         interval : int
             Number of seconds between saving the learner.
 
@@ -586,7 +586,7 @@ def simple(learner, goal):
 
     Parameters
     ----------
-    learner : adaptive.BaseLearner
+    learner : ~`adaptive.BaseLearner` instance
     goal : callable
         The end condition for the calculation. This function must take the
         learner as its sole argument, and return True if we should stop.
@@ -605,9 +605,10 @@ def replay_log(learner, log):
 
     Parameters
     ----------
-    learner : learner.BaseLearner
+    learner : `~adaptive.BaseLearner` instance
+        New learner where the log will be applied.
     log : list
-        contains tuples: '(method_name, *args)'.
+        contains tuples: ``(method_name, *args)``.
     """
     for method, *args in log:
         getattr(learner, method)(*args)

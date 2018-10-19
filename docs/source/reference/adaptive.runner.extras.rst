@@ -1,5 +1,5 @@
-adaptive.runner.simple
-======================
+Runner extras
+=============
 
 Simple executor
 ---------------
@@ -9,7 +9,7 @@ Simple executor
 Sequential excecutor
 --------------------
 
-.. autofunction:: adaptive.runner.SequentialExecutor
+.. autoclass:: adaptive.runner.SequentialExecutor
 
 
 Replay log

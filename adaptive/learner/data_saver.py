@@ -35,11 +35,13 @@ class DataSaver:
     def __getattr__(self, attr):
         return getattr(self.learner, attr)
 
+    @copy_docstring_from(BaseLearner.tell)
     def tell(self, x, result):
         y = self.arg_picker(result)
         self.extra_data[x] = result
         self.learner.tell(x, y)
 
+    @copy_docstring_from(BaseLearner.tell_pending)
     def tell_pending(self, x):
         self.learner.tell_pending(x)
 

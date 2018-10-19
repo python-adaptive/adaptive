@@ -8,18 +8,18 @@ from ..utils import cache_latest
 
 
 class SKOptLearner(Optimizer, BaseLearner):
-    """Learn a function minimum using 'skopt.Optimizer'.
+    """Learn a function minimum using ``skopt.Optimizer``.
 
-    This is an 'Optimizer' from 'scikit-optimize',
+    This is an ``Optimizer`` from ``scikit-optimize``,
     with the necessary methods added to make it conform
-    to the 'adaptive' learner interface.
+    to the ``adaptive`` learner interface.
 
     Parameters
     ----------
     function : callable
         The function to learn.
     **kwargs :
-        Arguments to pass to 'skopt.Optimizer'.
+        Arguments to pass to ``skopt.Optimizer``.
     """
 
     def __init__(self, function, **kwargs):
@@ -63,6 +63,7 @@ class SKOptLearner(Optimizer, BaseLearner):
 
     @property
     def npoints(self):
+        """Number of evaluated points."""
         return len(self.Xi)
 
     def plot(self, nsamples=200):

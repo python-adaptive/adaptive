@@ -20,6 +20,9 @@ class BaseLearner(metaclass=abc.ABCMeta):
     npoints : int, optional
         The number of evaluated points that have been added to the learner.
         Subclasses do not *have* to implement this attribute.
+    pending_points : set, optional
+        Points that have been requested but have not been evaluated yet.
+        Subclasses do not *have* to implement this attribute.
 
     Notes
     -----
@@ -118,10 +121,11 @@ class BaseLearner(metaclass=abc.ABCMeta):
 
         Notes
         -----
-        There are __two ways__ of naming the files:
-        1. Using the 'fname' argument in 'learner.save(fname='example.p')
-        2. Setting the 'fname' attribute, like
-           'learner.fname = "data/example.p"' and then 'learner.save()'.
+        There are **two ways** of naming the files:
+
+        1. Using the ``fname`` argument in ``learner.save(fname='example.p')``
+        2. Setting the ``fname`` attribute, like
+           ``learner.fname = "data/example.p"`` and then ``learner.save()``.
         """
         fname = fname or self.fname
         data = self._get_data()
@@ -142,7 +146,7 @@ class BaseLearner(metaclass=abc.ABCMeta):
 
         Notes
         -----
-        See the notes in the 'BaseLearner.save' doc-string.
+        See the notes in the `save` doc-string.
         """
         fname = fname or self.fname
         with suppress(FileNotFoundError, EOFError):
@@ -157,6 +161,9 @@ class BaseLearner(metaclass=abc.ABCMeta):
 
     @property
     def fname(self):
+        """Filename for the learner when it is saved (or loaded) using
+        `~adaptive.BaseLearner.save` (or `~adaptive.BaseLearner.load` ).
+        """
         # This is a property because then it will be availible in the DataSaver
         try:
             return self._fname

@@ -22,6 +22,7 @@ on the following packages
 - ``bokeh``
 - ``ipywidgets``
 
+We recommend to start with the :ref:`Tutorial `~adaptive.Learner1D``.
 
 .. note::
     Because this documentation consists of static html, the ``live_plot``

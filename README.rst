@@ -1,12 +1,10 @@
 .. summary-start
 
-.. _logo-adaptive:
+|logo| adaptive
+===============
 
-|image0| adaptive
-=================
-
-|PyPI| |Conda| |Downloads| |pipeline status| |DOI| |Binder| |Join the
-chat at https://gitter.im/python-adaptive/adaptive| |Documentation Status|
+|PyPI| |Conda| |Downloads| |Pipeline status| |DOI| |Binder| |Gitter|
+|Documentation| |GitHub|
 
 **Tools for adaptive parallel sampling of mathematical functions.**
 
@@ -126,7 +124,9 @@ We would like to give credits to the following people:
   Mathematical Software, 37 (3), art. no. 26, 2010.
 - Pauli Virtanen for his ``AdaptiveTriSampling`` script (no longer
   available online since SciPy Central went down) which served as
-  inspiration for the ``~adaptive.Learner2D``.
+  inspiration for the `~adaptive.Learner2D`.
+
+.. credits-end
 
 For general discussion, we have a `Gitter chat
 channel <https://gitter.im/python-adaptive/adaptive>`_. If you find any
@@ -136,21 +136,23 @@ or submit a `merge
 request <https://gitlab.kwant-project.org/qt/adaptive/merge_requests>`_.
 
 .. references-start
-.. |image0| image:: https://gitlab.kwant-project.org/qt/adaptive/uploads/d20444093920a4a0499e165b5061d952/logo.png
+.. |logo| image:: https://adaptive.readthedocs.io/en/latest/_static/logo.png
 .. |PyPI| image:: https://img.shields.io/pypi/v/adaptive.svg
    :target: https://pypi.python.org/pypi/adaptive
-.. |Conda| image:: https://anaconda.org/conda-forge/adaptive/badges/installer/conda.svg
+.. |Conda| image:: https://img.shields.io/badge/install%20with-conda-green.svg
    :target: https://anaconda.org/conda-forge/adaptive
-.. |Downloads| image:: https://anaconda.org/conda-forge/adaptive/badges/downloads.svg
+.. |Downloads| image:: https://img.shields.io/conda/dn/conda-forge/adaptive.svg
    :target: https://anaconda.org/conda-forge/adaptive
-.. |pipeline status| image:: https://gitlab.kwant-project.org/qt/adaptive/badges/master/pipeline.svg
+.. |Pipeline status| image:: https://gitlab.kwant-project.org/qt/adaptive/badges/master/pipeline.svg
    :target: https://gitlab.kwant-project.org/qt/adaptive/pipelines
 .. |DOI| image:: https://zenodo.org/badge/113714660.svg
-   :target: https://zenodo.org/badge/latestdoi/113714660
+   :target: https://doi.org/10.5281/zenodo.1446400
 .. |Binder| image:: https://mybinder.org/badge.svg
    :target: https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb
-.. |Join the chat at https://gitter.im/python-adaptive/adaptive| image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
+.. |Gitter| image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
    :target: https://gitter.im/python-adaptive/adaptive
-.. |Documentation Status| image:: https://readthedocs.org/projects/adaptive/badge/?version=latest
+.. |Documentation| image:: https://readthedocs.org/projects/adaptive/badge/?version=latest
    :target: https://adaptive.readthedocs.io/en/latest/?badge=latest
+.. |GitHub| image:: https://img.shields.io/github/stars/python-adaptive/adaptive.svg?style=social
+   :target: https://github.com/python-adaptive/adaptive/stargazers
 .. references-end

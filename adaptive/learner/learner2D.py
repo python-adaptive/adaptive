@@ -15,6 +15,19 @@ from ..utils import cache_latest
 # Learner2D and helper functions.
 
 def deviations(ip):
+    """Returns the deviation of the linear estimate.
+
+    Is useful when defining custom loss functions.
+
+    Parameters
+    ----------
+    ip : `scipy.interpolate.LinearNDInterpolator` instance
+
+    Returns
+    -------
+    numpy array
+        The deviation per triangle.
+    """
     values = ip.values / (ip.values.ptp(axis=0).max() or 1)
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
         ip.tri, values, tol=1e-6)
@@ -37,6 +50,20 @@ def deviations(ip):
 
 
 def areas(ip):
+    """Returns the area per triangle of the triangulation inside
+    a `LinearNDInterpolator` instance.
+
+    Is useful when defining custom loss functions.
+
+    Parameters
+    ----------
+    ip : `scipy.interpolate.LinearNDInterpolator` instance
+
+    Returns
+    -------
+    numpy array
+        The area per triangle in ``ip.tri``.
+    """
     p = ip.tri.points[ip.tri.vertices]
     q = p[:, :-1, :] - p[:, -1, None, :]
     areas = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0]) / 2
@@ -289,10 +316,17 @@ class Learner2D(BaseLearner):
 
     @property
     def npoints(self):
+        """Number of evaluated points."""
         return len(self.data)
 
     @property
     def vdim(self):
+        """Length of the output of ``learner.function``.
+        If the output is unsized (when it's a scalar)
+        then `vdim = 1`.
+
+        As long as no data is known `vdim = 1`.
+        """
         if self._vdim is None and self.data:
             try:
                 value = next(iter(self.data.values()))
@@ -337,11 +371,15 @@ class Learner2D(BaseLearner):
         return points_combined, values_combined
 
     def data_combined(self):
+        """Like `data`, however this includes the points in
+        `pending_points` for which the values are interpolated."""
         # Interpolate the unfinished points
         points, values = self._data_combined()
         return {tuple(k): v for k, v in zip(points, values)}
 
     def ip(self):
+        """A `scipy.interpolate.LinearNDInterpolator` instance
+        containing the learner's data."""
         if self._ip is None:
             points, values = self._data_in_bounds()
             points = self._scale(points)
@@ -349,6 +387,9 @@ class Learner2D(BaseLearner):
         return self._ip
 
     def ip_combined(self):
+        """A `scipy.interpolate.LinearNDInterpolator` instance
+        containing the learner's data *and* interpolated data of
+        the `pending_points`."""
         if self._ip_combined is None:
             points, values = self._data_combined()
             points = self._scale(points)

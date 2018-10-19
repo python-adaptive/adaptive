@@ -487,6 +487,7 @@ class IntegratorLearner(BaseLearner):
 
     @property
     def npoints(self):
+        """Number of evaluated points."""
         return len(self.done_points)
 
     @property

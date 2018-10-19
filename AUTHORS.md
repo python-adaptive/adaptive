@@ -1,4 +1,4 @@
-# Adaptive Authors
+## Authors
 Below is a list of the contributors to Adaptive:
 
 + [Anton Akhmerov](<https://antonakhmerov.org>)

@@ -22,7 +22,7 @@ class BalancingLearner(BaseLearner):
 
     Parameters
     ----------
-    learners : sequence of `BaseLearner`
+    learners : sequence of `~adaptive.BaseLearner`\s
         The learners from which to choose. These must all have the same type.
     cdims : sequence of dicts, or (keys, iterable of values), optional
         Constant dimensions; the parameters that label the learners. Used
@@ -42,6 +42,13 @@ class BalancingLearner(BaseLearner):
             >>> cdims = (['A', 'B'], [(True, 0), (True, 1),
             ...                       (False, 0), (False, 1)])
 
+    Attributes
+    ----------
+    learners : list
+        The sequence of `~adaptive.BaseLearner`\s.
+    function : callable
+        A function that calls the functions of the underlying learners.
+        Its signature is ``function(learner_index, point)``.
     strategy : 'loss_improvements' (default), 'loss', or 'npoints'
         The points that the `BalancingLearner` choses can be either based on:
         the best 'loss_improvements', the smallest total 'loss' of the
@@ -51,13 +58,13 @@ class BalancingLearner(BaseLearner):
 
     Notes
     -----
-    This learner compares the 'loss' calculated from the "child" learners.
+    This learner compares the `loss` calculated from the "child" learners.
     This requires that the 'loss' from different learners *can be meaningfully
     compared*. For the moment we enforce this restriction by requiring that
     all learners are the same type but (depending on the internals of the
     learner) it may be that the loss cannot be compared *even between learners
-    of the same type*. In this case the `BalancingLearner` will behave in an
-    undefined way.
+    of the same type*. In this case the `~adaptive.BalancingLearner` will
+    behave in an undefined way. Change the `strategy` in that case.
     """
 
     def __init__(self, learners, *, cdims=None, strategy='loss_improvements'):
@@ -81,6 +88,12 @@ class BalancingLearner(BaseLearner):
 
     @property
     def strategy(self):
+        """Can be either 'loss_improvements' (default), 'loss', or 'npoints'
+        The points that the `BalancingLearner` choses can be either based on:
+        the best 'loss_improvements', the smallest total 'loss' of the
+        child learners, or the number of points per learner, using 'npoints'.
+        One can dynamically change the strategy while the simulation is
+        running by changing the ``learner.strategy`` attribute."""
         return self._strategy
 
     @strategy.setter
@@ -122,7 +135,7 @@ class BalancingLearner(BaseLearner):
         points = []
         loss_improvements = []
         for _ in range(n):
-            losses = self.losses(real=False)
+            losses = self._losses(real=False)
             max_ind = np.argmax(losses)
             xs, ls = self.learners[max_ind].ask(1)
             points.append((max_ind, xs[0]))
@@ -165,7 +178,7 @@ class BalancingLearner(BaseLearner):
         self._loss.pop(index, None)
         self.learners[index].tell_pending(x)
 
-    def losses(self, real=True):
+    def _losses(self, real=True):
         losses = []
         loss_dict = self._loss if real else self._pending_loss
 
@@ -178,7 +191,7 @@ class BalancingLearner(BaseLearner):
 
     @cache_latest
     def loss(self, real=True):
-        losses = self.losses(real)
+        losses = self._losses(real)
         return max(losses)
 
     def plot(self, cdims=None, plotter=None, dynamic=True):
@@ -215,8 +228,8 @@ class BalancingLearner(BaseLearner):
         Returns
         -------
         dm : `holoviews.core.DynamicMap` (default) or `holoviews.core.HoloMap`
-            A `DynamicMap` (dynamic=True) or `HoloMap` (dynamic=False) with
-            sliders that are defined by `cdims`.
+             A `DynamicMap` ``(dynamic=True)`` or `HoloMap`
+             ``(dynamic=False)`` with sliders that are defined by `cdims`.
         """
         hv = ensure_holoviews()
         cdims = cdims or self._cdims_default
@@ -295,7 +308,7 @@ class BalancingLearner(BaseLearner):
         Notes
         -----
         The order of the child learners inside `learner.learners` is the same
-        as `adaptive.utils.named_product(**combos)`.
+        as ``adaptive.utils.named_product(**combos)``.
         """
         learners = []
         arguments = named_product(**combos)
@@ -313,7 +326,7 @@ class BalancingLearner(BaseLearner):
         folder : str
             Directory in which the learners's data will be saved.
         compress : bool, default True
-            Compress the data upon saving using 'gzip'. When saving
+            Compress the data upon saving using `gzip`. When saving
             using compression, one must load it with compression too.
 
         Notes
@@ -364,7 +377,7 @@ class BalancingLearner(BaseLearner):
 
         Example
         -------
-        See the example in the 'BalancingLearner.save' doc-string.
+        See the example in the `BalancingLearner.save` doc-string.
         """
         for l in self.learners:
             l.load(os.path.join(folder, l.fname), compress=compress)

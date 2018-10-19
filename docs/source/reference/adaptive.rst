@@ -7,6 +7,7 @@ Learners
 .. toctree::
 
     adaptive.learner.average_learner
+    adaptive.learner.base_learner
     adaptive.learner.balancing_learner
     adaptive.learner.data_saver
     adaptive.learner.integrator_learner
@@ -22,6 +23,7 @@ Runners
     adaptive.runner.Runner
     adaptive.runner.AsyncRunner
     adaptive.runner.BlockingRunner
+    adaptive.runner.BaseRunner
     adaptive.runner.extras
 
 Other

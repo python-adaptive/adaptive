@@ -8,7 +8,7 @@ Custom adaptive logic for 1D and 2D
 
 .. seealso::
     The complete source code of this tutorial can be found in
-    :jupyter-download:notebook:`tutorial.custom-loss-function`
+    :jupyter-download:notebook:`tutorial.custom-loss`
 
 .. jupyter-execute::
     :hide-code:

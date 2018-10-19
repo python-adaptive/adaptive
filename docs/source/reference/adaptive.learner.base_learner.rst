@@ -1,4 +1,4 @@
-adaptive.learner.BaseLearner
+adaptive.BaseLearner
 ============================
 
 .. autoclass:: adaptive.learner.BaseLearner

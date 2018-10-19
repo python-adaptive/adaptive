@@ -27,6 +27,8 @@ class AverageLearner(BaseLearner):
         Sampled points and values.
     pending_points : set
         Points that still have to be evaluated.
+    npoints : int
+        Number of evaluated points.
     """
 
     def __init__(self, function, atol=None, rtol=None):
@@ -48,7 +50,7 @@ class AverageLearner(BaseLearner):
 
     @property
     def n_requested(self):
-        return len(self.data) + len(self.pending_points)
+        return self.npoints + len(self.pending_points)
 
     def ask(self, n, tell_pending=True):
         points = list(range(self.n_requested, self.n_requested + n))
@@ -59,7 +61,7 @@ class AverageLearner(BaseLearner):
                           - set(self.data)
                           - set(self.pending_points))[:n]
 
-        loss_improvements = [self.loss_improvement(n) / n] * n
+        loss_improvements = [self._loss_improvement(n) / n] * n
         if tell_pending:
             for p in points:
                 self.tell_pending(p)
@@ -81,10 +83,13 @@ class AverageLearner(BaseLearner):
 
     @property
     def mean(self):
+        """The average of all values in `data`."""
         return self.sum_f / self.npoints
 
     @property
     def std(self):
+        """The corrected sample standard deviation of the values
+        in `data`."""
         n = self.npoints
         if n < 2:
             return np.inf
@@ -106,7 +111,7 @@ class AverageLearner(BaseLearner):
         return max(standard_error / self.atol,
                    standard_error / abs(self.mean) / self.rtol)
 
-    def loss_improvement(self, n):
+    def _loss_improvement(self, n):
         loss = self.loss()
         if np.isfinite(loss):
             return loss - self.loss(n=self.npoints + n)
@@ -118,6 +123,12 @@ class AverageLearner(BaseLearner):
         self.pending_points = set()
 
     def plot(self):
+        """Returns a histogram of the evaluated data.
+
+        Returns
+        -------
+        holoviews.element.Histogram
+            A histogram of the evaluated data."""
         hv = ensure_holoviews()
         vals = [v for v in self.data.values() if v is not None]
         if not vals:

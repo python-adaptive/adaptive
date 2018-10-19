@@ -188,10 +188,17 @@ class LearnerND(BaseLearner):
 
     @property
     def npoints(self):
+        """Number of evaluated points."""
         return len(self.data)
 
     @property
     def vdim(self):
+        """Length of the output of ``learner.function``.
+        If the output is unsized (when it's a scalar)
+        then `vdim = 1`.
+
+        As long as no data is known `vdim = 1`.
+        """
         if self._vdim is None and self.data:
             try:
                 value = next(iter(self.data.values()))
@@ -205,6 +212,8 @@ class LearnerND(BaseLearner):
         return all(p in self.data for p in self._bounds_points)
 
     def ip(self):
+        """A `scipy.interpolate.LinearNDInterpolator` instance
+        containing the learner's data."""
         # XXX: take our own triangulation into account when generating the ip
         return interpolate.LinearNDInterpolator(self.points, self.values)
 
@@ -227,10 +236,12 @@ class LearnerND(BaseLearner):
 
     @property
     def values(self):
+        """Get the values from `data` as a numpy array."""
         return np.array(list(self.data.values()), dtype=float)
 
     @property
     def points(self):
+        """Get the points from `data` as a numpy array."""
         return np.array(list(self.data.keys()), dtype=float)
 
     def tell(self, point, value):
@@ -262,6 +273,7 @@ class LearnerND(BaseLearner):
         return simplex in self.tri.simplices
 
     def inside_bounds(self, point):
+        """Check whether a point is inside the bounds."""
         return all(mn <= p <= mx for p, (mn, mx) in zip(point, self.bounds))
 
     def tell_pending(self, point, *, simplex=None):

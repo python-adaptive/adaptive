@@ -19,9 +19,13 @@ The following learners are implemented:
 - `~adaptive.AverageLearner`, For stochastic functions where you want to
   average the result over many evaluations,
 - `~adaptive.IntegratorLearner`, for
-  when you want to intergrate a 1D function ``f: ℝ → ℝ``,
+  when you want to intergrate a 1D function ``f: ℝ → ℝ``.
+
+Meta-learners (to be used with other learners):
+
 - `~adaptive.BalancingLearner`, for when you want to run several learners at once,
-  selecting the “best” one each time you get more points.
+  selecting the “best” one each time you get more points,
+- `~adaptive.DataSaver`, for when your function doesn't just return a scalar or a vector.
 
 In addition to the learners, ``adaptive`` also provides primitives for
 running the sampling across several cores and even several machines,
@@ -46,8 +50,6 @@ on the *Play* :fa:`play` button or move the sliders.
     import numpy as np
     adaptive.notebook_extension()
     %output holomap='scrubber'
-
-
 
 `adaptive.Learner1D`
 ~~~~~~~~~~~~~~~~~~~~
@@ -82,8 +84,6 @@ on the *Play* :fa:`play` button or move the sliders.
     (get_hm(uniform_loss).relabel('homogeneous samping')
      + get_hm(default_loss).relabel('with adaptive'))
 
-
-
 `adaptive.Learner2D`
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -111,8 +111,6 @@ on the *Play* :fa:`play` button or move the sliders.
     plots = {n: plot(learner, n) for n in range(4, 1010, 20)}
     hv.HoloMap(plots, kdims=['npoints']).collate()
 
-
-
 `adaptive.AverageLearner`
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -134,15 +132,31 @@ on the *Play* :fa:`play` button or move the sliders.
     plots = {n: plot(learner, n) for n in range(10, 10000, 200)}
     hv.HoloMap(plots, kdims=['npoints'])
 
+`adaptive.LearnerND`
+~~~~~~~~~~~~~~~~~~~~
+
+.. jupyter-execute::
+    :hide-code:
+
+    def sphere(xyz):
+        import numpy as np
+        x, y, z = xyz
+        a = 0.4
+        return np.exp(-(x**2 + y**2 + z**2 - 0.75**2)**2/a**4)
+
+    learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
+    adaptive.runner.simple(learner, lambda l: l.npoints == 3000)
+
+    learner.plot_3D()
 
 see more in the :ref:`Tutorial Adaptive`.
 
-
 .. include:: ../../README.rst
     :start-after: not-in-documentation-end
-
-
-Authors
--------
+    :end-before: credits-end
 
 .. mdinclude:: ../../AUTHORS.md
+
+.. include:: ../../README.rst
+    :start-after: credits-end
+    :end-before: references-start

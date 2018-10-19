@@ -16,6 +16,6 @@
    :maxdepth: 2
    :hidden:
 
-   rest_of_readme
+   docs
    tutorial/tutorial
    reference/adaptive

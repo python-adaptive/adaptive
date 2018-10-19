@@ -34,7 +34,7 @@ def uniform_loss(interval, scale, function_values):
 
 
 def default_loss(interval, scale, function_values):
-    """Calculate loss on a single interval
+    """Calculate loss on a single interval.
 
     Currently returns the rescaled length of the interval. If one of the
     y-values is missing, returns 0 (so the intervals with missing data are
@@ -148,6 +148,12 @@ class Learner1D(BaseLearner):
 
     @property
     def vdim(self):
+        """Length of the output of ``learner.function``.
+        If the output is unsized (when it's a scalar)
+        then `vdim = 1`.
+
+        As long as no data is known `vdim = 1`.
+        """
         if self._vdim is None:
             if self.data:
                 y = next(iter(self.data.values()))
@@ -162,6 +168,7 @@ class Learner1D(BaseLearner):
 
     @property
     def npoints(self):
+        """Number of evaluated points."""
         return len(self.data)
 
     @cache_latest
@@ -169,7 +176,7 @@ class Learner1D(BaseLearner):
         losses = self.losses if real else self.losses_combined
         return max(losses.values()) if len(losses) > 0 else float('inf')
 
-    def update_interpolated_loss_in_interval(self, x_left, x_right):
+    def _update_interpolated_loss_in_interval(self, x_left, x_right):
         if x_left is not None and x_right is not None:
             dx = x_right - x_left
             if dx < self._dx_eps:
@@ -187,13 +194,13 @@ class Learner1D(BaseLearner):
                 self.losses_combined[a, b] = (b - a) * loss / dx
                 a = b
 
-    def update_losses(self, x, real=True):
+    def _update_losses(self, x, real=True):
         # When we add a new point x, we should update the losses
         # (x_left, x_right) are the "real" neighbors of 'x'.
-        x_left, x_right = self.find_neighbors(x, self.neighbors)
+        x_left, x_right = self._find_neighbors(x, self.neighbors)
         # (a, b) are the neighbors of the combined interpolated
         # and "real" intervals.
-        a, b = self.find_neighbors(x, self.neighbors_combined)
+        a, b = self._find_neighbors(x, self.neighbors_combined)
 
         # (a, b) is splitted into (a, x) and (x, b) so if (a, b) exists
         self.losses_combined.pop((a, b), None)  # we get rid of (a, b).
@@ -202,8 +209,8 @@ class Learner1D(BaseLearner):
             # We need to update all interpolated losses in the interval
             # (x_left, x) and (x, x_right). Since the addition of the point
             # 'x' could change their loss.
-            self.update_interpolated_loss_in_interval(x_left, x)
-            self.update_interpolated_loss_in_interval(x, x_right)
+            self._update_interpolated_loss_in_interval(x_left, x)
+            self._update_interpolated_loss_in_interval(x, x_right)
 
             # Since 'x' is in between (x_left, x_right),
             # we get rid of the interval.
@@ -230,7 +237,7 @@ class Learner1D(BaseLearner):
             self.losses_combined[x, b] = float('inf')
 
     @staticmethod
-    def find_neighbors(x, neighbors):
+    def _find_neighbors(x, neighbors):
         if x in neighbors:
             return neighbors[x]
         pos = neighbors.bisect_left(x)
@@ -239,14 +246,14 @@ class Learner1D(BaseLearner):
         x_right = keys[pos] if pos != len(neighbors) else None
         return x_left, x_right
 
-    def update_neighbors(self, x, neighbors):
+    def _update_neighbors(self, x, neighbors):
         if x not in neighbors:  # The point is new
-            x_left, x_right = self.find_neighbors(x, neighbors)
+            x_left, x_right = self._find_neighbors(x, neighbors)
             neighbors[x] = [x_left, x_right]
             neighbors.get(x_left, [None, None])[1] = x
             neighbors.get(x_right, [None, None])[0] = x
 
-    def update_scale(self, x, y):
+    def _update_scale(self, x, y):
         """Update the scale with which the x and y-values are scaled.
 
         For a learner where the function returns a single scalar the scale
@@ -291,16 +298,16 @@ class Learner1D(BaseLearner):
         if not self.bounds[0] <= x <= self.bounds[1]:
             return
 
-        self.update_neighbors(x, self.neighbors_combined)
-        self.update_neighbors(x, self.neighbors)
-        self.update_scale(x, y)
-        self.update_losses(x, real=True)
+        self._update_neighbors(x, self.neighbors_combined)
+        self._update_neighbors(x, self.neighbors)
+        self._update_scale(x, y)
+        self._update_losses(x, real=True)
 
         # If the scale has increased enough, recompute all losses.
         if self._scale[1] > 2 * self._oldscale[1]:
 
             for interval in self.losses:
-                self.update_interpolated_loss_in_interval(*interval)
+                self._update_interpolated_loss_in_interval(*interval)
 
             self._oldscale = deepcopy(self._scale)
 
@@ -309,8 +316,8 @@ class Learner1D(BaseLearner):
             # The point is already evaluated before
             return
         self.pending_points.add(x)
-        self.update_neighbors(x, self.neighbors_combined)
-        self.update_losses(x, real=False)
+        self._update_neighbors(x, self.neighbors_combined)
+        self._update_losses(x, real=False)
 
     def tell_many(self, xs, ys, *, force=False):
         if not force and not (len(xs) > 0.5 * len(self.data) and len(xs) > 2):
@@ -379,10 +386,10 @@ class Learner1D(BaseLearner):
             if ival in self.losses:
                 # If this interval does not exist it should already
                 # have an inf loss.
-                self.update_interpolated_loss_in_interval(*ival)
+                self._update_interpolated_loss_in_interval(*ival)
 
     def ask(self, n, tell_pending=True):
-        """Return n points that are expected to maximally reduce the loss."""
+        """Return 'n' points that are expected to maximally reduce the loss."""
         points, loss_improvements = self._ask_points_without_adding(n)
 
         if tell_pending:
@@ -392,7 +399,7 @@ class Learner1D(BaseLearner):
         return points, loss_improvements
 
     def _ask_points_without_adding(self, n):
-        """Return n points that are expected to maximally reduce the loss.
+        """Return 'n' points that are expected to maximally reduce the loss.
         Without altering the state of the learner"""
         # Find out how to divide the n points over the intervals
         # by finding  positive integer n_i that minimize max(L_i / n_i) subject
@@ -466,6 +473,14 @@ class Learner1D(BaseLearner):
         return points, loss_improvements
 
     def plot(self):
+        """Returns a plot of the evaluated data.
+
+        Returns
+        -------
+        plot : `holoviews.element.Scatter` (if vdim=1)\
+               else `holoviews.element.Path`
+            Plot of the evaluated data.
+        """
         hv = ensure_holoviews()
         if not self.data:
             p = hv.Scatter([]) * hv.Path([])
