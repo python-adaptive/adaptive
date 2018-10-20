@@ -219,8 +219,8 @@ class LearnerND(BaseLearner):
 
     @property
     def tri(self):
-        """A `adaptive.learner.Triangulation` instance with all the points
-        of the learner."""
+        """An `adaptive.learner.triangulation.Triangulation` instance
+        with all the points of the learner."""
         if self._tri is not None:
             return self._tri
 
@@ -230,8 +230,8 @@ class LearnerND(BaseLearner):
             return self._tri
         except ValueError:
             # A ValueError is raised if we do not have enough points or
-            # the provided points are coplanar, so we need more points to create
-            # a valid triangulation
+            # the provided points are coplanar, so we need more points to
+            # create a valid triangulation
             return None
 
     @property
