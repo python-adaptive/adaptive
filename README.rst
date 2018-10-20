@@ -145,8 +145,8 @@ request <https://gitlab.kwant-project.org/qt/adaptive/merge_requests>`_.
    :target: https://anaconda.org/conda-forge/adaptive
 .. |Pipeline status| image:: https://gitlab.kwant-project.org/qt/adaptive/badges/master/pipeline.svg
    :target: https://gitlab.kwant-project.org/qt/adaptive/pipelines
-.. |DOI| image:: https://zenodo.org/badge/113714660.svg
-   :target: https://doi.org/10.5281/zenodo.1446400
+.. |DOI| image:: https://img.shields.io/badge/doi-10.5281%2Fzenodo.1182437-blue.svg
+   :target: https://doi.org/10.5281/zenodo.1182437
 .. |Binder| image:: https://mybinder.org/badge.svg
    :target: https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb
 .. |Gitter| image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
