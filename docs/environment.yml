@@ -10,6 +10,7 @@ dependencies:
     - scipy
     - holoviews
     - bokeh
+    - plotly
     - ipyparallel
     - distributed
     - ipykernel>=4.8*

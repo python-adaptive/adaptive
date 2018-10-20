@@ -38,6 +38,7 @@ extras_require = {
         'ipywidgets',
         'bokeh',
         'matplotlib',
+        'plotly',
     ],
 }
 

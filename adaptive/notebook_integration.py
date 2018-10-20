@@ -7,28 +7,42 @@ import warnings
 
 
 _async_enabled = False
-_plotting_enabled = False
+_holoviews_enabled = False
+_ipywidgets_enabled = False
+_plotly_enabled = False
 
 
 def notebook_extension():
+    """Enable ipywidgets, holoviews, and asyncio notebook integration."""
     if not in_ipynb():
         raise RuntimeError('"adaptive.notebook_extension()" may only be run '
                            'from a Jupyter notebook.')
 
-    global _plotting_enabled
-    _plotting_enabled = False
+    global _async_enabled, _holoviews_enabled, _ipywidgets_enabled
+
+    # Load holoviews
     try:
-        import ipywidgets
-        import holoviews
-        holoviews.notebook_extension('bokeh', logo=False)
-        _plotting_enabled = True
+        if not _holoviews_enabled:
+            import holoviews
+            holoviews.notebook_extension('bokeh', logo=False)
+            _holoviews_enabled = True
     except ModuleNotFoundError:
-        warnings.warn("holoviews and (or) ipywidgets are not installed; plotting "
+        warnings.warn("holoviews is not installed; plotting "
+                      "is disabled.", RuntimeWarning)
+    
+    # Load ipywidgets
+    try:
+        if not _ipywidgets_enabled:
+            import ipywidgets
+            _ipywidgets_enabled = True
+    except ModuleNotFoundError:
+        warnings.warn("ipywidgets is not installed; live_info "
                       "is disabled.", RuntimeWarning)
 
-    global _async_enabled
-    get_ipython().magic('gui asyncio')
-    _async_enabled = True
+    # Enable asyncio integration
+    if not _async_enabled:
+        get_ipython().magic('gui asyncio')
+        _async_enabled = True
 
 
 def ensure_holoviews():
@@ -36,6 +50,22 @@ def ensure_holoviews():
         return importlib.import_module('holoviews')
     except ModuleNotFoundError:
         raise RuntimeError('holoviews is not installed; plotting is disabled.')
+
+
+def ensure_plotly():
+    global _plotly_enabled
+    try:
+        import plotly
+        if not _plotly_enabled:
+            import plotly.graph_objs
+            import plotly.figure_factory
+            import plotly.offline
+            # This injects javascript and should happen only once
+            plotly.offline.init_notebook_mode()
+            _plotly_enabled = True
+        return plotly
+    except ModuleNotFoundError:
+        raise RuntimeError('plotly is not installed; plotting is disabled.')
 
 
 def in_ipynb():
@@ -72,7 +102,7 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     dm : `holoviews.core.DynamicMap`
         The plot that automatically updates every `update_interval`.
     """
-    if not _plotting_enabled:
+    if not _holoviews_enabled:
         raise RuntimeError("Live plotting is not enabled; did you run "
                            "'adaptive.notebook_extension()'?")
 
@@ -126,7 +156,7 @@ def live_info(runner, *, update_interval=0.5):
     Returns an interactive ipywidget that can be
     visualized in a Jupyter notebook.
     """
-    if not _plotting_enabled:
+    if not _holoviews_enabled:
         raise RuntimeError("Live plotting is not enabled; did you run "
                            "'adaptive.notebook_extension()'?")
 
