@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, Iterable
+import functools
 import heapq
 import itertools
 import random
@@ -470,6 +471,10 @@ class LearnerND(BaseLearner):
         self._subtriangulations = dict()
         self._pending_to_simplex = dict()
 
+    ##########################
+    # Plotting related stuff #
+    ##########################
+
     def plot(self, n=None, tri_alpha=0):
         """Plot the function we want to learn, only works in 2D.
 
@@ -588,6 +593,9 @@ class LearnerND(BaseLearner):
     def plot_3D(self, with_triangulation=False):
         """Plot the learner's data in 3D using plotly.
 
+        Does *not* work with the
+        `adaptive.notebook_integration.live_plot` functionality.
+
         Parameters
         ----------
         with_triangulation : bool, default: False
@@ -595,7 +603,7 @@ class LearnerND(BaseLearner):
 
         Returns
         -------
-        plot : plotly.offline.iplot object
+        plot : `plotly.offline.iplot` object
             The 3D plot of ``learner.data``.
         """
         plotly = ensure_plotly()
@@ -653,3 +661,182 @@ class LearnerND(BaseLearner):
 
     def _set_data(self, data):
         self.tell_many(*zip(*data.items()))
+
+    def _get_iso(self, level=0.0, which='surface'):
+        if which == 'surface':
+            if self.ndim != 3 or self.vdim != 1:
+                raise Exception('Isosurface plotting is only supported'
+                                ' for a 3D input and 1D output')
+            get_surface = True
+            get_line = False
+        elif which == 'line':
+            if self.ndim != 2 or self.vdim != 1:
+                raise Exception('Isoline plotting is only supported'
+                                ' for a 2D input and 1D output')
+            get_surface = False
+            get_line = True
+
+        vertices = []  # index -> (x,y,z)
+        faces_or_lines = []  # tuple of indices of the corner points
+
+        @functools.lru_cache()
+        def _get_vertex_index(a, b):
+            vertex_a = self.tri.vertices[a]
+            vertex_b = self.tri.vertices[b]
+            value_a = self.data[vertex_a]
+            value_b = self.data[vertex_b]
+
+            da = abs(value_a - level)
+            db = abs(value_b - level)
+            dab = da + db
+
+            new_pt = (db / dab * np.array(vertex_a)
+                      + da / dab * np.array(vertex_b))
+
+            new_index = len(vertices)
+            vertices.append(new_pt)
+            return new_index
+
+        for simplex in self.tri.simplices:
+            plane_or_line = []
+            for a, b in itertools.combinations(simplex, 2):
+                va = self.data[self.tri.vertices[a]]
+                vb = self.data[self.tri.vertices[b]]
+                if min(va, vb) < level <= max(va, vb):
+                    vi = _get_vertex_index(a, b)
+                    should_add = True
+                    for pi in plane_or_line:
+                        if np.allclose(vertices[vi], vertices[pi]):
+                            should_add = False
+                    if should_add:
+                        plane_or_line.append(vi)
+
+            if get_surface and len(plane_or_line) == 3:
+                faces_or_lines.append(plane_or_line)
+            elif get_surface and len(plane_or_line) == 4:
+                faces_or_lines.append(plane_or_line[:3])
+                faces_or_lines.append(plane_or_line[1:])
+            elif get_line and len(plane_or_line) == 2:
+                faces_or_lines.append(plane_or_line)
+
+        if len(faces_or_lines) == 0:
+            r_min = min(self.data[v] for v in self.tri.vertices)
+            r_max = max(self.data[v] for v in self.tri.vertices)
+
+            raise ValueError(
+                f"Could not draw isosurface for level={level}, as"
+                " this value is not inside the function range. Please choose"
+                f" a level strictly inside interval ({r_min}, {r_max})"
+            )
+
+        return vertices, faces_or_lines
+
+    def plot_isoline(self, level=0.0, n=None, tri_alpha=0):
+        """Plot the isoline at a specific level, only works in 2D.
+
+        Parameters
+        ----------
+        level : float, default: 0
+            The value of the function at which you would like to see
+            the isoline.
+        n : int
+            The number of boxes in the interpolation grid along each axis.
+            This is passed to `plot`.
+        tri_alpha : float
+            The opacity of the overlaying triangulation. This is passed
+            to `plot`.
+
+        Returns
+        -------
+        `holoviews.core.Overlay`
+            The plot of the isoline(s). This overlays a `plot` with a
+            `holoviews.element.Path`.
+        """
+        hv = ensure_holoviews()
+        if n == -1:
+            plot = hv.Path([])
+        else:
+            plot = self.plot(n=n, tri_alpha=tri_alpha)
+
+        if isinstance(level, Iterable):
+            for l in level:
+                plot = plot * self.plot_isoline(level=l, n=-1)
+            return plot
+
+        vertices, lines = self.self._get_iso(level, which='line')
+        paths = [[vertices[i], vertices[j]] for i, j in lines]
+        contour = hv.Path(paths)
+
+        contour_opts = dict(color='black')
+        contour = contour.opts(style=contour_opts)
+        return plot * contour
+
+    def plot_isosurface(self, level=0.0, hull_opacity=0.2):
+        """Plots a linearly interpolated isosurface.
+
+        This is the 3D analog of an isoline. Does *not* work with the
+        `adaptive.notebook_integration.live_plot` functionality.
+
+        Parameters
+        ----------
+        level : float, default: 0.0
+            the function value which you are interested in.
+        hull_opacity : float, default: 0.0
+            the opacity of the hull of the domain.
+
+        Returns
+        -------
+        plot : `plotly.offline.iplot` object
+            The plot object of the isosurface.
+        """
+        plotly = ensure_plotly()
+
+        vertices, faces = self._get_iso(level, which='surface')
+        x, y, z = zip(*vertices)
+
+        fig = plotly.figure_factory.create_trisurf(
+            x=x, y=y, z=z, plot_edges=False,
+            simplices=faces, title="Isosurface")
+        isosurface = fig.data[0]
+        isosurface.update(lighting=dict(ambient=1, diffuse=1,
+            roughness=1, specular=0, fresnel=0))
+
+        if hull_opacity < 1e-3:
+            # Do not compute the hull_mesh.
+            return plotly.offline.iplot(fig)
+
+        hull_mesh = self._get_hull_mesh(opacity=hull_opacity)
+        return plotly.offline.iplot([isosurface, hull_mesh])
+
+    def _get_hull_mesh(self, opacity=0.2):
+        plotly = ensure_plotly()
+        hull = scipy.spatial.ConvexHull(self._bounds_points)
+
+        # Find the colors of each plane, giving triangles which are coplanar
+        # the same color, such that a square face has the same color.
+        color_dict = {}
+
+        def _get_plane_color(simplex):
+            simplex = tuple(simplex)
+            # If the volume of the two triangles combined is zero then they
+            # belong to the same plane.
+            for simplex_key, color in color_dict.items():
+                points = [hull.points[i] for i in set(simplex_key + simplex)]
+                points = np.array(points)
+                if np.linalg.matrix_rank(points[1:] - points[0]) < 3:
+                    return color
+                if scipy.spatial.ConvexHull(points).volume < 1e-5:
+                    return color
+            color_dict[simplex] = tuple(random.randint(0, 255)
+                                        for _ in range(3))
+            return color_dict[simplex]
+
+        colors = [_get_plane_color(simplex) for simplex in hull.simplices]
+
+        x, y, z = zip(*self._bounds_points)
+        i, j, k = hull.simplices.T
+        lighting = dict(ambient=1, diffuse=1, roughness=1,
+                        specular=0, fresnel=0)
+        return plotly.graph_objs.Mesh3d(x=x, y=y, z=z, i=i, j=j, k=k,
+                                        facecolor=colors, opacity=opacity,
+                                        lighting=lighting)
