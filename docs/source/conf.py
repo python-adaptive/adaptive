@@ -136,7 +136,7 @@ def get_holoviews_js_css():
     from holoviews.plotting import Renderer
     dependencies = {**Renderer.core_dependencies,
                     **Renderer.extra_dependencies}
-    required = ['jQueryUI', 'jQuery', 'require']
+    required = ['jQuery', 'jQueryUI', 'require']
     js = [url for name in required for url in dependencies[name].get('js', [])]
     css = [url for name in required for url in dependencies[name].get('css', [])]
     return js, css
