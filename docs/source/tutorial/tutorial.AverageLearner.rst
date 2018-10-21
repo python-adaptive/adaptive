@@ -40,7 +40,8 @@ implementation the seed parameter can be ignored by the function).
 .. jupyter-execute::
 
     learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
-    runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 2)
+    # `loss < 1` means that we reached the `rtol` or `atol`
+    runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1)
 
 .. jupyter-execute::
     :hide-code:
