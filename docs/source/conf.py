@@ -50,7 +50,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'jupyter_sphinx.execute',
     'sphinx_fontawesome',
-    'm2r'
+    'm2r',
 ]
 
 source_parsers = {}
@@ -136,7 +136,7 @@ def get_holoviews_js_css():
     from holoviews.plotting import Renderer
     dependencies = {**Renderer.core_dependencies,
                     **Renderer.extra_dependencies}
-    required = ['jQuery', 'jQueryUI', 'require']
+    required = ['jQuery', 'jQueryUI', 'underscore', 'require']
     js = [url for name in required for url in dependencies[name].get('js', [])]
     css = [url for name in required for url in dependencies[name].get('css', [])]
     return js, css
@@ -146,9 +146,18 @@ js, css = get_holoviews_js_css()
 html_context = {'holoviews_js_files': js}
 
 
+def remove_jquery_and_underscore(app):
+    # We need to remove the jquery and underscore file that are
+    # added by default because we already add it in the <head> tag.
+    remove = lambda x: not any(js in x for js in ['jquery', 'underscore'])
+    if hasattr(app.builder, 'script_files'):
+        app.builder.script_files = [x for x in app.builder.script_files
+                                    if remove(x)]
+
+
 def setup(app):
     for url in css:
         app.add_stylesheet(url)
 
     app.add_stylesheet('custom.css')  # For the `live_info` widget
-    app.add_javascript("https://unpkg.com/@jupyter-widgets/html-manager@0.14.4/dist/embed-amd.js")
+    app.connect('builder-inited', remove_jquery_and_underscore)
