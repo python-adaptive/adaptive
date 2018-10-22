@@ -1,6 +1,24 @@
 image: quantumtinkerer/research
 
+cache:
+  paths:
+    - .pip
+
+
+stages:
+  - test
+  - deploy
+
+
+before_script:
+  - mkdir -p .pip
+  - pip install asv scikit-optimize
+  - pip install -r test-requirements.txt
+  - asv machine --config=benchmarks/asv.conf.json --yes
+
+
 test:
+  stage: test
   script:
     - pip install -r test-requirements.txt
     - conda install -y -q scikit-optimize
@@ -9,12 +27,48 @@ test:
     paths:
       - htmlcov
 
+
 authors check:
+  stage: test
   script:
     - MISSING_AUTHORS=$(git shortlog -s HEAD | sed -e "s/^[0-9\t ]*//"| xargs -i sh -c 'grep -q "{}" AUTHORS.md || echo "{} missing from authors"')
     - if [ ! -z "$MISSING_AUTHORS" ]; then { echo $MISSING_AUTHORS; exit 1; }; fi
   allow_failure: true
 
+
 check whitespace style:
   script: ./check_whitespace
   allow_failure: true
+
+
+benchmarks for master:
+  stage: test
+  script:
+    - asv run --config=benchmarks/asv.conf.json --skip-existing-commits ALL
+  artifacts:
+    paths:
+      - benchmarks/results
+      - benchmarks/env
+    expire_in: 7d
+  only:
+    - master
+
+
+benchmarks not master:
+  stage: test
+  script:
+    - asv run --config=benchmarks/asv.conf.json master..${CI_COMMIT_REF_NAME}
+  except:
+    - master
+
+
+upload benchmarks:
+  stage: deploy
+  before_script:
+    - mkdir -p ~/.ssh && ssh-keyscan tnw-tn1.tudelft.net >> ~/.ssh/known_hosts
+    - echo $WEBSITE_KEY | base64 -d > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+  script:
+    - asv publish
+    - "rsync -ravz --delete benchmarks/html/* adaptive-asv@tnw-tn1.tudelft.net:"
+  after_script:
+    - rm -rf ~/.ssh
