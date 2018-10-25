@@ -55,7 +55,7 @@ else:
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
-    """Base class for runners that use concurrent.futures.Executors.
+    """Base class for runners that use `concurrent.futures.Executors`.
 
     Parameters
     ----------
@@ -245,12 +245,16 @@ class BaseRunner(metaclass=abc.ABCMeta):
     
     @abc.abstractmethod
     def elapsed_time(self):
-        """Is called in 'overhead'."""
+        """Return the total time elapsed since the runner
+        was started.
+        
+        Is called in `overhead`.
+        """
         pass
     
     @abc.abstractmethod
     def _submit(self, x):
-        """Is called in '_get_futures'."""
+        """Is called in `_get_futures`."""
         pass
 
 
@@ -455,11 +459,6 @@ class AsyncRunner(BaseRunner):
                 raise RuntimeError('Cannot use an executor when learning an '
                                    'async function.')
             self.executor.shutdown()  # Make sure we don't shoot ourselves later
-            self.__submit = lambda x: self.ioloop.create_task(self.function(x))
-        else:
-            self.__submit = functools.partial(self.ioloop.run_in_executor,
-                                             self.executor,
-                                             self.function)
 
         self.task = self.ioloop.create_task(self._run())
         self.saving_task = None
@@ -470,7 +469,11 @@ class AsyncRunner(BaseRunner):
                           "'adaptive.notebook_extension()'")
 
     def _submit(self, x):
-        return self.__submit(x)
+        ioloop = self.ioloop
+        if inspect.iscoroutinefunction(self.learner.function):
+            return ioloop.create_task(self.function(x))
+        else:
+            return ioloop.run_in_executor(self.executor, self.function, x)
 
     def status(self):
         """Return the runner status as a string.
