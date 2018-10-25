@@ -8,12 +8,6 @@ import pickle
 import time
 
 
-def timed(f, *args, **kwargs):
-    t_start = time.time()
-    result = f(*args, **kwargs)
-    return result, time.time() - t_start
-
-
 def named_product(**items):
     names = items.keys()
     vals = items.values()
