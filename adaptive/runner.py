@@ -8,6 +8,7 @@ import os
 import time
 import traceback
 import warnings
+import abc
 
 from .notebook_integration import live_plot, live_info, in_ipynb
 from .utils import timed
@@ -53,7 +54,7 @@ else:
     _default_executor_kwargs = {}
 
 
-class BaseRunner:
+class BaseRunner(metaclass=abc.ABCMeta):
     """Base class for runners that use `concurrent.futures.Executors`.
 
     Parameters
@@ -241,6 +242,20 @@ class BaseRunner:
     def failed(self):
         """Set of points that failed ``runner.retries`` times."""
         return set(self.tracebacks) - set(self.to_retry)
+    
+    @abc.abstractmethod
+    def elapsed_time(self):
+        """Return the total time elapsed since the runner
+        was started.
+        
+        Is called in `overhead`.
+        """
+        pass
+    
+    @abc.abstractmethod
+    def _submit(self, x):
+        """Is called in `_get_futures`."""
+        pass
 
 
 class BlockingRunner(BaseRunner):
@@ -444,11 +459,6 @@ class AsyncRunner(BaseRunner):
                 raise RuntimeError('Cannot use an executor when learning an '
                                    'async function.')
             self.executor.shutdown()  # Make sure we don't shoot ourselves later
-            self._submit = lambda x: self.ioloop.create_task(self.function(x))
-        else:
-            self._submit = functools.partial(self.ioloop.run_in_executor,
-                                             self.executor,
-                                             self.function)
 
         self.task = self.ioloop.create_task(self._run())
         self.saving_task = None
@@ -457,6 +467,13 @@ class AsyncRunner(BaseRunner):
                           "event loop is not running! If you are "
                           "in a Jupyter notebook, remember to run "
                           "'adaptive.notebook_extension()'")
+
+    def _submit(self, x):
+        ioloop = self.ioloop
+        if inspect.iscoroutinefunction(self.learner.function):
+            return ioloop.create_task(self.function(x))
+        else:
+            return ioloop.run_in_executor(self.executor, self.function, x)
 
     def status(self):
         """Return the runner status as a string.
