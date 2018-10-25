@@ -11,7 +11,6 @@ import warnings
 import abc
 
 from .notebook_integration import live_plot, live_info, in_ipynb
-from .utils import timed
 
 try:
     import ipyparallel
@@ -105,8 +104,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
     Methods
     -------
     overhead : callable
-        The overhead in percent of using Adaptive. This includes the
-        overhead of the executor. Essentially, this is
+        The overhead in percent of using Adaptive. Essentially, this is
         ``100 * (1 - total_elapsed_function_time / self.elapsed_time())``.
 
     """
@@ -130,8 +128,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         self.learner = learner
         self.log = [] if log else None
 
-        # Function timing
-        self.function = functools.partial(timed, self.learner.function)
+        # Timing
         self.start_time = time.time()
         self.end_time = None
         self._elapsed_function_time = 0
@@ -190,7 +187,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
         for fut in done_futs:
             x = self.pending_points.pop(fut)
             try:
-                y, t = fut.result()
+                y = fut.result()
+                t = time.time() - fut.start_time  # total execution time
             except Exception as e:
                 self.tracebacks[x] = traceback.format_exc()
                 self.to_retry[x] = self.to_retry.get(x, 0) + 1
@@ -218,7 +216,9 @@ class BaseRunner(metaclass=abc.ABCMeta):
         points, _ = self._ask(n_new_tasks)
 
         for x in points:
-            self.pending_points[self._submit(x)] = x
+            fut = self._submit(x)
+            fut.start_time = time.time()  # so we can measure execution time
+            self.pending_points[fut] = x
 
         # Collect and results and add them to the learner
         futures = list(self.pending_points.keys())
@@ -332,7 +332,7 @@ class BlockingRunner(BaseRunner):
         self._run()
 
     def _submit(self, x):
-        return self.executor.submit(self.function, x)
+        return self.executor.submit(self.learner.function, x)
 
     def _run(self):
         first_completed = concurrent.FIRST_COMPLETED
@@ -471,9 +471,9 @@ class AsyncRunner(BaseRunner):
     def _submit(self, x):
         ioloop = self.ioloop
         if inspect.iscoroutinefunction(self.learner.function):
-            return ioloop.create_task(self.function(x))
+            return ioloop.create_task(self.learner.function(x))
         else:
-            return ioloop.run_in_executor(self.executor, self.function, x)
+            return ioloop.run_in_executor(self.executor, self.learner.function, x)
 
     def status(self):
         """Return the runner status as a string.
