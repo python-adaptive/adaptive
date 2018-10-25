@@ -298,6 +298,15 @@ raise the exception with the stack trace:
 
     runner.task.result()
 
+
+You can also check ``runner.tracebacks`` which is a mapping from
+point → traceback.
+
+.. jupyter-execute::
+
+    for point, tb in runner.tracebacks.items():
+        print(f'point: {point}:\n {tb}')
+
 Logging runners
 ~~~~~~~~~~~~~~~
 
@@ -337,10 +346,16 @@ set of operations on another runner:
 
     learner.plot().Scatter.I.opts(style=dict(size=6)) * reconstructed_learner.plot()
 
-Timing functions
-~~~~~~~~~~~~~~~~
+Adding coroutines
+-----------------
 
-To time the runner you **cannot** simply use
+In the following example we'll add a `~asyncio.Task` that times the runner.
+This is *only* for demonstration purposes because one can simply
+check ``runner.elapsed_time()`` or use the ``runner.live_info()``
+widget to see the time since the runner has started.
+
+So let's get on with the example. To time the runner
+you **cannot** simply use
 
 .. code:: python
 

@@ -338,6 +338,8 @@ class BlockingRunner(BaseRunner):
             self._cleanup()
 
     def elapsed_time(self):
+        """Return the total time elapsed since the runner
+        was started."""
         if self.end_time is None:
             # This shouldn't happen if the BlockingRunner
             # correctly finished.
@@ -532,6 +534,8 @@ class AsyncRunner(BaseRunner):
             self._cleanup()
 
     def elapsed_time(self):
+        """Return the total time elapsed since the runner
+        was started."""
         if self.task.done():
             end_time = self.end_time
             if end_time is None:
