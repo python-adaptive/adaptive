@@ -4,6 +4,7 @@ import random
 import numpy as np
 
 from ..learner import Learner1D
+from ..learner.learner1D import get_curvature_loss
 from ..runner import simple
 
 
@@ -120,9 +121,9 @@ def test_termination_on_discontinuities():
     smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
     assert smallest_interval >= np.finfo(float).eps
 
-    learner = _run_on_discontinuity(0.5E3, (-1E3, 1E3))
+    learner = _run_on_discontinuity(0.5e3, (-1e3, 1e3))
     smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
-    assert smallest_interval >= 0.5E3 * np.finfo(float).eps
+    assert smallest_interval >= 0.5e3 * np.finfo(float).eps
 
 
 def test_order_adding_points():
@@ -340,3 +341,21 @@ def test_tell_many():
     learner2 = Learner1D(f, bounds=(-1, 1))
     _random_run(learner, learner2, scale_doubling=True)
     test_equal(learner, learner2)
+
+
+def test_curvature_loss():
+    def f(x):
+        return np.tanh(20*x)
+
+    learner = Learner1D(f, (-1, 1), loss_per_interval=get_curvature_loss(), loss_depends_on_neighbours=True)
+    simple(learner, goal=lambda l: l.npoints > 100)
+    # assert this is reached without error
+
+
+def test_curvature_loss_vectors():
+    def f(x):
+        return np.tanh(20*x), np.tanh(20*(x-0.4))
+
+    learner = Learner1D(f, (-1, 1), loss_per_interval=get_curvature_loss(), loss_depends_on_neighbours=True)
+    simple(learner, goal=lambda l: l.npoints > 100)
+    assert learner.npoints > 100

@@ -229,7 +229,9 @@ def simplex_volume_in_embedding(vertices) -> float:
     coeff = - (-2) ** (num_verts-1) * factorial(num_verts-1) ** 2
     vol_square = np.linalg.det(sq_dists_mat) / coeff
 
-    if vol_square <= 0:
+    if vol_square < 0:
+        if abs(vol_square) < 1e-15:
+            return 0
         raise ValueError('Provided vertices do not form a simplex')
 
     return np.sqrt(vol_square)

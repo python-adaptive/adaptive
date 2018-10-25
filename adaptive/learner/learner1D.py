@@ -3,11 +3,14 @@ from copy import deepcopy
 import heapq
 import itertools
 import math
+from collections import Iterable
 
 import numpy as np
 import sortedcontainers
 
 from .base_learner import BaseLearner
+from .learnerND import volume
+from .triangulation import simplex_volume_in_embedding
 from ..notebook_integration import ensure_holoviews
 from ..utils import cache_latest
 
@@ -54,6 +57,45 @@ def default_loss(interval, scale, function_values):
         except TypeError:
             loss = math.hypot(dx, dy)
     return loss
+
+
+def _loss_of_multi_interval(xs, ys):
+    N = len(xs) - 2
+    if isinstance(ys[0], Iterable):
+        pts = [(x, *y) for x, y in zip(xs, ys)]
+        vol = simplex_volume_in_embedding
+    else:
+        pts = [(x, y) for x, y in zip(xs, ys)]
+        vol = volume
+    return sum(vol(pts[i:i+3]) for i in range(N)) / N
+
+
+def triangle_loss(interval, neighbours, scale, function_values):
+    x_left, x_right = interval
+    neighbour_left, neighbour_right = neighbours
+    xs = [neighbour_left, x_left, x_right, neighbour_right]
+    # The neighbours could be None if we are at the boundary, in that case we
+    # have to filter this out
+    xs = [x for x in xs if x is not None]
+
+    if len(xs) <= 2:
+        return (x_right - x_left) / scale[0]
+    else:
+        y_scale = scale[1] or 1
+        ys_scaled = [function_values[x] / y_scale for x in xs]
+        xs_scaled = [x / scale[0] for x in xs]
+        return _loss_of_multi_interval(xs_scaled, ys_scaled)
+
+
+def get_curvature_loss(area_factor=1, euclid_factor=0.02, horizontal_factor=0.02):
+    def curvature_loss(interval, neighbours, scale, function_values):
+        triangle_loss_ = triangle_loss(interval, neighbours, scale, function_values)
+        default_loss_ = default_loss(interval, scale, function_values)
+        dx = (interval[1] - interval[0]) / scale[0]
+        return (area_factor * (triangle_loss_**0.5)
+                + euclid_factor * default_loss_
+                + horizontal_factor * dx)
+    return curvature_loss
 
 
 def linspace(x_left, x_right, n):
@@ -116,9 +158,14 @@ class Learner1D(BaseLearner):
         to have values for both of the points in 'interval'.
     """
 
-    def __init__(self, function, bounds, loss_per_interval=None):
+    def __init__(self, function, bounds, loss_per_interval=None, loss_depends_on_neighbours=False):
         self.function = function
-        self.loss_per_interval = loss_per_interval or default_loss
+        self._loss_depends_on_neighbours = loss_depends_on_neighbours
+
+        if loss_depends_on_neighbours:
+            self.loss_per_interval = loss_per_interval or get_curvature_loss()
+        else:
+            self.loss_per_interval = loss_per_interval or default_loss
 
         # A dict storing the loss function for each interval x_n.
         self.losses = {}
@@ -176,25 +223,42 @@ class Learner1D(BaseLearner):
         losses = self.losses if real else self.losses_combined
         return max(losses.values()) if len(losses) > 0 else float('inf')
 
-    def _update_interpolated_loss_in_interval(self, x_left, x_right):
-        if x_left is not None and x_right is not None:
-            dx = x_right - x_left
-            if dx < self._dx_eps:
-                loss = 0
-            else:
-                loss = self.loss_per_interval((x_left, x_right),
-                                              self._scale, self.data)
-            self.losses[x_left, x_right] = loss
+    def _get_loss_in_interval(self, x_left, x_right):
+        assert x_left is not None and x_right is not None
 
-            # Iterate over all interpolated intervals in between
-            # x_left and x_right and set the newly interpolated loss.
-            a, b = x_left, None
-            while b != x_right:
-                b = self.neighbors_combined[a][1]
-                self.losses_combined[a, b] = (b - a) * loss / dx
-                a = b
+        if x_right - x_left < self._dx_eps:
+            return 0
+
+        # we need to compute the loss for this interval
+        interval = (x_left, x_right)
+        if self._loss_depends_on_neighbours:
+            neighbour_left = self.neighbors.get(x_left, (None, None))[0]
+            neighbour_right = self.neighbors.get(x_right, (None, None))[1]
+            neighbours = neighbour_left, neighbour_right
+            return self.loss_per_interval(interval, neighbours,
+                                          self._scale, self.data)
+        else:
+            return self.loss_per_interval(interval, self._scale, self.data)
+
+
+    def _update_interpolated_loss_in_interval(self, x_left, x_right):
+        if x_left is None or x_right is None:
+            return
+
+        loss = self._get_loss_in_interval(x_left, x_right)
+        self.losses[x_left, x_right] = loss
+
+        # Iterate over all interpolated intervals in between
+        # x_left and x_right and set the newly interpolated loss.
+        a, b = x_left, None
+        dx = x_right - x_left
+        while b != x_right:
+            b = self.neighbors_combined[a][1]
+            self.losses_combined[a, b] = (b - a) * loss / dx
+            a = b
 
     def _update_losses(self, x, real=True):
+        """Update all losses that depend on x"""
         # When we add a new point x, we should update the losses
         # (x_left, x_right) are the "real" neighbors of 'x'.
         x_left, x_right = self._find_neighbors(x, self.neighbors)
@@ -211,6 +275,13 @@ class Learner1D(BaseLearner):
             # 'x' could change their loss.
             self._update_interpolated_loss_in_interval(x_left, x)
             self._update_interpolated_loss_in_interval(x, x_right)
+
+            # if the loss depends on the neighbors we should also update those losses
+            if self._loss_depends_on_neighbours:
+                neighbour_left = self.neighbors.get(x_left, (None, None))[0]
+                neighbour_right = self.neighbors.get(x_right, (None, None))[1]
+                self._update_interpolated_loss_in_interval(neighbour_left, x_left)
+                self._update_interpolated_loss_in_interval(x_right, neighbour_right)
 
             # Since 'x' is in between (x_left, x_right),
             # we get rid of the interval.
@@ -358,7 +429,7 @@ class Learner1D(BaseLearner):
         self.losses = {}
         for x_left, x_right in intervals:
             self.losses[x_left, x_right] = (
-                self.loss_per_interval((x_left, x_right), self._scale, self.data)
+                self._get_loss_in_interval(x_left, x_right)
                 if x_right - x_left >= self._dx_eps else 0)
 
         # List with "real" intervals that have interpolated intervals inside
