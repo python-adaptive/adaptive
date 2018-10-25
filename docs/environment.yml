@@ -9,7 +9,7 @@ dependencies:
     - sortedcontainers
     - scipy
     - holoviews
-    - bokeh
+    - bokeh==0.13
     - plotly
     - ipyparallel
     - distributed
