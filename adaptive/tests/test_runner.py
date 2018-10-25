@@ -5,7 +5,8 @@ import asyncio
 import pytest
 
 from ..learner import Learner1D, Learner2D
-from ..runner import simple, BlockingRunner, AsyncRunner, SequentialExecutor
+from ..runner import (simple, BlockingRunner, AsyncRunner, SequentialExecutor,
+                      with_ipyparallel, with_distributed)
 
 
 def blocking_runner(learner, goal):
@@ -19,8 +20,10 @@ def async_runner(learner, goal):
 
 runners = [simple, blocking_runner, async_runner]
 
+
 def trivial_goal(learner):
     return learner.npoints > 10
+
 
 @pytest.mark.parametrize('runner', runners)
 def test_simple(runner):
@@ -28,6 +31,7 @@ def test_simple(runner):
 
     def f(x):
         return x
+
     learner = Learner1D(f, (-1, 1))
     runner(learner, lambda l: l.npoints > 10)
     assert len(learner.data) > 10
@@ -54,3 +58,52 @@ def test_aync_def_function():
     learner = Learner1D(f, (-1, 1))
     runner = AsyncRunner(learner, trivial_goal)
     asyncio.get_event_loop().run_until_complete(runner.task)
+
+
+### Test with different executors
+
+@pytest.fixture(scope="session")
+def ipyparallel_executor():
+    from ipyparallel import Client
+    import pexpect
+
+    child = pexpect.spawn('ipcluster start -n 1')
+    child.expect('Engines appear to have started successfully', timeout=35)
+    yield Client()
+    if not child.terminate(force=True):
+        raise RuntimeError('Could not stop ipcluster')
+
+
+@pytest.fixture(scope="session")
+def dask_executor():
+    from distributed import LocalCluster, Client
+
+    client = Client(n_workers=1)
+    yield client
+    client.close()
+
+
+def linear(x):
+    return x
+
+
+def test_concurrent_futures_executor():
+    from concurrent.futures import ProcessPoolExecutor
+    BlockingRunner(Learner1D(linear, (-1, 1)), trivial_goal,
+                   executor=ProcessPoolExecutor(max_workers=1))
+
+
+@pytest.mark.skipif(not with_ipyparallel, reason='IPyparallel is not installed')
+def test_ipyparallel_executor(ipyparallel_executor):
+    learner = Learner1D(linear, (-1, 1))
+    BlockingRunner(learner, trivial_goal,
+                   executor=ipyparallel_executor)
+    assert learner.npoints > 0
+
+
+@pytest.mark.skipif(not with_distributed, reason='dask.distributed is not installed')
+def test_distributed_executor(dask_executor):
+    learner = Learner1D(linear, (-1, 1))
+    BlockingRunner(learner, trivial_goal,
+                   executor=dask_executor)
+    assert learner.npoints > 0
