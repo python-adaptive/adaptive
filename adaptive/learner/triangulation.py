@@ -204,7 +204,6 @@ def simplex_volume_in_embedding(vertices) -> float:
         if the vertices do not form a simplex (for example,
         because they are coplanar, colinear or coincident).
     """
-
     # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
     # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
 
@@ -230,6 +229,8 @@ def simplex_volume_in_embedding(vertices) -> float:
     vol_square = np.linalg.det(sq_dists_mat) / coeff
 
     if vol_square <= 0:
+        if abs(vol_square) < 1e-15:
+            return 0
         raise ValueError('Provided vertices do not form a simplex')
 
     return np.sqrt(vol_square)
@@ -493,17 +494,11 @@ class Triangulation:
                 bad_triangles.add(simplex)
 
                 # Get all simplices that share at least a point with the simplex
-                neighbours = set.union(*[self.vertex_to_simplices[p]
-                                         for p in todo_points])
+                neighbors = self.get_neighbors_from_vertices(todo_points)
                 # Filter out the already evaluated simplices
-                neighbours = neighbours - done_simplices
-
-                # Keep only the simplices sharing a whole face with the current simplex
-                neighbours = set(
-                    simpl for simpl in neighbours
-                    if len(set(simpl) & set(simplex)) == self.dim  # they share a face
-                )
-                queue.update(neighbours)
+                neighbors = neighbors - done_simplices
+                neighbors = self.get_face_sharing_neighbors(neighbors, simplex)
+                queue.update(neighbors)
 
         faces = list(self.faces(simplices=bad_triangles))
 
@@ -605,6 +600,20 @@ class Triangulation:
     def vertex_invariant(self, vertex):
         """Simplices originating from a vertex don't overlap."""
         raise NotImplementedError
+
+    def get_neighbors_from_vertices(self, simplex):
+        return set.union(*[self.vertex_to_simplices[p]
+                           for p in simplex])
+
+    def get_face_sharing_neighbors(self, neighbors, simplex):
+        """Keep only the simplices sharing a whole face with simplex."""
+        return set(simpl for simpl in neighbors
+            if len(set(simpl) & set(simplex)) == self.dim)  # they share a face
+
+    def get_simplices_attached_to_points(self, indices):
+        # Get all simplices that share at least a point with the simplex
+        neighbors = self.get_neighbors_from_vertices(indices)
+        return self.get_face_sharing_neighbors(neighbors, indices)
 
     @property
     def hull(self):
