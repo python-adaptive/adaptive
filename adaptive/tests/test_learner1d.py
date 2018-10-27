@@ -347,15 +347,19 @@ def test_curvature_loss():
     def f(x):
         return np.tanh(20*x)
 
-    learner = Learner1D(f, (-1, 1), loss_per_interval=get_curvature_loss(), loss_depends_on_neighbours=True)
-    simple(learner, goal=lambda l: l.npoints > 100)
-    # assert this is reached without error
+    for n in [0, 1]:
+        learner = Learner1D(f, (-1, 1),
+            loss_per_interval=get_curvature_loss(), nn_neighbors=n)
+        simple(learner, goal=lambda l: l.npoints > 100)
+        assert learner.npoints > 100
 
 
 def test_curvature_loss_vectors():
     def f(x):
         return np.tanh(20*x), np.tanh(20*(x-0.4))
 
-    learner = Learner1D(f, (-1, 1), loss_per_interval=get_curvature_loss(), loss_depends_on_neighbours=True)
-    simple(learner, goal=lambda l: l.npoints > 100)
-    assert learner.npoints > 100
+    for n in [0, 1]:
+        learner = Learner1D(f, (-1, 1),
+            loss_per_interval=get_curvature_loss(), nn_neighbors=n)
+        simple(learner, goal=lambda l: l.npoints > 100)
+        assert learner.npoints > 100
