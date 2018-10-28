@@ -15,7 +15,7 @@ from ..notebook_integration import ensure_holoviews
 from ..utils import cache_latest
 
 
-def uniform_loss(interval, scale, function_values, neighbors):
+def uniform_loss(interval, scale, data, neighbors):
     """Loss function that samples the domain uniformly.
 
     Works with `~adaptive.Learner1D` only.
@@ -36,7 +36,7 @@ def uniform_loss(interval, scale, function_values, neighbors):
     return dx
 
 
-def default_loss(interval, scale, function_values, neighbors):
+def default_loss(interval, scale, data, neighbors):
     """Calculate loss on a single interval.
 
     Currently returns the rescaled length of the interval. If one of the
@@ -44,7 +44,7 @@ def default_loss(interval, scale, function_values, neighbors):
     never touched. This behavior should be improved later.
     """
     x_left, x_right = interval
-    y_right, y_left = function_values[x_right], function_values[x_left]
+    y_right, y_left = data[x_right], data[x_left]
     x_scale, y_scale = scale
     dx = (x_right - x_left) / x_scale
     if y_scale == 0:
@@ -70,7 +70,7 @@ def _loss_of_multi_interval(xs, ys):
     return sum(vol(pts[i:i+3]) for i in range(N)) / N
 
 
-def triangle_loss(interval, scale, function_values, neighbors):
+def triangle_loss(interval, scale, data, neighbors):
     x_left, x_right = interval
     xs = [neighbors[x_left][0], x_left, x_right, neighbors[x_right][1]]
     xs = [x for x in xs if x is not None]
@@ -79,15 +79,15 @@ def triangle_loss(interval, scale, function_values, neighbors):
         return (x_right - x_left) / scale[0]
     else:
         y_scale = scale[1] or 1
-        ys_scaled = [function_values[x] / y_scale for x in xs]
+        ys_scaled = [data[x] / y_scale for x in xs]
         xs_scaled = [x / scale[0] for x in xs]
         return _loss_of_multi_interval(xs_scaled, ys_scaled)
 
 
 def get_curvature_loss(area_factor=1, euclid_factor=0.02, horizontal_factor=0.02):
-    def curvature_loss(interval, scale, function_values, neighbors):
-        triangle_loss_ = triangle_loss(interval, scale, function_values, neighbors)
-        default_loss_ = default_loss(interval, scale, function_values, neighbors)
+    def curvature_loss(interval, scale, data, neighbors):
+        triangle_loss_ = triangle_loss(interval, scale, data, neighbors)
+        default_loss_ = default_loss(interval, scale, data, neighbors)
         dx = (interval[1] - interval[0]) / scale[0]
         return (area_factor * (triangle_loss_**0.5)
                 + euclid_factor * default_loss_
@@ -163,11 +163,13 @@ class Learner1D(BaseLearner):
     scale : (float, float)
         The x and y scale over all the intervals, useful for rescaling the
         interval loss.
-    function_values : dict(float → float)
+    data : dict(float → float)
         A map containing evaluated function values. It is guaranteed
         to have values for both of the points in 'interval'.
     neighbors : dict(float → (float, float))
         A map containing points as keys to its neighbors as a tuple.
+        At the left ``x_left`` and right ``x_left`` most boundary it has
+        ``x_left: (None, float)`` and ``x_right: (float, None)``.
     """
 
     def __init__(self, function, bounds, loss_per_interval=None, nn_neighbors=0):

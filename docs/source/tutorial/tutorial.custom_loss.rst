@@ -60,8 +60,8 @@ simple (but naive) strategy is to *uniformly* sample the domain:
 
 .. jupyter-execute::
 
-    def uniform_sampling_1d(interval, scale, function_values):
-        # Note that we never use 'function_values'; the loss is just the size of the subdomain
+    def uniform_sampling_1d(interval, scale, data):
+        # Note that we never use 'data'; the loss is just the size of the subdomain
         x_left, x_right = interval
         x_scale, _ = scale
         dx = (x_right - x_left) / x_scale
