@@ -23,6 +23,7 @@ def notebook_extension():
 
     # Load holoviews
     try:
+        _holoviews_enabled = False  # After closing a notebook the js is gone
         if not _holoviews_enabled:
             import holoviews
             holoviews.notebook_extension('bokeh', logo=False)
