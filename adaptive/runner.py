@@ -180,6 +180,10 @@ class BaseRunner(metaclass=abc.ABCMeta):
         but is a rough rule of thumb.
         """
         t_function = self._elapsed_function_time
+        if t_function == 0:
+            # When no function is done executing, the overhead cannot
+            # reliably be determined, so 0 is the best we can do.
+            return 0
         t_total = self.elapsed_time()
         return (1 - t_function / t_total) * 100
 
@@ -425,7 +429,6 @@ class AsyncRunner(BaseRunner):
         The overhead in percent of using Adaptive. This includes the
         overhead of the executor. Essentially, this is
         ``100 * (1 - total_elapsed_function_time / self.elapsed_time())``.
-
 
     Notes
     -----
