@@ -201,7 +201,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
                     if self.raise_if_retries_exceeded:
                         self._do_raise(e, x)
             else:
-                self._elapsed_function_time += t / _get_ncores(self.executor)
+                self._elapsed_function_time += t / self._get_max_tasks()
                 self.to_retry.pop(x, None)
                 self.tracebacks.pop(x, None)
                 if self.do_log:
@@ -220,8 +220,9 @@ class BaseRunner(metaclass=abc.ABCMeta):
         points, _ = self._ask(n_new_tasks)
 
         for x in points:
+            start_time = time.time()  # so we can measure execution time
             fut = self._submit(x)
-            fut.start_time = time.time()  # so we can measure execution time
+            fut.start_time = start_time
             self.pending_points[fut] = x
 
         # Collect and results and add them to the learner
