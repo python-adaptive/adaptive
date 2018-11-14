@@ -107,9 +107,10 @@ class LearnerND(BaseLearner):
     func: callable
         The function to learn. Must take a tuple of N real
         parameters and return a real number or an arraylike of length M.
-    bounds : list of 2-tuples
+    bounds : list of 2-tuples or `scipy.spatial.ConvexHull`
         A list ``[(a_1, b_1), (a_2, b_2), ..., (a_n, b_n)]`` containing bounds,
         one pair per dimension.
+        Or a ConvexHull that defines the boundary of the domain.
     loss_per_simplex : callable, optional
         A function that returns the loss for a simplex.
         If not provided, then a default is used, which uses
@@ -150,14 +151,21 @@ class LearnerND(BaseLearner):
     """
 
     def __init__(self, func, bounds, loss_per_simplex=None):
-        self.ndim = len(bounds)
         self._vdim = None
         self.loss_per_simplex = loss_per_simplex or default_loss
-        self.bounds = tuple(tuple(map(float, b)) for b in bounds)
         self.data = OrderedDict()
         self.pending_points = set()
 
-        self._bounds_points = list(map(tuple, itertools.product(*bounds)))
+        if isinstance(bounds, scipy.spatial.ConvexHull):
+            hull_points = bounds.points[bounds.vertices]
+            self._bounds_points = sorted(list(map(tuple, hull_points)))
+            self._bbox = tuple(zip(hull_points.min(axis=0), hull_points.max(axis=0)))
+            self._interior = scipy.spatial.Delaunay(self._bounds_points)
+        else:
+            self._bounds_points = sorted(list(map(tuple, itertools.product(*bounds))))
+            self._bbox = tuple(tuple(map(float, b)) for b in bounds)
+
+        self.ndim = len(self._bbox)
 
         self.function = func
         self._tri = None
@@ -169,7 +177,7 @@ class LearnerND(BaseLearner):
         self._subtriangulations = dict()  # simplex → triangulation
 
         # scale to unit
-        self._transform = np.linalg.inv(np.diag(np.diff(bounds).flat))
+        self._transform = np.linalg.inv(np.diag(np.diff(self._bbox).flat))
 
         # create a private random number generator with fixed seed
         self._random = random.Random(1)
@@ -275,7 +283,12 @@ class LearnerND(BaseLearner):
 
     def inside_bounds(self, point):
         """Check whether a point is inside the bounds."""
-        return all(mn <= p <= mx for p, (mn, mx) in zip(point, self.bounds))
+        if hasattr(self, '_interior'):
+            return self._interior.find_simplex(point, tol=1e-8) >= 0
+        else:
+            eps = 1e-8
+            return all((mn - eps) <= p <= (mx + eps) for p, (mn, mx)
+                       in zip(point, self._bbox))
 
     def tell_pending(self, point, *, simplex=None):
         point = tuple(point)
@@ -349,11 +362,13 @@ class LearnerND(BaseLearner):
         assert not self._bounds_available
         # pick a random point inside the bounds
         # XXX: change this into picking a point based on volume loss
-        a = np.diff(self.bounds).flat
-        b = np.array(self.bounds)[:, 0]
-        r = np.array([self._random.random() for _ in range(self.ndim)])
-        p = r * a + b
-        p = tuple(p)
+        a = np.diff(self._bbox).flat
+        b = np.array(self._bbox)[:, 0]
+        p = None
+        while p is None or not self.inside_bounds(p):
+            r = np.array([self._random.random() for _ in range(self.ndim)])
+            p = r * a + b
+            p = tuple(p)
 
         self.tell_pending(p)
         return p, np.inf
@@ -489,10 +504,10 @@ class LearnerND(BaseLearner):
         if self.vdim > 1:
             raise NotImplementedError('holoviews currently does not support',
                                       '3D surface plots in bokeh.')
-        if len(self.bounds) != 2:
+        if len(self.ndim) != 2:
             raise NotImplementedError("Only 2D plots are implemented: You can "
                                       "plot a 2D slice with 'plot_slice'.")
-        x, y = self.bounds
+        x, y = self._bbox
         lbrt = x[0], y[0], x[1], y[1]
 
         if len(self.data) >= 4:
@@ -549,7 +564,7 @@ class LearnerND(BaseLearner):
                 raise NotImplementedError('multidimensional output not yet'
                                           ' supported by `plot_slice`')
             n = n or 201
-            values = [cut_mapping.get(i, np.linspace(*self.bounds[i], n))
+            values = [cut_mapping.get(i, np.linspace(*self._bbox[i], n))
                       for i in range(self.ndim)]
             ind = next(i for i in range(self.ndim) if i not in cut_mapping)
             x = values[ind]
@@ -574,9 +589,9 @@ class LearnerND(BaseLearner):
             xys = [xs[:, None], ys[None, :]]
             values = [cut_mapping[i] if i in cut_mapping
                       else xys.pop(0) * (b[1] - b[0]) + b[0]
-                      for i, b in enumerate(self.bounds)]
+                      for i, b in enumerate(self._bbox)]
 
-            lbrt = [b for i, b in enumerate(self.bounds)
+            lbrt = [b for i, b in enumerate(self._bbox)
                     if i not in cut_mapping]
             lbrt = np.reshape(lbrt, (2, 2)).T.flatten().tolist()
 
