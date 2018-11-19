@@ -53,13 +53,13 @@ class DataSaver:
         self.learner._set_data(learner_data)
 
     @copy_docstring_from(BaseLearner.save)
-    def save(self, fname=None, compress=True):
+    def save(self, fname, compress=True):
         # We copy this method because the 'DataSaver' is not a
         # subclass of the 'BaseLearner'.
         BaseLearner.save(self, fname, compress)
 
     @copy_docstring_from(BaseLearner.load)
-    def load(self, fname=None, compress=True):
+    def load(self, fname, compress=True):
         # We copy this method because the 'DataSaver' is not a
         # subclass of the 'BaseLearner'.
         BaseLearner.load(self, fname, compress)

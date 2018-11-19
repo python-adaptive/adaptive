@@ -430,15 +430,15 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     learner = BalancingLearner([learner_type(f, **learner_kwargs)])
     control = BalancingLearner([learner_type(f, **learner_kwargs)])
 
-    # set fnames
-    learner.learners[0].fname = 'test'
-    control.learners[0].fname = 'test'
-
     simple(learner, lambda l: l.learners[0].npoints > 100)
     folder = tempfile.mkdtemp()
+
+    def fname(learner):
+        return folder + 'test'
+
     try:
-        learner.save(folder=folder)
-        control.load(folder=folder)
+        learner.save(fname)
+        control.load(fname)
         if learner_type is not Learner1D:
             # Because different scales result in differnt losses
             np.testing.assert_almost_equal(learner.loss(), control.loss())
