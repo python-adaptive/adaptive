@@ -4,7 +4,7 @@ import random
 import numpy as np
 
 from ..learner import Learner1D
-from ..learner.learner1D import get_curvature_loss
+from ..learner.learner1D import curvature_loss_function
 from ..runner import simple
 
 
@@ -347,7 +347,7 @@ def test_curvature_loss():
     def f(x):
         return np.tanh(20*x)
 
-    loss = get_curvature_loss()
+    loss = curvature_loss_function()
     assert loss.nth_neighbors == 1
     learner = Learner1D(f, (-1, 1), loss_per_interval=loss)
     simple(learner, goal=lambda l: l.npoints > 100)
@@ -358,7 +358,7 @@ def test_curvature_loss_vectors():
     def f(x):
         return np.tanh(20*x), np.tanh(20*(x-0.4))
 
-    loss = get_curvature_loss()
+    loss = curvature_loss_function()
     assert loss.nth_neighbors == 1
     learner = Learner1D(f, (-1, 1), loss_per_interval=loss)
     simple(learner, goal=lambda l: l.npoints > 100)

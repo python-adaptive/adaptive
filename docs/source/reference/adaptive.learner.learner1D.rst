@@ -17,4 +17,4 @@ Custom loss functions
 
 .. autofunction:: adaptive.learner.learner1D.triangle_loss
 
-.. autofunction:: adaptive.learner.learner1D.get_curvature_loss
+.. autofunction:: adaptive.learner.learner1D.curvature_loss_function

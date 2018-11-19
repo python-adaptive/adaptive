@@ -150,10 +150,10 @@ by specifying ``loss_per_interval``.
 
 .. jupyter-execute::
 
-    from adaptive.learner.learner1D import (get_curvature_loss,
+    from adaptive.learner.learner1D import (curvature_loss_function,
                                             uniform_loss,
                                             default_loss)
-    curvature_loss = get_curvature_loss()
+    curvature_loss = curvature_loss_function()
     learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=curvature_loss)
     runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 
