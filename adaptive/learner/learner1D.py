@@ -66,6 +66,7 @@ def uses_nth_neighbors(n):
         return loss_per_interval
     return _wrapped
 
+
 @uses_nth_neighbors(0)
 def uniform_loss(xs, ys):
     """Loss function that samples the domain uniformly.
