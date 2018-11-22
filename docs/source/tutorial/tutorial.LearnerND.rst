@@ -92,7 +92,7 @@ lines. However, as always, when you sample more points the graph will
 become gradually smoother.
 
 Using any convex shape as domain
---------------------------------
+................................
 
 Suppose you do not simply want to sample your function on a square (in 2D) or in
 a cube (in 3D). The LearnerND supports using a `scipy.spatial.ConvexHull` as

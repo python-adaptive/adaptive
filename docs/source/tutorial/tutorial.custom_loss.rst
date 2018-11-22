@@ -46,11 +46,14 @@ tl;dr, one can use the following *loss functions* that
 
 + `adaptive.learner.learner1D.default_loss`
 + `adaptive.learner.learner1D.uniform_loss`
++ `adaptive.learner.learner1D.curvature_loss_function`
 + `adaptive.learner.learner2D.default_loss`
 + `adaptive.learner.learner2D.uniform_loss`
 + `adaptive.learner.learner2D.minimize_triangle_surface_loss`
 + `adaptive.learner.learner2D.resolution_loss_function`
 
+Whenever a loss function has `_function` appended to its name, it is a factory function
+that returns the loss function with certain settings.
 
 Uniform sampling
 ~~~~~~~~~~~~~~~~

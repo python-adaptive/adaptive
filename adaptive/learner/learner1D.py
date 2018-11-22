@@ -32,7 +32,7 @@ def uses_nth_neighbors(n):
     The next function is a part of the `curvature_loss_function` function.
 
     >>> @uses_nth_neighbors(1)
-    ...def triangle_loss(xs, ys):
+    ... def triangle_loss(xs, ys):
     ...    xs = [x for x in xs if x is not None]
     ...    ys = [y for y in ys if y is not None]
     ...
