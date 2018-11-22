@@ -60,11 +60,8 @@ simple (but naive) strategy is to *uniformly* sample the domain:
 
 .. jupyter-execute::
 
-    def uniform_sampling_1d(interval, scale, data):
-        # Note that we never use 'data'; the loss is just the size of the subdomain
-        x_left, x_right = interval
-        x_scale, _ = scale
-        dx = (x_right - x_left) / x_scale
+    def uniform_sampling_1d(xs, ys):
+        dx = xs[1] - xs[0]
         return dx
 
     def f_divergent_1d(x):
