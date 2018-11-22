@@ -89,7 +89,7 @@ def test_loss_interpolation():
     for i in range(100):
         # Add a 100 points with either None or 0
         if random.random() < 0.9:
-            learner.tell(random.uniform(-1, 1), None)
+            learner.tell_pending(random.uniform(-1, 1))
         else:
             learner.tell(random.uniform(-1, 1), 0)
 
@@ -141,7 +141,7 @@ def test_adding_existing_point_passes_silently():
     l.tell(0, 0)
     l.tell(1, 0)
     l.tell(2, 0)
-    l.tell(1, None)
+    l.tell(1, 100)
 
 
 def test_loss_at_machine_precision_interval_is_zero():
