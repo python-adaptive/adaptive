@@ -28,6 +28,26 @@ except ModuleNotFoundError:
     SKOptLearner = None
 
 
+LOSS_FUNCTIONS = {
+    Learner1D: ('loss_per_interval', (
+        adaptive.learner.learner1D.default_loss,
+        adaptive.learner.learner1D.uniform_loss,
+        adaptive.learner.learner1D.curvature_loss_function(),
+    )),
+    Learner2D: ('loss_per_triangle', (
+        adaptive.learner.learner2D.default_loss,
+        adaptive.learner.learner2D.uniform_loss,
+        adaptive.learner.learner2D.minimize_triangle_surface_loss,
+        adaptive.learner.learner2D.resolution_loss_function(),
+    )),
+    LearnerND: ('loss_per_simplex', (
+        adaptive.learner.learnerND.default_loss,
+        adaptive.learner.learnerND.std_loss,
+        adaptive.learner.learnerND.uniform_loss,
+    )),
+}
+
+
 def generate_random_parametrization(f):
     """Return a realization of 'f' with parameters bound to random values.
 
@@ -75,38 +95,26 @@ def maybe_skip(learner):
 # All parameters except the first must be annotated with a callable that
 # returns a random value for that parameter.
 
-
-@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.default_loss)
-@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.uniform_loss)
-@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.curvature_loss_function())
+@learn_with(Learner1D, bounds=(-1, 1))
 def quadratic(x, m: uniform(0, 10), b: uniform(0, 1)):
     return m * x**2 + b
 
 
-@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.default_loss)
-@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.uniform_loss)
-@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.curvature_loss_function())
+@learn_with(Learner1D, bounds=(-1, 1))
 def linear_with_peak(x, d: uniform(-1, 1)):
     a = 0.01
     return x + a**2 / (a**2 + (x - d)**2)
 
 
-@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.default_loss)
-@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.std_loss)
-@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.uniform_loss)
-@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)), loss_per_triangle=adaptive.learner.learner2D.default_loss)
-@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)), loss_per_triangle=adaptive.learner.learner2D.uniform_loss)
-@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)), loss_per_triangle=adaptive.learner.learner2D.minimize_triangle_surface_loss)
-@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)), loss_per_triangle=adaptive.learner.learner2D.resolution_loss_function())
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
+@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)))
 def ring_of_fire(xy, d: uniform(0.2, 1)):
     a = 0.2
     x, y = xy
     return x + math.exp(-(x**2 + y**2 - d**2)**2 / a**4)
 
 
-@learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.default_loss)
-@learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.std_loss)
-@learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.uniform_loss)
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
 def sphere_of_fire(xyz, d: uniform(0.2, 1)):
     a = 0.2
     x, y, z = xyz
@@ -120,6 +128,17 @@ def gaussian(n):
 
 # Decorators for tests.
 
+
+# Create a sequence of learner parameters by adding all
+# possible loss functions to an existing parameter set.
+def add_loss_to_params(learner_type, existing_params):
+    if learner_type not in LOSS_FUNCTIONS:
+        return [existing_params]
+    loss_param, loss_functions = LOSS_FUNCTIONS[learner_type]
+    loss_params = [{loss_param: f} for f in loss_functions]
+    return [dict(**existing_params, **lp) for lp in loss_params]
+
+
 def run_with(*learner_types):
     pars = []
     for l in learner_types:
@@ -127,13 +146,15 @@ def run_with(*learner_types):
         if has_marker:
             marker, l = l
         for f, k in learner_function_combos[l]:
-            # Check if learner was marked with our `xfail` decorator
-            # XXX: doesn't work when feeding kwargs to xfail.
-            if has_marker:
-                pars.append(pytest.param(l, f, dict(k),
-                                         marks=[marker]))
-            else:
-                pars.append((l, f, dict(k)))
+            ks = add_loss_to_params(l, k)
+            for k in ks:
+                # Check if learner was marked with our `xfail` decorator
+                # XXX: doesn't work when feeding kwargs to xfail.
+                if has_marker:
+                    pars.append(pytest.param(l, f, dict(k),
+                                             marks=[marker]))
+                else:
+                    pars.append((l, f, dict(k)))
     return pytest.mark.parametrize('learner_type, f, learner_kwargs', pars)
 
 
