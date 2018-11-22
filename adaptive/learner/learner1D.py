@@ -123,6 +123,7 @@ def triangle_loss(xs, ys):
 
 
 def curvature_loss_function(area_factor=1, euclid_factor=0.02, horizontal_factor=0.02):
+    # XXX: add a doc-string
     @uses_nth_neighbors(1)
     def curvature_loss(xs, ys):
         xs_middle = xs[1:3]

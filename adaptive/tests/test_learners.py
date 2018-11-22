@@ -15,14 +15,15 @@ import numpy as np
 import pytest
 import scipy.spatial
 
-from ..learner import (AverageLearner, BalancingLearner, DataSaver,
+import adaptive
+from adaptive.learner import (AverageLearner, BalancingLearner, DataSaver,
     IntegratorLearner, Learner1D, Learner2D, LearnerND)
-from ..runner import simple
+from adaptive.runner import simple
 
 
 try:
     import skopt
-    from ..learner import SKOptLearner
+    from adaptive.learner import SKOptLearner
 except ModuleNotFoundError:
     SKOptLearner = None
 
@@ -75,26 +76,37 @@ def maybe_skip(learner):
 # returns a random value for that parameter.
 
 
-@learn_with(Learner1D, bounds=(-1, 1))
+@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.default_loss)
+@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.uniform_loss)
+@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.curvature_loss_function())
 def quadratic(x, m: uniform(0, 10), b: uniform(0, 1)):
     return m * x**2 + b
 
 
-@learn_with(Learner1D, bounds=(-1, 1))
+@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.default_loss)
+@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.uniform_loss)
+@learn_with(Learner1D, bounds=(-1, 1), loss_per_interval=adaptive.learner.learner1D.curvature_loss_function())
 def linear_with_peak(x, d: uniform(-1, 1)):
     a = 0.01
     return x + a**2 / (a**2 + (x - d)**2)
 
 
-@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
-@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)))
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.default_loss)
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.std_loss)
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.uniform_loss)
+@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)), loss_per_triangle=adaptive.learner.learner2D.default_loss)
+@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)), loss_per_triangle=adaptive.learner.learner2D.uniform_loss)
+@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)), loss_per_triangle=adaptive.learner.learner2D.minimize_triangle_surface_loss)
+@learn_with(Learner2D, bounds=((-1, 1), (-1, 1)), loss_per_triangle=adaptive.learner.learner2D.resolution_loss_function())
 def ring_of_fire(xy, d: uniform(0.2, 1)):
     a = 0.2
     x, y = xy
     return x + math.exp(-(x**2 + y**2 - d**2)**2 / a**4)
 
 
-@learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.default_loss)
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.std_loss)
+@learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)), loss_per_simplex=adaptive.learner.learnerND.uniform_loss)
 def sphere_of_fire(xyz, d: uniform(0.2, 1)):
     a = 0.2
     x, y, z = xyz
