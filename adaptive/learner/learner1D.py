@@ -563,8 +563,13 @@ class Learner1D(BaseLearner):
         def finite_loss(loss, xs):
             # If the loss is infinite we return the
             # distance between the two points.
-            return (loss if not math.isinf(loss)
-                    else (xs[1] - xs[0]) / self._scale[0])
+            if math.isinf(loss):
+                loss = (xs[1] - xs[0]) / self._scale[0]
+
+            # We round the loss to 12 digits such that losses
+            # are equal up to numerical precision will be considered
+            # equal.
+            return round(loss, ndigits=12)
 
         quals = [(-finite_loss(loss, x), x, 1)
                  for x, loss in self.losses_combined.items()]
