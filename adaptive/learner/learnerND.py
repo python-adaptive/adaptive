@@ -13,18 +13,19 @@ from .base_learner import BaseLearner
 
 from ..notebook_integration import ensure_holoviews, ensure_plotly
 from .triangulation import (Triangulation, point_in_simplex,
-                            circumsphere, simplex_volume_in_embedding)
+                            circumsphere, simplex_volume_in_embedding,
+                            fast_det)
 from ..utils import restore, cache_latest
 
 
 def volume(simplex, ys=None):
     # Notice the parameter ys is there so you can use this volume method as
     # as loss function
-    matrix = np.array(np.subtract(simplex[:-1], simplex[-1]), dtype=float)
-    dim = len(simplex) - 1
+    matrix = np.subtract(simplex[:-1], simplex[-1], dtype=float)
 
     # See https://www.jstor.org/stable/2315353
-    vol = np.abs(np.linalg.det(matrix)) / np.math.factorial(dim)
+    dim = len(simplex) - 1
+    vol = np.abs(fast_det(matrix)) / np.math.factorial(dim)
     return vol
 
 
