@@ -397,7 +397,7 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
         assert np.allclose(xs_unscaled, cxs)
 
     # Check if the losses are close
-    assert abs(learner.loss() - control.loss()) / learner.loss() < 1e-11
+    assert math.isclose(learner.loss(), control.loss(), rel_tol=1e-10)
 
 
 @run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
