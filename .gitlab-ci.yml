@@ -1,20 +1,44 @@
-image: quantumtinkerer/research
+image: gitlab.kwant-project.org:5005/qt/adaptive:latest
+
+stages:
+  - prebuild
+  - test
+
+build docker:
+  stage: prebuild
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - export CI_REF=${CI_COMMIT_TAG:-latest}
+  script:
+    - /kaniko/executor
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/Dockerfile
+      --destination $CI_REGISTRY_IMAGE:$CI_REF
+  only:
+    changes:
+      - Dockerfile
+      - environment.yml
+      - test-requirements.txt
 
 test:
+  stage: test
   script:
-    - pip install -r test-requirements.txt
-    - conda install -y -q scikit-optimize
     - py.test --verbose --cov=adaptive --cov-report term --cov-report html adaptive
   artifacts:
     paths:
       - htmlcov
 
 authors check:
+  stage: test
   script:
     - MISSING_AUTHORS=$(git shortlog -s HEAD | sed -e "s/^[0-9\t ]*//"| xargs -i sh -c 'grep -q "{}" AUTHORS.md || echo "{} missing from authors"')
     - if [ ! -z "$MISSING_AUTHORS" ]; then { echo $MISSING_AUTHORS; exit 1; }; fi
   allow_failure: true
 
 check whitespace style:
+  stage: test
   script: ./check_whitespace
   allow_failure: true
