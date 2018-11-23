@@ -229,22 +229,19 @@ def test_learner_accepts_lists(learner_type, bounds):
     simple(learner, goal=lambda l: l.npoints > 10)
 
 
-@run_with(xfail(Learner1D), Learner2D, LearnerND)
+@run_with(Learner1D, Learner2D, LearnerND)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
 
     Either it is idempotent, or it is an error.
     This is the only sane behaviour.
-
-    This test will fail for the Learner1D because the losses are normalized by
-    _scale which is updated after every point. After one iteration of adding
-    points, the _scale could be different from what it was when calculating
-    the losses of the intervals. Readding the points a second time means
-    that the losses are now all normalized by the correct _scale.
     """
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
+    if learner_type is Learner1D:
+        learner._recompute_losses_factor = 1
+        control._recompute_losses_factor = 1
 
     N = random.randint(10, 30)
     control.ask(N)
@@ -298,13 +295,10 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     assert set(pls) == set(cpls)
 
 
-@run_with(xfail(Learner1D), xfail(Learner2D), xfail(LearnerND), AverageLearner)
+@run_with(Learner1D, xfail(Learner2D), xfail(LearnerND), AverageLearner)
 def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     """The order of calls to 'tell' between calls to 'ask'
     is arbitrary.
-
-    This test will fail for the Learner1D for the same reason as described in
-    the doc-string in `test_adding_existing_data_is_idempotent`.
 
     This test will fail for the Learner2D because
     `interpolate.interpnd.estimate_gradients_2d_global` will give different
@@ -314,6 +308,10 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
+
+    if learner_type is Learner1D:
+        learner._recompute_losses_factor = 1
+        control._recompute_losses_factor = 1
 
     N = random.randint(10, 30)
     control.ask(N)
@@ -443,14 +441,16 @@ def test_saving(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
+    if learner_type is Learner1D:
+        learner._recompute_losses_factor = 1
+        control._recompute_losses_factor = 1
     simple(learner, lambda l: l.npoints > 100)
     fd, path = tempfile.mkstemp()
     try:
         learner.save(path)
         control.load(path)
-        if learner_type is not Learner1D:
-            # Because different scales result in differnt losses
-            np.testing.assert_almost_equal(learner.loss(), control.loss())
+
+        np.testing.assert_almost_equal(learner.loss(), control.loss())
 
         # Try if the control is runnable
         simple(control, lambda l: l.npoints > 200)
@@ -466,6 +466,11 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     learner = BalancingLearner([learner_type(f, **learner_kwargs)])
     control = BalancingLearner([learner_type(f, **learner_kwargs)])
 
+    if learner_type is Learner1D:
+        for l, c in zip(learner.learners, control.learners):
+            l._recompute_losses_factor = 1
+            c._recompute_losses_factor = 1
+
     simple(learner, lambda l: l.learners[0].npoints > 100)
     folder = tempfile.mkdtemp()
 
@@ -473,11 +478,10 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
         return folder + 'test'
 
     try:
-        learner.save(fname)
-        control.load(fname)
-        if learner_type is not Learner1D:
-            # Because different scales result in differnt losses
-            np.testing.assert_almost_equal(learner.loss(), control.loss())
+        learner.save(fname=fname)
+        control.load(fname=fname)
+
+        np.testing.assert_almost_equal(learner.loss(), control.loss())
 
         # Try if the control is runnable
         simple(control, lambda l: l.learners[0].npoints > 200)
@@ -494,14 +498,19 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
     arg_picker = operator.itemgetter('y')
     learner = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
     control = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
+
+    if learner_type is Learner1D:
+        learner.learner._recompute_losses_factor = 1
+        control.learner._recompute_losses_factor = 1
+
     simple(learner, lambda l: l.npoints > 100)
     fd, path = tempfile.mkstemp()
     try:
         learner.save(path)
         control.load(path)
-        if learner_type is not Learner1D:
-            # Because different scales result in differnt losses
-            np.testing.assert_almost_equal(learner.loss(), control.loss())
+
+        np.testing.assert_almost_equal(learner.loss(), control.loss())
+
         assert learner.extra_data == control.extra_data
 
         # Try if the control is runnable
