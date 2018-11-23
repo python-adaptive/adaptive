@@ -384,7 +384,7 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     learner = learner_type(lambda x: yscale * f(np.array(x) / xscale),
                            **l_kwargs)
 
-    npoints = random.randrange(1000, 2000)
+    npoints = random.randrange(300, 500)
 
     for n in range(npoints):
         cxs, _ = control.ask(1)
