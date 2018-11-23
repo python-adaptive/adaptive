@@ -139,14 +139,14 @@ def add_loss_to_params(learner_type, existing_params):
     return [dict(**existing_params, **lp) for lp in loss_params]
 
 
-def run_with(*learner_types):
+def run_with(*learner_types, with_all_loss_functions=True):
     pars = []
     for l in learner_types:
         has_marker = isinstance(l, tuple)
         if has_marker:
             marker, l = l
         for f, k in learner_function_combos[l]:
-            ks = add_loss_to_params(l, k)
+            ks = add_loss_to_params(l, k) if with_all_loss_functions else [k]
             for k in ks:
                 # Check if learner was marked with our `xfail` decorator
                 # XXX: doesn't work when feeding kwargs to xfail.
@@ -402,7 +402,8 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     assert abs(learner.loss() - control.loss()) / learner.loss() < 1e-11
 
 
-@run_with(Learner1D, Learner2D, LearnerND, AverageLearner)
+@run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
+    with_all_loss_functions=False)
 def test_balancing_learner(learner_type, f, learner_kwargs):
     """Test if the BalancingLearner works with the different types of learners."""
     learners = [learner_type(generate_random_parametrization(f), **learner_kwargs)
@@ -436,7 +437,8 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
 
 
 @run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
-    maybe_skip(SKOptLearner), IntegratorLearner)
+    maybe_skip(SKOptLearner), IntegratorLearner,
+    with_all_loss_functions=False)
 def test_saving(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
@@ -457,7 +459,8 @@ def test_saving(learner_type, f, learner_kwargs):
 
 
 @run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
-    maybe_skip(SKOptLearner), IntegratorLearner)
+    maybe_skip(SKOptLearner), IntegratorLearner,
+    with_all_loss_functions=False)
 def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = BalancingLearner([learner_type(f, **learner_kwargs)])
@@ -483,7 +486,8 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
 
 
 @run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
-    maybe_skip(SKOptLearner), IntegratorLearner)
+    maybe_skip(SKOptLearner), IntegratorLearner,
+    with_all_loss_functions=False)
 def test_saving_with_datasaver(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     g = lambda x: {'y': f(x), 't': random.random()}
