@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+
 import abc
 from contextlib import suppress
 from copy import deepcopy
 
-from ..utils import save, load
+from adaptive.utils import save, load
 
 
 class BaseLearner(metaclass=abc.ABCMeta):

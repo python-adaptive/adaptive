@@ -3,9 +3,9 @@
 import random
 import numpy as np
 
-from ..learner import Learner1D
-from ..learner.learner1D import curvature_loss_function
-from ..runner import simple
+from adaptive.learner import Learner1D
+from adaptive.learner.learner1D import curvature_loss_function
+from adaptive.runner import simple
 
 
 def test_pending_loss_intervals():

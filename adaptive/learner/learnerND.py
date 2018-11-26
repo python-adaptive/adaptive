@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from collections import OrderedDict, Iterable
 import functools
 import heapq
@@ -9,13 +10,13 @@ import numpy as np
 from scipy import interpolate
 import scipy.spatial
 
-from .base_learner import BaseLearner
-
-from ..notebook_integration import ensure_holoviews, ensure_plotly
-from .triangulation import (Triangulation, point_in_simplex,
-                            circumsphere, simplex_volume_in_embedding,
-                            fast_det)
-from ..utils import restore, cache_latest
+from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.triangulation import (
+    Triangulation, point_in_simplex, circumsphere,
+    simplex_volume_in_embedding, fast_det
+)
+from adaptive.notebook_integration import ensure_holoviews, ensure_plotly
+from adaptive.utils import restore, cache_latest
 
 
 def volume(simplex, ys=None):

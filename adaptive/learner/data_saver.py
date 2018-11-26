@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+
 from collections import OrderedDict
 import functools
 
-from .base_learner import BaseLearner
-from ..utils import copy_docstring_from
+from adaptive.learner.base_learner import BaseLearner
+from adaptive.utils import copy_docstring_from
 
 
 class DataSaver:

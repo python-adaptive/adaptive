@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from ..learner import LearnerND
-from ..runner import replay_log, simple
-from .test_learners import ring_of_fire, generate_random_parametrization
 import scipy.spatial
+
+from adaptive.learner import LearnerND
+from adaptive.runner import replay_log, simple
+
+from .test_learners import ring_of_fire, generate_random_parametrization
 
 def test_faiure_case_LearnerND():
     log = [

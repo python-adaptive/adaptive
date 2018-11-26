@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+
 import numpy as np
 from skopt import Optimizer
 
-from .base_learner import BaseLearner
-from ..notebook_integration import ensure_holoviews
-from ..utils import cache_latest
+from adaptive.learner.base_learner import BaseLearner
+from adaptive.notebook_integration import ensure_holoviews
+from adaptive.utils import cache_latest
 
 
 class SKOptLearner(Optimizer, BaseLearner):

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from collections import defaultdict, Iterable
 from contextlib import suppress
 from functools import partial
@@ -7,9 +8,9 @@ import os.path
 
 import numpy as np
 
-from .base_learner import BaseLearner
-from ..notebook_integration import ensure_holoviews
-from ..utils import cache_latest, named_product, restore
+from adaptive.learner.base_learner import BaseLearner
+from adaptive.notebook_integration import ensure_holoviews
+from adaptive.utils import cache_latest, named_product, restore
 
 
 def dispatch(child_functions, arg):

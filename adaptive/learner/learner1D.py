@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from copy import deepcopy
 import heapq
 import itertools
@@ -8,11 +9,11 @@ from collections import Iterable
 import numpy as np
 import sortedcontainers
 
-from .base_learner import BaseLearner
-from .learnerND import volume
-from .triangulation import simplex_volume_in_embedding
-from ..notebook_integration import ensure_holoviews
-from ..utils import cache_latest
+from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.learnerND import volume
+from adaptive.learner.triangulation import simplex_volume_in_embedding
+from adaptive.notebook_integration import ensure_holoviews
+from adaptive.utils import cache_latest
 
 
 def uses_nth_neighbors(n):
