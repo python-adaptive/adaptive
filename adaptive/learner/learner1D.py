@@ -123,6 +123,7 @@ def triangle_loss(xs, ys):
 
 
 def curvature_loss_function(area_factor=1, euclid_factor=0.02, horizontal_factor=0.02):
+    # XXX: add a doc-string
     @uses_nth_neighbors(1)
     def curvature_loss(xs, ys):
         xs_middle = xs[1:3]
@@ -226,6 +227,11 @@ class Learner1D(BaseLearner):
         # A dict storing the loss function for each interval x_n.
         self.losses = {}
         self.losses_combined = {}
+
+        # When the scale changes by a factor 2, the losses are
+        # recomputed. This is tunable such that we can test
+        # the learners behavior in the tests.
+        self._recompute_losses_factor = 2
 
         self.data = {}
         self.pending_points = set()
@@ -446,7 +452,7 @@ class Learner1D(BaseLearner):
         self._update_losses(x, real=True)
 
         # If the scale has increased enough, recompute all losses.
-        if self._scale[1] > 2 * self._oldscale[1]:
+        if self._scale[1] > self._recompute_losses_factor * self._oldscale[1]:
 
             for interval in self.losses:
                 self._update_interpolated_loss_in_interval(*interval)
@@ -562,8 +568,13 @@ class Learner1D(BaseLearner):
         def finite_loss(loss, xs):
             # If the loss is infinite we return the
             # distance between the two points.
-            return (loss if not math.isinf(loss)
-                    else (xs[1] - xs[0]) / self._scale[0])
+            if math.isinf(loss):
+                loss = (xs[1] - xs[0]) / self._scale[0]
+
+            # We round the loss to 12 digits such that losses
+            # are equal up to numerical precision will be considered
+            # equal.
+            return round(loss, ndigits=12)
 
         quals = [(-finite_loss(loss, x), x, 1)
                  for x, loss in self.losses_combined.items()]
