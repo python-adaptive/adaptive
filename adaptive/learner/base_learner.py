@@ -107,48 +107,31 @@ class BaseLearner(metaclass=abc.ABCMeta):
         """
         self._set_data(other._get_data())
 
-    def save(self, fname=None, compress=True):
+    def save(self, fname, compress=True):
         """Save the data of the learner into a pickle file.
 
         Parameters
         ----------
-        fname : str, optional
-            The filename of the learner's pickle data file. If None use
-            the 'fname' attribute, like 'learner.fname = "example.p".
+        fname : str
+            The filename into which to save the learner's data.
         compress : bool, default True
             Compress the data upon saving using 'gzip'. When saving
             using compression, one must load it with compression too.
-
-        Notes
-        -----
-        There are **two ways** of naming the files:
-
-        1. Using the ``fname`` argument in ``learner.save(fname='example.p')``
-        2. Setting the ``fname`` attribute, like
-           ``learner.fname = "data/example.p"`` and then ``learner.save()``.
         """
-        fname = fname or self.fname
         data = self._get_data()
         save(fname, data, compress)
 
-    def load(self, fname=None, compress=True):
+    def load(self, fname, compress=True):
         """Load the data of a learner from a pickle file.
 
         Parameters
         ----------
-        fname : str, optional
-            The filename of the saved learner's pickled data file.
-            If None use the 'fname' attribute, like
-            'learner.fname = "example.p".
+        fname : str
+            The filename from which to load the learner's data.
         compress : bool, default True
             If the data is compressed when saved, one must load it
             with compression too.
-
-        Notes
-        -----
-        See the notes in the `save` doc-string.
         """
-        fname = fname or self.fname
         with suppress(FileNotFoundError, EOFError):
             data = load(fname, compress)
             self._set_data(data)
@@ -158,19 +141,3 @@ class BaseLearner(metaclass=abc.ABCMeta):
 
     def __setstate__(self, state):
         self.__dict__ = state
-
-    @property
-    def fname(self):
-        """Filename for the learner when it is saved (or loaded) using
-        `~adaptive.BaseLearner.save` (or `~adaptive.BaseLearner.load` ).
-        """
-        # This is a property because then it will be availible in the DataSaver
-        try:
-            return self._fname
-        except AttributeError:
-            raise AttributeError("Set 'learner.fname' or use the 'fname'"
-                " argument when using 'learner.save' or 'learner.load'.")
-
-    @fname.setter
-    def fname(self, fname):
-        self._fname = fname
