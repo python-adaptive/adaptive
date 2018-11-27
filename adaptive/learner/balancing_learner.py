@@ -350,7 +350,7 @@ class BalancingLearner(BaseLearner):
         >>> learner.save(combo_fname)  # use 'load' in the same way
         """
         if isinstance(fname, Iterable):
-            for l, _fname in zip(fname, self.learners):
+            for l, _fname in zip(self.learners, fname):
                 l.save(_fname, compress=compress)
         else:
             for l in self.learners:
@@ -374,7 +374,7 @@ class BalancingLearner(BaseLearner):
         See the example in the `BalancingLearner.save` doc-string.
         """
         if isinstance(fname, Iterable):
-            for l, _fname in zip(fname, self.learners):
+            for l, _fname in zip(self.learners, fname):
                 l.load(_fname, compress=compress)
         else:
             for l in self.learners:
