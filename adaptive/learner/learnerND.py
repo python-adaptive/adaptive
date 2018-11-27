@@ -344,6 +344,7 @@ class LearnerND(BaseLearner):
         subtriangulation = self._subtriangulations[simplex]
         for subsimplex in new_subsimplices:
             subloss = subtriangulation.volume(subsimplex) * loss_density
+            subloss = round(subloss, ndigits=8)
             heapq.heappush(self._simplex_queue,
                            (-subloss, simplex, subsimplex))
 
@@ -461,6 +462,7 @@ class LearnerND(BaseLearner):
                 self._try_adding_pending_point_to_simplex(p, simplex)
 
             if simplex not in self._subtriangulations:
+                loss = round(loss, ndigits=8)
                 heapq.heappush(self._simplex_queue, (-loss, simplex, None))
                 continue
 
@@ -495,6 +497,7 @@ class LearnerND(BaseLearner):
 
             # now distribute it around the the children if they are present
             if simplex not in self._subtriangulations:
+                loss = round(loss, ndigits=8)
                 heapq.heappush(self._simplex_queue, (-loss, simplex, None))
                 continue
 
