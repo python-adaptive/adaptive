@@ -78,13 +78,14 @@ def uniform_loss(ip):
 
     Examples
     --------
+    >>> from adaptive.learner.learner2D import uniform_loss
     >>> def f(xy):
     ...     x, y = xy
     ...     return x**2 + y**2
     >>>
     >>> learner = adaptive.Learner2D(f,
     ...                              bounds=[(-1, -1), (1, 1)],
-    ...                              loss_per_triangle=uniform_sampling_2d)
+    ...                              loss_per_triangle=uniform_loss)
     >>>
     """
     return np.sqrt(areas(ip))
