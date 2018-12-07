@@ -48,7 +48,7 @@ setup(
     name='adaptive',
     description='Adaptive parallel sampling of mathematical functions',
     version=version,
-    url='https://gitlab.kwant-project.org/qt/adaptive',
+    url='https://adaptive.readthedocs.io/',
     author='Adaptive authors',
     license='BSD',
     classifiers=[
