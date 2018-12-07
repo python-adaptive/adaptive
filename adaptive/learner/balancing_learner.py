@@ -335,13 +335,13 @@ class BalancingLearner(BaseLearner):
         -------
         >>> def combo_fname(learner):
         ...     val = learner.function.keywords  # because functools.partial
-        ...     fname = '__'.join([f'{k}_{v}.pickle' for k, v in val])
+        ...     fname = '__'.join([f'{k}_{v}.pickle' for k, v in val.items()])
         ...     return 'data_folder/' + fname
         >>>
         >>> def f(x, a, b): return a * x**2 + b
         >>>
         >>> learners = [Learner1D(functools.partial(f, **combo), (-1, 1))
-        ...             for combo in adaptive.utils.named_product(a=[1, 2], b=[1]]
+        ...             for combo in adaptive.utils.named_product(a=[1, 2], b=[1])]
         >>>
         >>> learner = BalancingLearner(learners)
         >>> # Run the learner
