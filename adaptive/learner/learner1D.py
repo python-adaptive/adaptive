@@ -692,5 +692,7 @@ def finite_loss(ival, loss, x_scale):
 
     # We round the loss to 12 digits such that losses
     # are equal up to numerical precision will be considered
-    # equal.
-    return round(loss, ndigits=12), ival
+    # equal. This is 3.5x faster than unsing the `round` function.
+    round_fac = 1e12
+    loss = int(loss * round_fac + 0.5) / round_fac
+    return loss, ival
