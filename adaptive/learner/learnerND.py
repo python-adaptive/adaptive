@@ -506,7 +506,7 @@ class LearnerND(BaseLearner):
         if self.vdim > 1:
             raise NotImplementedError('holoviews currently does not support',
                                       '3D surface plots in bokeh.')
-        if len(self.ndim) != 2:
+        if self.ndim != 2:
             raise NotImplementedError("Only 2D plots are implemented: You can "
                                       "plot a 2D slice with 'plot_slice'.")
         x, y = self._bbox
@@ -516,7 +516,9 @@ class LearnerND(BaseLearner):
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                n = int(0.658 / np.sqrt(np.min(self.tri.volumes())))
+                scale_factor = np.product(np.diag(self._transform))
+                a_sq = np.sqrt(np.min(self.tri.volumes()) * scale_factor)
+                n = max(10, int(0.658 / a_sq))
 
             xs = ys = np.linspace(0, 1, n)
             xs = xs * (x[1] - x[0]) + x[0]
@@ -585,7 +587,9 @@ class LearnerND(BaseLearner):
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                n = int(0.658 / np.sqrt(np.min(self.tri.volumes())))
+                scale_factor = np.product(np.diag(self._transform))
+                a_sq = np.sqrt(np.min(self.tri.volumes()) * scale_factor)
+                n = max(10, int(0.658 / a_sq))
 
             xs = ys = np.linspace(0, 1, n)
             xys = [xs[:, None], ys[None, :]]
@@ -780,7 +784,7 @@ class LearnerND(BaseLearner):
                 plot = plot * self.plot_isoline(level=l, n=-1)
             return plot
 
-        vertices, lines = self.self._get_iso(level, which='line')
+        vertices, lines = self._get_iso(level, which='line')
         paths = [[vertices[i], vertices[j]] for i, j in lines]
         contour = hv.Path(paths)
 
