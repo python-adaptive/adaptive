@@ -7,6 +7,7 @@ from adaptive.runner import replay_log, simple
 
 from .test_learners import ring_of_fire, generate_random_parametrization
 
+
 def test_faiure_case_LearnerND():
     log = [
         ('ask', 4),
@@ -24,6 +25,7 @@ def test_faiure_case_LearnerND():
     ]
     learner = LearnerND(lambda *x: x, bounds=[(-1, 1), (-1, 1), (-1, 1)])
     replay_log(learner, log)
+
 
 def test_interior_vs_bbox_gives_same_result():
     f = generate_random_parametrization(ring_of_fire)
