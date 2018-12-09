@@ -362,9 +362,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
 
 # XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
 #      but we xfail it now, as Learner2D will be deprecated anyway
-# The LearnerND fails sometimes, see
-# https://gitlab.kwant-project.org/qt/adaptive/merge_requests/128#note_21807
-@run_with(Learner1D, xfail(Learner2D), xfail(LearnerND))
+@run_with(Learner1D, xfail(Learner2D), LearnerND)
 def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner_kwargs):
     """Learners behave identically under transformations that leave
        the loss invariant.
