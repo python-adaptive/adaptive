@@ -390,6 +390,10 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
 
     npoints = random.randrange(300, 500)
 
+    if learner_type is LearnerND:
+        # Because the LearnerND is slow
+        npoints //= 10
+
     for n in range(npoints):
         cxs, _ = control.ask(1)
         xs, _ = learner.ask(1)
