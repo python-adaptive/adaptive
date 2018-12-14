@@ -435,6 +435,13 @@ class Learner2D(BaseLearner):
             triangle = ip.tri.points[ip.tri.vertices[jsimplex]]
             point_new = choose_point_in_triangle(triangle, max_badness=5)
             point_new = tuple(self._unscale(point_new))
+
+            # np.clip results in numerical precision problems
+            # https://gitlab.kwant-project.org/qt/adaptive/issues/132
+            clip = lambda x, l, u: max(l, min(u, x))
+            point_new = (clip(point_new[0], *self.bounds[0]),
+                         clip(point_new[1], *self.bounds[1]))
+
             loss_new = losses[jsimplex]
 
             points_new.append(point_new)
