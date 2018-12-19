@@ -143,8 +143,8 @@ request <https://gitlab.kwant-project.org/qt/adaptive/merge_requests>`_.
    :target: https://anaconda.org/conda-forge/adaptive
 .. |Downloads| image:: https://img.shields.io/conda/dn/conda-forge/adaptive.svg
    :target: https://anaconda.org/conda-forge/adaptive
-.. |Pipeline status| image:: https://gitlab.kwant-project.org/qt/adaptive/badges/master/pipeline.svg
-   :target: https://gitlab.kwant-project.org/qt/adaptive/pipelines
+.. |Pipeline status| image:: https://dev.azure.com/python-adaptive/adaptive/_apis/build/status/python-adaptive.adaptive?branchName=master
+   :target: https://dev.azure.com/python-adaptive/adaptive/_build/latest?definitionId=6?branchName=master
 .. |DOI| image:: https://img.shields.io/badge/doi-10.5281%2Fzenodo.1182437-blue.svg
    :target: https://doi.org/10.5281/zenodo.1182437
 .. |Binder| image:: https://mybinder.org/badge.svg
