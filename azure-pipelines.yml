@@ -1,0 +1,35 @@
+steps:
+- task: CondaEnvironment@1
+  inputs:
+    packageSpecs: >
+      python=3.6
+      sortedcontainers
+      sortedcollections
+      scipy
+      holoviews
+      ipyparallel
+      distributed
+      ipykernel>=4.8*
+      jupyter_client>=5.2.2
+      ipywidgets
+      scikit-optimize
+      plotly
+    createCustomEnvironment: true
+    createOptions: "-c conda-forge"
+    environmentName: 'adaptive'
+
+- script: pip install -r test-requirements.txt
+  displayName: 'Install test-requirements.txt'
+
+- script: py.test --verbose --cov=adaptive --cov-report term --cov-report html adaptive
+  displayName: 'Run the tests'
+
+- script: |
+    MISSING_AUTHORS=$(git shortlog -s HEAD | sed -e "s/^[0-9\t ]*//"| xargs -i sh -c 'grep -q "{}" AUTHORS.md || echo "{} missing from authors"')
+    if [ ! -z "$MISSING_AUTHORS" ]; then { echo $MISSING_AUTHORS; exit 1; }; fi
+  continueOnError: true
+  displayName: 'Authors check'
+
+- script: ./check_whitespace
+  continueOnError: true
+  displayName: 'Whitespace check'
