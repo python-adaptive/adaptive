@@ -29,7 +29,7 @@ def test_faiure_case_LearnerND():
 
 def test_interior_vs_bbox_gives_same_result():
     f = generate_random_parametrization(ring_of_fire)
-    
+
     control = LearnerND(f, bounds=[(-1, 1), (-1, 1)])
     hull = scipy.spatial.ConvexHull(control._bounds_points)
     learner = LearnerND(f, bounds=hull)

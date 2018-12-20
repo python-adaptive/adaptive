@@ -248,16 +248,16 @@ class BaseRunner(metaclass=abc.ABCMeta):
     def failed(self):
         """Set of points that failed ``runner.retries`` times."""
         return set(self.tracebacks) - set(self.to_retry)
-    
+
     @abc.abstractmethod
     def elapsed_time(self):
         """Return the total time elapsed since the runner
         was started.
-        
+
         Is called in `overhead`.
         """
         pass
-    
+
     @abc.abstractmethod
     def _submit(self, x):
         """Is called in `_get_futures`."""

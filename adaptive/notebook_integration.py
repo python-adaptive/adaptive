@@ -32,7 +32,7 @@ def notebook_extension():
     except ModuleNotFoundError:
         warnings.warn("holoviews is not installed; plotting "
                       "is disabled.", RuntimeWarning)
-    
+
     # Load ipywidgets
     try:
         if not _ipywidgets_enabled:
