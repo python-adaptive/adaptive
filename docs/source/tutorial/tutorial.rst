@@ -1,7 +1,7 @@
 Tutorial Adaptive
 =================
 
-`Adaptive <https://gitlab.kwant-project.org/qt/adaptive-evaluation>`__
+`Adaptive <https://github.com/python-adaptive/adaptive>`__
 is a package for adaptively sampling functions with support for parallel
 evaluation.
 

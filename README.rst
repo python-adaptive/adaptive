@@ -130,10 +130,10 @@ We would like to give credits to the following people:
 
 For general discussion, we have a `Gitter chat
 channel <https://gitter.im/python-adaptive/adaptive>`_. If you find any
-bugs or have any feature suggestions please file a GitLab
-`issue <https://gitlab.kwant-project.org/qt/adaptive/issues/new?issue>`_
-or submit a `merge
-request <https://gitlab.kwant-project.org/qt/adaptive/merge_requests>`_.
+bugs or have any feature suggestions please file a GitHub
+`issue <https://github.com/python-adaptive/adaptive/issues/new>`_
+or submit a `pull
+request <https://github.com/python-adaptive/adaptive/pulls>`_.
 
 .. references-start
 .. |logo| image:: https://adaptive.readthedocs.io/en/latest/_static/logo.png

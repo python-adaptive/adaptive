@@ -1,12 +1,12 @@
 {
     "version": 1,
     "project": "adaptive",
-    "project_url": "https://gitlab.kwant-project.org/qt/adaptive",
+    "project_url": "https://github.com/python-adaptive/adaptive",
     "repo": "..",
     "dvcs": "git",
     "environment_type": "conda",
     "install_timeout": 600,
-    "show_commit_url": "https://gitlab.kwant-project.org/qt/adaptive/commit/",
+    "show_commit_url": "https://github.com/python-adaptive/adaptive/commits/",
     "pythons": ["3.6"],
     "conda_channels": ["conda-forge"],
     "matrix": {

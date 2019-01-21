@@ -68,7 +68,7 @@ def same_ivals(f, a, b, tol):
         return equal_ivals(learner.ivals, ivals, verbose=True)
 
 
-# XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
+# XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 @pytest.mark.xfail
 def test_that_gives_same_intervals_as_reference_implementation():
     for i, args in enumerate([[f0, 0, 3, 1e-5],
@@ -157,7 +157,7 @@ def test_adding_points_and_skip_one_point():
     np.testing.assert_almost_equal(learner.igral, learner2.igral)
 
 
-# XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
+# XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 @pytest.mark.xfail
 def test_tell_in_random_order(first_add_33=False):
     from operator import attrgetter
@@ -218,7 +218,7 @@ def test_tell_in_random_order(first_add_33=False):
             assert np.isfinite(l.err)
 
 
-# XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
+# XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 @pytest.mark.xfail
 def test_tell_in_random_order_first_add_33():
     test_tell_in_random_order(first_add_33=True)
@@ -238,7 +238,7 @@ def test_approximating_intervals():
         assert ivals[i].b == ivals[i + 1].a, (ivals[i], ivals[i + 1])
 
 
-# XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/43)
+# XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/96)
 @pytest.mark.xfail
 def test_removed_choose_mutiple_points_at_once():
     """Given that a high-precision interval that was split into 2 low-precision ones,

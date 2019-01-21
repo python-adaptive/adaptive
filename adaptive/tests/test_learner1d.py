@@ -9,7 +9,7 @@ from adaptive.runner import simple
 
 
 def test_pending_loss_intervals():
-    # https://gitlab.kwant-project.org/qt/adaptive/issues/99
+    # https://github.com/python-adaptive/adaptive/issues/40
     l = Learner1D(lambda x: x, (0, 4))
 
     l.tell(0, 0)
@@ -24,7 +24,7 @@ def test_pending_loss_intervals():
 
 
 def test_loss_interpolation_for_unasked_point():
-    # https://gitlab.kwant-project.org/qt/adaptive/issues/99
+    # https://github.com/python-adaptive/adaptive/issues/40
     l = Learner1D(lambda x: x, (0, 4))
 
     l.tell(0, 0)
@@ -127,7 +127,7 @@ def test_termination_on_discontinuities():
 
 
 def test_order_adding_points():
-    # and https://gitlab.kwant-project.org/qt/adaptive/issues/98
+    # and https://github.com/python-adaptive/adaptive/issues/41
     l = Learner1D(lambda x: x, (0, 1))
     l.tell_many([1, 0, 0.5], [0, 0, 0])
     assert l.losses_combined == {(0, 0.5): 0.5, (0.5, 1): 0.5}
@@ -136,7 +136,7 @@ def test_order_adding_points():
 
 
 def test_adding_existing_point_passes_silently():
-    # See https://gitlab.kwant-project.org/qt/adaptive/issues/97
+    # See https://github.com/python-adaptive/adaptive/issues/42
     l = Learner1D(lambda x: x, (0, 4))
     l.tell(0, 0)
     l.tell(1, 0)
@@ -167,7 +167,7 @@ def small_deviations(x):
 def test_small_deviations():
     """This tests whether the Learner1D can handle small deviations.
     See https://gitlab.kwant-project.org/qt/adaptive/merge_requests/73 and
-    https://gitlab.kwant-project.org/qt/adaptive/issues/61."""
+    https://github.com/python-adaptive/adaptive/issues/78."""
 
     eps = 5e-14
     learner = Learner1D(small_deviations, bounds=(1 - eps, 1 + eps))
@@ -221,7 +221,7 @@ def test_uniform_sampling1D_v2():
 
 
 def test_add_data_unordered():
-    # see https://gitlab.kwant-project.org/qt/adaptive/issues/95
+    # see https://github.com/python-adaptive/adaptive/issues/44
     learner = Learner1D(lambda x: x, bounds=(-1, 1))
     xs = [-1, 1, 0]
 

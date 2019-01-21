@@ -437,7 +437,7 @@ class Learner2D(BaseLearner):
             point_new = tuple(self._unscale(point_new))
 
             # np.clip results in numerical precision problems
-            # https://gitlab.kwant-project.org/qt/adaptive/issues/132
+            # https://github.com/python-adaptive/adaptive/issues/7
             clip = lambda x, l, u: max(l, min(u, x))
             point_new = (clip(point_new[0], *self.bounds[0]),
                          clip(point_new[1], *self.bounds[1]))
