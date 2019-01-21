@@ -657,24 +657,11 @@ class Learner1D(BaseLearner):
         self.tell_many(*zip(*data.items()))
 
 
-def _fix_deepcopy(sorted_dict, x_scale):
-    # XXX: until https://github.com/grantjenks/sortedcollections/issues/5 is fixed
-    import types
-    def __deepcopy__(self, memo):
-        items = deepcopy(list(self.items()))
-        lm = loss_manager(self.x_scale)
-        lm.update(items)
-        return lm
-    sorted_dict.x_scale = x_scale
-    sorted_dict.__deepcopy__ = types.MethodType(__deepcopy__, sorted_dict)
-
-
 def loss_manager(x_scale):
     def sort_key(ival, loss):
         loss, ival = finite_loss(ival, loss, x_scale)
         return -loss, ival
     sorted_dict = sortedcollections.ItemSortedDict(sort_key)
-    _fix_deepcopy(sorted_dict, x_scale)
     return sorted_dict
 
 

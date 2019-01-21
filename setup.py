@@ -26,7 +26,7 @@ version, cmdclass = get_version_and_cmdclass('adaptive')
 
 install_requires = [
     'scipy',
-    'sortedcollections',
+    'sortedcollections >= 1.1',
     'sortedcontainers >= 2.0',
 ]
 
