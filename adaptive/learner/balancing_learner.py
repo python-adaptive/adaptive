@@ -381,7 +381,7 @@ class BalancingLearner(BaseLearner):
                 l.load(fname(l), compress=compress)
 
     def _get_data(self):
-        return [l._get_data() for l in learner.learners]
+        return [l._get_data() for l in self.learners]
 
     def _set_data(self, data):
         for l, _data in zip(self.learners, data):
