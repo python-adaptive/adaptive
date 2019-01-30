@@ -654,7 +654,8 @@ class Learner1D(BaseLearner):
         return self.data
 
     def _set_data(self, data):
-        self.tell_many(*zip(*data.items()))
+        if data:
+            self.tell_many(*zip(*data.items()))
 
 
 def _fix_deepcopy(sorted_dict, x_scale):
