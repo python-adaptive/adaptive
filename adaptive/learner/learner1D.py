@@ -129,7 +129,7 @@ def curvature_loss_function(area_factor=1, euclid_factor=0.02, horizontal_factor
     @uses_nth_neighbors(1)
     def curvature_loss(xs, ys):
         xs_middle = xs[1:3]
-        ys_middle = xs[1:3]
+        ys_middle = ys[1:3]
 
         triangle_loss_ = triangle_loss(xs, ys)
         default_loss_ = default_loss(xs_middle, ys_middle)
