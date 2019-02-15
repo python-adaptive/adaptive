@@ -684,7 +684,7 @@ def finite_loss(ival, loss, x_scale):
     sort intervals that have infinite loss."""
     # If the loss is infinite we return the
     # distance between the two points.
-    if math.isinf(loss):
+    if math.isinf(loss) or math.isnan(loss):
         loss = (ival[1] - ival[0]) / x_scale
         if len(ival) == 3:
             # Used when constructing quals. Last item is

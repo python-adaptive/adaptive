@@ -363,3 +363,15 @@ def test_curvature_loss_vectors():
     learner = Learner1D(f, (-1, 1), loss_per_interval=loss)
     simple(learner, goal=lambda l: l.npoints > 100)
     assert learner.npoints > 100
+
+
+def test_NaN_loss():
+    # see https://github.com/python-adaptive/adaptive/issues/145
+    def f(x):
+        a = 0.01
+        if random.random() < 0.2:
+            return np.NaN
+        return x + a**2 / (a**2 + x**2)
+
+    learner = Learner1D(f, bounds=(-1, 1))
+    simple(learner, lambda l: l.npoints > 100)
