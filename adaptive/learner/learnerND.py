@@ -757,7 +757,8 @@ class LearnerND(BaseLearner):
         return self.data
 
     def _set_data(self, data):
-        self.tell_many(*zip(*data.items()))
+        if data:
+            self.tell_many(*zip(*data.items()))
 
     def _get_iso(self, level=0.0, which='surface'):
         if which == 'surface':
