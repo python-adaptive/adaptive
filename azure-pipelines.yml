@@ -1,22 +1,12 @@
 steps:
-- task: CondaEnvironment@1
-  inputs:
-    packageSpecs: >
-      python=3.6
-      sortedcontainers
-      sortedcollections
-      scipy
-      holoviews
-      ipyparallel
-      distributed
-      ipykernel>=4.8*
-      jupyter_client>=5.2.2
-      ipywidgets
-      scikit-optimize
-      plotly
-    createCustomEnvironment: true
-    createOptions: "-c conda-forge"
-    environmentName: 'adaptive'
+- bash: echo "##vso[task.prependpath]/usr/share/miniconda/bin"
+  displayName: Add conda to PATH
+
+- bash: sudo chown -R $USER /usr/share/miniconda
+  displayName: Take ownership of conda installation
+
+- script: conda env update --name root --quiet --file environment.yml
+  displayName: Create conda environment
 
 - script: pip install -r test-requirements.txt
   displayName: 'Install test-requirements.txt'
