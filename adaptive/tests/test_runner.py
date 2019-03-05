@@ -101,6 +101,7 @@ def test_ipyparallel_executor(ipyparallel_executor):
     assert learner.npoints > 0
 
 
+@pytest.mark.timeout(60)
 @pytest.mark.skipif(not with_distributed, reason='dask.distributed is not installed')
 def test_distributed_executor(dask_executor):
     learner = Learner1D(linear, (-1, 1))

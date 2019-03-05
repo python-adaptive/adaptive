@@ -1,27 +1,18 @@
 steps:
-- task: CondaEnvironment@1
-  inputs:
-    packageSpecs: >
-      python=3.6
-      sortedcontainers
-      sortedcollections
-      scipy
-      holoviews
-      ipyparallel
-      distributed
-      ipykernel>=4.8*
-      jupyter_client>=5.2.2
-      ipywidgets
-      scikit-optimize
-      plotly
-    createCustomEnvironment: true
-    createOptions: "-c conda-forge"
-    environmentName: 'adaptive'
+- bash: echo "##vso[task.prependpath]/usr/share/miniconda/bin"
+  displayName: Add conda to PATH
 
-- script: pip install -r test-requirements.txt
+- script: conda env create --quiet --file environment.yml
+  displayName: Create Anaconda environment
+
+- script: |
+    source activate adaptive
+    pip install -r test-requirements.txt
   displayName: 'Install test-requirements.txt'
 
-- script: py.test --verbose --cov=adaptive --cov-report term --cov-report html adaptive
+- script: |
+    source activate adaptive
+    py.test --verbose --cov=adaptive --cov-report term --cov-report html adaptive
   displayName: 'Run the tests'
 
 - script: |
