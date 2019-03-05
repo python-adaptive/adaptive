@@ -2,16 +2,17 @@ steps:
 - bash: echo "##vso[task.prependpath]/usr/share/miniconda/bin"
   displayName: Add conda to PATH
 
-- bash: sudo chown -R $USER /usr/share/miniconda
-  displayName: Take ownership of conda installation
+- script: conda env create --quiet --file environment.yml
+  displayName: Create Anaconda environment
 
-- script: conda env update --name root --quiet --file environment.yml
-  displayName: Create conda environment
-
-- script: pip install -r test-requirements.txt
+- script: |
+    source activate adaptive
+    pip install -r test-requirements.txt
   displayName: 'Install test-requirements.txt'
 
-- script: py.test --verbose --cov=adaptive --cov-report term --cov-report html adaptive
+- script: |
+    source activate adaptive
+    py.test --verbose --cov=adaptive --cov-report term --cov-report html adaptive
   displayName: 'Run the tests'
 
 - script: |
