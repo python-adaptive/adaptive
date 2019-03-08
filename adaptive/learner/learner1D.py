@@ -69,6 +69,28 @@ def uses_nth_neighbors(n):
     return _wrapped
 
 
+def loss_returns(return_type, return_length):
+    def _wrapped(loss_per_interval):
+        loss_per_interval.return_type = return_type
+        loss_per_interval.return_length = return_length
+        return loss_per_interval
+    return _wrapped
+
+
+def inf_format(return_type, return_len=None):
+    is_iterable = hasattr(return_type, '__iter__')
+    if is_iterable:
+        return return_type(return_len * [np.inf])
+    else:
+        return return_type(np.inf)
+
+
+def ensure_tuple(x):
+    if not isinstance(x, Iterable):
+        x = (x,)
+    return x
+
+
 @uses_nth_neighbors(0)
 def uniform_loss(xs, ys):
     """Loss function that samples the domain uniformly.
@@ -287,7 +309,8 @@ class Learner1D(BaseLearner):
     def loss(self, real=True):
         losses = self.losses if real else self.losses_combined
         if not losses:
-            return np.inf
+            return inf_format(self.loss_per_interval.return_type,
+                              self.loss_per_interval.return_length)
         max_interval, max_loss = losses.peekitem(0)
         return max_loss
 
@@ -325,7 +348,7 @@ class Learner1D(BaseLearner):
         ys_scaled = tuple(self._scale_y(y) for y in ys)
 
         # we need to compute the loss for this interval
-        return self.loss_per_interval(xs_scaled, ys_scaled)
+        return ensure_tuple(self.loss_per_interval(xs_scaled, ys_scaled))
 
     def _update_interpolated_loss_in_interval(self, x_left, x_right):
         if x_left is None or x_right is None:
@@ -379,13 +402,17 @@ class Learner1D(BaseLearner):
         left_loss_is_unknown = ((x_left is None) or
                                 (not real and x_right is None))
         if (a is not None) and left_loss_is_unknown:
-            self.losses_combined[a, x] = float('inf')
+            self.losses_combined[a, x] = inf_format(
+                self.loss_per_interval.return_type,
+                self.loss_per_interval.return_length)
 
         # (no real point right of x) or (no real point left of b)
         right_loss_is_unknown = ((x_right is None) or
                                  (not real and x_left is None))
         if (b is not None) and right_loss_is_unknown:
-            self.losses_combined[x, b] = float('inf')
+            self.losses_combined[x, b] = inf_format(
+                self.loss_per_interval.return_type,
+                self.loss_per_interval.return_length)
 
     @staticmethod
     def _find_neighbors(x, neighbors):
@@ -660,8 +687,8 @@ class Learner1D(BaseLearner):
 
 def loss_manager(x_scale):
     def sort_key(ival, loss):
-        loss, ival = finite_loss(ival, loss, x_scale)
-        return -loss, ival
+        loss = [-finite_loss(ival, l, x_scale)[0] for l in loss]
+        return loss, ival
     sorted_dict = sortedcollections.ItemSortedDict(sort_key)
     return sorted_dict
 
