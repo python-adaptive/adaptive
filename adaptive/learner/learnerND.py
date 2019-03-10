@@ -63,21 +63,22 @@ def default_loss(simplex, ys):
     return simplex_volume_in_embedding(pts)
 
 
-def triangle_loss(simplex, neighbors):
+def triangle_loss(simplex, values, neighbors, neighbor_values):
     """
-    Simplex and the neighbors are a list of coordinates,
-    both input and output coordinates.
+    Computes the average of the volumes of the simplex combined with each 
+    neighbouring point.
 
     Parameters
     ----------
     simplex : list of tuples
-        Each entry is one point of the simplex, it should contain both
-        input and output coordinates in the same tuple.
-        i.e. (x1, x2, x3, y1, y2) in the case of `f: R^3 -> R^2`.
+        Each entry is one point of the simplex.
+    values : list of values
+        The function values of each of the simplex points.
     neighbors : list of tuples
-        The missing vertex of the simplex that shares exactly one
-        face with `simplex`. May contain None if the simplex is
-        at the boundary.
+        The neighboring points of the simplex, ordered such that simplex[0] 
+        exacly opposes neigbors[0], etc.
+    neighbor_values : list of values
+        The function values for each of the neighboring points.
 
     Returns
     -------
@@ -88,35 +89,38 @@ def triangle_loss(simplex, neighbors):
     if len(neighbors) == 0:
         return 0
 
-    return sum(simplex_volume_in_embedding([*simplex, neighbour])
-               for neighbour in neighbors) / len(neighbors)
+    s = [(*x, *to_list(y)) for x, y in zip(simplex, values)]
+    n = [(*x, *to_list(y)) for x, y in zip(neighbors, neighbor_values)]
+
+    return sum(simplex_volume_in_embedding([*s, neighbour])
+               for neighbour in n) / len(neighbors)
 
 
-def get_curvature_loss(exploration=0.05):
+def curvature_loss_function(exploration=0.05):
     # XXX: add doc-string!
-    def curvature_loss(simplex, neighbors):
-        """Simplex and the neighbors are a list of coordinates,
-        both input and output coordinates.
+    def curvature_loss(simplex, values, neighbors, neighbor_values):
+        """Compute the curvature loss of a simplex.
 
         Parameters
         ----------
         simplex : list of tuples
-            Each entry is one point of the simplex, it should contain both
-            input and output coordinates in the same tuple.
-            i.e. (x1, x2, x3, y1, y2) in the case of `f: R^3 -> R^2`.
+            Each entry is one point of the simplex.
+        values : list of values
+            The function values of each of the simplex points.
         neighbors : list of tuples
-            The missing vertex of the simplex that shares exactly one
-            face with `simplex`. May contain None if the simplex is
-            at the boundary.
+            The neighboring points of the simplex, ordered such that simplex[0] 
+            exacly opposes neigbors[0], etc.
+        neighbor_values : list of values
+            The function values for each of the neighboring points.
 
         Returns
         -------
         loss : float
         """
-        dim = len(simplex) - 1
-        xs = [pt[:dim] for pt in simplex]
-        loss_input_volume = volume(xs)
-        loss_curvature = triangle_loss(simplex, neighbors)
+        dim = len(simplex[0]) # the number of coordinates
+        loss_input_volume = volume(simplex)
+
+        loss_curvature = triangle_loss(simplex, values, neighbors, neighbor_values)
         return (loss_curvature + exploration * loss_input_volume ** ((2 + dim) / dim)) ** (1 / (2 + dim))
     return curvature_loss
 
