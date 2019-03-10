@@ -126,6 +126,17 @@ def fast_3d_circumcircle(points):
     return center, radius
 
 
+def fast_det(matrix):
+    matrix = np.asarray(matrix, dtype=float)
+    if matrix.shape == (2, 2):
+        return matrix[0][0] * matrix[1][1] - matrix[1][0] * matrix[0][1]
+    elif matrix.shape == (3, 3):
+        a, b, c, d, e, f, g, h, i = matrix.ravel()
+        return a * (e*i - f*h) - b * (d*i - f*g) + c * (d*h - e*g)
+    else:
+        return np.linalg.det(matrix)
+
+
 def circumsphere(pts):
     dim = len(pts) - 1
     if dim == 2:
@@ -140,9 +151,9 @@ def circumsphere(pts):
     for i in range(1, len(pts)):
         r = np.delete(mat, i, 1)
         factor = (-1) ** (i + 1)
-        center.append(factor * np.linalg.det(r))
+        center.append(factor * fast_det(r))
 
-    a = np.linalg.det(np.delete(mat, 0, 1))
+    a = fast_det(np.delete(mat, 0, 1))
     center = [x / (2 * a) for x in center]
 
     x0 = pts[0]
@@ -226,9 +237,9 @@ def simplex_volume_in_embedding(vertices) -> float:
     sq_dists_mat = scipy.spatial.distance.squareform(bordered)
 
     coeff = - (-2) ** (num_verts-1) * factorial(num_verts-1) ** 2
-    vol_square = np.linalg.det(sq_dists_mat) / coeff
+    vol_square = fast_det(sq_dists_mat) / coeff
 
-    if vol_square <= 0:
+    if vol_square < 0:
         if abs(vol_square) < 1e-15:
             return 0
         raise ValueError('Provided vertices do not form a simplex')
@@ -580,7 +591,7 @@ class Triangulation:
         prefactor = np.math.factorial(self.dim)
         vertices = np.array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
-        return float(abs(np.linalg.det(vectors)) / prefactor)
+        return float(abs(fast_det(vectors)) / prefactor)
 
     def volumes(self):
         return [self.volume(sim) for sim in self.simplices]

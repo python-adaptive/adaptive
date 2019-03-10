@@ -1,10 +1,13 @@
+# -*- coding: utf-8 -*-
+
 from collections import Counter
 from math import factorial
 import itertools
 import pytest
 
-from ..learner.triangulation import Triangulation
 import numpy as np
+
+from adaptive.learner.triangulation import Triangulation
 
 with_dimension = pytest.mark.parametrize('dim', [2, 3, 4])
 

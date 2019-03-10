@@ -137,3 +137,61 @@ functions:
 .. jupyter-execute::
 
     runner.live_plot(update_interval=0.1)
+
+
+Looking at curvature
+....................
+
+By default ``adaptive`` will sample more points where the (normalized)
+euclidean distance between the neighboring points is large.
+You may achieve better results sampling more points in regions with high
+curvature. To do this, you need to tell the learner to look at the curvature
+by specifying ``loss_per_interval``.
+
+.. jupyter-execute::
+
+    from adaptive.learner.learner1D import (curvature_loss_function,
+                                            uniform_loss,
+                                            default_loss)
+    curvature_loss = curvature_loss_function()
+    learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=curvature_loss)
+    runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+
+.. jupyter-execute::
+    :hide-code:
+
+    await runner.task  # This is not needed in a notebook environment!
+
+.. jupyter-execute::
+
+    runner.live_info()
+
+.. jupyter-execute::
+
+    runner.live_plot(update_interval=0.1)
+
+We may see the difference of homogeneous sampling vs only one interval vs
+including nearest neighboring intervals in this plot: We will look at 100 points.
+
+.. jupyter-execute::
+
+    def sin_exp(x):
+        from math import exp, sin
+        return sin(15 * x) * exp(-x**2*2)
+
+    learner_h = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=uniform_loss)
+    learner_1 = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=default_loss)
+    learner_2 = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=curvature_loss)
+
+    npoints_goal = lambda l: l.npoints >= 100
+    # adaptive.runner.simple is a non parallel blocking runner.
+    adaptive.runner.simple(learner_h, goal=npoints_goal)
+    adaptive.runner.simple(learner_1, goal=npoints_goal)
+    adaptive.runner.simple(learner_2, goal=npoints_goal)
+
+    (learner_h.plot().relabel('homogeneous')
+     + learner_1.plot().relabel('euclidean loss')
+     + learner_2.plot().relabel('curvature loss')).cols(2)
+
+More info about using custom loss functions can be found
+in :ref:`Custom adaptive logic for 1D and 2D`.

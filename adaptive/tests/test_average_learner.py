@@ -4,7 +4,7 @@ import random
 
 import numpy as np
 
-from ..learner import AverageLearner
+from adaptive.learner import AverageLearner
 
 
 def test_only_returns_new_points():

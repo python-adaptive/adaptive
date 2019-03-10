@@ -26,7 +26,8 @@ version, cmdclass = get_version_and_cmdclass('adaptive')
 
 install_requires = [
     'scipy',
-    'sortedcontainers',
+    'sortedcollections',
+    'sortedcontainers >= 2.0',
 ]
 
 extras_require = {
@@ -47,7 +48,7 @@ setup(
     name='adaptive',
     description='Adaptive parallel sampling of mathematical functions',
     version=version,
-    url='https://gitlab.kwant-project.org/qt/adaptive',
+    url='https://adaptive.readthedocs.io/',
     author='Adaptive authors',
     license='BSD',
     classifiers=[

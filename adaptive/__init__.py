@@ -1,24 +1,27 @@
 # -*- coding: utf-8 -*-
+
 from contextlib import suppress
 
-from .notebook_integration import (notebook_extension, live_plot,
+from adaptive.notebook_integration import (notebook_extension, live_plot,
                                    active_plotting_tasks)
 
-from . import learner
-from . import runner
-from . import utils
+from adaptive import learner
+from adaptive import runner
+from adaptive import utils
 
-from .learner import (BaseLearner, Learner1D, Learner2D, LearnerND,
-                      AverageLearner, BalancingLearner, make_datasaver,
-                      DataSaver, IntegratorLearner)
+from adaptive.learner import (
+	BaseLearner, Learner1D, Learner2D, LearnerND,
+    AverageLearner, BalancingLearner, make_datasaver,
+    DataSaver, IntegratorLearner
+)
 
 with suppress(ImportError):
     # Only available if 'scikit-optimize' is installed
-    from .learner import SKOptLearner
+    from adaptive.learner import SKOptLearner
 
-from .runner import Runner, AsyncRunner, BlockingRunner
+from adaptive.runner import Runner, AsyncRunner, BlockingRunner
 
-from ._version import __version__
+from adaptive._version import __version__
 del _version
 
 del notebook_integration  # to avoid confusion with `notebook_extension`

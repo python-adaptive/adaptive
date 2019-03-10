@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from collections import defaultdict
+
+from collections import defaultdict, Iterable
 from contextlib import suppress
 from functools import partial
 from operator import itemgetter
@@ -7,9 +8,9 @@ import os.path
 
 import numpy as np
 
-from .base_learner import BaseLearner
-from ..notebook_integration import ensure_holoviews
-from ..utils import cache_latest, named_product, restore
+from adaptive.learner.base_learner import BaseLearner
+from adaptive.notebook_integration import ensure_holoviews
+from adaptive.utils import cache_latest, named_product, restore
 
 
 def dispatch(child_functions, arg):
@@ -317,70 +318,67 @@ class BalancingLearner(BaseLearner):
             learners.append(learner)
         return cls(learners, cdims=arguments)
 
-    def save(self, folder, compress=True):
+    def save(self, fname, compress=True):
         """Save the data of the child learners into pickle files
         in a directory.
 
         Parameters
         ----------
-        folder : str
-            Directory in which the learners's data will be saved.
+        fname: callable or sequence of strings
+            Given a learner, returns a filename into which to save the data.
+            Or a list (or iterable) with filenames.
         compress : bool, default True
             Compress the data upon saving using `gzip`. When saving
             using compression, one must load it with compression too.
 
-        Notes
-        -----
-        The child learners need to have a 'fname' attribute in order to use
-        this method.
-
         Example
         -------
-        >>> def combo_fname(val):
-        ...     return '__'.join([f'{k}_{v}.p' for k, v in val.items()])
-        ...
-        ... def f(x, a, b): return a * x**2 + b
-        ...
-        >>> learners = []
-        >>> for combo in adaptive.utils.named_product(a=[1, 2], b=[1]):
-        ...     l = Learner1D(functools.partial(f, combo=combo))
-        ...     l.fname = combo_fname(combo)  # 'a_1__b_1.p', 'a_2__b_1.p' etc.
-        ...     learners.append(l)
-        ... learner = BalancingLearner(learners)
-        ... # Run the learner
-        ... runner = adaptive.Runner(learner)
-        ... # Then save
-        ... learner.save('data_folder')  # use 'load' in the same way
+        >>> def combo_fname(learner):
+        ...     val = learner.function.keywords  # because functools.partial
+        ...     fname = '__'.join([f'{k}_{v}.pickle' for k, v in val.items()])
+        ...     return 'data_folder/' + fname
+        >>>
+        >>> def f(x, a, b): return a * x**2 + b
+        >>>
+        >>> learners = [Learner1D(functools.partial(f, **combo), (-1, 1))
+        ...             for combo in adaptive.utils.named_product(a=[1, 2], b=[1])]
+        >>>
+        >>> learner = BalancingLearner(learners)
+        >>> # Run the learner
+        >>> runner = adaptive.Runner(learner)
+        >>> # Then save
+        >>> learner.save(combo_fname)  # use 'load' in the same way
         """
-        if len(self.learners) != len(set(l.fname for l in self.learners)):
-            raise RuntimeError("The 'learner.fname's are not all unique.")
+        if isinstance(fname, Iterable):
+            for l, _fname in zip(self.learners, fname):
+                l.save(_fname, compress=compress)
+        else:
+            for l in self.learners:
+                l.save(fname(l), compress=compress)
 
-        for l in self.learners:
-            l.save(os.path.join(folder, l.fname), compress=compress)
-
-    def load(self, folder, compress=True):
+    def load(self, fname, compress=True):
         """Load the data of the child learners from pickle files
         in a directory.
 
         Parameters
         ----------
-        folder : str
-            Directory from which the learners's data will be loaded.
+        fname: callable or sequence of strings
+            Given a learner, returns a filename from which to load the data.
+            Or a list (or iterable) with filenames.
         compress : bool, default True
             If the data is compressed when saved, one must load it
             with compression too.
-
-        Notes
-        -----
-        The child learners need to have a 'fname' attribute in order to use
-        this method.
 
         Example
         -------
         See the example in the `BalancingLearner.save` doc-string.
         """
-        for l in self.learners:
-            l.load(os.path.join(folder, l.fname), compress=compress)
+        if isinstance(fname, Iterable):
+            for l, _fname in zip(self.learners, fname):
+                l.load(_fname, compress=compress)
+        else:
+            for l in self.learners:
+                l.load(fname(l), compress=compress)
 
     def _get_data(self):
         return [l._get_data() for l in learner.learners]

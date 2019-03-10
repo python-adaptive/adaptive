@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
+
 from functools import partial
 from operator import attrgetter
 
 import numpy as np
 import pytest
-from ..learner import IntegratorLearner
-from ..learner.integrator_learner import DivergentIntegralError
-from ..learner.integrator_coeffs import ns
+
+from adaptive.learner import IntegratorLearner
+from adaptive.learner.integrator_learner import DivergentIntegralError
+from adaptive.learner.integrator_coeffs import ns
 from .algorithm_4 import algorithm_4, f0, f7, f21, f24, f63, fdiv
 from .algorithm_4 import DivergentIntegralError as A4DivergentIntegralError
 

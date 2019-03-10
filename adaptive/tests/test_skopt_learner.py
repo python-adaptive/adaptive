@@ -4,11 +4,10 @@ import numpy as np
 
 import pytest
 
-
 try:
     import skopt
     with_scikit_optimize = True
-    from ..learner import SKOptLearner
+    from adaptive.learner import SKOptLearner
 except ModuleNotFoundError:
     with_scikit_optimize = False
 

@@ -46,11 +46,14 @@ tl;dr, one can use the following *loss functions* that
 
 + `adaptive.learner.learner1D.default_loss`
 + `adaptive.learner.learner1D.uniform_loss`
++ `adaptive.learner.learner1D.curvature_loss_function`
 + `adaptive.learner.learner2D.default_loss`
 + `adaptive.learner.learner2D.uniform_loss`
 + `adaptive.learner.learner2D.minimize_triangle_surface_loss`
-+ `adaptive.learner.learner2D.resolution_loss`
++ `adaptive.learner.learner2D.resolution_loss_function`
 
+Whenever a loss function has `_function` appended to its name, it is a factory function
+that returns the loss function with certain settings.
 
 Uniform sampling
 ~~~~~~~~~~~~~~~~
@@ -60,11 +63,8 @@ simple (but naive) strategy is to *uniformly* sample the domain:
 
 .. jupyter-execute::
 
-    def uniform_sampling_1d(interval, scale, function_values):
-        # Note that we never use 'function_values'; the loss is just the size of the subdomain
-        x_left, x_right = interval
-        x_scale, _ = scale
-        dx = (x_right - x_left) / x_scale
+    def uniform_sampling_1d(xs, ys):
+        dx = xs[1] - xs[0]
         return dx
 
     def f_divergent_1d(x):
@@ -135,34 +135,23 @@ small (0 loss).
 
     %%opts EdgePaths (color='w') Image [logz=True colorbar=True]
 
-    def resolution_loss(ip, min_distance=0, max_distance=1):
+    def resolution_loss_function(min_distance=0, max_distance=1):
         """min_distance and max_distance should be in between 0 and 1
         because the total area is normalized to 1."""
+        def resolution_loss(ip):
+            from adaptive.learner.learner2D import default_loss, areas
+            loss = default_loss(ip)
 
-        from adaptive.learner.learner2D import areas, deviations
+            A = areas(ip)
+            # Setting areas with a small area to zero such that they won't be chosen again
+            loss[A < min_distance**2] = 0
 
-        A = areas(ip)
+            # Setting triangles that have a size larger than max_distance to infinite loss
+            loss[A > max_distance**2] = np.inf
 
-        # 'deviations' returns an array of shape '(n, len(ip))', where
-        # 'n' is the  is the dimension of the output of the learned function
-        # In this case we know that the learned function returns a scalar,
-        # so 'deviations' returns an array of shape '(1, len(ip))'.
-        # It represents the deviation of the function value from a linear estimate
-        # over each triangular subdomain.
-        dev = deviations(ip)[0]
-
-        # we add terms of the same dimension: dev == [distance], A == [distance**2]
-        loss = np.sqrt(A) * dev + A
-
-        # Setting areas with a small area to zero such that they won't be chosen again
-        loss[A < min_distance**2] = 0
-
-        # Setting triangles that have a size larger than max_distance to infinite loss
-        loss[A > max_distance**2] = np.inf
-
-        return loss
-
-    loss = partial(resolution_loss, min_distance=0.01)
+            return loss
+        return resolution_loss
+    loss = resolution_loss_function(min_distance=0.01)
 
     learner = adaptive.Learner2D(f_divergent_2d, [(-1, 1), (-1, 1)], loss_per_triangle=loss)
     runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.02)
@@ -172,4 +161,4 @@ Awesome! We zoom in on the singularity, but not at the expense of
 sampling the rest of the domain a reasonable amount.
 
 The above strategy is available as
-`adaptive.learner.learner2D.resolution_loss`.
+`adaptive.learner.learner2D.resolution_loss_function`.

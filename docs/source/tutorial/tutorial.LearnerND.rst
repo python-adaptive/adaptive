@@ -90,3 +90,37 @@ is a result of the fact that the learner chooses points in 3 dimensions
 and the simplices are not in the same face as we try to interpolate our
 lines. However, as always, when you sample more points the graph will
 become gradually smoother.
+
+Using any convex shape as domain
+................................
+
+Suppose you do not simply want to sample your function on a square (in 2D) or in
+a cube (in 3D). The LearnerND supports using a `scipy.spatial.ConvexHull` as
+your domain. This is best illustrated in the following example.
+
+Suppose you would like to sample you function in a cube split in half diagonally.
+You could use the following code as an example:
+
+.. jupyter-execute::
+
+    import scipy
+
+    def f(xyz):
+        x, y, z = xyz
+        return x**4 + y**4 + z**4 - (x**2+y**2+z**2)**2
+
+    # set the bound points, you can change this to be any shape
+    b = [(-1, -1, -1),
+         (-1,  1, -1),
+         (-1, -1,  1),
+         (-1,  1,  1),
+         ( 1,  1, -1),
+         ( 1, -1, -1)]
+
+    # you have to convert the points into a scipy.spatial.ConvexHull
+    hull = scipy.spatial.ConvexHull(b)
+
+    learner = adaptive.LearnerND(f, hull)
+    adaptive.BlockingRunner(learner, goal=lambda l: l.npoints > 2000)
+
+    learner.plot_isosurface(-0.5)

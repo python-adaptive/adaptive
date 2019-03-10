@@ -33,13 +33,10 @@ Saving and loading learners
 Every learner has a `~adaptive.BaseLearner.save` and `~adaptive.BaseLearner.load`
 method that can be used to save and load **only** the data of a learner.
 
-There are **two ways** of naming the files: 1. Using the ``fname``
-argument in ``learner.save(fname=...)`` 2. Setting the ``fname``
-attribute, like ``learner.fname = 'data/example.p`` and then
-``learner.save()``
+Use the ``fname`` argument in ``learner.save(fname=...)``.
 
-The second way *must be used* when saving the ``learner``\s of a
-`~adaptive.BalancingLearner`.
+Or, when using a `~adaptive.BalancingLearner` one can use either a callable
+that takes the child learner and returns a filename **or** a list of filenames.
 
 By default the resulting pickle files are compressed, to turn this off
 use ``learner.save(fname=..., compress=False)``

@@ -10,12 +10,13 @@ import numpy as np
 from scipy.linalg import norm
 from sortedcontainers import SortedSet
 
-from .base_learner import BaseLearner
+from adaptive.learner.base_learner import BaseLearner
+from adaptive.notebook_integration import ensure_holoviews
+from adaptive.utils import cache_latest, restore
+
 from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
                                 ndiv_max, min_sep, eps, xi, V_inv,
                                 Vcond, alpha, gamma)
-from ..notebook_integration import ensure_holoviews
-from ..utils import cache_latest, restore
 
 
 def _downdate(c, nans, depth):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from ..learner import Learner1D, BalancingLearner
+from adaptive.learner import Learner1D, BalancingLearner
 
 
 def test_balancing_learner_loss_cache():

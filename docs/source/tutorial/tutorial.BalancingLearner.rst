@@ -57,7 +57,7 @@ The balancing learner can for example be used to implement a poor-man’s
 
 Often one wants to create a set of ``learner``\ s for a cartesian
 product of parameters. For that particular case we’ve added a
-``classmethod`` called ``~adaptive.BalancingLearner.from_product``.
+``classmethod`` called `~adaptive.BalancingLearner.from_product`.
 See how it works below
 
 .. jupyter-execute::

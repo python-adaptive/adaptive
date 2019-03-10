@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from collections import OrderedDict
 from copy import copy
 import itertools
@@ -7,9 +8,9 @@ from math import sqrt
 import numpy as np
 from scipy import interpolate
 
-from .base_learner import BaseLearner
-from ..notebook_integration import ensure_holoviews
-from ..utils import cache_latest
+from adaptive.learner.base_learner import BaseLearner
+from adaptive.notebook_integration import ensure_holoviews
+from adaptive.utils import cache_latest
 
 
 # Learner2D and helper functions.
@@ -77,19 +78,20 @@ def uniform_loss(ip):
 
     Examples
     --------
+    >>> from adaptive.learner.learner2D import uniform_loss
     >>> def f(xy):
     ...     x, y = xy
     ...     return x**2 + y**2
     >>>
     >>> learner = adaptive.Learner2D(f,
     ...                              bounds=[(-1, -1), (1, 1)],
-    ...                              loss_per_triangle=uniform_sampling_2d)
+    ...                              loss_per_triangle=uniform_loss)
     >>>
     """
     return np.sqrt(areas(ip))
 
 
-def resolution_loss(ip, min_distance=0, max_distance=1):
+def resolution_loss_function(min_distance=0, max_distance=1):
     """Loss function that is similar to the `default_loss` function, but you
     can set the maximimum and minimum size of a triangle.
 
@@ -104,27 +106,25 @@ def resolution_loss(ip, min_distance=0, max_distance=1):
     ...     x, y = xy
     ...     return x**2 + y**2
     >>>
-    >>> from functools import partial
-    >>> loss = partial(resolution_loss, min_distance=0.01)
+    >>> loss = resolution_loss_function(min_distance=0.01, max_distance=1)
     >>> learner = adaptive.Learner2D(f,
     ...                              bounds=[(-1, -1), (1, 1)],
     ...                              loss_per_triangle=loss)
     >>>
     """
-    A = areas(ip)
-    dev = np.sum(deviations(ip), axis=0)
+    def resolution_loss(ip):
+        loss = default_loss(ip)
 
-    # similar to the default_loss
-    loss = np.sqrt(A) * dev + A
+        A = areas(ip)
+        # Setting areas with a small area to zero such that they won't be chosen again
+        loss[A < min_distance**2] = 0
 
-    # Setting areas with a small area to zero such that they won't be chosen again
-    loss[A < min_distance**2] = 0
+        # Setting triangles that have a size larger than max_distance to infinite loss
+        # such that these triangles will be picked
+        loss[A > max_distance**2] = np.inf
 
-    # Setting triangles that have a size larger than max_distance to infinite loss
-    # such that these triangles will be picked
-    loss[A > max_distance**2] = np.inf
-
-    return loss
+        return loss
+    return resolution_loss
 
 
 def minimize_triangle_surface_loss(ip):
@@ -435,6 +435,13 @@ class Learner2D(BaseLearner):
             triangle = ip.tri.points[ip.tri.vertices[jsimplex]]
             point_new = choose_point_in_triangle(triangle, max_badness=5)
             point_new = tuple(self._unscale(point_new))
+
+            # np.clip results in numerical precision problems
+            # https://gitlab.kwant-project.org/qt/adaptive/issues/132
+            clip = lambda x, l, u: max(l, min(u, x))
+            point_new = (clip(point_new[0], *self.bounds[0]),
+                         clip(point_new[1], *self.bounds[1]))
+
             loss_new = losses[jsimplex]
 
             points_new.append(point_new)
