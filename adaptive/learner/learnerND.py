@@ -91,7 +91,8 @@ def triangle_loss(simplex, neighbors):
     return sum(simplex_volume_in_embedding([*simplex, neighbour])
                for neighbour in neighbors) / len(neighbors)
 
-def get_curvature_loss(curvature_factor=1, volume_factor=0, input_volume_factor=0.05):
+
+def get_curvature_loss(exploration=0.05):
     # XXX: add doc-string!
     def curvature_loss(simplex, neighbors):
         """Simplex and the neighbors are a list of coordinates,
@@ -113,13 +114,10 @@ def get_curvature_loss(curvature_factor=1, volume_factor=0, input_volume_factor=
         loss : float
         """
         dim = len(simplex) - 1
-        loss_volume = simplex_volume_in_embedding(simplex)
         xs = [pt[:dim] for pt in simplex]
         loss_input_volume = volume(xs)
         loss_curvature = triangle_loss(simplex, neighbors)
-        return (curvature_factor * loss_curvature ** (dim / (dim+1))
-                + volume_factor * loss_volume
-                + input_volume_factor * loss_input_volume)
+        return (loss_curvature + exploration * loss_input_volume ** ((2 + dim) / dim)) ** (1 / (2 + dim))
     return curvature_loss
 
 
