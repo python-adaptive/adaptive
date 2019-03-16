@@ -21,3 +21,12 @@ def test_balancing_learner_loss_cache():
     bl = BalancingLearner([learner])
     assert bl.loss(real=False) == pending_loss
     assert bl.loss(real=True) == real_loss
+
+
+def test_distribute_first_points_over_learners():
+    learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
+    learner = BalancingLearner(learners)
+    points, _ = learner.ask(100)
+    i_learner, xs = zip(*points)
+    # assert that are all learners in the suggested points
+    assert len(set(i_learner)) == len(learners)
