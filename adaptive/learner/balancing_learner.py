@@ -161,11 +161,19 @@ class BalancingLearner(BaseLearner):
 
     def ask(self, n, tell_pending=True):
         """Chose points for learners."""
+        if any(l.npoints for l in self.learners):
+            ask_and_tell = self._ask_and_tell
+        else:
+            # If there are no data points yet,
+            # distribute the points over all learners.
+            # See https://github.com/python-adaptive/adaptive/issues/159
+            ask_and_tell = self._ask_and_tell_based_on_npoints
+
         if not tell_pending:
             with restore(*self.learners):
-                return self._ask_and_tell(n)
+                return ask_and_tell(n)
         else:
-            return self._ask_and_tell(n)
+            return ask_and_tell(n)
 
     def tell(self, x, y):
         index, x = x
