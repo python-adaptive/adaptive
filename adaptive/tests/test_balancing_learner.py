@@ -34,6 +34,14 @@ def test_distribute_first_points_over_learners():
         assert len(set(i_learner)) == len(learners)
 
 
+def test_ask_0():
+    for strategy in ['loss', 'loss_improvements', 'npoints']:
+        learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
+        learner = BalancingLearner(learners, strategy=strategy)
+        points, _ = learner.ask(0)
+        assert len(points) == 0
+
+
 def test_strategies():
     goals = {
         'loss': lambda l: l.loss() < 0.1,
