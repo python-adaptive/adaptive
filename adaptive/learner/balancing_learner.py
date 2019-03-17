@@ -113,40 +113,34 @@ class BalancingLearner(BaseLearner):
                 ' strategy="npoints" is implemented.')
 
     def _ask_and_tell_based_on_loss_improvements(self, n):
-        chosen_points = []
-        chosen_loss_improvements = []
-        npoints = [l.npoints + len(l.pending_points)
-                   for l in self.learners]
+        selected = []  # tuples ((learner_index, point), loss_improvement)
+        npoints = [l.npoints + len(l.pending_points) for l in self.learners]
         for _ in range(n):
-            improvements_per_learner = []
-            points_per_learner = []
+            to_select = []
             for index, learner in enumerate(self.learners):
                 # Take the points from the cache
                 if index not in self._ask_cache:
                     self._ask_cache[index] = learner.ask(
                         n=1, tell_pending=False)
                 points, loss_improvements = self._ask_cache[index]
-
-                priority = (loss_improvements[0], -npoints[index])
-                improvements_per_learner.append(priority)
-                points_per_learner.append((index, points[0]))
+                to_select.append(
+                    ((index, points[0]),
+                     (loss_improvements[0], -npoints[index]))
+                )
 
             # Choose the optimal improvement.
             (index, point), (loss_improvement, _) = max(
-                zip(points_per_learner, improvements_per_learner),
-                key=itemgetter(1))
+                to_select, key=itemgetter(1))
             npoints[index] += 1
-            chosen_points.append((index, point))
-            chosen_loss_improvements.append(loss_improvement)
+            selected.append(((index, point), loss_improvement))
             self.tell_pending((index, point))
 
-        return chosen_points, chosen_loss_improvements
+        points, loss_improvements = map(list, zip(*selected))
+        return points, loss_improvements
 
     def _ask_and_tell_based_on_loss(self, n):
-        chosen_points = []
-        chosen_loss_improvements = []
-        npoints = [l.npoints + len(l.pending_points)
-                   for l in self.learners]
+        selected = []   # tuples ((learner_index, point), loss_improvement)
+        npoints = [l.npoints + len(l.pending_points) for l in self.learners]
         for _ in range(n):
             losses = self._losses(real=False)
             priority = zip(losses, (-n for n in npoints))
@@ -158,15 +152,14 @@ class BalancingLearner(BaseLearner):
                 self._ask_cache[index] = self.learners[index].ask(n=1)
             points, loss_improvements = self._ask_cache[index]
 
-            chosen_points.append((index, points[0]))
-            chosen_loss_improvements.append(loss_improvements[0])
-        return chosen_points, chosen_loss_improvements
+            selected.append(((index, points[0]), loss_improvements[0]))
+
+        points, loss_improvements = map(list, zip(*selected))
+        return points, loss_improvements
 
     def _ask_and_tell_based_on_npoints(self, n):
-        chosen_points = []
-        chosen_loss_improvements = []
-        npoints = [l.npoints + len(l.pending_points)
-                   for l in self.learners]
+        selected = []  # tuples ((learner_index, point), loss_improvement)
+        npoints = [l.npoints + len(l.pending_points) for l in self.learners]
         n_left = n
         while n_left > 0:
             index = np.argmin(npoints)
@@ -176,9 +169,10 @@ class BalancingLearner(BaseLearner):
             points, loss_improvements = self._ask_cache[index]
             npoints[index] += 1
             n_left -= 1
-            chosen_points.append((index, points[0]))
-            chosen_loss_improvements.append(loss_improvements[0])
-        return chosen_points, chosen_loss_improvements
+            selected.append(((index, points[0]), loss_improvements[0]))
+
+        points, loss_improvements = map(list, zip(*selected))
+        return points, loss_improvements
 
     def ask(self, n, tell_pending=True):
         """Chose points for learners."""
