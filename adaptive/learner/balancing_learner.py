@@ -125,12 +125,14 @@ class BalancingLearner(BaseLearner):
                     self._points[index] = learner.ask(
                         n=1, tell_pending=False)
                 points, loss_improvements = self._points[index]
-                npoints = npoints_per_learner[index] + learner.npoints
+                npoints = (npoints_per_learner[index]
+                           + learner.npoints
+                           + len(learner.pending_points))
                 priority = (loss_improvements[0], -npoints)
                 improvements_per_learner.append(priority)
                 points_per_learner.append((index, points[0]))
 
-            # Chose the optimal improvement.
+            # Choose the optimal improvement.
             (index, point), (loss_improvement, _) = max(
                 zip(points_per_learner, improvements_per_learner),
                 key=itemgetter(1))
@@ -142,15 +144,23 @@ class BalancingLearner(BaseLearner):
         return chosen_points, chosen_loss_improvements
 
     def _ask_and_tell_based_on_loss(self, n):
-        points = []
-        loss_improvements = []
+        chosen_points = []
+        chosen_loss_improvements = []
+        npoints_per_learner = defaultdict(int)
+
         for _ in range(n):
             losses = self._losses(real=False)
-            max_ind = np.argmax(losses)
-            xs, ls = self.learners[max_ind].ask(1)
-            points.append((max_ind, xs[0]))
-            loss_improvements.append(ls[0])
-        return points, loss_improvements
+            npoints = [-(l.npoints
+                         + npoints_per_learner[i]
+                         + len(l.pending_points))
+                       for i, l in enumerate(self.learners)]
+            priority = zip(losses, npoints)
+            index, (_, _) = max(enumerate(priority), key=itemgetter(1))
+            npoints_per_learner[index] += 1
+            points, loss_improvements = self.learners[index].ask(1)
+            chosen_points.append((index, points[0]))
+            chosen_loss_improvements.append(loss_improvements[0])
+        return chosen_points, chosen_loss_improvements
 
     def _ask_and_tell_based_on_npoints(self, n):
         points = []
