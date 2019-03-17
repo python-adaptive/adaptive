@@ -20,7 +20,7 @@ def dispatch(child_functions, arg):
 
 
 class BalancingLearner(BaseLearner):
-    """Choose the optimal points from a set of learners.
+    r"""Choose the optimal points from a set of learners.
 
     Parameters
     ----------
