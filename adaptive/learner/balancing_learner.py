@@ -163,15 +163,13 @@ class BalancingLearner(BaseLearner):
     def _ask_and_tell_based_on_npoints(self, n):
         selected = []  # tuples ((learner_index, point), loss_improvement)
         total_points = [l.npoints + len(l.pending_points) for l in self.learners]
-        n_left = n
-        while n_left > 0:
+        for _ in range(n):
             index = np.argmin(total_points)
             # Take the points from the cache
             if index not in self._ask_cache:
                 self._ask_cache[index] = self.learners[index].ask(n=1)
             points, loss_improvements = self._ask_cache[index]
             total_points[index] += 1
-            n_left -= 1
             selected.append(((index, points[0]), loss_improvements[0]))
             self.tell_pending((index, points[0]))
 
