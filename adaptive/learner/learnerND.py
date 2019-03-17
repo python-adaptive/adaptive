@@ -513,7 +513,12 @@ class LearnerND(BaseLearner):
     @property
     def _scale(self):
         # get the output scale
-        return self._max_value - self._min_value
+        scale = self._max_value - self._min_value
+        if isinstance(scale, np.ndarray):
+            scale[scale == 0] = 1
+        elif scale == 0:
+            scale = 1
+        return scale
 
     def _update_range(self, new_output):
         if self._min_value is None or self._max_value is None:
