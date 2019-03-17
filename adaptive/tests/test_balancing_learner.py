@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import pytest
+
 from adaptive.learner import Learner1D, BalancingLearner
+from adaptive.runner import simple
 
 
 def test_balancing_learner_loss_cache():
@@ -21,3 +24,37 @@ def test_balancing_learner_loss_cache():
     bl = BalancingLearner([learner])
     assert bl.loss(real=False) == pending_loss
     assert bl.loss(real=True) == real_loss
+
+
+@pytest.mark.parametrize('strategy', ['loss', 'loss_improvements', 'npoints'])
+def test_distribute_first_points_over_learners(strategy):
+    for initial_points in [0, 3]:
+        learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
+        learner = BalancingLearner(learners, strategy=strategy)
+
+        points = learner.ask(initial_points)[0]
+        learner.tell_many(points, points)
+
+        points, _ = learner.ask(100)
+        i_learner, xs = zip(*points)
+        # assert that are all learners in the suggested points
+        assert len(set(i_learner)) == len(learners)
+
+
+@pytest.mark.parametrize('strategy', ['loss', 'loss_improvements', 'npoints'])
+def test_ask_0(strategy):
+    learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
+    learner = BalancingLearner(learners, strategy=strategy)
+    points, _ = learner.ask(0)
+    assert len(points) == 0
+
+
+@pytest.mark.parametrize('strategy, goal', [
+    ('loss', lambda l: l.loss() < 0.1),
+    ('loss_improvements', lambda l: l.loss() < 0.1),
+    ('npoints', lambda bl: all(l.npoints > 10 for l in bl.learners)),
+])
+def test_strategies(strategy, goal):
+    learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
+    learner = BalancingLearner(learners, strategy=strategy)
+    simple(learner, goal=goal)

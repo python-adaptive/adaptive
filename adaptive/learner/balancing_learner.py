@@ -77,7 +77,7 @@ class BalancingLearner(BaseLearner):
         # pickle the whole learner.
         self.function = partial(dispatch, [l.function for l in self.learners])
 
-        self._points = {}
+        self._ask_cache = {}
         self._loss = {}
         self._pending_loss = {}
         self._cdims_default = cdims
@@ -113,54 +113,74 @@ class BalancingLearner(BaseLearner):
                 ' strategy="npoints" is implemented.')
 
     def _ask_and_tell_based_on_loss_improvements(self, n):
-        points = []
-        loss_improvements = []
+        selected = []  # tuples ((learner_index, point), loss_improvement)
+        total_points = [l.npoints + len(l.pending_points) for l in self.learners]
         for _ in range(n):
-            improvements_per_learner = []
-            pairs = []
+            to_select = []
             for index, learner in enumerate(self.learners):
-                if index not in self._points:
-                    self._points[index] = learner.ask(
+                # Take the points from the cache
+                if index not in self._ask_cache:
+                    self._ask_cache[index] = learner.ask(
                         n=1, tell_pending=False)
-                point, loss_improvement = self._points[index]
-                improvements_per_learner.append(loss_improvement[0])
-                pairs.append((index, point[0]))
-            x, l = max(zip(pairs, improvements_per_learner),
-                       key=itemgetter(1))
-            points.append(x)
-            loss_improvements.append(l)
-            self.tell_pending(x)
+                points, loss_improvements = self._ask_cache[index]
+                to_select.append(
+                    ((index, points[0]),
+                     (loss_improvements[0], -total_points[index]))
+                )
 
+            # Choose the optimal improvement.
+            (index, point), (loss_improvement, _) = max(
+                to_select, key=itemgetter(1))
+            total_points[index] += 1
+            selected.append(((index, point), loss_improvement))
+            self.tell_pending((index, point))
+
+        points, loss_improvements = map(list, zip(*selected))
         return points, loss_improvements
 
     def _ask_and_tell_based_on_loss(self, n):
-        points = []
-        loss_improvements = []
+        selected = []   # tuples ((learner_index, point), loss_improvement)
+        total_points = [l.npoints + len(l.pending_points) for l in self.learners]
         for _ in range(n):
             losses = self._losses(real=False)
-            max_ind = np.argmax(losses)
-            xs, ls = self.learners[max_ind].ask(1)
-            points.append((max_ind, xs[0]))
-            loss_improvements.append(ls[0])
+            index, _ = max(
+                enumerate(zip(losses, (-n for n in total_points))),
+                key=itemgetter(1)
+            )
+            total_points[index] += 1
+
+            # Take the points from the cache
+            if index not in self._ask_cache:
+                self._ask_cache[index] = self.learners[index].ask(n=1)
+            points, loss_improvements = self._ask_cache[index]
+
+            selected.append(((index, points[0]), loss_improvements[0]))
+            self.tell_pending((index, points[0]))
+
+        points, loss_improvements = map(list, zip(*selected))
         return points, loss_improvements
 
     def _ask_and_tell_based_on_npoints(self, n):
-        points = []
-        loss_improvements = []
-        npoints = [l.npoints + len(l.pending_points)
-                   for l in self.learners]
-        n_left = n
-        while n_left > 0:
-            i = np.argmin(npoints)
-            xs, ls = self.learners[i].ask(1)
-            npoints[i] += 1
-            n_left -= 1
-            points.append((i, xs[0]))
-            loss_improvements.append(ls[0])
+        selected = []  # tuples ((learner_index, point), loss_improvement)
+        total_points = [l.npoints + len(l.pending_points) for l in self.learners]
+        for _ in range(n):
+            index = np.argmin(total_points)
+            # Take the points from the cache
+            if index not in self._ask_cache:
+                self._ask_cache[index] = self.learners[index].ask(n=1)
+            points, loss_improvements = self._ask_cache[index]
+            total_points[index] += 1
+            selected.append(((index, points[0]), loss_improvements[0]))
+            self.tell_pending((index, points[0]))
+
+        points, loss_improvements = map(list, zip(*selected))
         return points, loss_improvements
 
     def ask(self, n, tell_pending=True):
         """Chose points for learners."""
+        if n == 0:
+            return [], []
+
         if not tell_pending:
             with restore(*self.learners):
                 return self._ask_and_tell(n)
@@ -169,14 +189,14 @@ class BalancingLearner(BaseLearner):
 
     def tell(self, x, y):
         index, x = x
-        self._points.pop(index, None)
+        self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
         self._pending_loss.pop(index, None)
         self.learners[index].tell(x, y)
 
     def tell_pending(self, x):
         index, x = x
-        self._points.pop(index, None)
+        self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
         self.learners[index].tell_pending(x)
 
