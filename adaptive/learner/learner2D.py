@@ -501,7 +501,7 @@ class Learner2D(BaseLearner):
                 self._stack[p] = np.inf
 
     def plot(self, n=None, tri_alpha=0):
-        """Plot the Learner2D's current state.
+        r"""Plot the Learner2D's current state.
 
         This plot function interpolates the data on a regular grid.
         The gridspacing is evaluated by checking the size of the smallest

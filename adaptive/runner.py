@@ -55,7 +55,7 @@ else:
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
-    """Base class for runners that use `concurrent.futures.Executors`.
+    r"""Base class for runners that use `concurrent.futures.Executors`.
 
     Parameters
     ----------
@@ -369,7 +369,7 @@ class BlockingRunner(BaseRunner):
 
 
 class AsyncRunner(BaseRunner):
-    """Run a learner asynchronously in an executor using `asyncio`.
+    r"""Run a learner asynchronously in an executor using `asyncio`.
 
     Parameters
     ----------
