@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from adaptive.learner import Learner1D, BalancingLearner
+from adaptive.runner import simple
 
 
 def test_balancing_learner_loss_cache():
@@ -24,9 +25,23 @@ def test_balancing_learner_loss_cache():
 
 
 def test_distribute_first_points_over_learners():
-    learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
-    learner = BalancingLearner(learners)
-    points, _ = learner.ask(100)
-    i_learner, xs = zip(*points)
-    # assert that are all learners in the suggested points
-    assert len(set(i_learner)) == len(learners)
+    for strategy in ['loss', 'loss_improvements', 'npoints']:
+        learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
+        learner = BalancingLearner(learners, strategy=strategy)
+        points, _ = learner.ask(100)
+        i_learner, xs = zip(*points)
+        # assert that are all learners in the suggested points
+        assert len(set(i_learner)) == len(learners)
+
+
+def test_strategies():
+    goals = {
+        'loss': lambda l: l.loss() < 0.1,
+        'loss_improvements': lambda l: l.loss() < 0.1,
+        'npoints': lambda bl: all(l.npoints > 10 for l in bl.learners)
+    }
+
+    for strategy, goal in goals.items():
+        learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
+        learner = BalancingLearner(learners, strategy=strategy)
+        simple(learner, goal=goal)
