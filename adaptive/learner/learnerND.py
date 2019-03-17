@@ -483,7 +483,7 @@ class LearnerND(BaseLearner):
 
         # scale them to a cube with sides 1
         vertices = vertices @ self._transform
-        values = self._output_multiplier * values
+        values = self._output_multiplier * np.array(values)
 
         # compute the loss on the scaled simplex
         return float(self.loss_per_simplex(vertices, values))
@@ -518,35 +518,33 @@ class LearnerND(BaseLearner):
     def _update_range(self, new_output):
         if self._min_value is None or self._max_value is None:
             # this is the first point, nothing to do, just set the range
-            self._min_value = np.array(new_output)
-            self._max_value = np.array(new_output)
-            self._old_scale = self._scale
+            self._min_value = np.min(new_output)
+            self._max_value = np.max(new_output)
+            self._old_scale = self._scale or 1
             return False
 
         # if range in one or more directions is doubled, then update all losses
-        self._min_value = np.minimum(self._min_value, new_output)
-        self._max_value = np.maximum(self._max_value, new_output)
+        self._min_value = min(self._min_value, np.min(new_output))
+        self._max_value = max(self._max_value, np.max(new_output))
 
-        scale_multiplier = 1 / self._scale
-        if isinstance(scale_multiplier, float):
-            scale_multiplier = np.array([scale_multiplier], dtype=float)
+        scale_multiplier = 1 / (self._scale or 1)
 
         # the maximum absolute value that is in the range. Because this is the
         # largest number, this also has the largest absolute numerical error.
-        max_absolute_value_in_range = np.max(np.abs([self._min_value, self._max_value]), axis=0)
+        max_absolute_value_in_range = max(abs(self._min_value),
+                                          abs(self._max_value))
         # since a float has a relative error of 1e-15, the absolute error is the value * 1e-15
         abs_err = 1e-15 * max_absolute_value_in_range
         # when scaling the floats, the error gets increased.
         scaled_err = abs_err * scale_multiplier
 
-        allowed_numerical_error = 1e-2
-
         # do not scale along the axis if the numerical error gets too big
-        scale_multiplier[scaled_err > allowed_numerical_error] = 1
+        if scaled_err > 1e-2:  # allowed_numerical_error = 1e-2
+            scale_multiplier = 1
 
         self._output_multiplier = scale_multiplier
 
-        scale_factor = np.max(np.nan_to_num(self._scale / self._old_scale))
+        scale_factor = self._scale / self._old_scale
         if scale_factor > self._recompute_losses_factor:
             self._old_scale = self._scale
             self._recompute_all_losses()
