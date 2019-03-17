@@ -513,32 +513,27 @@ class LearnerND(BaseLearner):
     @property
     def _scale(self):
         # get the output scale
-        scale = self._max_value - self._min_value
-        if isinstance(scale, np.ndarray):
-            scale[scale == 0] = 1
-        elif scale == 0:
-            scale = 1
-        return scale
+        return np.max(self._max_value - self._min_value)
 
     def _update_range(self, new_output):
         if self._min_value is None or self._max_value is None:
             # this is the first point, nothing to do, just set the range
             self._min_value = np.array(new_output)
             self._max_value = np.array(new_output)
-            self._old_scale = self._scale
+            self._old_scale = self._scale or 1
             return False
 
         # if range in one or more directions is doubled, then update all losses
         self._min_value = np.minimum(self._min_value, new_output)
         self._max_value = np.maximum(self._max_value, new_output)
 
-        scale_multiplier = 1 / self._scale
+        scale_multiplier = 1 / (self._scale or 1)
         if isinstance(scale_multiplier, float):
             scale_multiplier = np.array([scale_multiplier], dtype=float)
 
         # the maximum absolute value that is in the range. Because this is the
         # largest number, this also has the largest absolute numerical error.
-        max_absolute_value_in_range = np.max(np.abs([self._min_value, self._max_value]), axis=0)
+        max_absolute_value_in_range = np.max(np.abs([self._min_value, self._max_value]))
         # since a float has a relative error of 1e-15, the absolute error is the value * 1e-15
         abs_err = 1e-15 * max_absolute_value_in_range
         # when scaling the floats, the error gets increased.
