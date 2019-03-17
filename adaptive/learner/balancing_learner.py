@@ -176,6 +176,9 @@ class BalancingLearner(BaseLearner):
 
     def ask(self, n, tell_pending=True):
         """Chose points for learners."""
+        if n == 0:
+            return [], []
+
         if not tell_pending:
             with restore(*self.learners):
                 return self._ask_and_tell(n)
