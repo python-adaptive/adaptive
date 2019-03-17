@@ -77,7 +77,7 @@ class BalancingLearner(BaseLearner):
         # pickle the whole learner.
         self.function = partial(dispatch, [l.function for l in self.learners])
 
-        self._points = {}
+        self._ask_cache = {}
         self._loss = {}
         self._pending_loss = {}
         self._cdims_default = cdims
@@ -122,10 +122,10 @@ class BalancingLearner(BaseLearner):
             points_per_learner = []
             for index, learner in enumerate(self.learners):
                 # Take the points from the cache
-                if index not in self._points:
-                    self._points[index] = learner.ask(
+                if index not in self._ask_cache:
+                    self._ask_cache[index] = learner.ask(
                         n=1, tell_pending=False)
-                points, loss_improvements = self._points[index]
+                points, loss_improvements = self._ask_cache[index]
 
                 priority = (loss_improvements[0], -npoints[index])
                 improvements_per_learner.append(priority)
@@ -154,9 +154,9 @@ class BalancingLearner(BaseLearner):
             npoints[index] += 1
 
             # Take the points from the cache
-            if index not in self._points:
-                self._points[index] = self.learners[index].ask(n=1)
-            points, loss_improvements = self._points[index]
+            if index not in self._ask_cache:
+                self._ask_cache[index] = self.learners[index].ask(n=1)
+            points, loss_improvements = self._ask_cache[index]
 
             chosen_points.append((index, points[0]))
             chosen_loss_improvements.append(loss_improvements[0])
@@ -171,9 +171,9 @@ class BalancingLearner(BaseLearner):
         while n_left > 0:
             index = np.argmin(npoints)
             # Take the points from the cache
-            if index not in self._points:
-                self._points[index] = self.learners[index].ask(n=1)
-            points, loss_improvements = self._points[index]
+            if index not in self._ask_cache:
+                self._ask_cache[index] = self.learners[index].ask(n=1)
+            points, loss_improvements = self._ask_cache[index]
             npoints[index] += 1
             n_left -= 1
             chosen_points.append((index, points[0]))
@@ -190,14 +190,14 @@ class BalancingLearner(BaseLearner):
 
     def tell(self, x, y):
         index, x = x
-        self._points.pop(index, None)
+        self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
         self._pending_loss.pop(index, None)
         self.learners[index].tell(x, y)
 
     def tell_pending(self, x):
         index, x = x
-        self._points.pop(index, None)
+        self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
         self.learners[index].tell_pending(x)
 
