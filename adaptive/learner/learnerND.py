@@ -551,7 +551,7 @@ class LearnerND(BaseLearner):
 
         self._output_multiplier = scale_multiplier
 
-        scale_factor = np.max(np.nan_to_num(self._scale / self._old_scale))
+        scale_factor = np.max(self._scale / self._old_scale)
         if scale_factor > self._recompute_losses_factor:
             self._old_scale = self._scale
             self._recompute_all_losses()
