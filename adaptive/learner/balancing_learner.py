@@ -115,8 +115,8 @@ class BalancingLearner(BaseLearner):
     def _ask_and_tell_based_on_loss_improvements(self, n):
         chosen_points = []
         chosen_loss_improvements = []
-        npoints_per_learner = defaultdict(int)
-
+        npoints = [l.npoints + len(l.pending_points)
+                   for l in self.learners]
         for _ in range(n):
             improvements_per_learner = []
             points_per_learner = []
@@ -126,10 +126,8 @@ class BalancingLearner(BaseLearner):
                     self._points[index] = learner.ask(
                         n=1, tell_pending=False)
                 points, loss_improvements = self._points[index]
-                npoints = (npoints_per_learner[index]
-                           + learner.npoints
-                           + len(learner.pending_points))
-                priority = (loss_improvements[0], -npoints)
+
+                priority = (loss_improvements[0], -npoints[index])
                 improvements_per_learner.append(priority)
                 points_per_learner.append((index, points[0]))
 
@@ -137,7 +135,7 @@ class BalancingLearner(BaseLearner):
             (index, point), (loss_improvement, _) = max(
                 zip(points_per_learner, improvements_per_learner),
                 key=itemgetter(1))
-            npoints_per_learner[index] += 1
+            npoints[index] += 1
             chosen_points.append((index, point))
             chosen_loss_improvements.append(loss_improvement)
             self.tell_pending((index, point))
@@ -147,17 +145,13 @@ class BalancingLearner(BaseLearner):
     def _ask_and_tell_based_on_loss(self, n):
         chosen_points = []
         chosen_loss_improvements = []
-        npoints_per_learner = defaultdict(int)
-
+        npoints = [l.npoints + len(l.pending_points)
+                   for l in self.learners]
         for _ in range(n):
             losses = self._losses(real=False)
-            npoints = [-(l.npoints
-                         + npoints_per_learner[i]
-                         + len(l.pending_points))
-                       for i, l in enumerate(self.learners)]
-            priority = zip(losses, npoints)
+            priority = zip(losses, (-n for n in npoints))
             index = max(enumerate(priority), key=itemgetter(1))[0]
-            npoints_per_learner[index] += 1
+            npoints[index] += 1
 
             # Take the points from the cache
             if index not in self._points:
