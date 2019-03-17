@@ -121,6 +121,7 @@ class BalancingLearner(BaseLearner):
             improvements_per_learner = []
             points_per_learner = []
             for index, learner in enumerate(self.learners):
+                # Take the points from the cache
                 if index not in self._points:
                     self._points[index] = learner.ask(
                         n=1, tell_pending=False)
@@ -155,27 +156,35 @@ class BalancingLearner(BaseLearner):
                          + len(l.pending_points))
                        for i, l in enumerate(self.learners)]
             priority = zip(losses, npoints)
-            index, (_, _) = max(enumerate(priority), key=itemgetter(1))
+            index = max(enumerate(priority), key=itemgetter(1))[0]
             npoints_per_learner[index] += 1
-            points, loss_improvements = self.learners[index].ask(1)
+
+            # Take the points from the cache
+            if index not in self._points:
+                self._points[index] = self.learners[index].ask(n=1)
+            points, loss_improvements = self._points[index]
+
             chosen_points.append((index, points[0]))
             chosen_loss_improvements.append(loss_improvements[0])
         return chosen_points, chosen_loss_improvements
 
     def _ask_and_tell_based_on_npoints(self, n):
-        points = []
-        loss_improvements = []
+        chosen_points = []
+        chosen_loss_improvements = []
         npoints = [l.npoints + len(l.pending_points)
                    for l in self.learners]
         n_left = n
         while n_left > 0:
-            i = np.argmin(npoints)
-            xs, ls = self.learners[i].ask(1)
-            npoints[i] += 1
+            index = np.argmin(npoints)
+            # Take the points from the cache
+            if index not in self._points:
+                self._points[index] = self.learners[index].ask(n=1)
+            points, loss_improvements = self._points[index]
+            npoints[index] += 1
             n_left -= 1
-            points.append((i, xs[0]))
-            loss_improvements.append(ls[0])
-        return points, loss_improvements
+            chosen_points.append((index, points[0]))
+            chosen_loss_improvements.append(loss_improvements[0])
+        return chosen_points, chosen_loss_improvements
 
     def ask(self, n, tell_pending=True):
         """Chose points for learners."""
