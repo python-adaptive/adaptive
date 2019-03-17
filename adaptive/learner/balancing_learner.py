@@ -143,8 +143,10 @@ class BalancingLearner(BaseLearner):
         total_points = [l.npoints + len(l.pending_points) for l in self.learners]
         for _ in range(n):
             losses = self._losses(real=False)
-            priority = zip(losses, (-n for n in total_points))
-            index = max(enumerate(priority), key=itemgetter(1))[0]
+            index, _ = max(
+                enumerate(zip(losses, (-n for n in total_points))),
+                key=itemgetter(1)
+            )
             total_points[index] += 1
 
             # Take the points from the cache
@@ -153,6 +155,7 @@ class BalancingLearner(BaseLearner):
             points, loss_improvements = self._ask_cache[index]
 
             selected.append(((index, points[0]), loss_improvements[0]))
+            self.tell_pending((index, points[0]))
 
         points, loss_improvements = map(list, zip(*selected))
         return points, loss_improvements
@@ -170,6 +173,7 @@ class BalancingLearner(BaseLearner):
             total_points[index] += 1
             n_left -= 1
             selected.append(((index, points[0]), loss_improvements[0]))
+            self.tell_pending((index, points[0]))
 
         points, loss_improvements = map(list, zip(*selected))
         return points, loss_improvements
