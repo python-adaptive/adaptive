@@ -113,25 +113,33 @@ class BalancingLearner(BaseLearner):
                 ' strategy="npoints" is implemented.')
 
     def _ask_and_tell_based_on_loss_improvements(self, n):
-        points = []
-        loss_improvements = []
+        chosen_points = []
+        chosen_loss_improvements = []
+        npoints_per_learner = defaultdict(int)
+
         for _ in range(n):
             improvements_per_learner = []
-            pairs = []
+            points_per_learner = []
             for index, learner in enumerate(self.learners):
                 if index not in self._points:
                     self._points[index] = learner.ask(
                         n=1, tell_pending=False)
-                point, loss_improvement = self._points[index]
-                improvements_per_learner.append(loss_improvement[0])
-                pairs.append((index, point[0]))
-            x, l = max(zip(pairs, improvements_per_learner),
-                       key=itemgetter(1))
-            points.append(x)
-            loss_improvements.append(l)
-            self.tell_pending(x)
+                points, loss_improvements = self._points[index]
+                npoints = npoints_per_learner[index] + learner.npoints
+                priority = (loss_improvements[0], -npoints)
+                improvements_per_learner.append(priority)
+                points_per_learner.append((index, points[0]))
 
-        return points, loss_improvements
+            # Chose the optimal improvement.
+            (index, point), (loss_improvement, _) = max(
+                zip(points_per_learner, improvements_per_learner),
+                key=itemgetter(1))
+            npoints_per_learner[index] += 1
+            chosen_points.append((index, point))
+            chosen_loss_improvements.append(loss_improvement)
+            self.tell_pending((index, point))
+
+        return chosen_points, chosen_loss_improvements
 
     def _ask_and_tell_based_on_loss(self, n):
         points = []
@@ -161,19 +169,11 @@ class BalancingLearner(BaseLearner):
 
     def ask(self, n, tell_pending=True):
         """Chose points for learners."""
-        if any(l.npoints for l in self.learners):
-            ask_and_tell = self._ask_and_tell
-        else:
-            # If there are no data points yet,
-            # distribute the points over all learners.
-            # See https://github.com/python-adaptive/adaptive/issues/159
-            ask_and_tell = self._ask_and_tell_based_on_npoints
-
         if not tell_pending:
             with restore(*self.learners):
-                return ask_and_tell(n)
+                return self._ask_and_tell(n)
         else:
-            return ask_and_tell(n)
+            return self._ask_and_tell(n)
 
     def tell(self, x, y):
         index, x = x
