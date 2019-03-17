@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from collections import defaultdict, Iterable
+from collections import defaultdict
+from collections.abc import Iterable
 from contextlib import suppress
 from functools import partial
 from operator import itemgetter

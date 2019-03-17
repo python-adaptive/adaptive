@@ -4,7 +4,7 @@ from copy import deepcopy
 import heapq
 import itertools
 import math
-from collections import Iterable
+from collections.abc import Iterable
 
 import numpy as np
 import sortedcontainers

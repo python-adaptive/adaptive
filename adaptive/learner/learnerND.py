@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from collections import OrderedDict, Iterable
+from collections import OrderedDict
+from collections.abc import Iterable
 import functools
 import heapq
 import itertools
