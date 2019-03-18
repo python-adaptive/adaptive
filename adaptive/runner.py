@@ -7,6 +7,7 @@ from contextlib import suppress
 import functools
 import inspect
 import os
+import sys
 import time
 import traceback
 import warnings
@@ -241,7 +242,12 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _cleanup(self):
         if self.shutdown_executor:
-            self.executor.shutdown(wait=False)
+            # XXX: temporary set wait=True for Python 3.7
+            # see https://github.com/python-adaptive/adaptive/issues/156
+            # and https://github.com/python-adaptive/adaptive/pull/164
+            self.executor.shutdown(
+                wait=True if sys.version_info >= (3, 7) else False
+            )
         self.end_time = time.time()
 
     @property
