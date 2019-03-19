@@ -132,11 +132,13 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     # off a thread (and learner is not threadsafe) or block the kernel.
 
     async def updater():
+        event = lambda: hv.streams.Stream.trigger(dm.streams) # XXX: used to be dm.event()
+        # see https://github.com/pyviz/holoviews/issues/3564
         try:
             while not runner.task.done():
-                dm.event()
+                event()
                 await asyncio.sleep(update_interval)
-            dm.event()  # fire off one last update before we die
+            event()  # fire off one last update before we die
         finally:
             if active_plotting_tasks[name] is asyncio.Task.current_task():
                 active_plotting_tasks.pop(name, None)
