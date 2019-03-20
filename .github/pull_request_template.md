@@ -8,6 +8,8 @@ Fixes #(ISSUE_NUMBER_HERE)
 
 - [ ] Fixed style issues using `pre-commit run --all` (first install using `pip install pre-commit`)
 - [ ] `pytest` passed
+- [ ] Check if the plots display in the [test documentation](https://adaptive.readthedocs.io/en/test_documentation/) but make sure the build has finished [here](https://readthedocs.org/projects/adaptive/builds/)
+
 
 ## Type of change
 
