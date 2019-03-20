@@ -108,3 +108,18 @@ jobs:
       if [ ! -z "$MISSING_AUTHORS" ]; then { echo $MISSING_AUTHORS; exit 1; }; fi
     displayName: 'Authors check'
     continueOnError: true
+
+- job: documentation_tests
+  steps:
+  - checkout: self
+    persistCredentials: true
+
+  - script: |
+      git branch -D test_documentation
+      git checkout -b test_documentation
+      git push -f origin test_documentation
+    displayName: Push test documentation
+    condition: ne(variables['Build.SourceBranch'], 'refs/heads/master')
+
+  - bash: echo "##vso[task.prependpath]/usr/share/miniconda/bin"
+    displayName: Add conda to PATH
