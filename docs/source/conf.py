@@ -145,6 +145,8 @@ def get_holoviews_js_css():
 js, css = get_holoviews_js_css()
 html_context = {'holoviews_js_files': js}  # used in source/_templates/layout.html
 
+html_logo = 'logo_docs.png'
+
 
 def setup(app):
     for url in css:
