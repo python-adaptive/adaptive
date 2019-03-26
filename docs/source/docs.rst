@@ -48,7 +48,7 @@ on the *Play* :fa:`play` button or move the sliders.
     from adaptive.learner.learner1D import uniform_loss, default_loss
     import holoviews as hv
     import numpy as np
-    adaptive.notebook_extension()
+    adaptive.notebook_extension(_inline_js=False)
     %output holomap='scrubber'
 
 `adaptive.Learner1D`
