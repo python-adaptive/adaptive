@@ -17,6 +17,5 @@ dependencies:
     - ipywidgets
     - scikit-optimize
     - git+https://github.com/basnijholt/jupyter-sphinx.git@widgets_execute
-    - git+https://github.com/python-adaptive/adaptive.git@master  # temporary solution because jupyter-sphinx doesn't use the adaptive from the repo
     - sphinx_fontawesome
     - m2r
