@@ -14,7 +14,7 @@ _ipywidgets_enabled = False
 _plotly_enabled = False
 
 
-def notebook_extension():
+def notebook_extension(*, _inline_js=True):
     """Enable ipywidgets, holoviews, and asyncio notebook integration."""
     if not in_ipynb():
         raise RuntimeError('"adaptive.notebook_extension()" may only be run '
@@ -27,7 +27,7 @@ def notebook_extension():
         _holoviews_enabled = False  # After closing a notebook the js is gone
         if not _holoviews_enabled:
             import holoviews
-            holoviews.notebook_extension('bokeh', logo=False)
+            holoviews.notebook_extension('bokeh', logo=False, inline=_inline_js)
             _holoviews_enabled = True
     except ModuleNotFoundError:
         warnings.warn("holoviews is not installed; plotting "
