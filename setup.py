@@ -48,6 +48,7 @@ setup(
     name='adaptive',
     description='Adaptive parallel sampling of mathematical functions',
     version=version,
+    python_requires='>=3.6',
     url='https://adaptive.readthedocs.io/',
     author='Adaptive authors',
     license='BSD',
