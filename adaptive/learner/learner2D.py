@@ -547,10 +547,8 @@ class Learner2D(BaseLearner):
             # numerical precision problems it could (for example) be
             # (-0.5000000000000001, 0.49999999999999983), then any point at exact
             # boundary would be outside of the domain. See #181.
-            x_min, y_min = np.min(ip.points, axis=0)
-            x_max, y_max = np.max(ip.points, axis=0)
-            x = np.linspace(x_min, x_max, n)
-            y = np.linspace(y_min, y_max, n)
+            eps = 1e-13
+            x = y = np.linspace(-0.5 + eps, 0.5 - eps, n)
             z = ip(x[:, None], y[None, :] * self.aspect_ratio).squeeze()
 
             if self.vdim > 1:
