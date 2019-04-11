@@ -1,6 +1,7 @@
 import numpy as np
-from adaptive.learner.triangulation import Triangulation
+import pytest
 
+from adaptive.learner.triangulation import Triangulation
 
 ###################################
 # Points are shaped like this:    #
@@ -41,6 +42,19 @@ def test_triangulation_can_find_oposing_points():
   assert tri.get_opposing_vertices((0,2,3)) == (None, 4, 1)
   assert tri.get_opposing_vertices((0,3,4)) == (None, 1, 2)
 
+
+def test_triangulation_can_get_oposing_points_if_only_one_simplex_exists():
+  tri = Triangulation(points[:3])
+  assert tri.get_opposing_vertices((0,1,2)) == (None, None, None)
+
+
+def test_triangulation_find_opposing_vertices_raises_if_simplex_is_invalid():
+  tri = Triangulation(points)
+  with pytest.raises(ValueError):
+    tri.get_opposing_vertices((0,2,1))
+
+  with pytest.raises(ValueError):
+    tri.get_opposing_vertices((2,3,5))
 
 
 
