@@ -626,6 +626,21 @@ class Triangulation:
         neighbors = self.get_neighbors_from_vertices(indices)
         return self.get_face_sharing_neighbors(neighbors, indices)
 
+    def get_opposing_vertices(self, simplex):
+        if simplex not in self.simplices:
+            raise ValueError("Provided simplex is not part of the triangulation")
+        neighbors = self.get_simplices_attached_to_points(simplex)
+        def find_opposing_vertex(vertex):
+            # find the simplex:
+            simp = next((x for x in neighbors if vertex not in x), None)
+            if simp is None:
+                return None
+            opposing = set(simp) - set(simplex)
+            assert len(opposing) == 1
+            return opposing.pop()
+        result = tuple(find_opposing_vertex(v) for v in simplex)
+        return result
+
     @property
     def hull(self):
         """Compute hull from triangulation.
