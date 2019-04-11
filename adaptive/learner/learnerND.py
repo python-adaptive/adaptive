@@ -11,7 +11,7 @@ from scipy import interpolate
 import scipy.spatial
 from sortedcontainers import SortedKeyList
 
-from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
 from adaptive.notebook_integration import ensure_holoviews, ensure_plotly
 from adaptive.learner.triangulation import (
     Triangulation, point_in_simplex, circumsphere,
@@ -65,6 +65,7 @@ def default_loss(simplex, ys):
     return simplex_volume_in_embedding(pts)
 
 
+@uses_nth_neighbors(1)
 def triangle_loss(simplex, values, neighbors, neighbor_values):
     """
     Computes the average of the volumes of the simplex combined with each 
@@ -78,7 +79,7 @@ def triangle_loss(simplex, values, neighbors, neighbor_values):
         The function values of each of the simplex points.
     neighbors : list of tuples
         The neighboring points of the simplex, ordered such that simplex[0] 
-        exacly opposes neigbors[0], etc.
+        exacly opposes neighbors[0], etc.
     neighbor_values : list of values
         The function values for each of the neighboring points.
 
@@ -100,6 +101,7 @@ def triangle_loss(simplex, values, neighbors, neighbor_values):
 
 def curvature_loss_function(exploration=0.05):
     # XXX: add doc-string!
+    @uses_nth_neighbors(1)
     def curvature_loss(simplex, values, neighbors, neighbor_values):
         """Compute the curvature loss of a simplex.
 
@@ -111,7 +113,7 @@ def curvature_loss_function(exploration=0.05):
             The function values of each of the simplex points.
         neighbors : list of tuples
             The neighboring points of the simplex, ordered such that simplex[0] 
-            exacly opposes neigbors[0], etc.
+            exacly opposes neighbors[0], etc.
         neighbor_values : list of values
             The function values for each of the neighboring points.
 
@@ -229,13 +231,14 @@ class LearnerND(BaseLearner):
     children based on volume.
     """
 
-    def __init__(self, func, bounds, loss_per_simplex=None, loss_depends_on_neighbors=False):
+    def __init__(self, func, bounds, loss_per_simplex=None):
         self._vdim = None
-        self._loss_depends_on_neighbors = loss_depends_on_neighbors
-        if loss_depends_on_neighbors:
-            self.loss_per_simplex = loss_per_simplex or curvature_loss_function()
+        self.loss_per_simplex = loss_per_simplex or default_loss
+        
+        if hasattr(self.loss_per_simplex, 'nth_neighbors'):
+            self._loss_depends_on_neighbors = self.loss_per_simplex.nth_neighbors
         else:
-            self.loss_per_simplex = loss_per_simplex or default_loss
+            self._loss_depends_on_neighbors = 0
 
         self.data = OrderedDict()
         self.pending_points = set()
@@ -325,13 +328,14 @@ class LearnerND(BaseLearner):
 
         try:
             self._tri = Triangulation(self.points)
-            self._update_losses(set(), self._tri.simplices)
-            return self._tri
         except ValueError:
             # A ValueError is raised if we do not have enough points or
             # the provided points are coplanar, so we need more points to
             # create a valid triangulation
             return None
+        
+        self._update_losses(set(), self._tri.simplices)
+        return self._tri
 
     @property
     def values(self):
@@ -354,7 +358,7 @@ class LearnerND(BaseLearner):
 
         self.pending_points.discard(point)
         tri = self.tri
-        self.data[point] = value
+        self.data[point] = value  # XXX why this order
 
         if not self.inside_bounds(point):
             return
@@ -421,7 +425,7 @@ class LearnerND(BaseLearner):
         return self._subtriangulations[simplex].add_point(point)
 
     def _update_subsimplex_losses(self, simplex, new_subsimplices):
-        loss = self._losses[simplex]
+        loss = self._losses[simplex] # ! KeyError
 
         loss_density = loss / self.tri.volume(simplex)
         subtriangulation = self._subtriangulations[simplex]
@@ -480,7 +484,7 @@ class LearnerND(BaseLearner):
 
         # Could not find a simplex, this code should never be reached
         assert self.tri is not None
-        raise AssertionError(
+        raise AssertionError( # ! Should not be reachable
             "Could not find a simplex to subdivide. Yet there should always"
             "  be a simplex available if LearnerND.tri() is not None."
         )
@@ -524,20 +528,34 @@ class LearnerND(BaseLearner):
         return self._ask_best_point()  # O(log N)
 
     def _compute_loss(self, simplex):
+        # get the loss
         vertices = self.tri.get_vertices(simplex)
         values = [self.data[tuple(v)] for v in vertices]
+
+        # scale them to a cube with sides 1
+        vertices = vertices @ self._transform
+        values = self._output_multiplier * values
+
         if not self._loss_depends_on_neighbors:
+            # compute the loss on the scaled simplex
             return float(self.loss_per_simplex(vertices, values))
 
         neighbors = self.tri.get_simplices_attached_to_points(simplex)
-        neighbour_indices = [next(iter(set(simpl) - set(simplex)))
+        neighbors = self.tri.get_face_sharing_neighbors(neighbors, simplex)
+        
+        neighbor_indices = [next(iter(set(simpl) - set(simplex)))
                              for simpl in neighbors]
-        neighbour_points = self.tri.get_vertices(neighbour_indices)
 
-        simpl = [(*x, *to_list(y)) for x, y in zip(vertices, values)]
-        neigh = [(*x, *to_list(self.data[tuple(x)])) for x in neighbour_points]
+        neighbor_points = self.tri.get_vertices(neighbor_indices) 
+        neighbor_values = [self.data[tuple(x)] for x in neighbor_points]
+        
+        
+        # scale the neighbors as well, if there are more than 0
+        if len(neighbor_points) > 0:
+            neighbor_points = neighbor_points @ self._transform
+            neighbor_values = self._output_multiplier * neighbor_values
 
-        return float(self.loss_per_simplex(simpl, neigh))
+        return float(self.loss_per_simplex(vertices, values, neighbor_points, neighbor_values))
 
     def _update_losses(self, to_delete: set, to_add: set):
         # XXX: add the points outside the triangulation to this as well
@@ -565,32 +583,20 @@ class LearnerND(BaseLearner):
             self._update_subsimplex_losses(
                 simplex, self._subtriangulations[simplex].simplices)
 
+        if self._loss_depends_on_neighbors:
+            points_of_added_simplices = set.union(*[set(s) for s in to_add])
+            neighbors = self.tri.get_simplices_attached_to_points(
+                points_of_added_simplices) - to_add
+            for simplex in neighbors:
+                loss = self._compute_loss(simplex)
+                self._losses[simplex] = loss
 
-        points_of_added_simplices = set.union(*[set(s) for s in to_add])
-        neighbors = self.tri.get_simplices_attached_to_points(
-            points_of_added_simplices) - to_add
-        for simplex in neighbors:
-            loss = self._compute_loss(simplex)
-            self._losses[simplex] = loss
+                if simplex not in self._subtriangulations:
+                    self._simplex_queue.add((loss, simplex, None))
+                    continue
 
-            if simplex not in self._subtriangulations:
-                heapq.heappush(self._simplex_queue, (-loss, simplex, None))
-                continue
-
-            self._update_subsimplex_losses(
-                simplex, self._subtriangulations[simplex].simplices)
-
-    def _compute_loss(self, simplex):
-        # get the loss
-        vertices = self.tri.get_vertices(simplex)
-        values = [self.data[tuple(v)] for v in vertices]
-
-        # scale them to a cube with sides 1
-        vertices = vertices @ self._transform
-        values = self._output_multiplier * values
-
-        # compute the loss on the scaled simplex
-        return float(self.loss_per_simplex(vertices, values))
+                self._update_subsimplex_losses(
+                    simplex, self._subtriangulations[simplex].simplices)
 
     def _recompute_all_losses(self):
         """Recompute all losses and pending losses."""

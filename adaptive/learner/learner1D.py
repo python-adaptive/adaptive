@@ -10,63 +10,11 @@ import numpy as np
 import sortedcontainers
 import sortedcollections
 
-from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
 from adaptive.learner.learnerND import volume
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest
-
-
-def uses_nth_neighbors(n):
-    """Decorator to specify how many neighboring intervals the loss function uses.
-
-    Wraps loss functions to indicate that they expect intervals together
-    with ``n`` nearest neighbors
-
-    The loss function will then receive the data of the N nearest neighbors
-    (``nth_neighbors``) aling with the data of the interval itself in a dict.
-    The `~adaptive.Learner1D` will also make sure that the loss is updated
-    whenever one of the ``nth_neighbors`` changes.
-
-    Examples
-    --------
-
-    The next function is a part of the `curvature_loss_function` function.
-
-    >>> @uses_nth_neighbors(1)
-    ... def triangle_loss(xs, ys):
-    ...    xs = [x for x in xs if x is not None]
-    ...    ys = [y for y in ys if y is not None]
-    ...
-    ...    if len(xs) == 2: # we do not have enough points for a triangle
-    ...        return xs[1] - xs[0]
-    ...
-    ...    N = len(xs) - 2 # number of constructed triangles
-    ...    if isinstance(ys[0], Iterable):
-    ...        pts = [(x, *y) for x, y in zip(xs, ys)]
-    ...        vol = simplex_volume_in_embedding
-    ...    else:
-    ...        pts = [(x, y) for x, y in zip(xs, ys)]
-    ...        vol = volume
-    ...    return sum(vol(pts[i:i+3]) for i in range(N)) / N
-
-    Or you may define a loss that favours the (local) minima of a function,
-    assuming that you know your function will have a single float as output.
-
-    >>> @uses_nth_neighbors(1)
-    ... def local_minima_resolving_loss(xs, ys):
-    ...     dx = xs[2] - xs[1] # the width of the interval of interest
-    ...
-    ...     if not ((ys[0] is not None and ys[0] > ys[1])
-    ...         or (ys[3] is not None and ys[3] > ys[2])):
-    ...         return loss * 100
-    ...
-    ...     return loss
-    """
-    def _wrapped(loss_per_interval):
-        loss_per_interval.nth_neighbors = n
-        return loss_per_interval
-    return _wrapped
 
 
 @uses_nth_neighbors(0)
