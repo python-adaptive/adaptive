@@ -543,7 +543,12 @@ class Learner2D(BaseLearner):
                 n = int(0.658 / sqrt(areas(ip).min()))
                 n = max(n, 10)
 
-            x = y = np.linspace(-0.5, 0.5, n)
+            # The bounds of the linspace should be (-0.5, 0.5) but because of
+            # numerical precision problems it could (for example) be
+            # (-0.5000000000000001, 0.49999999999999983), then any point at exact
+            # boundary would be outside of the domain. See #181.
+            eps = 1e-13
+            x = y = np.linspace(-0.5 + eps, 0.5 - eps, n)
             z = ip(x[:, None], y[None, :] * self.aspect_ratio).squeeze()
 
             if self.vdim > 1:
