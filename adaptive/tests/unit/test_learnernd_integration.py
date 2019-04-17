@@ -2,7 +2,6 @@ from adaptive.learner import LearnerND
 from adaptive.learner.learnerND import curvature_loss_function
 from adaptive.runner import simple as SimpleRunner, BlockingRunner, AsyncRunner
 import math
-import time
 import pytest
 
 
