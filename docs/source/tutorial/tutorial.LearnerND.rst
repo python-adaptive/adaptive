@@ -14,7 +14,7 @@ Tutorial `~adaptive.LearnerND`
     :hide-code:
 
     import adaptive
-    adaptive.notebook_extension()
+    adaptive.notebook_extension(_inline_js=False)
 
     import holoviews as hv
     import numpy as np
@@ -34,14 +34,13 @@ of the learner drops quickly with increasing number of dimensions.
 
 .. jupyter-execute::
 
-    # this step takes a lot of time, it will finish at about 3300 points, which can take up to 6 minutes
     def sphere(xyz):
         x, y, z = xyz
         a = 0.4
         return x + z**2 + np.exp(-(x**2 + y**2 + z**2 - 0.75**2)**2/a**4)
 
     learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
-    runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+    runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1e-3)
 
 .. jupyter-execute::
     :hide-code:

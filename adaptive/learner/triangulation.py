@@ -1,4 +1,5 @@
-from collections import Counter, Sized, Iterable
+from collections import Counter
+from collections.abc import Sized, Iterable
 from itertools import combinations, chain
 
 import numpy as np

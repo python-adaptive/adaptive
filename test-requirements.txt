@@ -1,4 +1,5 @@
-pytest
-pytest-randomly
-pytest-cov
 pexpect
+pytest
+pytest-cov
+pytest-randomly
+pytest-timeout

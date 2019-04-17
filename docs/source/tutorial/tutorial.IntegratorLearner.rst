@@ -14,7 +14,7 @@ Tutorial `~adaptive.IntegratorLearner`
     :hide-code:
 
     import adaptive
-    adaptive.notebook_extension()
+    adaptive.notebook_extension(_inline_js=False)
 
     import holoviews as hv
     import numpy as np

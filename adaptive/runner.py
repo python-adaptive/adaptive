@@ -7,6 +7,7 @@ from contextlib import suppress
 import functools
 import inspect
 import os
+import sys
 import time
 import traceback
 import warnings
@@ -55,7 +56,7 @@ else:
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
-    """Base class for runners that use `concurrent.futures.Executors`.
+    r"""Base class for runners that use `concurrent.futures.Executors`.
 
     Parameters
     ----------
@@ -241,23 +242,28 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _cleanup(self):
         if self.shutdown_executor:
-            self.executor.shutdown(wait=False)
+            # XXX: temporary set wait=True for Python 3.7
+            # see https://github.com/python-adaptive/adaptive/issues/156
+            # and https://github.com/python-adaptive/adaptive/pull/164
+            self.executor.shutdown(
+                wait=True if sys.version_info >= (3, 7) else False
+            )
         self.end_time = time.time()
 
     @property
     def failed(self):
         """Set of points that failed ``runner.retries`` times."""
         return set(self.tracebacks) - set(self.to_retry)
-    
+
     @abc.abstractmethod
     def elapsed_time(self):
         """Return the total time elapsed since the runner
         was started.
-        
+
         Is called in `overhead`.
         """
         pass
-    
+
     @abc.abstractmethod
     def _submit(self, x):
         """Is called in `_get_futures`."""
@@ -369,7 +375,7 @@ class BlockingRunner(BaseRunner):
 
 
 class AsyncRunner(BaseRunner):
-    """Run a learner asynchronously in an executor using `asyncio`.
+    r"""Run a learner asynchronously in an executor using `asyncio`.
 
     Parameters
     ----------

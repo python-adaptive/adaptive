@@ -26,7 +26,7 @@ version, cmdclass = get_version_and_cmdclass('adaptive')
 
 install_requires = [
     'scipy',
-    'sortedcollections',
+    'sortedcollections >= 1.1',
     'sortedcontainers >= 2.0',
 ]
 
@@ -48,6 +48,7 @@ setup(
     name='adaptive',
     description='Adaptive parallel sampling of mathematical functions',
     version=version,
+    python_requires='>=3.6',
     url='https://adaptive.readthedocs.io/',
     author='Adaptive authors',
     license='BSD',
@@ -56,6 +57,7 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Intended Audience :: Science/Research',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     packages=find_packages('.'),
     install_requires=install_requires,

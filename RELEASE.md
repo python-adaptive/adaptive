@@ -11,7 +11,7 @@ The following checks should be made *before* tagging the release.
 #### Check that all issues are resolved
 
 Check that all the issues and merge requests for the appropriate
-[milestone](https://gitlab.kwant-project.org/qt/adaptive/issues)
+[milestone](https://github.com/python-adaptive/adaptive/issues)
 have been resolved. Any unresolved issues should have their milestone
 bumped.
 
@@ -20,7 +20,7 @@ bumped.
 
 For major and minor releases we will be tagging the ``master`` branch.
 This should be as simple as verifying that the
-[latest CI pipeline](https://gitlab.kwant-project.org/qt/adaptive/pipelines)
+[latest CI pipeline](https://dev.azure.com/python-adaptive/adaptive/_build)
 succeeded.
 
 

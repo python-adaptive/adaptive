@@ -41,7 +41,7 @@ def test_simple(runner):
 def test_nonconforming_output(runner):
     """Test that using a runner works with a 2D learner, even when the
     learned function outputs a 1-vector. This tests against the regression
-    flagged in https://gitlab.kwant-project.org/qt/adaptive/issues/58.
+    flagged in https://github.com/python-adaptive/adaptive/issues/81.
     """
 
     def f(x):
@@ -101,6 +101,7 @@ def test_ipyparallel_executor(ipyparallel_executor):
     assert learner.npoints > 0
 
 
+@pytest.mark.timeout(60)
 @pytest.mark.skipif(not with_distributed, reason='dask.distributed is not installed')
 def test_distributed_executor(dask_executor):
     learner = Learner1D(linear, (-1, 1))

@@ -14,7 +14,7 @@ _ipywidgets_enabled = False
 _plotly_enabled = False
 
 
-def notebook_extension():
+def notebook_extension(*, _inline_js=True):
     """Enable ipywidgets, holoviews, and asyncio notebook integration."""
     if not in_ipynb():
         raise RuntimeError('"adaptive.notebook_extension()" may only be run '
@@ -27,12 +27,12 @@ def notebook_extension():
         _holoviews_enabled = False  # After closing a notebook the js is gone
         if not _holoviews_enabled:
             import holoviews
-            holoviews.notebook_extension('bokeh', logo=False)
+            holoviews.notebook_extension('bokeh', logo=False, inline=_inline_js)
             _holoviews_enabled = True
     except ModuleNotFoundError:
         warnings.warn("holoviews is not installed; plotting "
                       "is disabled.", RuntimeWarning)
-    
+
     # Load ipywidgets
     try:
         if not _ipywidgets_enabled:
@@ -132,11 +132,13 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     # off a thread (and learner is not threadsafe) or block the kernel.
 
     async def updater():
+        event = lambda: hv.streams.Stream.trigger(dm.streams) # XXX: used to be dm.event()
+        # see https://github.com/pyviz/holoviews/issues/3564
         try:
             while not runner.task.done():
-                dm.event()
+                event()
                 await asyncio.sleep(update_interval)
-            dm.event()  # fire off one last update before we die
+            event()  # fire off one last update before we die
         finally:
             if active_plotting_tasks[name] is asyncio.Task.current_task():
                 active_plotting_tasks.pop(name, None)

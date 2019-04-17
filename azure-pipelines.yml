@@ -1,0 +1,26 @@
+steps:
+- bash: echo "##vso[task.prependpath]/usr/share/miniconda/bin"
+  displayName: Add conda to PATH
+
+- script: conda env create --quiet --file environment.yml
+  displayName: Create Anaconda environment
+
+- script: |
+    source activate adaptive
+    pip install -r test-requirements.txt
+  displayName: 'Install test-requirements.txt'
+
+- script: |
+    source activate adaptive
+    py.test --verbose --cov=adaptive --cov-report term --cov-report html adaptive
+  displayName: 'Run the tests'
+
+- script: |
+    MISSING_AUTHORS=$(git shortlog -s HEAD | sed -e "s/^[0-9\t ]*//"| xargs -i sh -c 'grep -q "{}" AUTHORS.md || echo "{} missing from authors"')
+    if [ ! -z "$MISSING_AUTHORS" ]; then { echo $MISSING_AUTHORS; exit 1; }; fi
+  continueOnError: true
+  displayName: 'Authors check'
+
+- script: ./check_whitespace
+  continueOnError: true
+  displayName: 'Whitespace check'

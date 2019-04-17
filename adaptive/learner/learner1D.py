@@ -4,7 +4,7 @@ from copy import deepcopy
 import heapq
 import itertools
 import math
-from collections import Iterable
+from collections.abc import Iterable
 
 import numpy as np
 import sortedcontainers
@@ -77,7 +77,7 @@ def curvature_loss_function(area_factor=1, euclid_factor=0.02, horizontal_factor
     @uses_nth_neighbors(1)
     def curvature_loss(xs, ys):
         xs_middle = xs[1:3]
-        ys_middle = xs[1:3]
+        ys_middle = ys[1:3]
 
         triangle_loss_ = triangle_loss(xs, ys)
         default_loss_ = default_loss(xs_middle, ys_middle)
@@ -602,19 +602,8 @@ class Learner1D(BaseLearner):
         return self.data
 
     def _set_data(self, data):
-        self.tell_many(*zip(*data.items()))
-
-
-def _fix_deepcopy(sorted_dict, x_scale):
-    # XXX: until https://github.com/grantjenks/sortedcollections/issues/5 is fixed
-    import types
-    def __deepcopy__(self, memo):
-        items = deepcopy(list(self.items()))
-        lm = loss_manager(self.x_scale)
-        lm.update(items)
-        return lm
-    sorted_dict.x_scale = x_scale
-    sorted_dict.__deepcopy__ = types.MethodType(__deepcopy__, sorted_dict)
+        if data:
+            self.tell_many(*zip(*data.items()))
 
 
 def loss_manager(x_scale):
@@ -622,7 +611,6 @@ def loss_manager(x_scale):
         loss, ival = finite_loss(ival, loss, x_scale)
         return -loss, ival
     sorted_dict = sortedcollections.ItemSortedDict(sort_key)
-    _fix_deepcopy(sorted_dict, x_scale)
     return sorted_dict
 
 
@@ -631,7 +619,7 @@ def finite_loss(ival, loss, x_scale):
     sort intervals that have infinite loss."""
     # If the loss is infinite we return the
     # distance between the two points.
-    if math.isinf(loss):
+    if math.isinf(loss) or math.isnan(loss):
         loss = (ival[1] - ival[0]) / x_scale
         if len(ival) == 3:
             # Used when constructing quals. Last item is

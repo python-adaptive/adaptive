@@ -437,7 +437,7 @@ class Learner2D(BaseLearner):
             point_new = tuple(self._unscale(point_new))
 
             # np.clip results in numerical precision problems
-            # https://gitlab.kwant-project.org/qt/adaptive/issues/132
+            # https://github.com/python-adaptive/adaptive/issues/7
             clip = lambda x, l, u: max(l, min(u, x))
             point_new = (clip(point_new[0], *self.bounds[0]),
                          clip(point_new[1], *self.bounds[1]))
@@ -501,7 +501,7 @@ class Learner2D(BaseLearner):
                 self._stack[p] = np.inf
 
     def plot(self, n=None, tri_alpha=0):
-        """Plot the Learner2D's current state.
+        r"""Plot the Learner2D's current state.
 
         This plot function interpolates the data on a regular grid.
         The gridspacing is evaluated by checking the size of the smallest

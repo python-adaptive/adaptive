@@ -263,7 +263,7 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     assert set(pls) == set(cpls)
 
 
-# XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
+# XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
 @run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner)
 def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
@@ -336,7 +336,7 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
 
 
 # XXX: the Learner2D fails with ~50% chance
-# see https://gitlab.kwant-project.org/qt/adaptive/issues/84
+# see https://github.com/python-adaptive/adaptive/issues/55
 @run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner)
 def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, learner_kwargs):
     """The estimated loss improvement can never be greater than the total loss."""
@@ -360,7 +360,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
         assert sum(loss_improvements) < learner.loss()
 
 
-# XXX: This *should* pass (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
+# XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
 @run_with(Learner1D, xfail(Learner2D), LearnerND)
 def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner_kwargs):
