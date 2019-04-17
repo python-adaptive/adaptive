@@ -324,7 +324,12 @@ class Triangulation:
             self.vertex_to_simplices[vertex].add(simplex)
 
     def get_vertices(self, indices):
-        return [self.vertices[i] for i in indices]
+        return [self.get_vertex(i) for i in indices]
+
+    def get_vertex(self, index):
+        if index is None:
+            return None
+        return self.vertices[index]
 
     def get_reduced_simplex(self, point, simplex, eps=1e-8) -> list:
         """Check whether vertex lies within a simplex.

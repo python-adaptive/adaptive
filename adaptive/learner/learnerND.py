@@ -89,14 +89,15 @@ def triangle_loss(simplex, values, neighbors, neighbor_values):
     """
 
     neighbors = [n for n in neighbors if n is not None]
+    neighbor_values = [v for v in neighbor_values if v is not None]
     if len(neighbors) == 0:
         return 0
 
     s = [(*x, *to_list(y)) for x, y in zip(simplex, values)]
     n = [(*x, *to_list(y)) for x, y in zip(neighbors, neighbor_values)]
 
-    return sum(simplex_volume_in_embedding([*s, neighbour])
-               for neighbour in n) / len(neighbors)
+    return sum(simplex_volume_in_embedding([*s, neighbor])
+               for neighbor in n) / len(neighbors)
 
 
 def curvature_loss_function(exploration=0.05):
@@ -536,24 +537,23 @@ class LearnerND(BaseLearner):
         vertices = vertices @ self._transform
         values = self._output_multiplier * values
 
-        if not self._loss_depends_on_neighbors:
+        if self._loss_depends_on_neighbors == 0:
             # compute the loss on the scaled simplex
             return float(self.loss_per_simplex(vertices, values))
 
-        neighbors = self.tri.get_simplices_attached_to_points(simplex)
-        neighbors = self.tri.get_face_sharing_neighbors(neighbors, simplex)
-        
-        neighbor_indices = [next(iter(set(simpl) - set(simplex)))
-                             for simpl in neighbors]
+        # We do need the neighbors
+        neighbors = self.tri.get_opposing_vertices(simplex)
 
-        neighbor_points = self.tri.get_vertices(neighbor_indices) 
-        neighbor_values = [self.data[tuple(x)] for x in neighbor_points]
+        neighbor_points = self.tri.get_vertices(neighbors) 
+        neighbor_values = [self.data.get(x, None) for x in neighbor_points]
         
+        for i, point in enumerate(neighbor_points):
+            if point is not None:
+                neighbor_points[i] = point @ self._transform
         
-        # scale the neighbors as well, if there are more than 0
-        if len(neighbor_points) > 0:
-            neighbor_points = neighbor_points @ self._transform
-            neighbor_values = self._output_multiplier * neighbor_values
+        for i, value in enumerate(neighbor_values):
+            if value is not None:
+                neighbor_values[i] = self._output_multiplier * value
 
         return float(self.loss_per_simplex(vertices, values, neighbor_points, neighbor_values))
 
