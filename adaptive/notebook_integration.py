@@ -84,7 +84,8 @@ def in_ipynb():
 active_plotting_tasks = dict()
 
 
-def live_plot(runner, *, plotter=None, update_interval=2, name=None):
+def live_plot(runner, *, plotter=None, update_interval=2,
+              name=None, normalize=True):
     """Live plotting of the learner's data.
 
     Parameters
@@ -99,6 +100,8 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
         Name for the `live_plot` task in `adaptive.active_plotting_tasks`.
         By default the name is None and if another task with the same name
         already exists that other `live_plot` is canceled.
+    normalize : bool
+        Normalize (scale to fit) the frame upon each update.
 
     Returns
     -------
@@ -106,8 +109,10 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
         The plot that automatically updates every `update_interval`.
     """
     if not _holoviews_enabled:
-        raise RuntimeError("Live plotting is not enabled; did you run "
-                           "'adaptive.notebook_extension()'?")
+        raise RuntimeError(
+            "Live plotting is not enabled; did you run "
+            "'adaptive.notebook_extension()'?"
+        )
 
     import holoviews as hv
     import ipywidgets
@@ -123,8 +128,12 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
             else:
                 yield plotter(runner.learner)
 
-    dm = hv.DynamicMap(plot_generator(),
-                       streams=[hv.streams.Stream.define('Next')()])
+    steams = [hv.streams.Stream.define("Next")()]
+    dm = hv.DynamicMap(plot_generator(), streams=streams)
+
+    if normalize:
+        dm = dm.map(lambda obj: obj.opts(framewise=True), hv.Element)
+
     cancel_button = ipywidgets.Button(description='cancel live-plot',
                                       layout=ipywidgets.Layout(width='150px'))
 
