@@ -632,12 +632,12 @@ class Learner1D(BaseLearner):
         """
         hv = ensure_holoviews()
         if not self.data:
-            p = hv.Scatter([]) * hv.Path([])
+            p = hv.Path([])
         elif not self.vdim > 1:
-            p = hv.Scatter(self.data) * hv.Path([])
+            p = hv.Scatter(self.data)
         else:
             xs, ys = zip(*sorted(self.data.items()))
-            p = hv.Path((xs, ys)) * hv.Scatter([])
+            p = hv.Path((xs, ys))
 
         # Plot with 5% empty margins such that the boundary points are visible
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
