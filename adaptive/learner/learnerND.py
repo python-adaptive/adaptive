@@ -238,9 +238,14 @@ class LearnerND(BaseLearner):
         self.loss_per_simplex = loss_per_simplex or default_loss
         
         if hasattr(self.loss_per_simplex, 'nth_neighbors'):
-            self._loss_depends_on_neighbors = self.loss_per_simplex.nth_neighbors
+            if self.loss_per_simplex.nth_neighbors > 1:
+                raise NotImplementedError('The provided loss function wants '
+                    'next-nearest neighboring simplices for the loss computation, '
+                    'this feature is not yet implemented, either use '
+                    'nth_neightbors = 0 or 1')
+            self.nth_neighbors = self.loss_per_simplex.nth_neighbors
         else:
-            self._loss_depends_on_neighbors = 0
+            self.nth_neighbors = 0
 
         self.data = OrderedDict()
         self.pending_points = set()
@@ -538,7 +543,7 @@ class LearnerND(BaseLearner):
         vertices = vertices @ self._transform
         values = self._output_multiplier * np.array(values)
 
-        if self._loss_depends_on_neighbors == 0:
+        if self.nth_neighbors == 0:
             # compute the loss on the scaled simplex
             return float(self.loss_per_simplex(vertices, values))
 
@@ -584,7 +589,7 @@ class LearnerND(BaseLearner):
             self._update_subsimplex_losses(
                 simplex, self._subtriangulations[simplex].simplices)
 
-        if self._loss_depends_on_neighbors:
+        if self.nth_neighbors:
             points_of_added_simplices = set.union(*[set(s) for s in to_add])
             neighbors = self.tri.get_simplices_attached_to_points(
                 points_of_added_simplices) - to_add
