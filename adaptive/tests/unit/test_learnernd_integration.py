@@ -48,5 +48,5 @@ def test_learnerND_log_works():
     learner.tell((-1, 1), -1.0)
     learner.tell((1, -1), 1.0)
     learner.ask(2)
-    # At this point, there should! be one simplex in the triangulation, 
+    # At this point, there should! be one simplex in the triangulation,
     # furthermore the last two points that were asked should be in this simplex

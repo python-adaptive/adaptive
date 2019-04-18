@@ -69,7 +69,7 @@ def default_loss(simplex, ys):
 @uses_nth_neighbors(1)
 def triangle_loss(simplex, values, neighbors, neighbor_values):
     """
-    Computes the average of the volumes of the simplex combined with each 
+    Computes the average of the volumes of the simplex combined with each
     neighbouring point.
 
     Parameters
@@ -79,7 +79,7 @@ def triangle_loss(simplex, values, neighbors, neighbor_values):
     values : list of values
         The function values of each of the simplex points.
     neighbors : list of tuples
-        The neighboring points of the simplex, ordered such that simplex[0] 
+        The neighboring points of the simplex, ordered such that simplex[0]
         exacly opposes neighbors[0], etc.
     neighbor_values : list of values
         The function values for each of the neighboring points.
@@ -114,7 +114,7 @@ def curvature_loss_function(exploration=0.05):
         values : list of values
             The function values of each of the simplex points.
         neighbors : list of tuples
-            The neighboring points of the simplex, ordered such that simplex[0] 
+            The neighboring points of the simplex, ordered such that simplex[0]
             exacly opposes neighbors[0], etc.
         neighbor_values : list of values
             The function values for each of the neighboring points.
@@ -236,7 +236,7 @@ class LearnerND(BaseLearner):
     def __init__(self, func, bounds, loss_per_simplex=None):
         self._vdim = None
         self.loss_per_simplex = loss_per_simplex or default_loss
-        
+
         if hasattr(self.loss_per_simplex, 'nth_neighbors'):
             if self.loss_per_simplex.nth_neighbors > 1:
                 raise NotImplementedError('The provided loss function wants '
@@ -340,7 +340,7 @@ class LearnerND(BaseLearner):
             # the provided points are coplanar, so we need more points to
             # create a valid triangulation
             return None
-        
+
         self._update_losses(set(), self._tri.simplices)
         return self._tri
 
@@ -550,13 +550,13 @@ class LearnerND(BaseLearner):
         # We do need the neighbors
         neighbors = self.tri.get_opposing_vertices(simplex)
 
-        neighbor_points = self.tri.get_vertices(neighbors) 
+        neighbor_points = self.tri.get_vertices(neighbors)
         neighbor_values = [self.data.get(x, None) for x in neighbor_points]
-        
+
         for i, point in enumerate(neighbor_points):
             if point is not None:
                 neighbor_points[i] = point @ self._transform
-        
+
         for i, value in enumerate(neighbor_values):
             if value is not None:
                 neighbor_values[i] = self._output_multiplier * value
