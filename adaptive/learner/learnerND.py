@@ -360,7 +360,7 @@ class LearnerND(BaseLearner):
 
         self.pending_points.discard(point)
         tri = self.tri
-        self.data[point] = value  # XXX why this order
+        self.data[point] = value
 
         if not self.inside_bounds(point):
             return
@@ -427,7 +427,7 @@ class LearnerND(BaseLearner):
         return self._subtriangulations[simplex].add_point(point)
 
     def _update_subsimplex_losses(self, simplex, new_subsimplices):
-        loss = self._losses[simplex] # ! KeyError
+        loss = self._losses[simplex]
 
         loss_density = loss / self.tri.volume(simplex)
         subtriangulation = self._subtriangulations[simplex]
@@ -486,7 +486,7 @@ class LearnerND(BaseLearner):
 
         # Could not find a simplex, this code should never be reached
         assert self.tri is not None
-        raise AssertionError( # ! Should not be reachable
+        raise AssertionError(
             "Could not find a simplex to subdivide. Yet there should always"
             "  be a simplex available if LearnerND.tri() is not None."
         )
