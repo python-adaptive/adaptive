@@ -279,7 +279,7 @@ class BalancingLearner(BaseLearner):
         dm = dm.redim.values(**d)
 
         if dynamic:
-            return dm
+            return dm.map(lambda obj: obj.opts(framewise=True), hv.Element)
         else:
             # XXX: change when https://github.com/ioam/holoviews/issues/3085
             # is fixed.
