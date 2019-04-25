@@ -132,6 +132,8 @@ def live_plot(runner, *, plotter=None, update_interval=2,
     dm = hv.DynamicMap(plot_generator(), streams=streams)
 
     if normalize:
+        # XXX: change when https://github.com/pyviz/holoviews/issues/3637
+        # is fixed.
         dm = dm.map(lambda obj: obj.opts(framewise=True), hv.Element)
 
     cancel_button = ipywidgets.Button(description='cancel live-plot',
