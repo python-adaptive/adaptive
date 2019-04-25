@@ -4,6 +4,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
 from functools import partial
+import itertools
 from operator import itemgetter
 
 import numpy as np
@@ -53,7 +54,8 @@ class BalancingLearner(BaseLearner):
     strategy : 'loss_improvements' (default), 'loss', or 'npoints'
         The points that the `BalancingLearner` choses can be either based on:
         the best 'loss_improvements', the smallest total 'loss' of the
-        child learners, or the number of points per learner, using 'npoints'.
+        child learners, the number of points per learner, using 'npoints',
+        or by cycling through the learners one by one using 'cycle'.
         One can dynamically change the strategy while the simulation is
         running by changing the ``learner.strategy`` attribute.
 
@@ -90,10 +92,11 @@ class BalancingLearner(BaseLearner):
 
     @property
     def strategy(self):
-        """Can be either 'loss_improvements' (default), 'loss', or 'npoints'
-        The points that the `BalancingLearner` choses can be either based on:
-        the best 'loss_improvements', the smallest total 'loss' of the
-        child learners, or the number of points per learner, using 'npoints'.
+        """Can be either 'loss_improvements' (default), 'loss', 'npoints', or
+        'cycle'. The points that the `BalancingLearner` choses can be either
+        based on: the best 'loss_improvements', the smallest total 'loss' of
+        the child learners, the number of points per learner, using 'npoints',
+        or by going through all learners one by one using 'cycle'.
         One can dynamically change the strategy while the simulation is
         running by changing the ``learner.strategy`` attribute."""
         return self._strategy
@@ -107,10 +110,12 @@ class BalancingLearner(BaseLearner):
             self._ask_and_tell = self._ask_and_tell_based_on_loss
         elif strategy == "npoints":
             self._ask_and_tell = self._ask_and_tell_based_on_npoints
+        elif strategy == "cycle":
+            self._ask_and_tell = self._ask_and_tell_based_on_cycle
         else:
             raise ValueError(
-                'Only strategy="loss_improvements", strategy="loss", or'
-                ' strategy="npoints" is implemented.'
+                'Only strategy="loss_improvements", strategy="loss",'
+                ' strategy="npoints", or strategy="cycle" is implemented.'
             )
 
     def _ask_and_tell_based_on_loss_improvements(self, n):
@@ -171,6 +176,20 @@ class BalancingLearner(BaseLearner):
             self.tell_pending((index, points[0]))
 
         points, loss_improvements = map(list, zip(*selected))
+        return points, loss_improvements
+
+    def _ask_and_tell_based_on_cycle(self, n):
+        if not hasattr(self, "_cycle"):
+            self._cycle = itertools.cycle(range(len(self.learners)))
+
+        points, loss_improvements = [], []
+        for _ in range(n):
+            index = next(self._cycle)
+            point, loss_improvement = self.learners[index].ask(n=1)
+            points.append((index, point[0]))
+            loss_improvements.append(loss_improvement[0])
+            self.tell_pending((index, point[0]))
+
         return points, loss_improvements
 
     def ask(self, n, tell_pending=True):
