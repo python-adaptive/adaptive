@@ -53,3 +53,62 @@ On Windows by default `adaptive.Runner` uses a `distributed.Client`.
     runner = adaptive.Runner(learner, executor=client, goal=lambda l: l.loss() < 0.01)
     runner.live_info()
     runner.live_plot(update_interval=0.1)
+
+`mpi4py.futures.MPIPoolExecutor`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This makes sense if you want to run a ``Learner`` on a cluster non-interactively using a job script.
+
+For example, you create the following file called ``run_learner.py``:
+
+.. code:: python
+
+    import mpi4py.futures
+
+    learner = adaptive.Learner1D(f, bounds=(-1, 1))
+
+    # load the data
+    learner.load(fname)
+
+    # run until `goal` is reached with an `MPIPoolExecutor`
+    runner = adaptive.Runner(
+        learner,
+        executor=MPIPoolExecutor(),
+        shutdown_executor=True,
+        goal=lambda l: l.loss() < 0.01,
+    )
+
+    # periodically save the data (in case the job dies)
+    runner.start_periodic_saving(dict(fname=fname), interval=600)
+
+    # block until runner goal reached
+    runner.ioloop.run_until_complete(runner.task)
+
+
+On your laptop/desktop you can run this script like:
+
+.. code:: python
+
+    export MPI4PY_MAX_WORKERS=15
+    mpiexec -n 1 python run_learner.py
+
+Or you can pass ``max_workers=15`` programmatically when creating the executor instance.
+
+Inside the job script using a job queuing system use:
+
+.. code:: python
+
+    export MPI4PY_MAX_WORKERS=15
+    mpiexec -n 16 python -m mpi4py.futures run_learner.py
+
+How you call MPI might depend on your specific queuing system, with SLURM for example it's:
+
+.. code:: python
+
+    #!/bin/bash
+    #SBATCH --job-name adaptive-example
+    #SBATCH --ntasks 100
+
+    export MPI4PY_MAX_WORKERS=$SLURM_NTASKS
+    srun -n $SLURM_NTASKS --mpi=pmi2 ~/miniconda3/envs/py37_min/bin/python -m mpi4py.futures run_learner.py
+
