@@ -26,6 +26,12 @@ try:
 except ModuleNotFoundError:
     with_distributed = False
 
+try:
+    import mpi4py.futures
+    with_mpi4py = True
+except ModuleNotFoundError:
+    with_mpi4py = False
+
 with suppress(ModuleNotFoundError):
     import uvloop
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -66,7 +72,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         the learner as its sole argument, and return True when we should
         stop requesting more points.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
-               or `ipyparallel.Client`, optional
+               `mpi4py.futures.MPIPoolExecutor`, or `ipyparallel.Client`, optional
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.ProcessPoolExecutor`
         is used on Unix systems while on Windows a `distributed.Client`
@@ -281,7 +287,7 @@ class BlockingRunner(BaseRunner):
         the learner as its sole argument, and return True when we should
         stop requesting more points.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
-               or `ipyparallel.Client`, optional
+               `mpi4py.futures.MPIPoolExecutor`, or `ipyparallel.Client`, optional
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.ProcessPoolExecutor`
         is used on Unix systems while on Windows a `distributed.Client`
@@ -386,7 +392,7 @@ class AsyncRunner(BaseRunner):
         stop requesting more points. If not provided, the runner will run
         forever, or until ``self.task.cancel()`` is called.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
-               or `ipyparallel.Client`, optional
+               `mpi4py.futures.MPIPoolExecutor`, or `ipyparallel.Client`, optional
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.ProcessPoolExecutor`
         is used on Unix systems while on Windows a `distributed.Client`
@@ -693,6 +699,9 @@ def _get_ncores(ex):
         return 1
     elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
         return sum(n for n in ex._client.ncores().values())
+    elif with_mpi4py and isinstance(ex, mpi4py.futures.MPIPoolExecutor):
+        ex.bootup() # wait until all workers are up and running
+        return ex._pool.size  # not public API!
     else:
         raise TypeError('Cannot get number of cores for {}'
                         .format(ex.__class__))
