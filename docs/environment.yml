@@ -4,15 +4,14 @@ channels:
 - conda-forge
 
 dependencies:
-  - python=3.6
+  - python=3.7
   - pip:
     - sortedcollections
     - scipy
-    - holoviews==1.11
+    - holoviews==1.12
     - bokeh
     - plotly
     - ipyparallel
-    - pandas  # until https://github.com/ioam/holoviews/issues/3430 is fixed
     - distributed
     - ipywidgets
     - scikit-optimize

@@ -4,11 +4,11 @@ channels:
 - conda-forge
 
 dependencies:
-  - python=3.6
+  - python>=3.6
   - sortedcontainers
   - sortedcollections
   - scipy
-  - holoviews
+  - holoviews>=1.12
   - ipyparallel
   - distributed
   - ipykernel>=4.8*
