@@ -24,3 +24,8 @@ steps:
 - script: ./check_whitespace
   continueOnError: true
   displayName: 'Whitespace check'
+
+- script: |
+    source activate adaptive
+    black . --check -t py36
+  displayName: 'Run lint tests'

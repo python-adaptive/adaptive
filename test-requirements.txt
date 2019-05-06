@@ -3,3 +3,4 @@ pytest
 pytest-cov
 pytest-randomly
 pytest-timeout
+pre_commit
