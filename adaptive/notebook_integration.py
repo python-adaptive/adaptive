@@ -127,7 +127,7 @@ def live_plot(runner, *, plotter=None, update_interval=2,
             else:
                 yield plotter(runner.learner)
 
-    steams = [hv.streams.Stream.define("Next")()]
+    streams = [hv.streams.Stream.define("Next")()]
     dm = hv.DynamicMap(plot_generator(), streams=streams)
 
     if normalize:
