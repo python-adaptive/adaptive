@@ -7,10 +7,11 @@ import numpy as np
 import pytest
 
 from adaptive.learner import IntegratorLearner
-from adaptive.learner.integrator_learner import DivergentIntegralError
 from adaptive.learner.integrator_coeffs import ns
-from .algorithm_4 import algorithm_4, f0, f7, f21, f24, f63, fdiv
+from adaptive.learner.integrator_learner import DivergentIntegralError
+
 from .algorithm_4 import DivergentIntegralError as A4DivergentIntegralError
+from .algorithm_4 import algorithm_4, f0, f7, f21, f24, f63, fdiv
 
 eps = np.spacing(1)
 
@@ -27,7 +28,7 @@ def equal_ival(ival, other, *, verbose=False):
     """Note: Implementing __eq__ breaks SortedContainers in some way."""
     if ival.depth_complete is None:
         if verbose:
-            print('Interval {} is not complete.'.format(ival))
+            print(f'Interval {ival} is not complete.')
         return False
 
     slots = set(ival.__slots__).intersection(other.__slots__)
@@ -75,7 +76,7 @@ def test_that_gives_same_intervals_as_reference_implementation():
                               [f7, 0, 1, 1e-6],
                               [f21, 0, 1, 1e-3],
                               [f24, 0, 3, 1e-3]]):
-        assert same_ivals(*args), 'Function {}'.format(i)
+        assert same_ivals(*args), f'Function {i}'
 
 
 @pytest.mark.xfail
@@ -202,7 +203,7 @@ def test_tell_in_random_order(first_add_33=False):
         assert all(ival.a == other_ival.a for ival, other_ival in zip(*ivals))
 
         # Test if the approximating_intervals are the same
-        ivals = [set((i.a, i.b) for i in l.approximating_intervals)
+        ivals = [{(i.a, i.b) for i in l.approximating_intervals}
                  for l in learners]
         assert ivals[0] == ivals[1]
 

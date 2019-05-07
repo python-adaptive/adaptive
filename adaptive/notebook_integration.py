@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from contextlib import suppress
 import datetime
 import importlib
 import random
 import warnings
-
+from contextlib import suppress
 
 _async_enabled = False
 _holoviews_enabled = False

@@ -5,8 +5,8 @@ import asyncio
 import pytest
 
 from adaptive.learner import Learner1D, Learner2D
-from adaptive.runner import (simple, BlockingRunner, AsyncRunner,
-    SequentialExecutor, with_ipyparallel, with_distributed)
+from adaptive.runner import (AsyncRunner, BlockingRunner, SequentialExecutor,
+                             simple, with_distributed, with_ipyparallel)
 
 
 def blocking_runner(learner, goal):

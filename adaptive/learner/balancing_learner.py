@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import os.path
 from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
 from functools import partial
 from operator import itemgetter
-import os.path
 
 import numpy as np
 
@@ -82,7 +82,7 @@ class BalancingLearner(BaseLearner):
         self._pending_loss = {}
         self._cdims_default = cdims
 
-        if len(set(learner.__class__ for learner in self.learners)) > 1:
+        if len({learner.__class__ for learner in self.learners}) > 1:
             raise TypeError('A BalacingLearner can handle only one type'
                             ' of learners.')
 

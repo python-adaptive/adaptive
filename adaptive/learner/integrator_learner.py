@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # Based on an adaptive quadrature algorithm by Pedro Gonnet
 
+import sys
 from collections import defaultdict
 from math import sqrt
 from operator import attrgetter
-import sys
 
 import numpy as np
 from scipy.linalg import norm
@@ -14,9 +14,8 @@ from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest, restore
 
-from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
-                                ndiv_max, min_sep, eps, xi, V_inv,
-                                Vcond, alpha, gamma)
+from .integrator_coeffs import (T_left, T_right, V_inv, Vcond, alpha, b_def,
+                                eps, gamma, hint, min_sep, ndiv_max, ns, xi)
 
 
 def _downdate(c, nans, depth):
@@ -298,10 +297,10 @@ class _Interval:
 
     def __repr__(self):
         lst = [
-            '(a, b)=({:.5f}, {:.5f})'.format(self.a, self.b),
-            'depth={}'.format(self.depth),
-            'rdepth={}'.format(self.rdepth),
-            'err={:.5E}'.format(self.err),
+            f'(a, b)=({self.a:.5f}, {self.b:.5f})',
+            f'depth={self.depth}',
+            f'rdepth={self.rdepth}',
+            f'err={self.err:.5E}',
             'igral={:.5E}'.format(self.igral if hasattr(self, 'igral') else np.inf),
         ]
         return ' '.join(lst)

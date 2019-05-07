@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import itertools
 from collections import Counter
 from math import factorial
-import itertools
-import pytest
 
 import numpy as np
+import pytest
 
 from adaptive.learner.triangulation import Triangulation
 
@@ -49,11 +49,7 @@ def _check_faces_are_valid(t):
 def _check_hull_is_valid(t):
     """Check that the stored hull is consistent with one computed from scratch."""
     counts = Counter(t.faces())
-    hull = set(point
-               for face, count in counts.items()
-               if count == 1
-               for point in face)
-
+    hull = {point for face, count in counts.items() if count == 1 for point in face}
     assert t.hull == hull
 
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import random
+
 import numpy as np
 
 from adaptive.learner import Learner1D
@@ -55,12 +56,12 @@ def test_first_iteration():
 
     learner = Learner1D(lambda x: None, (-1, 1))
     points, loss_improvements = learner.ask(3)
-    assert set(points) == set([-1, 0, 1])
+    assert set(points) == {-1, 0, 1}
 
     learner = Learner1D(lambda x: None, (-1, 1))
     points, loss_improvements = learner.ask(1)
     assert len(points) == 1 and points[0] in learner.bounds
-    rest = set([-1, 0, 1]) - set(points)
+    rest = {-1, 0, 1} - set(points)
     points, loss_improvements = learner.ask(2)
     assert set(points) == set(rest)
 

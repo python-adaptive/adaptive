@@ -6,7 +6,7 @@ import scipy.spatial
 from adaptive.learner import LearnerND
 from adaptive.runner import replay_log, simple
 
-from .test_learners import ring_of_fire, generate_random_parametrization
+from .test_learners import generate_random_parametrization, ring_of_fire
 
 
 def test_faiure_case_LearnerND():

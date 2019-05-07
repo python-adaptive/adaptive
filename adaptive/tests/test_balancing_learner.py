@@ -2,7 +2,7 @@
 
 import pytest
 
-from adaptive.learner import Learner1D, BalancingLearner
+from adaptive.learner import BalancingLearner, Learner1D
 from adaptive.runner import simple
 
 

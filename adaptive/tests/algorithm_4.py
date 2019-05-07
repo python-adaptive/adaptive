@@ -2,12 +2,12 @@
 # Copyright 2017 Christoph Groth
 
 import warnings
-from fractions import Fraction as Frac
 from collections import defaultdict
+from fractions import Fraction as Frac
+
 import numpy as np
 from numpy.testing import assert_allclose
-from scipy.linalg import norm, inv
-
+from scipy.linalg import inv, norm
 
 eps = np.spacing(1)
 

@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from copy import deepcopy
 import heapq
 import itertools
 import math
 from collections.abc import Iterable
+from copy import deepcopy
 
 import numpy as np
-import sortedcontainers
 import sortedcollections
+import sortedcontainers
 
 from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
 from adaptive.learner.learnerND import volume

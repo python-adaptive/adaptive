@@ -1,10 +1,12 @@
-from adaptive.learner.learnerND import LearnerND, curvature_loss_function
-from adaptive.learner.base_learner import uses_nth_neighbors
 import math
 import time
-from scipy.spatial import ConvexHull
+
 import numpy as np
 import pytest
+from scipy.spatial import ConvexHull
+
+from adaptive.learner.base_learner import uses_nth_neighbors
+from adaptive.learner.learnerND import LearnerND, curvature_loss_function
 
 
 def ring_of_fire(xy):

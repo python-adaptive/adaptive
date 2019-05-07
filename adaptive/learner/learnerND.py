@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 
-from collections import OrderedDict
-from collections.abc import Iterable
 import functools
 import heapq
 import itertools
 import random
+from collections import OrderedDict
+from collections.abc import Iterable
 
 import numpy as np
-from scipy import interpolate
 import scipy.spatial
+from scipy import interpolate
 from sortedcontainers import SortedKeyList
 
 from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
+from adaptive.learner.triangulation import (Triangulation, circumsphere,
+                                            fast_det, point_in_simplex,
+                                            simplex_volume_in_embedding)
 from adaptive.notebook_integration import ensure_holoviews, ensure_plotly
-from adaptive.learner.triangulation import (
-    Triangulation, point_in_simplex, circumsphere,
-    simplex_volume_in_embedding, fast_det)
-from adaptive.utils import restore, cache_latest
+from adaptive.utils import cache_latest, restore
 
 
 def to_list(inp):
@@ -573,8 +573,8 @@ class LearnerND(BaseLearner):
             if subtri is not None:
                 pending_points_unbound.update(subtri.vertices)
 
-        pending_points_unbound = set(p for p in pending_points_unbound
-                                     if p not in self.data)
+        pending_points_unbound = {p for p in pending_points_unbound
+                                  if p not in self.data}
         for simplex in to_add:
             loss = self._compute_loss(simplex)
             self._losses[simplex] = loss

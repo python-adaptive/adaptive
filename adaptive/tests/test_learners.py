@@ -17,9 +17,9 @@ import scipy.spatial
 
 import adaptive
 from adaptive.learner import (AverageLearner, BalancingLearner, DataSaver,
-    IntegratorLearner, Learner1D, Learner2D, LearnerND)
+                              IntegratorLearner, Learner1D, Learner2D,
+                              LearnerND)
 from adaptive.runner import simple
-
 
 try:
     import skopt

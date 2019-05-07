@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 # Based on an adaptive quadrature algorithm by Pedro Gonnet
 
-from fractions import Fraction
 from collections import defaultdict
+from fractions import Fraction
+
 import numpy as np
 import scipy.linalg
 

@@ -1,11 +1,11 @@
+import math
 from collections import Counter
-from collections.abc import Sized, Iterable
-from itertools import combinations, chain
+from collections.abc import Iterable, Sized
+from itertools import chain, combinations
+from math import factorial
 
 import numpy as np
-import math
 import scipy.spatial
-from math import factorial
 
 
 def fast_norm(v):
@@ -624,8 +624,8 @@ class Triangulation:
 
     def get_face_sharing_neighbors(self, neighbors, simplex):
         """Keep only the simplices sharing a whole face with simplex."""
-        return set(simpl for simpl in neighbors
-            if len(set(simpl) & set(simplex)) == self.dim)  # they share a face
+        return {simpl for simpl in neighbors
+                if len(set(simpl) & set(simplex)) == self.dim}  # they share a face
 
     def get_simplices_attached_to_points(self, indices):
         # Get all simplices that share at least a point with the simplex
@@ -667,8 +667,8 @@ class Triangulation:
             raise RuntimeError("Broken triangulation, a (N-1)-dimensional"
                                " appears in more than 2 simplices.")
 
-        hull = set(point for face, count in counts.items() if count == 1
-                   for point in face)
+        hull = {point for face, count in counts.items() if count == 1
+                for point in face}
         return hull
 
     def convex_invariant(self, vertex):

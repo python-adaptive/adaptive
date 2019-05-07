@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from contextlib import contextmanager
 import functools
 import gzip
-from itertools import product
 import os
 import pickle
 import time
+from contextlib import contextmanager
+from itertools import product
 
 
 def named_product(**items):

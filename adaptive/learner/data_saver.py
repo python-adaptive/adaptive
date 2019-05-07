@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from collections import OrderedDict
 import functools
+from collections import OrderedDict
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.utils import copy_docstring_from

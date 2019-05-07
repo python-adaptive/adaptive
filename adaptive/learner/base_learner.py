@@ -4,7 +4,7 @@ import abc
 from contextlib import suppress
 from copy import deepcopy
 
-from adaptive.utils import save, load
+from adaptive.utils import load, save
 
 
 def uses_nth_neighbors(n):

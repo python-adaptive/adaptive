@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, find_packages
 import sys
 
+from setuptools import find_packages, setup
 
 if sys.version_info < (3, 6):
     print('adaptive requires Python 3.6 or above.')

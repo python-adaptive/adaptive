@@ -1,8 +1,8 @@
-import adaptive
-
-import numpy as np
 import random
 
+import numpy as np
+
+import adaptive
 
 offset = random.uniform(-0.5, 0.5)
 

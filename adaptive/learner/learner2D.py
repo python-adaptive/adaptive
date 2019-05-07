@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import itertools
 from collections import OrderedDict
 from copy import copy
-import itertools
 from math import sqrt
 
 import numpy as np
@@ -11,7 +11,6 @@ from scipy import interpolate
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest
-
 
 # Learner2D and helper functions.
 

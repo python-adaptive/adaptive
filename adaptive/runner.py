@@ -3,7 +3,6 @@
 import abc
 import asyncio
 import concurrent.futures as concurrent
-from contextlib import suppress
 import functools
 import inspect
 import os
@@ -11,8 +10,9 @@ import sys
 import time
 import traceback
 import warnings
+from contextlib import suppress
 
-from adaptive.notebook_integration import live_plot, live_info, in_ipynb
+from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 
 try:
     import ipyparallel
