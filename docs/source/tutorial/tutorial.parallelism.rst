@@ -111,4 +111,3 @@ How you call MPI might depend on your specific queuing system, with SLURM for ex
 
     export MPI4PY_MAX_WORKERS=$SLURM_NTASKS
     srun -n $SLURM_NTASKS --mpi=pmi2 ~/miniconda3/envs/py37_min/bin/python -m mpi4py.futures run_learner.py
-
