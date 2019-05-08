@@ -9,7 +9,7 @@ import pytest
 
 from adaptive.learner.triangulation import Triangulation
 
-with_dimension = pytest.mark.parametrize('dim', [2, 3, 4])
+with_dimension = pytest.mark.parametrize("dim", [2, 3, 4])
 
 
 def _make_triangulation(points):
@@ -92,8 +92,7 @@ def test_triangulation_of_standard_simplex(dim):
     expected_simplex = tuple(range(dim + 1))
     assert t.simplices == {expected_simplex}
     _check_triangulation_is_valid(t)
-    assert np.isclose(t.volume(expected_simplex),
-                      _standard_simplex_volume(dim))
+    assert np.isclose(t.volume(expected_simplex), _standard_simplex_volume(dim))
 
 
 @with_dimension
@@ -130,8 +129,9 @@ def test_adding_point_outside_circumscribed_hypersphere_in_positive_orthant(dim)
 
     # rest of the points are shared between the 2 simplices
     shared_simplices = {simplex1, simplex2}
-    assert all(t.vertex_to_simplices[v] == shared_simplices
-               for v in range(1, n_vertices - 1))
+    assert all(
+        t.vertex_to_simplices[v] == shared_simplices for v in range(1, n_vertices - 1)
+    )
 
 
 @with_dimension
@@ -158,16 +158,18 @@ def test_adding_point_outside_standard_simplex_in_negative_orthant(dim):
     # new point belongs to all the simplices *except* the initial one
     assert t.vertex_to_simplices[dim + 1] == t.simplices - {initial_simplex}
 
-    other_points = list(range(1, dim+1))
+    other_points = list(range(1, dim + 1))
     last_vertex = n_vertices - 1
-    extra_simplices = {(0, *points, last_vertex)
-                       for points in itertools.combinations(other_points, dim-1)}
+    extra_simplices = {
+        (0, *points, last_vertex)
+        for points in itertools.combinations(other_points, dim - 1)
+    }
 
     assert extra_simplices | {initial_simplex} == t.simplices
 
 
 @with_dimension
-@pytest.mark.parametrize('provide_simplex', [True, False])
+@pytest.mark.parametrize("provide_simplex", [True, False])
 def test_adding_point_inside_standard_simplex(dim, provide_simplex):
     t = Triangulation(_make_standard_simplex(dim))
     first_simplex = tuple(range(dim + 1))
@@ -183,8 +185,9 @@ def test_adding_point_inside_standard_simplex(dim, provide_simplex):
     _check_triangulation_is_valid(t)
 
     other_points = list(range(dim + 1))
-    expected_simplices = {(*points, added_point)
-                          for points in itertools.combinations(other_points, dim)}
+    expected_simplices = {
+        (*points, added_point) for points in itertools.combinations(other_points, dim)
+    }
     assert expected_simplices == t.simplices
 
     assert np.isclose(np.sum(t.volumes()), _standard_simplex_volume(dim))
@@ -201,9 +204,11 @@ def test_adding_point_on_standard_simplex_face(dim):
 
     _check_triangulation_is_valid(t)
 
-    other_points = list(range(1, dim+1))
-    expected_simplices = {(0, *points, added_point)
-                          for points in itertools.combinations(other_points, dim-1)}
+    other_points = list(range(1, dim + 1))
+    expected_simplices = {
+        (0, *points, added_point)
+        for points in itertools.combinations(other_points, dim - 1)
+    }
     assert expected_simplices == t.simplices
 
     assert np.isclose(np.sum(t.volumes()), _standard_simplex_volume(dim))
@@ -218,10 +223,9 @@ def test_adding_point_on_standard_simplex_edge(dim):
     _add_point_with_check(t, on_edge)
     _check_triangulation_is_valid(t)
 
-    other_points = list(range(2, dim+2))
+    other_points = list(range(2, dim + 2))
 
-    new_simplices = {(0, *other_points),
-                     (1, *other_points)}
+    new_simplices = {(0, *other_points), (1, *other_points)}
 
     assert new_simplices == t.simplices
 
@@ -269,9 +273,11 @@ def test_adding_point_inside_circumscribed_circle(dim):
 
     _check_triangulation_is_valid(t)
 
-    other_points = list(range(1, dim+1))
-    new_simplices = {(0, *points, added_point)
-                     for points in itertools.combinations(other_points, dim-1)}
+    other_points = list(range(1, dim + 1))
+    new_simplices = {
+        (0, *points, added_point)
+        for points in itertools.combinations(other_points, dim - 1)
+    }
     assert new_simplices == t.simplices
 
 
@@ -282,7 +288,7 @@ def test_triangulation_volume_is_less_than_bounding_box(dim):
     t = _make_triangulation(points)
 
     _check_triangulation_is_valid(t)
-    assert np.sum(t.volumes()) < 1+eps
+    assert np.sum(t.volumes()) < 1 + eps
 
 
 @with_dimension
@@ -307,8 +313,7 @@ def test_initialisation_raises_when_points_coplanar(dim):
 
     new_point1 = np.average(zero_volume_simplex, axis=0)
     new_point2 = np.sum(zero_volume_simplex, axis=0)
-    zero_volume_simplex = np.vstack((zero_volume_simplex,
-                                     new_point1, new_point2))
+    zero_volume_simplex = np.vstack((zero_volume_simplex, new_point1, new_point2))
 
     with pytest.raises(ValueError):
         Triangulation(zero_volume_simplex)
@@ -322,8 +327,8 @@ def test_initialisation_accepts_more_than_one_simplex(dim):
 
     tri = Triangulation(points)
 
-    simplex1 = tuple(range(dim+1))
-    simplex2 = tuple(range(1, dim+2))
+    simplex1 = tuple(range(dim + 1))
+    simplex2 = tuple(range(1, dim + 2))
 
     _check_triangulation_is_valid(tri)
 

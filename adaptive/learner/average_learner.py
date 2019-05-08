@@ -34,7 +34,7 @@ class AverageLearner(BaseLearner):
 
     def __init__(self, function, atol=None, rtol=None):
         if atol is None and rtol is None:
-            raise Exception('At least one of `atol` and `rtol` should be set.')
+            raise Exception("At least one of `atol` and `rtol` should be set.")
         if atol is None:
             atol = np.inf
         if rtol is None:
@@ -58,9 +58,11 @@ class AverageLearner(BaseLearner):
 
         if any(p in self.data or p in self.pending_points for p in points):
             # This means some of the points `< self.n_requested` do not exist.
-            points = list(set(range(self.n_requested + n))
-                          - set(self.data)
-                          - set(self.pending_points))[:n]
+            points = list(
+                set(range(self.n_requested + n))
+                - set(self.data)
+                - set(self.pending_points)
+            )[:n]
 
         loss_improvements = [self._loss_improvement(n) / n] * n
         if tell_pending:
@@ -76,7 +78,7 @@ class AverageLearner(BaseLearner):
         self.data[n] = value
         self.pending_points.discard(n)
         self.sum_f += value
-        self.sum_f_sq += value**2
+        self.sum_f_sq += value ** 2
         self.npoints += 1
 
     def tell_pending(self, n):
@@ -94,7 +96,7 @@ class AverageLearner(BaseLearner):
         n = self.npoints
         if n < 2:
             return np.inf
-        numerator = self.sum_f_sq - n * self.mean**2
+        numerator = self.sum_f_sq - n * self.mean ** 2
         if numerator < 0:
             # in this case the numerator ~ -1e-15
             return 0
@@ -109,8 +111,9 @@ class AverageLearner(BaseLearner):
         if n < 2:
             return np.inf
         standard_error = self.std / sqrt(n)
-        return max(standard_error / self.atol,
-                   standard_error / abs(self.mean) / self.rtol)
+        return max(
+            standard_error / self.atol, standard_error / abs(self.mean) / self.rtol
+        )
 
     def _loss_improvement(self, n):
         loss = self.loss()

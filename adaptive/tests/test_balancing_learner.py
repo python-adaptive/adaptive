@@ -26,7 +26,7 @@ def test_balancing_learner_loss_cache():
     assert bl.loss(real=True) == real_loss
 
 
-@pytest.mark.parametrize('strategy', ['loss', 'loss_improvements', 'npoints'])
+@pytest.mark.parametrize("strategy", ["loss", "loss_improvements", "npoints"])
 def test_distribute_first_points_over_learners(strategy):
     for initial_points in [0, 3]:
         learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
@@ -41,7 +41,7 @@ def test_distribute_first_points_over_learners(strategy):
         assert len(set(i_learner)) == len(learners)
 
 
-@pytest.mark.parametrize('strategy', ['loss', 'loss_improvements', 'npoints'])
+@pytest.mark.parametrize("strategy", ["loss", "loss_improvements", "npoints"])
 def test_ask_0(strategy):
     learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
     learner = BalancingLearner(learners, strategy=strategy)
@@ -49,11 +49,14 @@ def test_ask_0(strategy):
     assert len(points) == 0
 
 
-@pytest.mark.parametrize('strategy, goal', [
-    ('loss', lambda l: l.loss() < 0.1),
-    ('loss_improvements', lambda l: l.loss() < 0.1),
-    ('npoints', lambda bl: all(l.npoints > 10 for l in bl.learners)),
-])
+@pytest.mark.parametrize(
+    "strategy, goal",
+    [
+        ("loss", lambda l: l.loss() < 0.1),
+        ("loss_improvements", lambda l: l.loss() < 0.1),
+        ("npoints", lambda bl: all(l.npoints > 10 for l in bl.learners)),
+    ],
+)
 def test_strategies(strategy, goal):
     learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
     learner = BalancingLearner(learners, strategy=strategy)

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import heapq
 import itertools
 import math
 from collections.abc import Iterable
@@ -47,7 +46,7 @@ def default_loss(xs, ys):
     """
     dx = xs[1] - xs[0]
     if isinstance(ys[0], Iterable):
-        dy = [abs(a-b) for a, b in zip(*ys)]
+        dy = [abs(a - b) for a, b in zip(*ys)]
         return np.hypot(dx, dy).max()
     else:
         dy = ys[1] - ys[0]
@@ -59,17 +58,17 @@ def triangle_loss(xs, ys):
     xs = [x for x in xs if x is not None]
     ys = [y for y in ys if y is not None]
 
-    if len(xs) == 2: # we do not have enough points for a triangle
+    if len(xs) == 2:  # we do not have enough points for a triangle
         return xs[1] - xs[0]
 
-    N = len(xs) - 2 # number of constructed triangles
+    N = len(xs) - 2  # number of constructed triangles
     if isinstance(ys[0], Iterable):
         pts = [(x, *y) for x, y in zip(xs, ys)]
         vol = simplex_volume_in_embedding
     else:
         pts = [(x, y) for x, y in zip(xs, ys)]
         vol = volume
-    return sum(vol(pts[i:i+3]) for i in range(N)) / N
+    return sum(vol(pts[i : i + 3]) for i in range(N)) / N
 
 
 def curvature_loss_function(area_factor=1, euclid_factor=0.02, horizontal_factor=0.02):
@@ -82,9 +81,12 @@ def curvature_loss_function(area_factor=1, euclid_factor=0.02, horizontal_factor
         triangle_loss_ = triangle_loss(xs, ys)
         default_loss_ = default_loss(xs_middle, ys_middle)
         dx = xs_middle[1] - xs_middle[0]
-        return (area_factor * (triangle_loss_**0.5)
-                + euclid_factor * default_loss_
-                + horizontal_factor * dx)
+        return (
+            area_factor * (triangle_loss_ ** 0.5)
+            + euclid_factor * default_loss_
+            + horizontal_factor * dx
+        )
+
     return curvature_loss
 
 
@@ -106,8 +108,7 @@ def _get_neighbors_from_list(xs):
     xs_right = np.roll(xs, -1).tolist()
     xs_left[0] = None
     xs_right[-1] = None
-    neighbors = {x: [x_L, x_R] for x, x_L, x_R
-                 in zip(xs, xs_left, xs_right)}
+    neighbors = {x: [x_L, x_R] for x, x_L, x_R in zip(xs, xs_left, xs_right)}
     return sortedcontainers.SortedDict(neighbors)
 
 
@@ -167,13 +168,12 @@ class Learner1D(BaseLearner):
     def __init__(self, function, bounds, loss_per_interval=None):
         self.function = function
 
-        if hasattr(loss_per_interval, 'nth_neighbors'):
+        if hasattr(loss_per_interval, "nth_neighbors"):
             self.nth_neighbors = loss_per_interval.nth_neighbors
         else:
             self.nth_neighbors = 0
 
         self.loss_per_interval = loss_per_interval or default_loss
-
 
         # When the scale changes by a factor 2, the losses are
         # recomputed. This is tunable such that we can test
@@ -324,16 +324,14 @@ class Learner1D(BaseLearner):
             self.losses_combined[x, b] = (b - x) * loss / dx
 
         # (no real point left of x) or (no real point right of a)
-        left_loss_is_unknown = ((x_left is None) or
-                                (not real and x_right is None))
+        left_loss_is_unknown = (x_left is None) or (not real and x_right is None)
         if (a is not None) and left_loss_is_unknown:
-            self.losses_combined[a, x] = float('inf')
+            self.losses_combined[a, x] = float("inf")
 
         # (no real point right of x) or (no real point left of b)
-        right_loss_is_unknown = ((x_right is None) or
-                                 (not real and x_left is None))
+        right_loss_is_unknown = (x_right is None) or (not real and x_left is None)
         if (b is not None) and right_loss_is_unknown:
-            self.losses_combined[x, b] = float('inf')
+            self.losses_combined[x, b] = float("inf")
 
     @staticmethod
     def _find_neighbors(x, neighbors):
@@ -384,8 +382,10 @@ class Learner1D(BaseLearner):
             # The point is already evaluated before
             return
         if y is None:
-            raise TypeError("Y-value may not be None, use learner.tell_pending(x)"
-                "to indicate that this value is currently being calculated")
+            raise TypeError(
+                "Y-value may not be None, use learner.tell_pending(x)"
+                "to indicate that this value is currently being calculated"
+            )
 
         # either it is a float/int, if not, try casting to a np.array
         if not isinstance(y, (float, int)):
@@ -453,7 +453,8 @@ class Learner1D(BaseLearner):
         # Find the intervals for which the losses should be calculated.
         intervals, intervals_combined = [
             [(x_m, x_r) for x_m, (x_l, x_r) in neighbors.items()][:-1]
-            for neighbors in (self.neighbors, self.neighbors_combined)]
+            for neighbors in (self.neighbors, self.neighbors_combined)
+        ]
 
         # The the losses for the "real" intervals.
         self.losses = loss_manager(self._scale[0])
@@ -512,8 +513,11 @@ class Learner1D(BaseLearner):
             return [], []
 
         # If the bounds have not been chosen yet, we choose them first.
-        missing_bounds = [b for b in self.bounds if b not in self.data
-                          and b not in self.pending_points]
+        missing_bounds = [
+            b
+            for b in self.bounds
+            if b not in self.data and b not in self.pending_points
+        ]
 
         if len(missing_bounds) >= n:
             return missing_bounds[:n], [np.inf] * n
@@ -527,8 +531,10 @@ class Learner1D(BaseLearner):
         if len(missing_bounds) > 0:
             # There is at least one point in between the bounds.
             all_points = list(self.data.keys()) + list(self.pending_points)
-            intervals = [(self.bounds[0], min(all_points)),
-                         (max(all_points), self.bounds[1])]
+            intervals = [
+                (self.bounds[0], min(all_points)),
+                (max(all_points), self.bounds[1]),
+            ]
             for interval, bound in zip(intervals, self.bounds):
                 if bound in missing_bounds:
                     quals[(*interval, 1)] = np.inf
@@ -539,25 +545,30 @@ class Learner1D(BaseLearner):
         i, i_max = 0, len(self.losses_combined)
         for _ in range(points_to_go):
             qual, loss_qual = quals.peekitem(0) if quals else (None, 0)
-            ival, loss_ival = self.losses_combined.peekitem(i) if i < i_max else (None, 0)
+            ival, loss_ival = (
+                self.losses_combined.peekitem(i) if i < i_max else (None, 0)
+            )
 
-            if (qual is None
-                or (ival is not None
-                    and self._loss(self.losses_combined, ival)
-                        >= self._loss(quals, qual))):
+            if qual is None or (
+                ival is not None
+                and self._loss(self.losses_combined, ival) >= self._loss(quals, qual)
+            ):
                 i += 1
                 quals[(*ival, 2)] = loss_ival / 2
             else:
                 quals.pop(qual, None)
                 *xs, n = qual
-                quals[(*xs, n+1)] = loss_qual * n / (n+1)
+                quals[(*xs, n + 1)] = loss_qual * n / (n + 1)
 
-        points = list(itertools.chain.from_iterable(
-            linspace(*ival, n) for (*ival, n) in quals))
+        points = list(
+            itertools.chain.from_iterable(linspace(*ival, n) for (*ival, n) in quals)
+        )
 
-        loss_improvements = list(itertools.chain.from_iterable(
-            itertools.repeat(quals[x0, x1, n], n - 1)
-            for (x0, x1, n)  in quals))
+        loss_improvements = list(
+            itertools.chain.from_iterable(
+                itertools.repeat(quals[x0, x1, n], n - 1) for (x0, x1, n) in quals
+            )
+        )
 
         # add the missing bounds
         points = missing_bounds + points
@@ -610,6 +621,7 @@ def loss_manager(x_scale):
     def sort_key(ival, loss):
         loss, ival = finite_loss(ival, loss, x_scale)
         return -loss, ival
+
     sorted_dict = sortedcollections.ItemSortedDict(sort_key)
     return sorted_dict
 

@@ -11,18 +11,18 @@ from .test_learners import generate_random_parametrization, ring_of_fire
 
 def test_faiure_case_LearnerND():
     log = [
-        ('ask', 4),
-        ('tell', (-1, -1, -1), 1.607873907219222e-101),
-        ('tell', (-1, -1, 1), 1.607873907219222e-101),
-        ('ask', 2),
-        ('tell', (-1, 1, -1), 1.607873907219222e-101),
-        ('tell', (-1, 1, 1), 1.607873907219222e-101),
-        ('ask', 2),
-        ('tell', (1, -1, 1), 2.0),
-        ('tell', (1, -1, -1), 2.0),
-        ('ask', 2),
-        ('tell', (0.0, 0.0, 0.0), 4.288304431237686e-06),
-        ('tell', (1, 1, -1), 2.0)
+        ("ask", 4),
+        ("tell", (-1, -1, -1), 1.607873907219222e-101),
+        ("tell", (-1, -1, 1), 1.607873907219222e-101),
+        ("ask", 2),
+        ("tell", (-1, 1, -1), 1.607873907219222e-101),
+        ("tell", (-1, 1, 1), 1.607873907219222e-101),
+        ("ask", 2),
+        ("tell", (1, -1, 1), 2.0),
+        ("tell", (1, -1, -1), 2.0),
+        ("ask", 2),
+        ("tell", (0.0, 0.0, 0.0), 4.288304431237686e-06),
+        ("tell", (1, 1, -1), 2.0),
     ]
     learner = LearnerND(lambda *x: x, bounds=[(-1, 1), (-1, 1), (-1, 1)])
     replay_log(learner, log)
@@ -44,9 +44,9 @@ def test_interior_vs_bbox_gives_same_result():
 def test_vector_return_with_a_flat_layer():
     f = generate_random_parametrization(ring_of_fire)
     g = generate_random_parametrization(ring_of_fire)
-    h1 = lambda xy: np.array([f(xy), g(xy)])
-    h2 = lambda xy: np.array([f(xy), 0*g(xy)])
-    h3 = lambda xy: np.array([0*f(xy), g(xy)])
+    h1 = lambda xy: np.array([f(xy), g(xy)])  # noqa: E731
+    h2 = lambda xy: np.array([f(xy), 0 * g(xy)])  # noqa: E731
+    h3 = lambda xy: np.array([0 * f(xy), g(xy)])  # noqa: E731
     for function in [h1, h2, h3]:
         learner = LearnerND(function, bounds=[(-1, 1), (-1, 1)])
         simple(learner, goal=lambda l: l.loss() < 0.1)

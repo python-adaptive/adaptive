@@ -5,8 +5,14 @@ import asyncio
 import pytest
 
 from adaptive.learner import Learner1D, Learner2D
-from adaptive.runner import (AsyncRunner, BlockingRunner, SequentialExecutor,
-                             simple, with_distributed, with_ipyparallel)
+from adaptive.runner import (
+    AsyncRunner,
+    BlockingRunner,
+    SequentialExecutor,
+    simple,
+    with_distributed,
+    with_ipyparallel,
+)
 
 
 def blocking_runner(learner, goal):
@@ -25,7 +31,7 @@ def trivial_goal(learner):
     return learner.npoints > 10
 
 
-@pytest.mark.parametrize('runner', runners)
+@pytest.mark.parametrize("runner", runners)
 def test_simple(runner):
     """Test that the runners actually run."""
 
@@ -37,7 +43,7 @@ def test_simple(runner):
     assert len(learner.data) > 10
 
 
-@pytest.mark.parametrize('runner', runners)
+@pytest.mark.parametrize("runner", runners)
 def test_nonconforming_output(runner):
     """Test that using a runner works with a 2D learner, even when the
     learned function outputs a 1-vector. This tests against the regression
@@ -51,7 +57,6 @@ def test_nonconforming_output(runner):
 
 
 def test_aync_def_function():
-
     async def f(x):
         return x
 
@@ -62,21 +67,22 @@ def test_aync_def_function():
 
 ### Test with different executors
 
+
 @pytest.fixture(scope="session")
 def ipyparallel_executor():
     from ipyparallel import Client
     import pexpect
 
-    child = pexpect.spawn('ipcluster start -n 1')
-    child.expect('Engines appear to have started successfully', timeout=35)
+    child = pexpect.spawn("ipcluster start -n 1")
+    child.expect("Engines appear to have started successfully", timeout=35)
     yield Client()
     if not child.terminate(force=True):
-        raise RuntimeError('Could not stop ipcluster')
+        raise RuntimeError("Could not stop ipcluster")
 
 
 @pytest.fixture(scope="session")
 def dask_executor():
-    from distributed import LocalCluster, Client
+    from distributed import Client
 
     client = Client(n_workers=1)
     yield client
@@ -89,22 +95,24 @@ def linear(x):
 
 def test_concurrent_futures_executor():
     from concurrent.futures import ProcessPoolExecutor
-    BlockingRunner(Learner1D(linear, (-1, 1)), trivial_goal,
-                   executor=ProcessPoolExecutor(max_workers=1))
+
+    BlockingRunner(
+        Learner1D(linear, (-1, 1)),
+        trivial_goal,
+        executor=ProcessPoolExecutor(max_workers=1),
+    )
 
 
-@pytest.mark.skipif(not with_ipyparallel, reason='IPyparallel is not installed')
+@pytest.mark.skipif(not with_ipyparallel, reason="IPyparallel is not installed")
 def test_ipyparallel_executor(ipyparallel_executor):
     learner = Learner1D(linear, (-1, 1))
-    BlockingRunner(learner, trivial_goal,
-                   executor=ipyparallel_executor)
+    BlockingRunner(learner, trivial_goal, executor=ipyparallel_executor)
     assert learner.npoints > 0
 
 
 @pytest.mark.timeout(60)
-@pytest.mark.skipif(not with_distributed, reason='dask.distributed is not installed')
+@pytest.mark.skipif(not with_distributed, reason="dask.distributed is not installed")
 def test_distributed_executor(dask_executor):
     learner = Learner1D(linear, (-1, 1))
-    BlockingRunner(learner, trivial_goal,
-                   executor=dask_executor)
+    BlockingRunner(learner, trivial_goal, executor=dask_executor)
     assert learner.npoints > 0

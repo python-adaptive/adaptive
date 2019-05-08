@@ -21,15 +21,12 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
     (p0x, p0y), (p1x, p1y), (p2x, p2y) = simplex
     px, py = point
 
-    area = 0.5 * (- p1y * p2x + p0y * (p2x - p1x)
-                  + p1x * p2y + p0x * (p1y - p2y))
+    area = 0.5 * (-p1y * p2x + p0y * (p2x - p1x) + p1x * p2y + p0x * (p1y - p2y))
 
-    s = 1 / (2 * area) * (+ p0y * p2x + (p2y - p0y) * px
-                          - p0x * p2y + (p0x - p2x) * py)
+    s = 1 / (2 * area) * (+p0y * p2x + (p2y - p0y) * px - p0x * p2y + (p0x - p2x) * py)
     if s < -eps or s > 1 + eps:
         return False
-    t = 1 / (2 * area) * (+ p0x * p1y + (p0y - p1y) * px
-                          - p0y * p1x + (p1x - p0x) * py)
+    t = 1 / (2 * area) * (+p0x * p1y + (p0y - p1y) * px - p0y * p1x + (p1x - p0x) * py)
 
     return (t >= -eps) and (s + t <= 1 + eps)
 
@@ -68,15 +65,15 @@ def fast_2d_circumcircle(points):
     l2 = x2 * x2 + y2 * y2
 
     # compute some determinants
-    dx = + l1 * y2 - l2 * y1
-    dy = - l1 * x2 + l2 * x1
-    aa = + x1 * y2 - x2 * y1
+    dx = +l1 * y2 - l2 * y1
+    dy = -l1 * x2 + l2 * x1
+    aa = +x1 * y2 - x2 * y1
     a = 2 * aa
 
     # compute center
     x = dx / a
     y = dy / a
-    radius = math.sqrt(x*x + y*y)  # radius = norm([x, y])
+    radius = math.sqrt(x * x + y * y)  # radius = norm([x, y])
 
     return (x + points[0][0], y + points[0][1]), radius
 
@@ -104,25 +101,19 @@ def fast_3d_circumcircle(points):
     l3 = x3 * x3 + y3 * y3 + z3 * z3
 
     # Compute some determinants:
-    dx = (+ l1 * (y2 * z3 - z2 * y3)
-          - l2 * (y1 * z3 - z1 * y3)
-          + l3 * (y1 * z2 - z1 * y2))
-    dy = (+ l1 * (x2 * z3 - z2 * x3)
-          - l2 * (x1 * z3 - z1 * x3)
-          + l3 * (x1 * z2 - z1 * x2))
-    dz = (+ l1 * (x2 * y3 - y2 * x3)
-          - l2 * (x1 * y3 - y1 * x3)
-          + l3 * (x1 * y2 - y1 * x2))
-    aa = (+ x1 * (y2 * z3 - z2 * y3)
-          - x2 * (y1 * z3 - z1 * y3)
-          + x3 * (y1 * z2 - z1 * y2))
+    dx = +l1 * (y2 * z3 - z2 * y3) - l2 * (y1 * z3 - z1 * y3) + l3 * (y1 * z2 - z1 * y2)
+    dy = +l1 * (x2 * z3 - z2 * x3) - l2 * (x1 * z3 - z1 * x3) + l3 * (x1 * z2 - z1 * x2)
+    dz = +l1 * (x2 * y3 - y2 * x3) - l2 * (x1 * y3 - y1 * x3) + l3 * (x1 * y2 - y1 * x2)
+    aa = +x1 * (y2 * z3 - z2 * y3) - x2 * (y1 * z3 - z1 * y3) + x3 * (y1 * z2 - z1 * y2)
     a = 2 * aa
 
     center = (dx / a, -dy / a, dz / a)
     radius = fast_norm(center)
-    center = (center[0] + points[0][0],
-              center[1] + points[0][1],
-              center[2] + points[0][2])
+    center = (
+        center[0] + points[0][0],
+        center[1] + points[0][1],
+        center[2] + points[0][2],
+    )
 
     return center, radius
 
@@ -133,7 +124,7 @@ def fast_det(matrix):
         return matrix[0][0] * matrix[1][1] - matrix[1][0] * matrix[0][1]
     elif matrix.shape == (3, 3):
         a, b, c, d, e, f, g, h, i = matrix.ravel()
-        return a * (e*i - f*h) - b * (d*i - f*g) + c * (d*h - e*g)
+        return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
     else:
         return np.linalg.det(matrix)
 
@@ -223,12 +214,12 @@ def simplex_volume_in_embedding(vertices) -> float:
     dim = len(vertices[0])
     if dim == 2:
         # Heron's formula
-        a, b, c = scipy.spatial.distance.pdist(vertices, metric='euclidean')
+        a, b, c = scipy.spatial.distance.pdist(vertices, metric="euclidean")
         s = 0.5 * (a + b + c)
         return math.sqrt(s * (s - a) * (s - b) * (s - c))
 
     # β_ij = |v_i - v_k|²
-    sq_dists = scipy.spatial.distance.pdist(vertices, metric='sqeuclidean')
+    sq_dists = scipy.spatial.distance.pdist(vertices, metric="sqeuclidean")
 
     # Add border while compressed
     num_verts = scipy.spatial.distance.num_obs_y(sq_dists)
@@ -237,13 +228,13 @@ def simplex_volume_in_embedding(vertices) -> float:
     # Make matrix and find volume
     sq_dists_mat = scipy.spatial.distance.squareform(bordered)
 
-    coeff = - (-2) ** (num_verts-1) * factorial(num_verts-1) ** 2
+    coeff = -(-2) ** (num_verts - 1) * factorial(num_verts - 1) ** 2
     vol_square = fast_det(sq_dists_mat) / coeff
 
     if vol_square < 0:
         if abs(vol_square) < 1e-15:
             return 0
-        raise ValueError('Provided vertices do not form a simplex')
+        raise ValueError("Provided vertices do not form a simplex")
 
     return np.sqrt(vol_square)
 
@@ -298,8 +289,10 @@ class Triangulation:
         coords = list(map(tuple, coords))
         vectors = np.subtract(coords[1:], coords[0])
         if np.linalg.matrix_rank(vectors) < dim:
-            raise ValueError("Initial simplex has zero volumes "
-                             "(the points are linearly dependent)")
+            raise ValueError(
+                "Initial simplex has zero volumes "
+                "(the points are linearly dependent)"
+            )
 
         self.vertices = list(coords)
         self.simplices = set()
@@ -390,8 +383,7 @@ class Triangulation:
         elif simplices is None:
             simplices = self.simplices
 
-        faces = (face for tri in simplices
-                 for face in combinations(tri, dim))
+        faces = (face for tri in simplices for face in combinations(tri, dim))
 
         if vertices is not None:
             return (face for face in faces if all(i in vertices for i in face))
@@ -571,8 +563,9 @@ class Triangulation:
             temporary_simplices = self._extend_hull(point)
 
             pt_index = len(self.vertices) - 1
-            deleted_simplices, added_simplices = \
-                self.bowyer_watson(pt_index, transform=transform)
+            deleted_simplices, added_simplices = self.bowyer_watson(
+                pt_index, transform=transform
+            )
 
             deleted = deleted_simplices - temporary_simplices
             added = added_simplices | (temporary_simplices - deleted_simplices)
@@ -581,7 +574,7 @@ class Triangulation:
             reduced_simplex = self.get_reduced_simplex(point, simplex)
             if not reduced_simplex:
                 self.vertex_to_simplices.pop()  # revert adding vertex
-                raise ValueError('Point lies outside of the specified simplex.')
+                raise ValueError("Point lies outside of the specified simplex.")
             else:
                 simplex = reduced_simplex
 
@@ -605,12 +598,10 @@ class Triangulation:
     def reference_invariant(self):
         """vertex_to_simplices and simplices are compatible."""
         for vertex in range(len(self.vertices)):
-            if any(vertex not in tri
-                   for tri in self.vertex_to_simplices[vertex]):
+            if any(vertex not in tri for tri in self.vertex_to_simplices[vertex]):
                 return False
         for simplex in self.simplices:
-            if any(simplex not in self.vertex_to_simplices[pt]
-                   for pt in simplex):
+            if any(simplex not in self.vertex_to_simplices[pt] for pt in simplex):
                 return False
         return True
 
@@ -619,13 +610,13 @@ class Triangulation:
         raise NotImplementedError
 
     def get_neighbors_from_vertices(self, simplex):
-        return set.union(*[self.vertex_to_simplices[p]
-                           for p in simplex])
+        return set.union(*[self.vertex_to_simplices[p] for p in simplex])
 
     def get_face_sharing_neighbors(self, neighbors, simplex):
         """Keep only the simplices sharing a whole face with simplex."""
-        return {simpl for simpl in neighbors
-                if len(set(simpl) & set(simplex)) == self.dim}  # they share a face
+        return {
+            simpl for simpl in neighbors if len(set(simpl) & set(simplex)) == self.dim
+        }  # they share a face
 
     def get_simplices_attached_to_points(self, indices):
         # Get all simplices that share at least a point with the simplex
@@ -636,6 +627,7 @@ class Triangulation:
         if simplex not in self.simplices:
             raise ValueError("Provided simplex is not part of the triangulation")
         neighbors = self.get_simplices_attached_to_points(simplex)
+
         def find_opposing_vertex(vertex):
             # find the simplex:
             simp = next((x for x in neighbors if vertex not in x), None)
@@ -644,6 +636,7 @@ class Triangulation:
             opposing = set(simp) - set(simplex)
             assert len(opposing) == 1
             return opposing.pop()
+
         result = tuple(find_opposing_vertex(v) for v in simplex)
         return result
 
@@ -664,11 +657,12 @@ class Triangulation:
         """
         counts = Counter(self.faces())
         if any(i > 2 for i in counts.values()):
-            raise RuntimeError("Broken triangulation, a (N-1)-dimensional"
-                               " appears in more than 2 simplices.")
+            raise RuntimeError(
+                "Broken triangulation, a (N-1)-dimensional"
+                " appears in more than 2 simplices."
+            )
 
-        hull = {point for face, count in counts.items() if count == 1
-                for point in face}
+        hull = {point for face, count in counts.items() if count == 1 for point in face}
         return hull
 
     def convex_invariant(self, vertex):

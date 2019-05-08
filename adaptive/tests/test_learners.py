@@ -16,35 +16,49 @@ import pytest
 import scipy.spatial
 
 import adaptive
-from adaptive.learner import (AverageLearner, BalancingLearner, DataSaver,
-                              IntegratorLearner, Learner1D, Learner2D,
-                              LearnerND)
+from adaptive.learner import (
+    AverageLearner,
+    BalancingLearner,
+    DataSaver,
+    IntegratorLearner,
+    Learner1D,
+    Learner2D,
+    LearnerND,
+)
 from adaptive.runner import simple
 
 try:
-    import skopt
     from adaptive.learner import SKOptLearner
 except ModuleNotFoundError:
     SKOptLearner = None
 
 
 LOSS_FUNCTIONS = {
-    Learner1D: ('loss_per_interval', (
-        adaptive.learner.learner1D.default_loss,
-        adaptive.learner.learner1D.uniform_loss,
-        adaptive.learner.learner1D.curvature_loss_function(),
-    )),
-    Learner2D: ('loss_per_triangle', (
-        adaptive.learner.learner2D.default_loss,
-        adaptive.learner.learner2D.uniform_loss,
-        adaptive.learner.learner2D.minimize_triangle_surface_loss,
-        adaptive.learner.learner2D.resolution_loss_function(),
-    )),
-    LearnerND: ('loss_per_simplex', (
-        adaptive.learner.learnerND.default_loss,
-        adaptive.learner.learnerND.std_loss,
-        adaptive.learner.learnerND.uniform_loss,
-    )),
+    Learner1D: (
+        "loss_per_interval",
+        (
+            adaptive.learner.learner1D.default_loss,
+            adaptive.learner.learner1D.uniform_loss,
+            adaptive.learner.learner1D.curvature_loss_function(),
+        ),
+    ),
+    Learner2D: (
+        "loss_per_triangle",
+        (
+            adaptive.learner.learner2D.default_loss,
+            adaptive.learner.learner2D.uniform_loss,
+            adaptive.learner.learner2D.minimize_triangle_surface_loss,
+            adaptive.learner.learner2D.resolution_loss_function(),
+        ),
+    ),
+    LearnerND: (
+        "loss_per_simplex",
+        (
+            adaptive.learner.learnerND.default_loss,
+            adaptive.learner.learnerND.std_loss,
+            adaptive.learner.learnerND.uniform_loss,
+        ),
+    ),
 }
 
 
@@ -60,8 +74,9 @@ def generate_random_parametrization(f):
     """
     _, *params = inspect.signature(f).parameters.items()
     if any(not callable(v.annotation) for (p, v) in params):
-        raise TypeError('All parameters to {} must be annotated with functions.'
-                        .format(f.__name__))
+        raise TypeError(
+            "All parameters to {} must be annotated with functions.".format(f.__name__)
+        )
     realization = {p: v.annotation() for (p, v) in params}
     return ft.partial(f, **realization)
 
@@ -76,7 +91,6 @@ learner_function_combos = collections.defaultdict(list)
 
 
 def learn_with(learner_type, **init_kwargs):
-
     def _(f):
         learner_function_combos[learner_type].append((f, init_kwargs))
         return f
@@ -95,15 +109,16 @@ def maybe_skip(learner):
 # All parameters except the first must be annotated with a callable that
 # returns a random value for that parameter.
 
+
 @learn_with(Learner1D, bounds=(-1, 1))
 def quadratic(x, m: uniform(0, 10), b: uniform(0, 1)):
-    return m * x**2 + b
+    return m * x ** 2 + b
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
 def linear_with_peak(x, d: uniform(-1, 1)):
     a = 0.01
-    return x + a**2 / (a**2 + (x - d)**2)
+    return x + a ** 2 / (a ** 2 + (x - d) ** 2)
 
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
@@ -111,14 +126,14 @@ def linear_with_peak(x, d: uniform(-1, 1)):
 def ring_of_fire(xy, d: uniform(0.2, 1)):
     a = 0.2
     x, y = xy
-    return x + math.exp(-(x**2 + y**2 - d**2)**2 / a**4)
+    return x + math.exp(-(x ** 2 + y ** 2 - d ** 2) ** 2 / a ** 4)
 
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
 def sphere_of_fire(xyz, d: uniform(0.2, 1)):
     a = 0.2
     x, y, z = xyz
-    return x + math.exp(-(x**2 + y**2 + z**2 - d**2)**2 / a**4) + z**2
+    return x + math.exp(-(x ** 2 + y ** 2 + z ** 2 - d ** 2) ** 2 / a ** 4) + z ** 2
 
 
 @learn_with(AverageLearner, rtol=1)
@@ -141,21 +156,20 @@ def add_loss_to_params(learner_type, existing_params):
 
 def run_with(*learner_types, with_all_loss_functions=True):
     pars = []
-    for l in learner_types:
-        has_marker = isinstance(l, tuple)
+    for learner in learner_types:
+        has_marker = isinstance(learner, tuple)
         if has_marker:
-            marker, l = l
-        for f, k in learner_function_combos[l]:
-            ks = add_loss_to_params(l, k) if with_all_loss_functions else [k]
+            marker, learner = learner
+        for f, k in learner_function_combos[learner]:
+            ks = add_loss_to_params(learner, k) if with_all_loss_functions else [k]
             for k in ks:
                 # Check if learner was marked with our `xfail` decorator
                 # XXX: doesn't work when feeding kwargs to xfail.
                 if has_marker:
-                    pars.append(pytest.param(l, f, dict(k),
-                                             marks=[marker]))
+                    pars.append(pytest.param(learner, f, dict(k), marks=[marker]))
                 else:
-                    pars.append((l, f, dict(k)))
-    return pytest.mark.parametrize('learner_type, f, learner_kwargs', pars)
+                    pars.append((learner, f, dict(k)))
+    return pytest.mark.parametrize("learner_type, f, learner_kwargs", pars)
 
 
 def ask_randomly(learner, rounds, points):
@@ -163,16 +177,17 @@ def ask_randomly(learner, rounds, points):
     n_points = [random.randrange(*points) for _ in range(n_rounds)]
 
     xs = []
-    ls = []
+    losses = []
     for n in n_points:
-        x, l = learner.ask(n)
-        xs.extend(x)
-        ls.extend(l)
+        new_xs, new_losses = learner.ask(n)
+        xs.extend(new_xs)
+        losses.extend(new_losses)
 
-    return xs, ls
+    return xs, losses
 
 
 # Tests
+
 
 @run_with(Learner1D)
 def test_uniform_sampling1D(learner_type, f, learner_kwargs):
@@ -207,20 +222,23 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
 
     # regular grid
     n = math.sqrt(len(points))
-    xbounds, ybounds = learner_kwargs['bounds']
+    xbounds, ybounds = learner_kwargs["bounds"]
     r = math.sqrt((ybounds[1] - ybounds[0]) / (xbounds[1] - xbounds[0]))
     xs, dx = np.linspace(*xbounds, int(n / r), retstep=True)
     ys, dy = np.linspace(*ybounds, int(n * r), retstep=True)
 
     distances, neighbors = tree.query(list(it.product(xs, ys)), k=1)
-    assert max(distances) < math.sqrt(dx**2 + dy**2)
+    assert max(distances) < math.sqrt(dx ** 2 + dy ** 2)
 
 
-@pytest.mark.parametrize('learner_type, bounds', [
-    (Learner1D, (-1, 1)),
-    (Learner2D, [(-1, 1), (-1, 1)]),
-    (LearnerND, [(-1, 1), (-1, 1), (-1, 1)]),
-])
+@pytest.mark.parametrize(
+    "learner_type, bounds",
+    [
+        (Learner1D, (-1, 1)),
+        (Learner2D, [(-1, 1), (-1, 1)]),
+        (LearnerND, [(-1, 1), (-1, 1), (-1, 1)]),
+    ],
+)
 def test_learner_accepts_lists(learner_type, bounds):
     def f(x):
         return [0, 1]
@@ -338,7 +356,9 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
 # XXX: the Learner2D fails with ~50% chance
 # see https://github.com/python-adaptive/adaptive/issues/55
 @run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner)
-def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, learner_kwargs):
+def test_expected_loss_improvement_is_less_than_total_loss(
+    learner_type, f, learner_kwargs
+):
     """The estimated loss improvement can never be greater than the total loss."""
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
@@ -352,8 +372,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
     _, loss_improvements = learner.ask(M)
 
     if learner_type is Learner2D:
-        assert (sum(loss_improvements)
-                < sum(learner.loss_per_triangle(learner.ip())))
+        assert sum(loss_improvements) < sum(learner.loss_per_triangle(learner.ip()))
     elif learner_type is Learner1D:
         assert sum(loss_improvements) < sum(learner.losses.values())
     elif learner_type is AverageLearner:
@@ -363,7 +382,9 @@ def test_expected_loss_improvement_is_less_than_total_loss(learner_type, f, lear
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
 @run_with(Learner1D, xfail(Learner2D), LearnerND)
-def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner_kwargs):
+def test_learner_performance_is_invariant_under_scaling(
+    learner_type, f, learner_kwargs
+):
     """Learners behave identically under transformations that leave
        the loss invariant.
 
@@ -380,9 +401,8 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     yscale = 1000 * random.random()
 
     l_kwargs = dict(learner_kwargs)
-    l_kwargs['bounds'] = xscale * np.array(l_kwargs['bounds'])
-    learner = learner_type(lambda x: yscale * f(np.array(x) / xscale),
-                           **l_kwargs)
+    l_kwargs["bounds"] = xscale * np.array(l_kwargs["bounds"])
+    learner = learner_type(lambda x: yscale * f(np.array(x) / xscale), **l_kwargs)
 
     if learner_type in [Learner1D, LearnerND]:
         learner._recompute_losses_factor = 1
@@ -408,12 +428,15 @@ def test_learner_performance_is_invariant_under_scaling(learner_type, f, learner
     assert math.isclose(learner.loss(), control.loss(), rel_tol=1e-10)
 
 
-@run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
-    with_all_loss_functions=False)
+@run_with(
+    Learner1D, Learner2D, LearnerND, AverageLearner, with_all_loss_functions=False
+)
 def test_balancing_learner(learner_type, f, learner_kwargs):
     """Test if the BalancingLearner works with the different types of learners."""
-    learners = [learner_type(generate_random_parametrization(f), **learner_kwargs)
-                for i in range(4)]
+    learners = [
+        learner_type(generate_random_parametrization(f), **learner_kwargs)
+        for i in range(4)
+    ]
 
     learner = BalancingLearner(learners)
 
@@ -439,12 +462,20 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
             x = stash.pop()
             learner.tell(x, learner.function(x))
 
-    assert all(l.npoints > 10 for l in learner.learners), [l.npoints for l in learner.learners]
+    assert all(l.npoints > 10 for l in learner.learners), [
+        l.npoints for l in learner.learners
+    ]
 
 
-@run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
-    maybe_skip(SKOptLearner), IntegratorLearner,
-    with_all_loss_functions=False)
+@run_with(
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    AverageLearner,
+    maybe_skip(SKOptLearner),
+    IntegratorLearner,
+    with_all_loss_functions=False,
+)
 def test_saving(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
@@ -466,9 +497,15 @@ def test_saving(learner_type, f, learner_kwargs):
         os.remove(path)
 
 
-@run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
-    maybe_skip(SKOptLearner), IntegratorLearner,
-    with_all_loss_functions=False)
+@run_with(
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    AverageLearner,
+    maybe_skip(SKOptLearner),
+    IntegratorLearner,
+    with_all_loss_functions=False,
+)
 def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = BalancingLearner([learner_type(f, **learner_kwargs)])
@@ -483,7 +520,7 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     folder = tempfile.mkdtemp()
 
     def fname(learner):
-        return folder + 'test'
+        return folder + "test"
 
     try:
         learner.save(fname=fname)
@@ -497,13 +534,19 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
         shutil.rmtree(folder)
 
 
-@run_with(Learner1D, Learner2D, LearnerND, AverageLearner,
-    maybe_skip(SKOptLearner), IntegratorLearner,
-    with_all_loss_functions=False)
+@run_with(
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    AverageLearner,
+    maybe_skip(SKOptLearner),
+    IntegratorLearner,
+    with_all_loss_functions=False,
+)
 def test_saving_with_datasaver(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
-    g = lambda x: {'y': f(x), 't': random.random()}
-    arg_picker = operator.itemgetter('y')
+    g = lambda x: {"y": f(x), "t": random.random()}  # noqa: E731
+    arg_picker = operator.itemgetter("y")
     learner = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
     control = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
 
