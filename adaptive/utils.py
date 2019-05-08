@@ -4,7 +4,6 @@ import functools
 import gzip
 import os
 import pickle
-import time
 from contextlib import contextmanager
 from itertools import product
 
@@ -28,13 +27,15 @@ def restore(*learners):
 def cache_latest(f):
     """Cache the latest return value of the function and add it
     as 'self._cache[f.__name__]'."""
+
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         self = args[0]
-        if not hasattr(self, '_cache'):
+        if not hasattr(self, "_cache"):
             self._cache = {}
         self._cache[f.__name__] = f(*args, **kwargs)
         return self._cache[f.__name__]
+
     return wrapper
 
 
@@ -44,18 +45,19 @@ def save(fname, data, compress=True):
     if dirname:
         os.makedirs(dirname, exist_ok=True)
     _open = gzip.open if compress else open
-    with _open(fname, 'wb') as f:
+    with _open(fname, "wb") as f:
         pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def load(fname, compress=True):
     fname = os.path.expanduser(fname)
     _open = gzip.open if compress else open
-    with _open(fname, 'rb') as f:
+    with _open(fname, "rb") as f:
         return pickle.load(f)
 
 
 def copy_docstring_from(other):
     def decorator(method):
         return functools.wraps(other)(method)
+
     return decorator

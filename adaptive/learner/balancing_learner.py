@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os.path
 from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
@@ -69,7 +68,7 @@ class BalancingLearner(BaseLearner):
     behave in an undefined way. Change the `strategy` in that case.
     """
 
-    def __init__(self, learners, *, cdims=None, strategy='loss_improvements'):
+    def __init__(self, learners, *, cdims=None, strategy="loss_improvements"):
         self.learners = learners
 
         # Naively we would make 'function' a method, but this causes problems
@@ -83,8 +82,9 @@ class BalancingLearner(BaseLearner):
         self._cdims_default = cdims
 
         if len({learner.__class__ for learner in self.learners}) > 1:
-            raise TypeError('A BalacingLearner can handle only one type'
-                            ' of learners.')
+            raise TypeError(
+                "A BalacingLearner can handle only one type" " of learners."
+            )
 
         self.strategy = strategy
 
@@ -101,16 +101,17 @@ class BalancingLearner(BaseLearner):
     @strategy.setter
     def strategy(self, strategy):
         self._strategy = strategy
-        if strategy == 'loss_improvements':
+        if strategy == "loss_improvements":
             self._ask_and_tell = self._ask_and_tell_based_on_loss_improvements
-        elif strategy == 'loss':
+        elif strategy == "loss":
             self._ask_and_tell = self._ask_and_tell_based_on_loss
-        elif strategy == 'npoints':
+        elif strategy == "npoints":
             self._ask_and_tell = self._ask_and_tell_based_on_npoints
         else:
             raise ValueError(
                 'Only strategy="loss_improvements", strategy="loss", or'
-                ' strategy="npoints" is implemented.')
+                ' strategy="npoints" is implemented.'
+            )
 
     def _ask_and_tell_based_on_loss_improvements(self, n):
         selected = []  # tuples ((learner_index, point), loss_improvement)
@@ -120,17 +121,14 @@ class BalancingLearner(BaseLearner):
             for index, learner in enumerate(self.learners):
                 # Take the points from the cache
                 if index not in self._ask_cache:
-                    self._ask_cache[index] = learner.ask(
-                        n=1, tell_pending=False)
+                    self._ask_cache[index] = learner.ask(n=1, tell_pending=False)
                 points, loss_improvements = self._ask_cache[index]
                 to_select.append(
-                    ((index, points[0]),
-                     (loss_improvements[0], -total_points[index]))
+                    ((index, points[0]), (loss_improvements[0], -total_points[index]))
                 )
 
             # Choose the optimal improvement.
-            (index, point), (loss_improvement, _) = max(
-                to_select, key=itemgetter(1))
+            (index, point), (loss_improvement, _) = max(to_select, key=itemgetter(1))
             total_points[index] += 1
             selected.append(((index, point), loss_improvement))
             self.tell_pending((index, point))
@@ -139,13 +137,12 @@ class BalancingLearner(BaseLearner):
         return points, loss_improvements
 
     def _ask_and_tell_based_on_loss(self, n):
-        selected = []   # tuples ((learner_index, point), loss_improvement)
+        selected = []  # tuples ((learner_index, point), loss_improvement)
         total_points = [l.npoints + len(l.pending_points) for l in self.learners]
         for _ in range(n):
             losses = self._losses(real=False)
             index, _ = max(
-                enumerate(zip(losses, (-n for n in total_points))),
-                key=itemgetter(1)
+                enumerate(zip(losses, (-n for n in total_points))), key=itemgetter(1)
             )
             total_points[index] += 1
 
@@ -257,7 +254,7 @@ class BalancingLearner(BaseLearner):
         cdims = cdims or self._cdims_default
 
         if cdims is None:
-            cdims = [{'i': i} for i in range(len(self.learners))]
+            cdims = [{"i": i} for i in range(len(self.learners))]
         elif not isinstance(cdims[0], dict):
             # Normalize the format
             keys, values_list = cdims

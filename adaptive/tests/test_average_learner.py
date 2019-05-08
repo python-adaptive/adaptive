@@ -42,7 +42,7 @@ def test_avg_std_and_npoints():
         if i > 2 and i % 10 == 0:
             # We need more than two points for 'learner.std' to be defined.
             values = np.array(list(learner.data.values()))
-            std = np.sqrt(sum((values - values.mean())**2) / (len(values) - 1))
+            std = np.sqrt(sum((values - values.mean()) ** 2) / (len(values) - 1))
             assert learner.npoints == len(learner.data)
             assert abs(learner.sum_f - values.sum()) < 1e-13
             assert abs(learner.std - std) < 1e-13

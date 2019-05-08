@@ -3,7 +3,6 @@
 import abc
 import asyncio
 import concurrent.futures as concurrent
-import functools
 import inspect
 import os
 import sys
@@ -16,31 +15,35 @@ from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 
 try:
     import ipyparallel
+
     with_ipyparallel = True
 except ModuleNotFoundError:
     with_ipyparallel = False
 
 try:
     import distributed
+
     with_distributed = True
 except ModuleNotFoundError:
     with_distributed = False
 
 try:
     import mpi4py.futures
+
     with_mpi4py = True
 except ModuleNotFoundError:
     with_mpi4py = False
 
 with suppress(ModuleNotFoundError):
     import uvloop
+
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 
-if os.name == 'nt':
+if os.name == "nt":
     if with_distributed:
         _default_executor = distributed.Client
-        _default_executor_kwargs = {'address': distributed.LocalCluster()}
+        _default_executor_kwargs = {"address": distributed.LocalCluster()}
     else:
         _windows_executor_msg = (
             "The default executor on Windows for 'adaptive.Runner' cannot "
@@ -117,10 +120,18 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     """
 
-    def __init__(self, learner, goal, *,
-                 executor=None, ntasks=None, log=False,
-                 shutdown_executor=False, retries=0,
-                 raise_if_retries_exceeded=True):
+    def __init__(
+        self,
+        learner,
+        goal,
+        *,
+        executor=None,
+        ntasks=None,
+        log=False,
+        shutdown_executor=False,
+        retries=0,
+        raise_if_retries_exceeded=True,
+    ):
 
         self.executor = _ensure_executor(executor)
         self.goal = goal
@@ -153,9 +164,9 @@ class BaseRunner(metaclass=abc.ABCMeta):
     def _do_raise(self, e, x):
         tb = self.tracebacks[x]
         raise RuntimeError(
-            'An error occured while evaluating '
+            "An error occured while evaluating "
             f'"learner.function({x})". '
-            f'See the traceback for details.:\n\n{tb}'
+            f"See the traceback for details.:\n\n{tb}"
         ) from e
 
     @property
@@ -163,13 +174,14 @@ class BaseRunner(metaclass=abc.ABCMeta):
         return self.log is not None
 
     def _ask(self, n):
-        points = [p for p in self.to_retry.keys()
-                  if p not in self.pending_points.values()][:n]
-        loss_improvements = len(points) * [float('inf')]
+        points = [
+            p for p in self.to_retry.keys() if p not in self.pending_points.values()
+        ][:n]
+        loss_improvements = len(points) * [float("inf")]
         if len(points) < n:
-            p, l = self.learner.ask(n - len(points))
-            points += p
-            loss_improvements += l
+            new_points, new_losses = self.learner.ask(n - len(points))
+            points += new_points
+            loss_improvements += new_losses
         return points, loss_improvements
 
     def overhead(self):
@@ -213,7 +225,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
                 self.to_retry.pop(x, None)
                 self.tracebacks.pop(x, None)
                 if self.do_log:
-                    self.log.append(('tell', x, y))
+                    self.log.append(("tell", x, y))
                 self.learner.tell(x, y)
 
     def _get_futures(self):
@@ -223,7 +235,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         n_new_tasks = max(0, self._get_max_tasks() - len(self.pending_points))
 
         if self.do_log:
-            self.log.append(('ask', n_new_tasks))
+            self.log.append(("ask", n_new_tasks))
 
         points, _ = self._ask(n_new_tasks)
 
@@ -251,9 +263,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
             # XXX: temporary set wait=True for Python 3.7
             # see https://github.com/python-adaptive/adaptive/issues/156
             # and https://github.com/python-adaptive/adaptive/pull/164
-            self.executor.shutdown(
-                wait=True if sys.version_info >= (3, 7) else False
-            )
+            self.executor.shutdown(wait=True if sys.version_info >= (3, 7) else False)
         self.end_time = time.time()
 
     @property
@@ -336,17 +346,32 @@ class BlockingRunner(BaseRunner):
 
     """
 
-    def __init__(self, learner, goal, *,
-                 executor=None, ntasks=None, log=False,
-                 shutdown_executor=False, retries=0,
-                 raise_if_retries_exceeded=True):
+    def __init__(
+        self,
+        learner,
+        goal,
+        *,
+        executor=None,
+        ntasks=None,
+        log=False,
+        shutdown_executor=False,
+        retries=0,
+        raise_if_retries_exceeded=True,
+    ):
         if inspect.iscoroutinefunction(learner.function):
-            raise ValueError("Coroutine functions can only be used "
-                             "with 'AsyncRunner'.")
-        super().__init__(learner, goal, executor=executor, ntasks=ntasks,
-                         log=log, shutdown_executor=shutdown_executor,
-                         retries=retries,
-                         raise_if_retries_exceeded=raise_if_retries_exceeded)
+            raise ValueError(
+                "Coroutine functions can only be used " "with 'AsyncRunner'."
+            )
+        super().__init__(
+            learner,
+            goal,
+            executor=executor,
+            ntasks=ntasks,
+            log=log,
+            shutdown_executor=shutdown_executor,
+            retries=retries,
+            raise_if_retries_exceeded=raise_if_retries_exceeded,
+        )
         self._run()
 
     def _submit(self, x):
@@ -356,13 +381,12 @@ class BlockingRunner(BaseRunner):
         first_completed = concurrent.FIRST_COMPLETED
 
         if self._get_max_tasks() < 1:
-            raise RuntimeError('Executor has no workers')
+            raise RuntimeError("Executor has no workers")
 
         try:
             while not self.goal(self.learner):
                 futures = self._get_futures()
-                done, _ = concurrent.wait(futures,
-                                          return_when=first_completed)
+                done, _ = concurrent.wait(futures, return_when=first_completed)
                 self._process_futures(done)
         finally:
             remaining = self._remove_unfinished()
@@ -451,19 +475,35 @@ class AsyncRunner(BaseRunner):
     run directly on the event loop (and not in the executor).
     """
 
-    def __init__(self, learner, goal=None, *,
-                 executor=None, ntasks=None, log=False,
-                 shutdown_executor=False, ioloop=None,
-                 retries=0, raise_if_retries_exceeded=True):
+    def __init__(
+        self,
+        learner,
+        goal=None,
+        *,
+        executor=None,
+        ntasks=None,
+        log=False,
+        shutdown_executor=False,
+        ioloop=None,
+        retries=0,
+        raise_if_retries_exceeded=True,
+    ):
 
         if goal is None:
+
             def goal(_):
                 return False
 
-        super().__init__(learner, goal, executor=executor, ntasks=ntasks,
-                         log=log, shutdown_executor=shutdown_executor,
-                         retries=retries,
-                         raise_if_retries_exceeded=raise_if_retries_exceeded)
+        super().__init__(
+            learner,
+            goal,
+            executor=executor,
+            ntasks=ntasks,
+            log=log,
+            shutdown_executor=shutdown_executor,
+            retries=retries,
+            raise_if_retries_exceeded=raise_if_retries_exceeded,
+        )
         self.ioloop = ioloop or asyncio.get_event_loop()
         self.task = None
 
@@ -473,17 +513,20 @@ class AsyncRunner(BaseRunner):
         # the user can have more fine-grained control over the parallelism.
         if inspect.iscoroutinefunction(learner.function):
             if executor:  # user-provided argument
-                raise RuntimeError('Cannot use an executor when learning an '
-                                   'async function.')
+                raise RuntimeError(
+                    "Cannot use an executor when learning an " "async function."
+                )
             self.executor.shutdown()  # Make sure we don't shoot ourselves later
 
         self.task = self.ioloop.create_task(self._run())
         self.saving_task = None
         if in_ipynb() and not self.ioloop.is_running():
-            warnings.warn("The runner has been scheduled, but the asyncio "
-                          "event loop is not running! If you are "
-                          "in a Jupyter notebook, remember to run "
-                          "'adaptive.notebook_extension()'")
+            warnings.warn(
+                "The runner has been scheduled, but the asyncio "
+                "event loop is not running! If you are "
+                "in a Jupyter notebook, remember to run "
+                "'adaptive.notebook_extension()'"
+            )
 
     def _submit(self, x):
         ioloop = self.ioloop
@@ -500,13 +543,13 @@ class AsyncRunner(BaseRunner):
         try:
             self.task.result()
         except asyncio.CancelledError:
-            return 'cancelled'
+            return "cancelled"
         except asyncio.InvalidStateError:
-            return 'running'
+            return "running"
         except Exception:
-            return 'failed'
+            return "failed"
         else:
-            return 'finished'
+            return "finished"
 
     def cancel(self):
         """Cancel the runner.
@@ -536,9 +579,9 @@ class AsyncRunner(BaseRunner):
         dm : `holoviews.core.DynamicMap`
             The plot that automatically updates every `update_interval`.
         """
-        return live_plot(self, plotter=plotter,
-                         update_interval=update_interval,
-                         name=name)
+        return live_plot(
+            self, plotter=plotter, update_interval=update_interval, name=name
+        )
 
     def live_info(self, *, update_interval=0.1):
         """Display live information about the runner.
@@ -552,14 +595,14 @@ class AsyncRunner(BaseRunner):
         first_completed = asyncio.FIRST_COMPLETED
 
         if self._get_max_tasks() < 1:
-            raise RuntimeError('Executor has no workers')
+            raise RuntimeError("Executor has no workers")
 
         try:
             while not self.goal(self.learner):
                 futures = self._get_futures()
-                done, _ = await asyncio.wait(futures,
-                                             return_when=first_completed,
-                                             loop=self.ioloop)
+                done, _ = await asyncio.wait(
+                    futures, return_when=first_completed, loop=self.ioloop
+                )
                 self._process_futures(done)
         finally:
             remaining = self._remove_unfinished()
@@ -597,11 +640,13 @@ class AsyncRunner(BaseRunner):
         ...     save_kwargs=dict(fname='data/test.pickle'),
         ...     interval=600)
         """
+
         async def _saver(save_kwargs=save_kwargs, interval=interval):
-            while self.status() == 'running':
+            while self.status() == "running":
                 self.learner.save(**save_kwargs)
                 await asyncio.sleep(interval)
             self.learner.save(**save_kwargs)  # one last time
+
         self.saving_task = self.ioloop.create_task(_saver())
         return self.saving_task
 
@@ -684,24 +729,26 @@ def _ensure_executor(executor):
     elif with_distributed and isinstance(executor, distributed.Client):
         return executor.get_executor()
     else:
-        raise TypeError('Only a concurrent.futures.Executor, distributed.Client,'
-                        ' or ipyparallel.Client can be used.')
+        raise TypeError(
+            "Only a concurrent.futures.Executor, distributed.Client,"
+            " or ipyparallel.Client can be used."
+        )
 
 
 def _get_ncores(ex):
     """Return the maximum  number of cores that an executor can use."""
     if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
         return len(ex.view)
-    elif isinstance(ex, (concurrent.ProcessPoolExecutor,
-                         concurrent.ThreadPoolExecutor)):
+    elif isinstance(
+        ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
+    ):
         return ex._max_workers  # not public API!
     elif isinstance(ex, SequentialExecutor):
         return 1
     elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
         return sum(n for n in ex._client.ncores().values())
     elif with_mpi4py and isinstance(ex, mpi4py.futures.MPIPoolExecutor):
-        ex.bootup() # wait until all workers are up and running
+        ex.bootup()  # wait until all workers are up and running
         return ex._pool.size  # not public API!
     else:
-        raise TypeError('Cannot get number of cores for {}'
-                        .format(ex.__class__))
+        raise TypeError("Cannot get number of cores for {}".format(ex.__class__))

@@ -14,6 +14,7 @@ from adaptive.utils import cache_latest
 
 # Learner2D and helper functions.
 
+
 def deviations(ip):
     """Returns the deviation of the linear estimate.
 
@@ -30,7 +31,8 @@ def deviations(ip):
     """
     values = ip.values / (ip.values.ptp(axis=0).max() or 1)
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
-        ip.tri, values, tol=1e-6)
+        ip.tri, values, tol=1e-6
+    )
 
     p = ip.tri.points[ip.tri.vertices]
     vs = values[ip.tri.vertices]
@@ -39,8 +41,9 @@ def deviations(ip):
     def deviation(p, v, g):
         dev = 0
         for j in range(3):
-            vest = v[:, j, None] + ((p[:, :, :] - p[:, j, None, :]) *
-                                    g[:, j, None, :]).sum(axis=-1)
+            vest = v[:, j, None] + (
+                (p[:, :, :] - p[:, j, None, :]) * g[:, j, None, :]
+            ).sum(axis=-1)
             dev += abs(vest - v).max(axis=1)
         return dev
 
@@ -111,18 +114,20 @@ def resolution_loss_function(min_distance=0, max_distance=1):
     ...                              loss_per_triangle=loss)
     >>>
     """
+
     def resolution_loss(ip):
         loss = default_loss(ip)
 
         A = areas(ip)
         # Setting areas with a small area to zero such that they won't be chosen again
-        loss[A < min_distance**2] = 0
+        loss[A < min_distance ** 2] = 0
 
         # Setting triangles that have a size larger than max_distance to infinite loss
         # such that these triangles will be picked
-        loss[A > max_distance**2] = np.inf
+        loss[A > max_distance ** 2] = np.inf
 
         return loss
+
     return resolution_loss
 
 
@@ -199,7 +204,7 @@ def choose_point_in_triangle(triangle, max_badness):
     i = edge_lengths.argmax()
 
     # We multiply by sqrt(3) / 4 such that a equilateral triangle has badness=1
-    badness = (edge_lengths[i]**2 / area) * (sqrt(3) / 4)
+    badness = (edge_lengths[i] ** 2 / area) * (sqrt(3) / 4)
     if badness > max_badness:
         point = (triangle_roll[i] + triangle[i]) / 2
     else:
@@ -336,8 +341,9 @@ class Learner2D(BaseLearner):
 
     @property
     def bounds_are_done(self):
-        return not any((p in self.pending_points or p in self._stack)
-                       for p in self._bounds_points)
+        return not any(
+            (p in self.pending_points or p in self._stack) for p in self._bounds_points
+        )
 
     def _data_in_bounds(self):
         if self.data:
@@ -392,8 +398,7 @@ class Learner2D(BaseLearner):
         if self._ip_combined is None:
             points, values = self._data_combined()
             points = self._scale(points)
-            self._ip_combined = interpolate.LinearNDInterpolator(points,
-                                                                 values)
+            self._ip_combined = interpolate.LinearNDInterpolator(points, values)
         return self._ip_combined
 
     def inside_bounds(self, xy):
@@ -437,9 +442,11 @@ class Learner2D(BaseLearner):
 
             # np.clip results in numerical precision problems
             # https://github.com/python-adaptive/adaptive/issues/7
-            clip = lambda x, l, u: max(l, min(u, x))
-            point_new = (clip(point_new[0], *self.bounds[0]),
-                         clip(point_new[1], *self.bounds[1]))
+            clip = lambda x, l, u: max(l, min(u, x))  # noqa: E731
+            point_new = (
+                clip(point_new[0], *self.bounds[0]),
+                clip(point_new[1], *self.bounds[1]),
+            )
 
             loss_new = losses[jsimplex]
 
@@ -469,7 +476,8 @@ class Learner2D(BaseLearner):
             # than the number of triangles between the points. Therefore
             # it could fill up till a length smaller than `stack_till`.
             new_points, new_loss_improvements = self._fill_stack(
-                stack_till=max(n_left, self.stack_size))
+                stack_till=max(n_left, self.stack_size)
+            )
             for p in new_points[:n_left]:
                 self.tell_pending(p)
             n_left -= len(new_points)
@@ -478,8 +486,7 @@ class Learner2D(BaseLearner):
             loss_improvements += new_loss_improvements
 
         if not tell_pending:
-            self._stack = OrderedDict(zip(points[:self.stack_size],
-                                          loss_improvements))
+            self._stack = OrderedDict(zip(points[: self.stack_size], loss_improvements))
             for point in points[:n]:
                 self.pending_points.discard(point)
 
@@ -551,18 +558,22 @@ class Learner2D(BaseLearner):
             z = ip(x[:, None], y[None, :] * self.aspect_ratio).squeeze()
 
             if self.vdim > 1:
-                ims = {i: hv.Image(np.rot90(z[:, :, i]), bounds=lbrt)
-                       for i in range(z.shape[-1])}
+                ims = {
+                    i: hv.Image(np.rot90(z[:, :, i]), bounds=lbrt)
+                    for i in range(z.shape[-1])
+                }
                 im = hv.HoloMap(ims)
             else:
                 im = hv.Image(np.rot90(z), bounds=lbrt)
 
             if tri_alpha:
                 points = self._unscale(ip.tri.points[ip.tri.vertices])
-                points = np.pad(points[:, [0, 1, 2, 0], :],
-                                pad_width=((0, 0), (0, 1), (0, 0)),
-                                mode='constant',
-                                constant_values=np.nan).reshape(-1, 2)
+                points = np.pad(
+                    points[:, [0, 1, 2, 0], :],
+                    pad_width=((0, 0), (0, 1), (0, 0)),
+                    mode="constant",
+                    constant_values=np.nan,
+                ).reshape(-1, 2)
                 tris = hv.EdgePaths([points])
             else:
                 tris = hv.EdgePaths([])
@@ -570,7 +581,7 @@ class Learner2D(BaseLearner):
             im = hv.Image([], bounds=lbrt)
             tris = hv.EdgePaths([])
 
-        im_opts = dict(cmap='viridis')
+        im_opts = dict(cmap="viridis")
         tri_opts = dict(line_width=0.5, alpha=tri_alpha)
         no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
 

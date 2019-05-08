@@ -22,7 +22,7 @@ def legendre(n):
     for i in range(2, n):
         # Use Bonnet's recursion formula.
         new = (i + 1) * [Fraction(0)]
-        new[1:] = (r * (2*i - 1) for r in result[-1])
+        new[1:] = (r * (2 * i - 1) for r in result[-1])
         new[:-2] = (n - r * (i - 1) for n, r in zip(new[:-2], result[-2]))
         new[:] = (n / i for n in new)
         result.append(new)
@@ -47,7 +47,7 @@ def newton(n):
     # term m * cos(a * Pi / n) to be added to prefactor of the
     # monomial x^(n-d).
 
-    mod = 2 * (n-1)
+    mod = 2 * (n - 1)
     terms = defaultdict(int)
     terms[0, 0] += 1
 
@@ -58,7 +58,7 @@ def newton(n):
                 # In order to reduce the number of terms, cosine
                 # arguments are mapped back to the inteval [0, pi/2).
                 arg = (a + b) % mod
-                if arg > n-1:
+                if arg > n - 1:
                     arg = mod - arg
                 if arg >= n // 2:
                     if n % 2 and arg == n // 2:
@@ -80,9 +80,9 @@ def newton(n):
         # c[n - d] += m * np.cos(a * np.pi / (n - 1))
 
     cf = np.array(c, float)
-    assert all(int(cfe) == ce for cfe, ce in zip(cf, c)), 'Precision loss'
+    assert all(int(cfe) == ce for cfe, ce in zip(cf, c)), "Precision loss"
 
-    cf /= 2.**np.arange(n, -1, -1)
+    cf /= 2.0 ** np.arange(n, -1, -1)
     return cf
 
 
@@ -121,13 +121,13 @@ def calc_bdef(ns):
     for n in ns:
         poly = []
         a = list(map(Fraction, newton(n)))
-        for b in legs[:n + 1]:
+        for b in legs[: n + 1]:
             igral = scalar_product(a, b)
 
             # Normalize & store.  (The polynomials returned by
             # legendre() have standard normalization that is not
             # orthonormal.)
-            poly.append(np.sqrt((2*len(b) - 1) / 2) * igral)
+            poly.append(np.sqrt((2 * len(b) - 1) / 2) * igral)
 
         result.append(np.array(poly))
     return result
@@ -136,7 +136,7 @@ def calc_bdef(ns):
 def calc_V(x, n):
     V = [np.ones(x.shape), x.copy()]
     for i in range(2, n):
-        V.append((2*i-1) / i * x * V[-1] - (i-1) / i * V[-2])
+        V.append((2 * i - 1) / i * x * V[-1] - (i - 1) / i * V[-2])
     for i in range(n):
         V[i] *= np.sqrt(i + 0.5)
     return np.array(V).T
@@ -174,7 +174,7 @@ ndiv_max = 20
 
 # set-up the downdate matrix
 k = np.arange(ns[3])
-alpha = np.sqrt((k+1)**2 / (2*k+1) / (2*k+3))
-gamma = np.concatenate([[0, 0], np.sqrt(k[2:]**2 / (4*k[2:]**2-1))])
+alpha = np.sqrt((k + 1) ** 2 / (2 * k + 1) / (2 * k + 3))
+gamma = np.concatenate([[0, 0], np.sqrt(k[2:] ** 2 / (4 * k[2:] ** 2 - 1))])
 
 b_def = calc_bdef(ns)

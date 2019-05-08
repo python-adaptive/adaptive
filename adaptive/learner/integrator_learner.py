@@ -14,8 +14,21 @@ from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest, restore
 
-from .integrator_coeffs import (T_left, T_right, V_inv, Vcond, alpha, b_def,
-                                eps, gamma, hint, min_sep, ndiv_max, ns, xi)
+from .integrator_coeffs import (
+    T_left,
+    T_right,
+    V_inv,
+    Vcond,
+    alpha,
+    b_def,
+    eps,
+    gamma,
+    hint,
+    min_sep,
+    ndiv_max,
+    ns,
+    xi,
+)
 
 
 def _downdate(c, nans, depth):
@@ -27,8 +40,7 @@ def _downdate(c, nans, depth):
         xii = xi[depth][i]
         b[m] = (b[m] + xii * b[m + 1]) / alpha[m - 1]
         for j in range(m - 1, 0, -1):
-            b[j] = ((b[j] + xii * b[j + 1] - gamma[j + 1] * b[j + 2])
-                    / alpha[j - 1])
+            b[j] = (b[j] + xii * b[j + 1] - gamma[j + 1] * b[j + 2]) / alpha[j - 1]
         b = b[1:]
 
         c[:m] -= c[m] / b[m] * b[:m]
@@ -109,9 +121,22 @@ class _Interval:
     """
 
     __slots__ = [
-        'a', 'b', 'c', 'c00', 'depth', 'igral', 'err', 'fx', 'rdepth',
-        'ndiv', 'parent', 'children', 'done_points', 'done_leaves',
-        'depth_complete', 'removed',
+        "a",
+        "b",
+        "c",
+        "c00",
+        "depth",
+        "igral",
+        "err",
+        "fx",
+        "rdepth",
+        "ndiv",
+        "parent",
+        "children",
+        "done_points",
+        "done_leaves",
+        "depth_complete",
+        "removed",
     ]
 
     def __init__(self, a, b, depth, rdepth):
@@ -165,8 +190,10 @@ class _Interval:
     def split(self):
         points = self.points()
         m = points[len(points) // 2]
-        ivals = [_Interval(self.a, m, 0, self.rdepth + 1),
-                 _Interval(m, self.b, 0, self.rdepth + 1)]
+        ivals = [
+            _Interval(self.a, m, 0, self.rdepth + 1),
+            _Interval(m, self.b, 0, self.rdepth + 1),
+        ]
         self.children = ivals
         for ival in ivals:
             ival.parent = self
@@ -185,16 +212,17 @@ class _Interval:
         children."""
         self.err = value
         for child in self.children:
-            if child.depth_complete or (child.depth_complete == 0
-                                        and self.depth_complete is not None):
+            if child.depth_complete or (
+                child.depth_complete == 0 and self.depth_complete is not None
+            ):
                 continue
             child.update_heuristic_err(value / 2)
 
     def calc_err(self, c_old):
         c_new = self.c
         c_diff = np.zeros(max(len(c_old), len(c_new)))
-        c_diff[:len(c_old)] = c_old
-        c_diff[:len(c_new)] -= c_new
+        c_diff[: len(c_old)] = c_old
+        c_diff[: len(c_new)] -= c_new
         c_diff = norm(c_diff)
         self.err = (self.b - self.a) * c_diff
         for child in self.children:
@@ -203,7 +231,7 @@ class _Interval:
         return c_diff
 
     def calc_ndiv(self):
-        div = (self.parent.c00 and self.c00 / self.parent.c00 > 2)
+        div = self.parent.c00 and self.c00 / self.parent.c00 > 2
         self.ndiv += div
 
         if self.ndiv > ndiv_max and 2 * self.ndiv > self.rdepth:
@@ -254,7 +282,7 @@ class _Interval:
             self.c00 = self.c[0]
 
             if self.parent.depth_complete is not None:
-                c_old = self.T[:, :ns[self.parent.depth_complete]] @ self.parent.c
+                c_old = self.T[:, : ns[self.parent.depth_complete]] @ self.parent.c
                 self.calc_err(c_old)
                 self.calc_ndiv()
 
@@ -262,7 +290,7 @@ class _Interval:
                 if child.depth_complete is not None:
                     child.calc_ndiv()
                 if child.depth_complete == 0:
-                    c_old = child.T[:, :ns[self.depth_complete]] @ self.c
+                    c_old = child.T[:, : ns[self.depth_complete]] @ self.c
                     child.calc_err(c_old)
 
         if self.done_leaves is not None and not len(self.done_leaves):
@@ -274,8 +302,9 @@ class _Interval:
             ival = self.parent
             old_leaves = set()
             while ival is not None:
-                unused_children = [child for child in ival.children
-                                   if child.done_leaves is not None]
+                unused_children = [
+                    child for child in ival.children if child.done_leaves is not None
+                ]
 
                 if not all(len(child.done_leaves) for child in unused_children):
                     break
@@ -297,17 +326,16 @@ class _Interval:
 
     def __repr__(self):
         lst = [
-            f'(a, b)=({self.a:.5f}, {self.b:.5f})',
-            f'depth={self.depth}',
-            f'rdepth={self.rdepth}',
-            f'err={self.err:.5E}',
-            'igral={:.5E}'.format(self.igral if hasattr(self, 'igral') else np.inf),
+            f"(a, b)=({self.a:.5f}, {self.b:.5f})",
+            f"depth={self.depth}",
+            f"rdepth={self.rdepth}",
+            f"err={self.err:.5E}",
+            "igral={:.5E}".format(self.igral if hasattr(self, "igral") else np.inf),
         ]
-        return ' '.join(lst)
+        return " ".join(lst)
 
 
 class IntegratorLearner(BaseLearner):
-
     def __init__(self, function, bounds, tol):
         """
         Parameters
@@ -350,7 +378,7 @@ class IntegratorLearner(BaseLearner):
         self.done_points = {}
         self.pending_points = set()
         self._stack = []
-        self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
+        self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter("rdepth")))
         self.ivals = set()
         ival = _Interval.make_first(*self.bounds)
         self.add_ival(ival)
@@ -362,8 +390,7 @@ class IntegratorLearner(BaseLearner):
 
     def tell(self, point, value):
         if point not in self.x_mapping:
-            raise ValueError("Point {} doesn't belong to any interval"
-                             .format(point))
+            raise ValueError("Point {} doesn't belong to any interval".format(point))
         self.done_points[point] = value
         self.pending_points.discard(point)
 
@@ -445,8 +472,9 @@ class IntegratorLearner(BaseLearner):
     def pop_from_stack(self, n):
         points = self._stack[:n]
         self._stack = self._stack[n:]
-        loss_improvements = [max(ival.err for ival in self.x_mapping[x])
-                             for x in points]
+        loss_improvements = [
+            max(ival.err for ival in self.x_mapping[x]) for x in points
+        ]
         return points, loss_improvements
 
     def remove_unfinished(self):
@@ -467,8 +495,10 @@ class IntegratorLearner(BaseLearner):
         # don't continue with splitting or refining.
         points = ival.points()
 
-        if (points[1] - points[0] < points[0] * min_sep
-            or points[-1] - points[-2] < points[-2] * min_sep):
+        if (
+            points[1] - points[0] < points[0] * min_sep
+            or points[-1] - points[-2] < points[-2] * min_sep
+        ):
             self.ivals.remove(ival)
         elif ival.depth == 3 or force_split:
             # Always split when depth is maximal or if refining didn't help
@@ -507,12 +537,13 @@ class IntegratorLearner(BaseLearner):
     def done(self):
         err = self.err
         igral = self.igral
-        err_excess = sum(i.err for i in self.approximating_intervals
-                         if i.removed)
-        return (err == 0
-                or err < abs(igral) * self.tol
-                or (err - err_excess < abs(igral) * self.tol < err_excess)
-                or not self.ivals)
+        err_excess = sum(i.err for i in self.approximating_intervals if i.removed)
+        return (
+            err == 0
+            or err < abs(igral) * self.tol
+            or (err - err_excess < abs(igral) * self.tol < err_excess)
+            or not self.ivals
+        )
 
     @cache_latest
     def loss(self, real=True):
@@ -520,28 +551,32 @@ class IntegratorLearner(BaseLearner):
 
     def plot(self):
         hv = ensure_holoviews()
-        ivals = sorted(self.ivals, key=attrgetter('a'))
+        ivals = sorted(self.ivals, key=attrgetter("a"))
         if not self.done_points:
             return hv.Path([])
-        xs, ys = zip(*[(x, y) for ival in ivals
-                       for x, y in sorted(ival.done_points.items())])
+        xs, ys = zip(
+            *[(x, y) for ival in ivals for x, y in sorted(ival.done_points.items())]
+        )
         return hv.Path((xs, ys))
 
     def _get_data(self):
         # Change the defaultdict of SortedSets to a normal dict of sets.
         x_mapping = {k: set(v) for k, v in self.x_mapping.items()}
 
-        return (self.priority_split,
-                self.done_points,
-                self.pending_points,
-                self._stack,
-                x_mapping,
-                self.ivals,
-                self.first_ival)
+        return (
+            self.priority_split,
+            self.done_points,
+            self.pending_points,
+            self._stack,
+            x_mapping,
+            self.ivals,
+            self.first_ival,
+        )
 
     def _set_data(self, data):
-        self.priority_split, self.done_points, self.pending_points, \
-            self._stack, x_mapping, self.ivals, self.first_ival = data
+        self.priority_split, self.done_points, self.pending_points, self._stack, x_mapping, self.ivals, self.first_ival = (
+            data
+        )
 
         # Add the pending_points to the _stack such that they are evaluated again
         for x in self.pending_points:
@@ -550,6 +585,6 @@ class IntegratorLearner(BaseLearner):
 
         # x_mapping is a data structure that can't easily be saved
         # so we recreate it here
-        self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
+        self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter("rdepth")))
         for k, _set in x_mapping.items():
             self.x_mapping[k].update(_set)

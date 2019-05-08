@@ -14,19 +14,25 @@ from nbconvert.preprocessors import Preprocessor
 
 class RemoveMetadata(Preprocessor):
     def preprocess(self, nb, resources):
-        nb.metadata = {"language_info": {"name":"python",
-                                         "pygments_lexer": "ipython3"}}
+        nb.metadata = {
+            "language_info": {"name": "python", "pygments_lexer": "ipython3"}
+        }
         return nb, resources
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # The filter is getting activated
     import os
+
     git_cmd = 'git config filter.ipynb_filter.clean "jupyter nbconvert --to notebook --config ipynb_filter.py --stdin --stdout"'
     os.system(git_cmd)
 else:
     # This script is used as config
-    c.Exporter.preprocessors = [RemoveMetadata]
-    c.ClearOutputPreprocessor.enabled = True
-    c.ClearOutputPreprocessor.remove_metadata_fields = [
-        "deletable", "editable", "collapsed", "scrolled"]
+    c.Exporter.preprocessors = [RemoveMetadata]  # noqa: F821
+    c.ClearOutputPreprocessor.enabled = True  # noqa: F821
+    c.ClearOutputPreprocessor.remove_metadata_fields = [  # noqa: F821
+        "deletable",
+        "editable",
+        "collapsed",
+        "scrolled",
+    ]
