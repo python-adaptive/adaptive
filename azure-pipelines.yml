@@ -23,5 +23,6 @@ steps:
 
 - script: |
     source activate adaptive
-    black . --check -t py36
-  displayName: 'Run lint tests'
+    pre-commit install
+    pre-commit run --all-files
+  displayName: 'Run pre-commit'
