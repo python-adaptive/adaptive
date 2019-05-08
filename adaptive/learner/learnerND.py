@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import functools
-import heapq
 import itertools
 import random
 from collections import OrderedDict
@@ -13,9 +12,13 @@ from scipy import interpolate
 from sortedcontainers import SortedKeyList
 
 from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
-from adaptive.learner.triangulation import (Triangulation, circumsphere,
-                                            fast_det, point_in_simplex,
-                                            simplex_volume_in_embedding)
+from adaptive.learner.triangulation import (
+    Triangulation,
+    circumsphere,
+    fast_det,
+    point_in_simplex,
+    simplex_volume_in_embedding,
+)
 from adaptive.notebook_integration import ensure_holoviews, ensure_plotly
 from adaptive.utils import cache_latest, restore
 
@@ -54,7 +57,7 @@ def std_loss(simplex, ys):
 
     dim = len(simplex) - 1
 
-    return r.flat * np.power(vol, 1. / dim) + vol
+    return r.flat * np.power(vol, 1.0 / dim) + vol
 
 
 def default_loss(simplex, ys):
@@ -97,8 +100,9 @@ def triangle_loss(simplex, values, neighbors, neighbor_values):
     s = [(*x, *to_list(y)) for x, y in zip(simplex, values)]
     n = [(*x, *to_list(y)) for x, y in zip(neighbors, neighbor_values)]
 
-    return sum(simplex_volume_in_embedding([*s, neighbor])
-               for neighbor in n) / len(neighbors)
+    return sum(simplex_volume_in_embedding([*s, neighbor]) for neighbor in n) / len(
+        neighbors
+    )
 
 
 def curvature_loss_function(exploration=0.05):
@@ -123,11 +127,14 @@ def curvature_loss_function(exploration=0.05):
         -------
         loss : float
         """
-        dim = len(simplex[0]) # the number of coordinates
+        dim = len(simplex[0])  # the number of coordinates
         loss_input_volume = volume(simplex)
 
         loss_curvature = triangle_loss(simplex, values, neighbors, neighbor_values)
-        return (loss_curvature + exploration * loss_input_volume ** ((2 + dim) / dim)) ** (1 / (2 + dim))
+        return (
+            loss_curvature + exploration * loss_input_volume ** ((2 + dim) / dim)
+        ) ** (1 / (2 + dim))
+
     return curvature_loss
 
 
@@ -163,8 +170,7 @@ def choose_point_in_simplex(simplex, transform=None):
     else:
         distances = scipy.spatial.distance.pdist(simplex)
         distance_matrix = scipy.spatial.distance.squareform(distances)
-        i, j = np.unravel_index(np.argmax(distance_matrix),
-                                distance_matrix.shape)
+        i, j = np.unravel_index(np.argmax(distance_matrix), distance_matrix.shape)
         point = (simplex[i, :] + simplex[j, :]) / 2
 
     if transform is not None:
@@ -237,12 +243,14 @@ class LearnerND(BaseLearner):
         self._vdim = None
         self.loss_per_simplex = loss_per_simplex or default_loss
 
-        if hasattr(self.loss_per_simplex, 'nth_neighbors'):
+        if hasattr(self.loss_per_simplex, "nth_neighbors"):
             if self.loss_per_simplex.nth_neighbors > 1:
-                raise NotImplementedError('The provided loss function wants '
-                    'next-nearest neighboring simplices for the loss computation, '
-                    'this feature is not yet implemented, either use '
-                    'nth_neightbors = 0 or 1')
+                raise NotImplementedError(
+                    "The provided loss function wants "
+                    "next-nearest neighboring simplices for the loss computation, "
+                    "this feature is not yet implemented, either use "
+                    "nth_neightbors = 0 or 1"
+                )
             self.nth_neighbors = self.loss_per_simplex.nth_neighbors
         else:
             self.nth_neighbors = 0
@@ -276,7 +284,9 @@ class LearnerND(BaseLearner):
         # for the output
         self._min_value = None
         self._max_value = None
-        self._output_multiplier = 1 # If we do not know anything, do not scale the values
+        self._output_multiplier = (
+            1
+        )  # If we do not know anything, do not scale the values
         self._recompute_losses_factor = 1.1
 
         # create a private random number generator with fixed seed
@@ -375,8 +385,7 @@ class LearnerND(BaseLearner):
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = None
-            to_delete, to_add = tri.add_point(
-                point, simplex, transform=self._transform)
+            to_delete, to_add = tri.add_point(point, simplex, transform=self._transform)
             self._update_losses(to_delete, to_add)
 
     def _simplex_exists(self, simplex):
@@ -385,12 +394,13 @@ class LearnerND(BaseLearner):
 
     def inside_bounds(self, point):
         """Check whether a point is inside the bounds."""
-        if hasattr(self, '_interior'):
+        if hasattr(self, "_interior"):
             return self._interior.find_simplex(point, tol=1e-8) >= 0
         else:
             eps = 1e-8
-            return all((mn - eps) <= p <= (mx + eps) for p, (mn, mx)
-                       in zip(point, self._bbox))
+            return all(
+                (mn - eps) <= p <= (mx + eps) for p, (mn, mx) in zip(point, self._bbox)
+            )
 
     def tell_pending(self, point, *, simplex=None):
         point = tuple(point)
@@ -454,8 +464,11 @@ class LearnerND(BaseLearner):
 
     def _ask_bound_point(self):
         # get the next bound point that is still available
-        new_point = next(p for p in self._bounds_points
-                         if p not in self.data and p not in self.pending_points)
+        new_point = next(
+            p
+            for p in self._bounds_points
+            if p not in self.data and p not in self.pending_points
+        )
         self.tell_pending(new_point)
         return new_point, np.inf
 
@@ -480,13 +493,17 @@ class LearnerND(BaseLearner):
         while len(self._simplex_queue):
             # XXX: Need to add check that the loss is the most recent computed loss
             loss, simplex, subsimplex = self._simplex_queue.pop(0)
-            if (subsimplex is None
+            if (
+                subsimplex is None
                 and simplex in self.tri.simplices
-                and simplex not in self._subtriangulations):
+                and simplex not in self._subtriangulations
+            ):
                 return abs(loss), simplex, subsimplex
-            if (simplex in self._subtriangulations
+            if (
+                simplex in self._subtriangulations
                 and simplex in self.tri.simplices
-                and subsimplex in self._subtriangulations[simplex].simplices):
+                and subsimplex in self._subtriangulations[simplex].simplices
+            ):
                 return abs(loss), simplex, subsimplex
 
         # Could not find a simplex, this code should never be reached
@@ -509,8 +526,7 @@ class LearnerND(BaseLearner):
             subtri = self._subtriangulations[simplex]
             points = subtri.get_vertices(subsimplex)
 
-        point_new = tuple(choose_point_in_simplex(points,
-                                                  transform=self._transform))
+        point_new = tuple(choose_point_in_simplex(points, transform=self._transform))
 
         self._pending_to_simplex[point_new] = simplex
         self.tell_pending(point_new, simplex=simplex)  # O(??)
@@ -519,8 +535,10 @@ class LearnerND(BaseLearner):
 
     @property
     def _bounds_available(self):
-        return any((p not in self.pending_points and p not in self.data)
-                   for p in self._bounds_points)
+        return any(
+            (p not in self.pending_points and p not in self.data)
+            for p in self._bounds_points
+        )
 
     def _ask(self):
         if self._bounds_available:
@@ -561,7 +579,9 @@ class LearnerND(BaseLearner):
             if value is not None:
                 neighbor_values[i] = self._output_multiplier * value
 
-        return float(self.loss_per_simplex(vertices, values, neighbor_points, neighbor_values))
+        return float(
+            self.loss_per_simplex(vertices, values, neighbor_points, neighbor_values)
+        )
 
     def _update_losses(self, to_delete: set, to_add: set):
         # XXX: add the points outside the triangulation to this as well
@@ -573,8 +593,9 @@ class LearnerND(BaseLearner):
             if subtri is not None:
                 pending_points_unbound.update(subtri.vertices)
 
-        pending_points_unbound = {p for p in pending_points_unbound
-                                  if p not in self.data}
+        pending_points_unbound = {
+            p for p in pending_points_unbound if p not in self.data
+        }
         for simplex in to_add:
             loss = self._compute_loss(simplex)
             self._losses[simplex] = loss
@@ -587,12 +608,15 @@ class LearnerND(BaseLearner):
                 continue
 
             self._update_subsimplex_losses(
-                simplex, self._subtriangulations[simplex].simplices)
+                simplex, self._subtriangulations[simplex].simplices
+            )
 
         if self.nth_neighbors:
             points_of_added_simplices = set.union(*[set(s) for s in to_add])
-            neighbors = self.tri.get_simplices_attached_to_points(
-                points_of_added_simplices) - to_add
+            neighbors = (
+                self.tri.get_simplices_attached_to_points(points_of_added_simplices)
+                - to_add
+            )
             for simplex in neighbors:
                 loss = self._compute_loss(simplex)
                 self._losses[simplex] = loss
@@ -602,7 +626,8 @@ class LearnerND(BaseLearner):
                     continue
 
                 self._update_subsimplex_losses(
-                    simplex, self._subtriangulations[simplex].simplices)
+                    simplex, self._subtriangulations[simplex].simplices
+                )
 
     def _recompute_all_losses(self):
         """Recompute all losses and pending losses."""
@@ -624,7 +649,8 @@ class LearnerND(BaseLearner):
                 continue
 
             self._update_subsimplex_losses(
-                simplex, self._subtriangulations[simplex].simplices)
+                simplex, self._subtriangulations[simplex].simplices
+            )
 
     @property
     def _scale(self):
@@ -647,8 +673,7 @@ class LearnerND(BaseLearner):
 
         # the maximum absolute value that is in the range. Because this is the
         # largest number, this also has the largest absolute numerical error.
-        max_absolute_value_in_range = max(abs(self._min_value),
-                                          abs(self._max_value))
+        max_absolute_value_in_range = max(abs(self._min_value), abs(self._max_value))
         # since a float has a relative error of 1e-15, the absolute error is the value * 1e-15
         abs_err = 1e-15 * max_absolute_value_in_range
         # when scaling the floats, the error gets increased.
@@ -671,7 +696,7 @@ class LearnerND(BaseLearner):
     def loss(self, real=True):
         # XXX: compute pending loss if real == False
         losses = self._losses if self.tri is not None else dict()
-        return max(losses.values()) if losses else float('inf')
+        return max(losses.values()) if losses else float("inf")
 
     def remove_unfinished(self):
         # XXX: implement this method
@@ -695,11 +720,14 @@ class LearnerND(BaseLearner):
         """
         hv = ensure_holoviews()
         if self.vdim > 1:
-            raise NotImplementedError('holoviews currently does not support',
-                                      '3D surface plots in bokeh.')
+            raise NotImplementedError(
+                "holoviews currently does not support", "3D surface plots in bokeh."
+            )
         if self.ndim != 2:
-            raise NotImplementedError("Only 2D plots are implemented: You can "
-                                      "plot a 2D slice with 'plot_slice'.")
+            raise NotImplementedError(
+                "Only 2D plots are implemented: You can "
+                "plot a 2D slice with 'plot_slice'."
+            )
         x, y = self._bbox
         lbrt = x[0], y[0], x[1], y[1]
 
@@ -719,12 +747,15 @@ class LearnerND(BaseLearner):
             im = hv.Image(np.rot90(z), bounds=lbrt)
 
             if tri_alpha:
-                points = np.array([self.tri.get_vertices(s)
-                                   for s in self.tri.simplices])
-                points = np.pad(points[:, [0, 1, 2, 0], :],
-                                pad_width=((0, 0), (0, 1), (0, 0)),
-                                mode='constant',
-                                constant_values=np.nan).reshape(-1, 2)
+                points = np.array(
+                    [self.tri.get_vertices(s) for s in self.tri.simplices]
+                )
+                points = np.pad(
+                    points[:, [0, 1, 2, 0], :],
+                    pad_width=((0, 0), (0, 1), (0, 0)),
+                    mode="constant",
+                    constant_values=np.nan,
+                ).reshape(-1, 2)
                 tris = hv.EdgePaths([points])
             else:
                 tris = hv.EdgePaths([])
@@ -732,7 +763,7 @@ class LearnerND(BaseLearner):
             im = hv.Image([], bounds=lbrt)
             tris = hv.EdgePaths([])
 
-        im_opts = dict(cmap='viridis')
+        im_opts = dict(cmap="viridis")
         tri_opts = dict(line_width=0.5, alpha=tri_alpha)
         no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
 
@@ -756,11 +787,14 @@ class LearnerND(BaseLearner):
             if not self.data:
                 return hv.Scatter([]) * hv.Path([])
             elif self.vdim > 1:
-                raise NotImplementedError('multidimensional output not yet'
-                                          ' supported by `plot_slice`')
+                raise NotImplementedError(
+                    "multidimensional output not yet" " supported by `plot_slice`"
+                )
             n = n or 201
-            values = [cut_mapping.get(i, np.linspace(*self._bbox[i], n))
-                      for i in range(self.ndim)]
+            values = [
+                cut_mapping.get(i, np.linspace(*self._bbox[i], n))
+                for i in range(self.ndim)
+            ]
             ind = next(i for i in range(self.ndim) if i not in cut_mapping)
             x = values[ind]
             y = self._ip()(*values)
@@ -773,8 +807,9 @@ class LearnerND(BaseLearner):
 
         elif plot_dim == 2:
             if self.vdim > 1:
-                raise NotImplementedError('holoviews currently does not support'
-                                          ' 3D surface plots in bokeh.')
+                raise NotImplementedError(
+                    "holoviews currently does not support" " 3D surface plots in bokeh."
+                )
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
@@ -784,12 +819,14 @@ class LearnerND(BaseLearner):
 
             xs = ys = np.linspace(0, 1, n)
             xys = [xs[:, None], ys[None, :]]
-            values = [cut_mapping[i] if i in cut_mapping
-                      else xys.pop(0) * (b[1] - b[0]) + b[0]
-                      for i, b in enumerate(self._bbox)]
+            values = [
+                cut_mapping[i]
+                if i in cut_mapping
+                else xys.pop(0) * (b[1] - b[0]) + b[0]
+                for i, b in enumerate(self._bbox)
+            ]
 
-            lbrt = [b for i, b in enumerate(self._bbox)
-                    if i not in cut_mapping]
+            lbrt = [b for i, b in enumerate(self._bbox) if i not in cut_mapping]
             lbrt = np.reshape(lbrt, (2, 2)).T.flatten().tolist()
 
             if len(self.data) >= 4:
@@ -798,7 +835,7 @@ class LearnerND(BaseLearner):
             else:
                 im = hv.Image([], bounds=lbrt)
 
-            return im.opts(style=dict(cmap='viridis'))
+            return im.opts(style=dict(cmap="viridis"))
         else:
             raise ValueError("Only 1 or 2-dimensional plots can be generated.")
 
@@ -831,23 +868,38 @@ class LearnerND(BaseLearner):
                     Ye += [vertices[i][1] for i in s] + [None]
                     Ze += [vertices[i][2] for i in s] + [None]
 
-            plots.append(plotly.graph_objs.Scatter3d(
-                x=Xe, y=Ye, z=Ze, mode='lines',
-                line=dict(color='rgb(125,125,125)', width=1),
-                hoverinfo='none'
-            ))
+            plots.append(
+                plotly.graph_objs.Scatter3d(
+                    x=Xe,
+                    y=Ye,
+                    z=Ze,
+                    mode="lines",
+                    line=dict(color="rgb(125,125,125)", width=1),
+                    hoverinfo="none",
+                )
+            )
 
         Xn, Yn, Zn = zip(*vertices)
         colors = [self.data[p] for p in self.tri.vertices]
-        marker = dict(symbol='circle', size=3, color=colors,
-            colorscale='Viridis',
-            line=dict(color='rgb(50,50,50)', width=0.5))
+        marker = dict(
+            symbol="circle",
+            size=3,
+            color=colors,
+            colorscale="Viridis",
+            line=dict(color="rgb(50,50,50)", width=0.5),
+        )
 
-        plots.append(plotly.graph_objs.Scatter3d(
-            x=Xn, y=Yn, z=Zn, mode='markers',
-            name='actors', marker=marker,
-            hoverinfo='text'
-        ))
+        plots.append(
+            plotly.graph_objs.Scatter3d(
+                x=Xn,
+                y=Yn,
+                z=Zn,
+                mode="markers",
+                name="actors",
+                marker=marker,
+                hoverinfo="text",
+            )
+        )
 
         axis = dict(
             showbackground=False,
@@ -855,14 +907,15 @@ class LearnerND(BaseLearner):
             zeroline=False,
             showgrid=False,
             showticklabels=False,
-            title='',
+            title="",
         )
 
         layout = plotly.graph_objs.Layout(
             showlegend=False,
             scene=dict(xaxis=axis, yaxis=axis, zaxis=axis),
             margin=dict(t=100),
-            hovermode='closest')
+            hovermode="closest",
+        )
 
         fig = plotly.graph_objs.Figure(data=plots, layout=layout)
 
@@ -875,17 +928,20 @@ class LearnerND(BaseLearner):
         if data:
             self.tell_many(*zip(*data.items()))
 
-    def _get_iso(self, level=0.0, which='surface'):
-        if which == 'surface':
+    def _get_iso(self, level=0.0, which="surface"):
+        if which == "surface":
             if self.ndim != 3 or self.vdim != 1:
-                raise Exception('Isosurface plotting is only supported'
-                                ' for a 3D input and 1D output')
+                raise Exception(
+                    "Isosurface plotting is only supported"
+                    " for a 3D input and 1D output"
+                )
             get_surface = True
             get_line = False
-        elif which == 'line':
+        elif which == "line":
             if self.ndim != 2 or self.vdim != 1:
-                raise Exception('Isoline plotting is only supported'
-                                ' for a 2D input and 1D output')
+                raise Exception(
+                    "Isoline plotting is only supported" " for a 2D input and 1D output"
+                )
             get_surface = False
             get_line = True
 
@@ -903,8 +959,7 @@ class LearnerND(BaseLearner):
             db = abs(value_b - level)
             dab = da + db
 
-            new_pt = (db / dab * np.array(vertex_a)
-                      + da / dab * np.array(vertex_b))
+            new_pt = db / dab * np.array(vertex_a) + da / dab * np.array(vertex_b)
 
             new_index = len(vertices)
             vertices.append(new_pt)
@@ -976,11 +1031,11 @@ class LearnerND(BaseLearner):
                 plot = plot * self.plot_isoline(level=l, n=-1)
             return plot
 
-        vertices, lines = self._get_iso(level, which='line')
+        vertices, lines = self._get_iso(level, which="line")
         paths = [[vertices[i], vertices[j]] for i, j in lines]
         contour = hv.Path(paths)
 
-        contour_opts = dict(color='black')
+        contour_opts = dict(color="black")
         contour = contour.opts(style=contour_opts)
         return plot * contour
 
@@ -1004,15 +1059,16 @@ class LearnerND(BaseLearner):
         """
         plotly = ensure_plotly()
 
-        vertices, faces = self._get_iso(level, which='surface')
+        vertices, faces = self._get_iso(level, which="surface")
         x, y, z = zip(*vertices)
 
         fig = plotly.figure_factory.create_trisurf(
-            x=x, y=y, z=z, plot_edges=False,
-            simplices=faces, title="Isosurface")
+            x=x, y=y, z=z, plot_edges=False, simplices=faces, title="Isosurface"
+        )
         isosurface = fig.data[0]
-        isosurface.update(lighting=dict(ambient=1, diffuse=1,
-            roughness=1, specular=0, fresnel=0))
+        isosurface.update(
+            lighting=dict(ambient=1, diffuse=1, roughness=1, specular=0, fresnel=0)
+        )
 
         if hull_opacity < 1e-3:
             # Do not compute the hull_mesh.
@@ -1040,16 +1096,22 @@ class LearnerND(BaseLearner):
                     return color
                 if scipy.spatial.ConvexHull(points).volume < 1e-5:
                     return color
-            color_dict[simplex] = tuple(random.randint(0, 255)
-                                        for _ in range(3))
+            color_dict[simplex] = tuple(random.randint(0, 255) for _ in range(3))
             return color_dict[simplex]
 
         colors = [_get_plane_color(simplex) for simplex in hull.simplices]
 
         x, y, z = zip(*self._bounds_points)
         i, j, k = hull.simplices.T
-        lighting = dict(ambient=1, diffuse=1, roughness=1,
-                        specular=0, fresnel=0)
-        return plotly.graph_objs.Mesh3d(x=x, y=y, z=z, i=i, j=j, k=k,
-                                        facecolor=colors, opacity=opacity,
-                                        lighting=lighting)
+        lighting = dict(ambient=1, diffuse=1, roughness=1, specular=0, fresnel=0)
+        return plotly.graph_objs.Mesh3d(
+            x=x,
+            y=y,
+            z=z,
+            i=i,
+            j=j,
+            k=k,
+            facecolor=colors,
+            opacity=opacity,
+            lighting=lighting,
+        )

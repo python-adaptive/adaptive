@@ -13,4 +13,4 @@ def test_private_api_used_in_live_info():
     ctx = zmq.Context()
     iopub_socket = ctx.socket(zmq.PUB)
     iopub_thread = ipykernel.iostream.IOPubThread(iopub_socket)
-    assert hasattr(iopub_thread, '_events')
+    assert hasattr(iopub_thread, "_events")

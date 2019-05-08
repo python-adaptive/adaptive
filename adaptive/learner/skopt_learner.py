@@ -53,8 +53,10 @@ class SKOptLearner(Optimizer, BaseLearner):
 
     def ask(self, n, tell_pending=True):
         if not tell_pending:
-            raise NotImplementedError('Asking points is an irreversible '
-                'action, so use `ask(n, tell_pending=True`.')
+            raise NotImplementedError(
+                "Asking points is an irreversible "
+                "action, so use `ask(n, tell_pending=True`."
+            )
         points = super().ask(n)
         # TODO: Choose a better estimate for the loss improvement.
         if self.space.n_dims > 1:
@@ -70,7 +72,7 @@ class SKOptLearner(Optimizer, BaseLearner):
     def plot(self, nsamples=200):
         hv = ensure_holoviews()
         if self.space.n_dims > 1:
-            raise ValueError('Can only plot 1D functions')
+            raise ValueError("Can only plot 1D functions")
         bounds = self.space.bounds[0]
         if not self.Xi:
             p = hv.Scatter([]) * hv.Curve([]) * hv.Area([])
@@ -82,13 +84,11 @@ class SKOptLearner(Optimizer, BaseLearner):
                 xsp = self.space.transform(xs.reshape(-1, 1).tolist())
                 y_pred, sigma = model.predict(xsp, return_std=True)
                 # Plot model prediction for function
-                curve = hv.Curve(
-                    (xs, y_pred)
-                ).opts(style=dict(line_dash='dashed'))
+                curve = hv.Curve((xs, y_pred)).opts(style=dict(line_dash="dashed"))
                 # Plot 95% confidence interval as colored area around points
                 area = hv.Area(
                     (xs, y_pred - 1.96 * sigma, y_pred + 1.96 * sigma),
-                    vdims=['y', 'y2'],
+                    vdims=["y", "y2"],
                 ).opts(style=dict(alpha=0.5, line_alpha=0))
 
             else:

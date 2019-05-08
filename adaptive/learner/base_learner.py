@@ -53,9 +53,11 @@ def uses_nth_neighbors(n):
     ...
     ...     return loss
     """
+
     def _wrapped(loss_per_interval):
         loss_per_interval.nth_neighbors = n
         return loss_per_interval
+
     return _wrapped
 
 

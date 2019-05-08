@@ -28,7 +28,7 @@ def equal_ival(ival, other, *, verbose=False):
     """Note: Implementing __eq__ breaks SortedContainers in some way."""
     if ival.depth_complete is None:
         if verbose:
-            print(f'Interval {ival} is not complete.')
+            print(f"Interval {ival} is not complete.")
         return False
 
     slots = set(ival.__slots__).intersection(other.__slots__)
@@ -38,7 +38,7 @@ def equal_ival(ival, other, *, verbose=False):
         b = getattr(other, s)
         is_equal = np.allclose(a, b, rtol=0, atol=eps, equal_nan=True)
         if verbose and not is_equal:
-            print('ival.{} - other.{} = {}'.format(s, s, a - b))
+            print("ival.{} - other.{} = {}".format(s, s, a - b))
         same_slots.append(is_equal)
 
     return all(same_slots)
@@ -48,35 +48,36 @@ def equal_ivals(ivals, other, *, verbose=False):
     """Note: `other` is a list of ivals."""
     if len(ivals) != len(other):
         if verbose:
-            print('len(ivals)={} != len(other)={}'.format(
-                len(ivals), len(other)))
+            print("len(ivals)={} != len(other)={}".format(len(ivals), len(other)))
         return False
 
-    ivals = [sorted(i, key=attrgetter('a')) for i in [ivals, other]]
-    return all(equal_ival(ival, other_ival, verbose=verbose)
-               for ival, other_ival in zip(*ivals))
+    ivals = [sorted(i, key=attrgetter("a")) for i in [ivals, other]]
+    return all(
+        equal_ival(ival, other_ival, verbose=verbose)
+        for ival, other_ival in zip(*ivals)
+    )
 
 
 def same_ivals(f, a, b, tol):
-        igral, err, n, ivals = algorithm_4(f, a, b, tol)
+    igral, err, n, ivals = algorithm_4(f, a, b, tol)
 
-        learner = run_integrator_learner(f, a, b, tol, n)
+    learner = run_integrator_learner(f, a, b, tol, n)
 
-        # This will only show up if the test fails, anyway
-        print('igral difference', learner.igral-igral,
-              'err difference', learner.err - err)
+    # This will only show up if the test fails, anyway
+    print(
+        "igral difference", learner.igral - igral, "err difference", learner.err - err
+    )
 
-        return equal_ivals(learner.ivals, ivals, verbose=True)
+    return equal_ivals(learner.ivals, ivals, verbose=True)
 
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 @pytest.mark.xfail
 def test_that_gives_same_intervals_as_reference_implementation():
-    for i, args in enumerate([[f0, 0, 3, 1e-5],
-                              [f7, 0, 1, 1e-6],
-                              [f21, 0, 1, 1e-3],
-                              [f24, 0, 3, 1e-3]]):
-        assert same_ivals(*args), f'Function {i}'
+    for i, args in enumerate(
+        [[f0, 0, 3, 1e-5], [f7, 0, 1, 1e-6], [f21, 0, 1, 1e-3], [f24, 0, 3, 1e-3]]
+    ):
+        assert same_ivals(*args), f"Function {i}"
 
 
 @pytest.mark.xfail
@@ -86,8 +87,9 @@ def test_machine_precision():
 
     learner = run_integrator_learner(f, a, b, tol, n)
 
-    print('igral difference', learner.igral-igral,
-          'err difference', learner.err - err)
+    print(
+        "igral difference", learner.igral - igral, "err difference", learner.err - err
+    )
 
     assert equal_ivals(learner.ivals, ivals, verbose=True)
 
@@ -163,48 +165,48 @@ def test_adding_points_and_skip_one_point():
 def test_tell_in_random_order(first_add_33=False):
     from operator import attrgetter
     import random
+
     tol = 1e-10
-    for f, a, b in ([f0, 0, 3],
-                    [f21, 0, 1],
-                    [f24, 0, 3],
-                    [f7, 0, 1],
-                    ):
+    for f, a, b in ([f0, 0, 3], [f21, 0, 1], [f24, 0, 3], [f7, 0, 1]):
         learners = []
 
         for shuffle in [True, False]:
-            l = IntegratorLearner(f, bounds=(a, b), tol=tol)
+            learner = IntegratorLearner(f, bounds=(a, b), tol=tol)
 
             if first_add_33:
-                xs, _ = l.ask(33)
+                xs, _ = learner.ask(33)
                 for x in xs:
-                    l.tell(x, f(x))
+                    learner.tell(x, f(x))
 
-            xs, _ = l.ask(10000)
+            xs, _ = learner.ask(10000)
 
             if shuffle:
                 random.shuffle(xs)
             for x in xs:
-                l.tell(x, f(x))
+                learner.tell(x, f(x))
 
-            learners.append(l)
+            learners.append(learner)
 
         # Check whether the points of the learners are identical
         assert set(learners[0].done_points) == set(learners[1].done_points)
 
         # Test whether approximating_intervals gives a complete set of intervals
-        for l in learners:
-            ivals = sorted(l.approximating_intervals, key=lambda l: l.a)
+        for learner in learners:
+            ivals = sorted(learner.approximating_intervals, key=lambda l: l.a)
             for i in range(len(ivals) - 1):
                 assert ivals[i].b == ivals[i + 1].a, (ivals[i], ivals[i + 1])
 
         # Test if approximating_intervals is the same for random order of adding the point
-        ivals = [sorted(ival, key=attrgetter('a')) for ival in
-                 [l.approximating_intervals for l in learners]]
+        ivals = [
+            sorted(ival, key=attrgetter("a"))
+            for ival in [l.approximating_intervals for l in learners]
+        ]
         assert all(ival.a == other_ival.a for ival, other_ival in zip(*ivals))
 
         # Test if the approximating_intervals are the same
-        ivals = [{(i.a, i.b) for i in l.approximating_intervals}
-                 for l in learners]
+        ivals = [
+            {(i.a, i.b) for i in learner.approximating_intervals} for l in learners
+        ]
         assert ivals[0] == ivals[1]
 
         # Test whether the igral is identical
@@ -215,8 +217,8 @@ def test_tell_in_random_order(first_add_33=False):
         assert all((l.err + err >= abs(l.igral - igral)) for l in learners)
 
         # Check that the errors are finite
-        for l in learners:
-            assert np.isfinite(l.err)
+        for learner in learners:
+            assert np.isfinite(learner.err)
 
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
@@ -227,6 +229,7 @@ def test_tell_in_random_order_first_add_33():
 
 def test_approximating_intervals():
     import random
+
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
 
     xs, _ = learner.ask(10000)

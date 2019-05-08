@@ -11,6 +11,20 @@ from adaptive.learner.learner1D import Learner1D
 from adaptive.learner.learner2D import Learner2D
 from adaptive.learner.learnerND import LearnerND
 
+__all__ = [
+    "AverageLearner",
+    "BalancingLearner",
+    "BaseLearner",
+    "DataSaver",
+    "make_datasaver",
+    "IntegratorLearner",
+    "Learner1D",
+    "Learner2D",
+    "LearnerND",
+]
+
 with suppress(ImportError):
     # Only available if 'scikit-optimize' is installed
-    from adaptive.learner.skopt_learner import SKOptLearner
+    from adaptive.learner.skopt_learner import SKOptLearner  # noqa: F401
+
+    __all__.append("SKOptLearner")

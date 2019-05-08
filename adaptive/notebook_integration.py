@@ -16,8 +16,10 @@ _plotly_enabled = False
 def notebook_extension(*, _inline_js=True):
     """Enable ipywidgets, holoviews, and asyncio notebook integration."""
     if not in_ipynb():
-        raise RuntimeError('"adaptive.notebook_extension()" may only be run '
-                           'from a Jupyter notebook.')
+        raise RuntimeError(
+            '"adaptive.notebook_extension()" may only be run '
+            "from a Jupyter notebook."
+        )
 
     global _async_enabled, _holoviews_enabled, _ipywidgets_enabled
 
@@ -26,54 +28,60 @@ def notebook_extension(*, _inline_js=True):
         _holoviews_enabled = False  # After closing a notebook the js is gone
         if not _holoviews_enabled:
             import holoviews
-            holoviews.notebook_extension('bokeh', logo=False, inline=_inline_js)
+
+            holoviews.notebook_extension("bokeh", logo=False, inline=_inline_js)
             _holoviews_enabled = True
     except ModuleNotFoundError:
-        warnings.warn("holoviews is not installed; plotting "
-                      "is disabled.", RuntimeWarning)
+        warnings.warn(
+            "holoviews is not installed; plotting " "is disabled.", RuntimeWarning
+        )
 
     # Load ipywidgets
     try:
         if not _ipywidgets_enabled:
-            import ipywidgets
+            import ipywidgets  # noqa: F401
+
             _ipywidgets_enabled = True
     except ModuleNotFoundError:
-        warnings.warn("ipywidgets is not installed; live_info "
-                      "is disabled.", RuntimeWarning)
+        warnings.warn(
+            "ipywidgets is not installed; live_info " "is disabled.", RuntimeWarning
+        )
 
     # Enable asyncio integration
     if not _async_enabled:
-        get_ipython().magic('gui asyncio')
+        get_ipython().magic("gui asyncio")  # noqa: F821
         _async_enabled = True
 
 
 def ensure_holoviews():
     try:
-        return importlib.import_module('holoviews')
+        return importlib.import_module("holoviews")
     except ModuleNotFoundError:
-        raise RuntimeError('holoviews is not installed; plotting is disabled.')
+        raise RuntimeError("holoviews is not installed; plotting is disabled.")
 
 
 def ensure_plotly():
     global _plotly_enabled
     try:
         import plotly
+
         if not _plotly_enabled:
             import plotly.graph_objs
             import plotly.figure_factory
             import plotly.offline
+
             # This injects javascript and should happen only once
             plotly.offline.init_notebook_mode()
             _plotly_enabled = True
         return plotly
     except ModuleNotFoundError:
-        raise RuntimeError('plotly is not installed; plotting is disabled.')
+        raise RuntimeError("plotly is not installed; plotting is disabled.")
 
 
 def in_ipynb():
     try:
         # If we are running in IPython, then `get_ipython()` is always a global
-        return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+        return get_ipython().__class__.__name__ == "ZMQInteractiveShell"
     except NameError:
         return False
 
@@ -83,8 +91,7 @@ def in_ipynb():
 active_plotting_tasks = dict()
 
 
-def live_plot(runner, *, plotter=None, update_interval=2,
-              name=None, normalize=True):
+def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=True):
     """Live plotting of the learner's data.
 
     Parameters
@@ -135,14 +142,17 @@ def live_plot(runner, *, plotter=None, update_interval=2,
         # is fixed.
         dm = dm.map(lambda obj: obj.opts(framewise=True), hv.Element)
 
-    cancel_button = ipywidgets.Button(description='cancel live-plot',
-                                      layout=ipywidgets.Layout(width='150px'))
+    cancel_button = ipywidgets.Button(
+        description="cancel live-plot", layout=ipywidgets.Layout(width="150px")
+    )
 
     # Could have used dm.periodic in the following, but this would either spin
     # off a thread (and learner is not threadsafe) or block the kernel.
 
     async def updater():
-        event = lambda: hv.streams.Stream.trigger(dm.streams) # XXX: used to be dm.event()
+        event = lambda: hv.streams.Stream.trigger(  # noqa: E731
+            dm.streams
+        )  # XXX: used to be dm.event()
         # see https://github.com/pyviz/holoviews/issues/3564
         try:
             while not runner.task.done():
@@ -152,7 +162,7 @@ def live_plot(runner, *, plotter=None, update_interval=2,
         finally:
             if active_plotting_tasks[name] is asyncio.Task.current_task():
                 active_plotting_tasks.pop(name, None)
-            cancel_button.layout.display = 'none'  # remove cancel button
+            cancel_button.layout.display = "none"  # remove cancel button
 
     def cancel(_):
         with suppress(KeyError):
@@ -177,7 +187,7 @@ def should_update(status):
         # i.e. we're offline for 12h, with an update_interval of 0.5s,
         # and without the reduced probability, we have buffer_size=86400.
         # With the correction this is np.log(86400) / np.log(1.1) = 119.2
-        return 1.1**buffer_size * random.random() < 1
+        return 1.1 ** buffer_size * random.random() < 1
     except Exception:
         # We catch any Exception because we are using a private API.
         return True
@@ -190,16 +200,19 @@ def live_info(runner, *, update_interval=0.5):
     visualized in a Jupyter notebook.
     """
     if not _holoviews_enabled:
-        raise RuntimeError("Live plotting is not enabled; did you run "
-                           "'adaptive.notebook_extension()'?")
+        raise RuntimeError(
+            "Live plotting is not enabled; did you run "
+            "'adaptive.notebook_extension()'?"
+        )
 
     import ipywidgets
     from IPython.display import display
 
     status = ipywidgets.HTML(value=_info_html(runner))
 
-    cancel = ipywidgets.Button(description='cancel runner',
-                               layout=ipywidgets.Layout(width='100px'))
+    cancel = ipywidgets.Button(
+        description="cancel runner", layout=ipywidgets.Layout(width="100px")
+    )
     cancel.on_click(lambda _: runner.cancel())
 
     async def update():
@@ -212,43 +225,47 @@ def live_info(runner, *, update_interval=0.5):
                 await asyncio.sleep(0.05)
 
         status.value = _info_html(runner)
-        cancel.layout.display = 'none'
+        cancel.layout.display = "none"
 
     runner.ioloop.create_task(update())
 
-    display(ipywidgets.HBox(
-        (status, cancel),
-        layout=ipywidgets.Layout(border='solid 1px',
-                                 width='200px',
-                                 align_items='center'),
-    ))
+    display(
+        ipywidgets.HBox(
+            (status, cancel),
+            layout=ipywidgets.Layout(
+                border="solid 1px", width="200px", align_items="center"
+            ),
+        )
+    )
 
 
 def _info_html(runner):
     status = runner.status()
 
-    color = {'cancelled': 'orange',
-             'failed': 'red',
-             'running': 'blue',
-             'finished': 'green'}[status]
+    color = {
+        "cancelled": "orange",
+        "failed": "red",
+        "running": "blue",
+        "finished": "green",
+    }[status]
 
     info = [
-        ('status', f'<font color="{color}">{status}</font>'),
-        ('elapsed time', datetime.timedelta(seconds=runner.elapsed_time())),
-        ('overhead', f'{runner.overhead():.2f}%'),
+        ("status", f'<font color="{color}">{status}</font>'),
+        ("elapsed time", datetime.timedelta(seconds=runner.elapsed_time())),
+        ("overhead", f"{runner.overhead():.2f}%"),
     ]
 
     with suppress(Exception):
-        info.append(('# of points', runner.learner.npoints))
+        info.append(("# of points", runner.learner.npoints))
 
     with suppress(Exception):
-        info.append(('latest loss', f'{runner.learner._cache["loss"]:.3f}'))
+        info.append(("latest loss", f'{runner.learner._cache["loss"]:.3f}'))
 
     template = '<dt class="ignore-css">{}</dt><dd>{}</dd>'
-    table = '\n'.join(template.format(k, v) for k, v in info)
+    table = "\n".join(template.format(k, v) for k, v in info)
 
-    return f'''
+    return f"""
         <dl>
         {table}
         </dl>
-    '''
+    """
