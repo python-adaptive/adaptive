@@ -1,18 +1,18 @@
 name: adaptive
 
 channels:
-- conda-forge
+  - conda-forge
 
 dependencies:
-  - python=3.7
+  - python=3.7.3
+  - sortedcollections=1.1.2
+  - scikit-optimize=0.5.2
+  - scipy=1.2.1
+  - holoviews=1.11.3
+  - bokeh=1.0.4
+  - plotly=3.9.0
+  - ipywidgets=7.4.2
   - pip:
-    - sortedcollections
-    - scipy
-    - holoviews==1.12*
-    - bokeh==1.1*
-    - plotly
-    - ipywidgets
-    - scikit-optimize
     - git+https://github.com/basnijholt/jupyter-sphinx.git@widgets_execute
-    - sphinx_fontawesome
-    - m2r
+    - sphinx_fontawesome==0.0.6
+    - m2r==0.2.1
