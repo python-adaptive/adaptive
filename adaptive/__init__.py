@@ -14,6 +14,7 @@ from adaptive.learner import (
     Learner2D,
     LearnerND,
     make_datasaver,
+    SequenceLearner,
 )
 from adaptive.notebook_integration import (
     active_plotting_tasks,
@@ -36,6 +37,7 @@ __all__ = [
     "Learner2D",
     "LearnerND",
     "make_datasaver",
+    "SequenceLearner",
     "active_plotting_tasks",
     "live_plot",
     "notebook_extension",

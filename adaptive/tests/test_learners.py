@@ -24,6 +24,7 @@ from adaptive.learner import (
     Learner1D,
     Learner2D,
     LearnerND,
+    SequenceLearner,
 )
 from adaptive.runner import simple
 
@@ -116,6 +117,7 @@ def quadratic(x, m: uniform(0, 10), b: uniform(0, 1)):
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
+@learn_with(SequenceLearner, sequence=np.linspace(-1, 1, 201))
 def linear_with_peak(x, d: uniform(-1, 1)):
     a = 0.01
     return x + a ** 2 / (a ** 2 + (x - d) ** 2)
@@ -123,6 +125,7 @@ def linear_with_peak(x, d: uniform(-1, 1)):
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
 @learn_with(Learner2D, bounds=((-1, 1), (-1, 1)))
+@learn_with(SequenceLearner, sequence=np.random.rand(1000, 2))
 def ring_of_fire(xy, d: uniform(0.2, 1)):
     a = 0.2
     x, y = xy
@@ -130,12 +133,14 @@ def ring_of_fire(xy, d: uniform(0.2, 1)):
 
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
+@learn_with(SequenceLearner, sequence=np.random.rand(1000, 3))
 def sphere_of_fire(xyz, d: uniform(0.2, 1)):
     a = 0.2
     x, y, z = xyz
     return x + math.exp(-(x ** 2 + y ** 2 + z ** 2 - d ** 2) ** 2 / a ** 4) + z ** 2
 
 
+@learn_with(SequenceLearner, sequence=range(1000))
 @learn_with(AverageLearner, rtol=1)
 def gaussian(n):
     return random.gauss(0, 1)
@@ -247,7 +252,7 @@ def test_learner_accepts_lists(learner_type, bounds):
     simple(learner, goal=lambda l: l.npoints > 10)
 
 
-@run_with(Learner1D, Learner2D, LearnerND)
+@run_with(Learner1D, Learner2D, LearnerND, SequenceLearner)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
 
@@ -283,7 +288,7 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
-@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner)
+@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner, SequenceLearner)
 def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     """Adding data for a point that was not returned by 'ask'."""
     # XXX: learner, control and bounds are not defined
@@ -429,7 +434,12 @@ def test_learner_performance_is_invariant_under_scaling(
 
 
 @run_with(
-    Learner1D, Learner2D, LearnerND, AverageLearner, with_all_loss_functions=False
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    AverageLearner,
+    SequenceLearner,
+    with_all_loss_functions=False,
 )
 def test_balancing_learner(learner_type, f, learner_kwargs):
     """Test if the BalancingLearner works with the different types of learners."""
@@ -474,6 +484,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     AverageLearner,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
+    SequenceLearner,
     with_all_loss_functions=False,
 )
 def test_saving(learner_type, f, learner_kwargs):
@@ -504,6 +515,7 @@ def test_saving(learner_type, f, learner_kwargs):
     AverageLearner,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
+    SequenceLearner,
     with_all_loss_functions=False,
 )
 def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
@@ -541,6 +553,7 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     AverageLearner,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
+    SequenceLearner,
     with_all_loss_functions=False,
 )
 def test_saving_with_datasaver(learner_type, f, learner_kwargs):
