@@ -287,7 +287,7 @@ class Learner2D(BaseLearner):
         self._vdim = None
         self.loss_per_triangle = loss_per_triangle or default_loss
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
-        self.data = OrderedDict()
+        self._data = OrderedDict()
         self._stack = OrderedDict()
         self.pending_points = set()
 
@@ -301,6 +301,10 @@ class Learner2D(BaseLearner):
         self._ip = self._ip_combined = None
 
         self.stack_size = 10
+
+    @property
+    def data(self):
+        return self._data
 
     @property
     def xy_scale(self):
@@ -341,9 +345,7 @@ class Learner2D(BaseLearner):
 
     @property
     def bounds_are_done(self):
-        return not any(
-            (p in self.pending_points or p in self._stack) for p in self._bounds_points
-        )
+        return all(p in self._data for p in self._bounds_points)
 
     def _data_in_bounds(self):
         if self.data:
@@ -406,12 +408,21 @@ class Learner2D(BaseLearner):
         (xmin, xmax), (ymin, ymax) = self.bounds
         return xmin <= x <= xmax and ymin <= y <= ymax
 
+    def _add_to_pending(self, point):
+        self.pending_points.add(point)
+
+    def _remove_from_to_pending(self, point):
+        self.pending_points.discard(point)
+
+    def _add_to_data(self, point, value):
+        self.data[point] = value
+
     def tell(self, point, value):
         point = tuple(point)
-        self.data[point] = value
+        self._add_to_data(point, value)
         if not self.inside_bounds(point):
             return
-        self.pending_points.discard(point)
+        self._remove_from_to_pending(point)
         self._ip = None
         self._stack.pop(point, None)
 
@@ -419,9 +430,13 @@ class Learner2D(BaseLearner):
         point = tuple(point)
         if not self.inside_bounds(point):
             return
-        self.pending_points.add(point)
+        self._add_to_pending(point)
         self._ip_combined = None
         self._stack.pop(point, None)
+
+    def _ensure_point(self, point):
+        """This adds a seed in the AverageLearner2D."""
+        return point
 
     def _fill_stack(self, stack_till=1):
         if len(self.data) + len(self.pending_points) < self.ndim + 1:
@@ -448,6 +463,7 @@ class Learner2D(BaseLearner):
                 clip(point_new[1], *self.bounds[1]),
             )
 
+            point_new = self._ensure_point(point_new)
             loss_new = losses[jsimplex]
 
             points_new.append(point_new)
@@ -488,7 +504,7 @@ class Learner2D(BaseLearner):
         if not tell_pending:
             self._stack = OrderedDict(zip(points[: self.stack_size], loss_improvements))
             for point in points[:n]:
-                self.pending_points.discard(point)
+                self._remove_from_to_pending(point)
 
         return points[:n], loss_improvements[:n]
 
@@ -588,11 +604,11 @@ class Learner2D(BaseLearner):
         return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
 
     def _get_data(self):
-        return self.data
+        return self._data
 
     def _set_data(self, data):
-        self.data = data
+        self._data = data
         # Remove points from stack if they already exist
         for point in copy(self._stack):
-            if point in self.data:
+            if point in self._data:
                 self._stack.pop(point)
