@@ -75,7 +75,7 @@ def generate_random_parametrization(f):
     _, *params = inspect.signature(f).parameters.items()
     if any(not callable(v.annotation) for (p, v) in params):
         raise TypeError(
-            "All parameters to {} must be annotated with functions.".format(f.__name__)
+            f"All parameters to {f.__name__} must be annotated with functions."
         )
     realization = {p: v.annotation() for (p, v) in params}
     return ft.partial(f, **realization)

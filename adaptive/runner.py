@@ -751,4 +751,4 @@ def _get_ncores(ex):
         ex.bootup()  # wait until all workers are up and running
         return ex._pool.size  # not public API!
     else:
-        raise TypeError("Cannot get number of cores for {}".format(ex.__class__))
+        raise TypeError(f"Cannot get number of cores for {ex.__class__}")

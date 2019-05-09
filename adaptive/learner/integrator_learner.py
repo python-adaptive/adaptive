@@ -390,7 +390,7 @@ class IntegratorLearner(BaseLearner):
 
     def tell(self, point, value):
         if point not in self.x_mapping:
-            raise ValueError("Point {} doesn't belong to any interval".format(point))
+            raise ValueError(f"Point {point} doesn't belong to any interval")
         self.done_points[point] = value
         self.pending_points.discard(point)
 
