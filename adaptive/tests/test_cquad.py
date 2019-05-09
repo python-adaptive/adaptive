@@ -204,9 +204,7 @@ def test_tell_in_random_order(first_add_33=False):
         assert all(ival.a == other_ival.a for ival, other_ival in zip(*ivals))
 
         # Test if the approximating_intervals are the same
-        ivals = [
-            {(i.a, i.b) for i in learner.approximating_intervals} for l in learners
-        ]
+        ivals = [{(i.a, i.b) for i in l.approximating_intervals} for l in learners]
         assert ivals[0] == ivals[1]
 
         # Test whether the igral is identical
