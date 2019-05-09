@@ -35,7 +35,7 @@ We recommend to start with the :ref:`Tutorial `~adaptive.Learner1D``.
     tutorial.Learner1D
     tutorial.Learner2D
     tutorial.custom_loss
-    tutorial.AverageLearner
+    tutorial.AverageLearners
     tutorial.BalancingLearner
     tutorial.DataSaver
     tutorial.IntegratorLearner
