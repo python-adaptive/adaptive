@@ -113,7 +113,7 @@ please setup the git filter by executing
 
 in the repository.
 
-We implement several other checks in order to maintain a consistent code style. We do this using [pre-commit`](https://pre-commit.com), execute
+We implement several other checks in order to maintain a consistent code style. We do this using `pre-commit <https://pre-commit.com>`_, execute
 
 .. code:: bash
 
