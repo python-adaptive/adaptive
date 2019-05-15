@@ -590,12 +590,11 @@ class Learner1D(BaseLearner):
             Plot of the evaluated data.
         """
         hv = ensure_holoviews()
-        if not self.data:
-            p = hv.Scatter([]) * hv.Path([])
-        elif not self.vdim > 1:
-            p = hv.Scatter(self.data) * hv.Path([])
+
+        xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
+        if self.vdim == 1:
+            p = hv.Path([]) * hv.Scatter((xs, ys))
         else:
-            xs, ys = zip(*sorted(self.data.items()))
             p = hv.Path((xs, ys)) * hv.Scatter([])
 
         # Plot with 5% empty margins such that the boundary points are visible
