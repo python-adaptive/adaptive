@@ -467,6 +467,8 @@ class AsyncRunner(BaseRunner):
         The overhead in percent of using Adaptive. This includes the
         overhead of the executor. Essentially, this is
         ``100 * (1 - total_elapsed_function_time / self.elapsed_time())``.
+    block_until_done : callable
+        Blocks until the ``runner.goal`` has been reached.
 
     Notes
     -----
@@ -651,6 +653,9 @@ class AsyncRunner(BaseRunner):
 
         self.saving_task = self.ioloop.create_task(_saver())
         return self.saving_task
+
+    def block_until_done(self):
+        self.ioloop.run_until_complete(self.task)
 
 
 # Default runner
