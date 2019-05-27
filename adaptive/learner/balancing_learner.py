@@ -377,7 +377,7 @@ class BalancingLearner(BaseLearner):
             for l in self.learners:
                 l.save(fname(l), compress=compress)
 
-    def load(self, fname, compress=True):
+    def load(self, fname, compress=True, with_progress_bar=False):
         """Load the data of the child learners from pickle files
         in a directory.
 
@@ -389,16 +389,31 @@ class BalancingLearner(BaseLearner):
         compress : bool, default True
             If the data is compressed when saved, one must load it
             with compression too.
+        with_progress_bar : bool, default False
+            Display a progress bar using `tqdm`.
 
         Example
         -------
         See the example in the `BalancingLearner.save` doc-string.
         """
+        def progress(seq):
+            if not with_progress_bar:
+                return seq
+            else:
+                from adaptive.notebook_integration import in_ipynb
+                desc = "Loading learners."
+                if in_ipynb():
+                    from tqdm import tqdm_notebook
+                    return tqdm_notebook(list(seq), desc=desc)
+                else:
+                    from tqdm import tqdm
+                    return tqdm(list(seq), desc=desc)
+
         if isinstance(fname, Iterable):
-            for l, _fname in zip(self.learners, fname):
+            for l, _fname in progress(zip(self.learners, fname)):
                 l.load(_fname, compress=compress)
         else:
-            for l in self.learners:
+            for l in progress(self.learners):
                 l.load(fname(l), compress=compress)
 
     def _get_data(self):

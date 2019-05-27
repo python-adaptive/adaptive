@@ -36,6 +36,7 @@ extras_require = {
         "bokeh",
         "matplotlib",
         "plotly",
+        "tqdm",
     ]
 }
 
