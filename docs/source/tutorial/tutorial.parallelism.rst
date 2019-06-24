@@ -63,7 +63,7 @@ For example, you create the following file called ``run_learner.py``:
 
 .. code:: python
 
-    import mpi4py.futures
+    from mpi4py.futures import MPIPoolExecutor
 
     learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
