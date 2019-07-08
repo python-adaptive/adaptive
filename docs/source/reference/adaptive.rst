@@ -14,6 +14,8 @@ Learners
     adaptive.learner.learner1D
     adaptive.learner.learner2D
     adaptive.learner.learnerND
+    adaptive.learner.average1D
+    adaptive.learner.average2D
     adaptive.learner.skopt_learner
 
 Runners

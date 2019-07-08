@@ -180,7 +180,7 @@ class Learner1D(BaseLearner):
         # the learners behavior in the tests.
         self._recompute_losses_factor = 2
 
-        self.data = {}
+        self._data = {}
         self.pending_points = set()
 
         # A dict {x_n: [x_{n-1}, x_{n+1}]} for quick checking of local
@@ -207,6 +207,10 @@ class Learner1D(BaseLearner):
         self._vdim = None
 
     @property
+    def data(self):
+        return self._data
+
+    @property
     def vdim(self):
         """Length of the output of ``learner.function``.
         If the output is unsized (when it's a scalar)
@@ -215,7 +219,7 @@ class Learner1D(BaseLearner):
         As long as no data is known `vdim = 1`.
         """
         if self._vdim is None:
-            if self.data:
+            if self._data:
                 y = next(iter(self.data.values()))
                 try:
                     self._vdim = len(np.squeeze(y))
@@ -229,7 +233,7 @@ class Learner1D(BaseLearner):
     @property
     def npoints(self):
         """Number of evaluated points."""
-        return len(self.data)
+        return len(self._data)
 
     @cache_latest
     def loss(self, real=True):
@@ -378,8 +382,8 @@ class Learner1D(BaseLearner):
                 self._scale[1] = self._bbox[1][1] - self._bbox[1][0]
 
     def tell(self, x, y):
-        if x in self.data:
-            # The point is already evaluated before
+        if x in self._data:
+            # The point is already evaluated before.
             return
         if y is None:
             raise TypeError(
@@ -391,12 +395,15 @@ class Learner1D(BaseLearner):
         if not isinstance(y, (float, int)):
             y = np.asarray(y, dtype=float)
 
-        # Add point to the real data dict
-        self.data[x] = y
+        # Add point to the real data dict.
+        self._data[x] = y
 
-        # remove from set of pending points
+        # Remove from set of pending points.
         self.pending_points.discard(x)
 
+        self._update_data_structures(x, y)
+
+    def _update_data_structures(self, x, y):
         if not self.bounds[0] <= x <= self.bounds[1]:
             return
 
@@ -413,7 +420,7 @@ class Learner1D(BaseLearner):
             self._oldscale = deepcopy(self._scale)
 
     def tell_pending(self, x):
-        if x in self.data:
+        if x in self._data:
             # The point is already evaluated before
             return
         self.pending_points.add(x)
@@ -421,7 +428,7 @@ class Learner1D(BaseLearner):
         self._update_losses(x, real=False)
 
     def tell_many(self, xs, ys, *, force=False):
-        if not force and not (len(xs) > 0.5 * len(self.data) and len(xs) > 2):
+        if not force and not (len(xs) > 0.5 * len(self._data) and len(xs) > 2):
             # Only run this more efficient method if there are
             # at least 2 points and the amount of points added are
             # at least half of the number of points already in 'data'.
@@ -430,11 +437,11 @@ class Learner1D(BaseLearner):
             return
 
         # Add data points
-        self.data.update(zip(xs, ys))
+        self._data.update(zip(xs, ys))
         self.pending_points.difference_update(xs)
 
         # Get all data as numpy arrays
-        points = np.array(list(self.data.keys()))
+        points = np.array(list(self._data.keys()))
         values = np.array(list(self.data.values()))
         points_pending = np.array(list(self.pending_points))
         points_combined = np.hstack([points_pending, points])
@@ -516,21 +523,21 @@ class Learner1D(BaseLearner):
         missing_bounds = [
             b
             for b in self.bounds
-            if b not in self.data and b not in self.pending_points
+            if b not in self._data and b not in self.pending_points
         ]
 
         if len(missing_bounds) >= n:
             return missing_bounds[:n], [np.inf] * n
 
         # Add bound intervals to quals if bounds were missing.
-        if len(self.data) + len(self.pending_points) == 0:
+        if len(self._data) + len(self.pending_points) == 0:
             # We don't have any points, so return a linspace with 'n' points.
             return np.linspace(*self.bounds, n).tolist(), [np.inf] * n
 
         quals = loss_manager(self._scale[0])
         if len(missing_bounds) > 0:
             # There is at least one point in between the bounds.
-            all_points = list(self.data.keys()) + list(self.pending_points)
+            all_points = list(self._data.keys()) + list(self.pending_points)
             intervals = [
                 (self.bounds[0], min(all_points)),
                 (max(all_points), self.bounds[1]),
@@ -590,7 +597,7 @@ class Learner1D(BaseLearner):
             Plot of the evaluated data.
         """
         hv = ensure_holoviews()
-        if not self.data:
+        if not self._data:
             p = hv.Scatter([]) * hv.Path([])
         elif not self.vdim > 1:
             p = hv.Scatter(self.data) * hv.Path([])
@@ -610,7 +617,7 @@ class Learner1D(BaseLearner):
         self.neighbors_combined = deepcopy(self.neighbors)
 
     def _get_data(self):
-        return self.data
+        return self._data
 
     def _set_data(self, data):
         if data:

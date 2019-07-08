@@ -6,6 +6,8 @@ from adaptive import learner, runner, utils
 from adaptive._version import __version__
 from adaptive.learner import (
     AverageLearner,
+    AverageLearner1D,
+    AverageLearner2D,
     BalancingLearner,
     BaseLearner,
     DataSaver,
@@ -28,6 +30,8 @@ __all__ = [
     "utils",
     "__version__",
     "AverageLearner",
+    "AverageLearner1D",
+    "AverageLearner2D",
     "BalancingLearner",
     "BaseLearner",
     "DataSaver",

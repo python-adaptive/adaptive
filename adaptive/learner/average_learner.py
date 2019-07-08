@@ -4,6 +4,7 @@ from math import sqrt
 
 import numpy as np
 
+from adaptive.learner.average_mixin import DataPoint
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest
@@ -40,14 +41,15 @@ class AverageLearner(BaseLearner):
         if rtol is None:
             rtol = np.inf
 
-        self.data = {}
+        self.data = DataPoint()
         self.pending_points = set()
         self.function = function
         self.atol = atol
         self.rtol = rtol
-        self.npoints = 0
-        self.sum_f = 0
-        self.sum_f_sq = 0
+
+    @property
+    def npoints(self):
+        return self.data.n
 
     @property
     def n_requested(self):
@@ -72,14 +74,9 @@ class AverageLearner(BaseLearner):
 
     def tell(self, n, value):
         if n in self.data:
-            # The point has already been added before.
             return
-
         self.data[n] = value
         self.pending_points.discard(n)
-        self.sum_f += value
-        self.sum_f_sq += value ** 2
-        self.npoints += 1
 
     def tell_pending(self, n):
         self.pending_points.add(n)
@@ -87,20 +84,13 @@ class AverageLearner(BaseLearner):
     @property
     def mean(self):
         """The average of all values in `data`."""
-        return self.sum_f / self.npoints
+        return self.data.mean
 
     @property
     def std(self):
         """The corrected sample standard deviation of the values
         in `data`."""
-        n = self.npoints
-        if n < 2:
-            return np.inf
-        numerator = self.sum_f_sq - n * self.mean ** 2
-        if numerator < 0:
-            # in this case the numerator ~ -1e-15
-            return 0
-        return sqrt(numerator / (n - 1))
+        return self.data.std
 
     @cache_latest
     def loss(self, real=True, *, n=None):
@@ -110,10 +100,8 @@ class AverageLearner(BaseLearner):
             n = n
         if n < 2:
             return np.inf
-        standard_error = self.std / sqrt(n)
-        return max(
-            standard_error / self.atol, standard_error / abs(self.mean) / self.rtol
-        )
+        sem = self.data.standard_error
+        return max(sem / self.atol, sem / abs(self.mean) / self.rtol)
 
     def _loss_improvement(self, n):
         loss = self.loss()
@@ -142,7 +130,7 @@ class AverageLearner(BaseLearner):
         return hv.operation.histogram(vals, num_bins=num_bins, dimension=1)
 
     def _get_data(self):
-        return (self.data, self.npoints, self.sum_f, self.sum_f_sq)
+        return dict(self.data)
 
     def _set_data(self, data):
-        self.data, self.npoints, self.sum_f, self.sum_f_sq = data
+        self.data = DataPoint(data)

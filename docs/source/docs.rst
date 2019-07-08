@@ -16,8 +16,9 @@ The following learners are implemented:
 - `~adaptive.Learner1D`, for 1D functions ``f: ℝ → ℝ^N``,
 - `~adaptive.Learner2D`, for 2D functions ``f: ℝ^2 → ℝ^N``,
 - `~adaptive.LearnerND`, for ND functions ``f: ℝ^N → ℝ^M``,
-- `~adaptive.AverageLearner`, For stochastic functions where you want to
+- `~adaptive.AverageLearner`, for stochastic functions where you want to
   average the result over many evaluations,
+- `~adaptive.AverageLearner1D` and `~adaptive.AverageLearner2D`, like the ``Learner1D/2D`` but where every point is averaged over many evaluations,
 - `~adaptive.IntegratorLearner`, for
   when you want to intergrate a 1D function ``f: ℝ → ℝ``.
 
