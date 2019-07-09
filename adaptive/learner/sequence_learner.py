@@ -27,7 +27,7 @@ class SequenceLearner(BaseLearner):
 
         # We use a poor man's OrderedSet, a dict that points to None.
         self._to_do_seq = {ensure_hashable(x): None for x in sequence}
-        self._npoints = len(sequence)
+        self._ntotal = len(sequence)
         self.sequence = copy(sequence)
         self.data = {}
         self.pending_points = set()
@@ -39,7 +39,7 @@ class SequenceLearner(BaseLearner):
             if len(points) >= n:
                 break
             points.append(point)
-            loss_improvements.append(inf / self._npoints)
+            loss_improvements.append(1 / self._ntotal)
 
         if tell_pending:
             for p in points:
@@ -59,8 +59,7 @@ class SequenceLearner(BaseLearner):
             return 0
         else:
             npoints = self.npoints + (0 if real else len(self.pending_points))
-            ntotal = len(self.sequence)
-            return (ntotal - npoints) / ntotal
+            return (self._ntotal - npoints) / self._ntotal
 
     def remove_unfinished(self):
         for p in self.pending_points:
