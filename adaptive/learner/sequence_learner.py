@@ -59,7 +59,8 @@ class SequenceLearner(BaseLearner):
             return 0
         else:
             npoints = self.npoints + (0 if real else len(self.pending_points))
-            return inf / npoints
+            ntotal = len(self.sequence)
+            return (ntotal - npoints) / ntotal
 
     def remove_unfinished(self):
         for p in self.pending_points:
