@@ -24,7 +24,9 @@ def ensure_hashable(x):
 class SequenceLearner(BaseLearner):
     def __init__(self, function, sequence):
         self.function = function
-        self._to_do_seq = {ensure_hashable(x) for x in sequence}
+
+        # We use a poor man's OrderedSet, a dict that points to None.
+        self._to_do_seq = {ensure_hashable(x): None for x in sequence}
         self._npoints = len(sequence)
         self.sequence = copy(sequence)
         self.data = {}
@@ -61,17 +63,17 @@ class SequenceLearner(BaseLearner):
 
     def remove_unfinished(self):
         for p in self.pending_points:
-            self._to_do_seq.add(p)
+            self._to_do_seq[p] = None
         self.pending_points = set()
 
     def tell(self, point, value):
         self.data[point] = value
         self.pending_points.discard(point)
-        self._to_do_seq.discard(point)
+        self._to_do_seq.pop(point, None)
 
     def tell_pending(self, point):
         self.pending_points.add(point)
-        self._to_do_seq.discard(point)
+        self._to_do_seq.pop(point, None)
 
     def done(self):
         return not self._to_do_seq and not self.pending_points
