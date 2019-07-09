@@ -24,7 +24,12 @@ def get_version_and_cmdclass(package_name):
 version, cmdclass = get_version_and_cmdclass("adaptive")
 
 
-install_requires = ["scipy", "sortedcollections >= 1.1", "sortedcontainers >= 2.0"]
+install_requires = [
+    "scipy",
+    "sortedcollections >= 1.1",
+    "sortedcontainers >= 2.0",
+    "atomicwrites",
+]
 
 extras_require = {
     "notebook": [

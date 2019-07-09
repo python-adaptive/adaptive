@@ -12,6 +12,7 @@ dependencies:
   - bokeh=1.0.4
   - plotly=3.9.0
   - ipywidgets=7.4.2
+  - atomicwrites=1.3.0
   - pip:
     - git+https://github.com/basnijholt/jupyter-sphinx.git@widgets_execute
     - sphinx_fontawesome==0.0.6
