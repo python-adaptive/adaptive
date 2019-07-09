@@ -51,7 +51,7 @@ class BalancingLearner(BaseLearner):
     function : callable
         A function that calls the functions of the underlying learners.
         Its signature is ``function(learner_index, point)``.
-    strategy : 'loss_improvements' (default), 'loss', or 'npoints'
+    strategy : 'loss_improvements' (default), 'loss', 'npoints', or 'cycle'.
         The points that the `BalancingLearner` choses can be either based on:
         the best 'loss_improvements', the smallest total 'loss' of the
         child learners, the number of points per learner, using 'npoints',
@@ -112,6 +112,7 @@ class BalancingLearner(BaseLearner):
             self._ask_and_tell = self._ask_and_tell_based_on_npoints
         elif strategy == "cycle":
             self._ask_and_tell = self._ask_and_tell_based_on_cycle
+            self._cycle = itertools.cycle(range(len(self.learners)))
         else:
             raise ValueError(
                 'Only strategy="loss_improvements", strategy="loss",'
@@ -179,9 +180,6 @@ class BalancingLearner(BaseLearner):
         return points, loss_improvements
 
     def _ask_and_tell_based_on_cycle(self, n):
-        if not hasattr(self, "_cycle"):
-            self._cycle = itertools.cycle(range(len(self.learners)))
-
         points, loss_improvements = [], []
         for _ in range(n):
             index = next(self._cycle)
