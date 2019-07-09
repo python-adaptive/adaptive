@@ -1,8 +1,13 @@
 ## Authors
-Below is a list of the contributors to Adaptive:
 
-+ [Anton Akhmerov](<https://antonakhmerov.org>)
+The current maintainers of Adaptive are:
+
 + [Bas Nijholt](<http://nijho.lt>)
++ [Joseph Weston](<https://joseph.weston.cloud>)
++ [Anton Akhmerov](<https://antonakhmerov.org>)
+
+Other contributors to Adaptive include:
+
++ Andrey E. Antipov
 + [Christoph Groth](<http://inac.cea.fr/Pisp/christoph.groth/>)
 + Jorn Hoofwijk
-+ [Joseph Weston](<https://joseph.weston.cloud>)
