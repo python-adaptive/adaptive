@@ -1,7 +1,7 @@
 import sys
 from copy import copy
 
-from sortedcontainers import SortedSet
+from sortedcontainers import SortedSet, SortedDict
 
 from adaptive.learner.base_learner import BaseLearner
 
@@ -39,7 +39,7 @@ class SequenceLearner(BaseLearner):
         self._to_do_indices = SortedSet({i for i, _ in enumerate(sequence)})
         self._ntotal = len(sequence)
         self.sequence = copy(sequence)
-        self.data = {}
+        self.data = SortedDict()
         self.pending_points = set()
 
     def ask(self, n, tell_pending=True):
@@ -97,7 +97,7 @@ class SequenceLearner(BaseLearner):
         """Get back the data in the same order as ``sequence``."""
         if not self.done():
             raise Exception("Learner is not yet complete.")
-        return [self.data[i] for i, _ in enumerate(self.sequence)]
+        return list(self.data.values())
 
     @property
     def npoints(self):
