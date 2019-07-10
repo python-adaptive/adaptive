@@ -33,6 +33,25 @@ class _IgnoreFirstArgument:
 
 
 class SequenceLearner(BaseLearner):
+    """A learner that will learn a sequence.
+
+    This is useful when your problem cannot be formulated in terms of
+    another adaptive learner, but you still want to use Adaptive's
+    routines to run, save, and plot.
+
+    Parameters
+    ----------
+    function : callable
+        The function to learn. Must take a single element `sequence`.
+    sequence : sequence
+        The sequence to learn.
+
+    Attributes
+    ----------
+    data : dict
+        The data as a mapping from "index of element in sequence" => value.
+    """
+
     def __init__(self, function, sequence):
         self._original_function = function
         self.function = _IgnoreFirstArgument(function)
@@ -65,7 +84,10 @@ class SequenceLearner(BaseLearner):
 
     def _set_data(self, data):
         if data:
-            self.tell_many(*zip(*data.items()))
+            indices, values = zip(*data.items())
+            # the points aren't used by tell, so we can safely pass None
+            points = [(i, None) for i in indices]
+            self.tell_many(points, values)
 
     def loss(self, real=True):
         if not (self._to_do_indices or self.pending_points):
