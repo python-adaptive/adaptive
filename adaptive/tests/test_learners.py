@@ -269,7 +269,7 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     N = random.randint(10, 30)
     control.ask(N)
     xs, _ = learner.ask(N)
-    points = [(x, f(x)) for x in xs]
+    points = [(x, learner.function(x)) for x in xs]
 
     for p in points:
         control.tell(*p)
@@ -282,8 +282,19 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     M = random.randint(10, 30)
     pls = zip(*learner.ask(M))
     cpls = zip(*control.ask(M))
-    # Point ordering is not defined, so compare as sets
-    assert set(pls) == set(cpls)
+    if learner_type is SequenceLearner:
+        # The SequenceLearner's points might not be hasable
+        points, values = zip(*pls)
+        indices, points = zip(*points)
+
+        cpoints, cvalues = zip(*cpls)
+        cindices, cpoints = zip(*cpoints)
+        assert (np.array(points) == np.array(cpoints)).all()
+        assert values == cvalues
+        assert indices == cindices
+    else:
+        # Point ordering is not defined, so compare as sets
+        assert set(pls) == set(cpls)
 
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
@@ -305,7 +316,7 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     N = random.randint(10, 30)
     xs, _ = control.ask(N)
 
-    ys = [f(x) for x in xs]
+    ys = [learner.function(x) for x in xs]
     for x, y in zip(xs, ys):
         control.tell(x, y)
         learner.tell(x, y)
@@ -313,9 +324,21 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     M = random.randint(10, 30)
     pls = zip(*learner.ask(M))
     cpls = zip(*control.ask(M))
-    # Point ordering within a single call to 'ask'
-    # is not guaranteed to be the same by the API.
-    assert set(pls) == set(cpls)
+
+    if learner_type is SequenceLearner:
+        # The SequenceLearner's points might not be hasable
+        points, values = zip(*pls)
+        indices, points = zip(*points)
+
+        cpoints, cvalues = zip(*cpls)
+        cindices, cpoints = zip(*cpoints)
+        assert (np.array(points) == np.array(cpoints)).all()
+        assert values == cvalues
+        assert indices == cindices
+    else:
+        # Point ordering within a single call to 'ask'
+        # is not guaranteed to be the same by the API.
+        assert set(pls) == set(cpls)
 
 
 @run_with(Learner1D, xfail(Learner2D), xfail(LearnerND), AverageLearner)
@@ -339,7 +362,7 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     N = random.randint(10, 30)
     control.ask(N)
     xs, _ = learner.ask(N)
-    points = [(x, f(x)) for x in xs]
+    points = [(x, learner.function(x)) for x in xs]
 
     for p in points:
         control.tell(*p)
@@ -371,7 +394,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(
     xs, loss_improvements = learner.ask(N)
 
     for x in xs:
-        learner.tell(x, f(x))
+        learner.tell(x, learner.function(x))
 
     M = random.randint(50, 100)
     _, loss_improvements = learner.ask(M)
@@ -553,7 +576,6 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     AverageLearner,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
-    SequenceLearner,
     with_all_loss_functions=False,
 )
 def test_saving_with_datasaver(learner_type, f, learner_kwargs):
