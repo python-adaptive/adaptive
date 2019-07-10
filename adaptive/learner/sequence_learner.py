@@ -33,7 +33,7 @@ class _IgnoreFirstArgument:
 
 
 class SequenceLearner(BaseLearner):
-    """A learner that will learn a sequence.
+    r"""A learner that will learn a sequence.
 
     This is useful when your problem cannot be formulated in terms of
     another adaptive learner, but you still want to use Adaptive's
@@ -50,6 +50,12 @@ class SequenceLearner(BaseLearner):
     ----------
     data : dict
         The data as a mapping from "index of element in sequence" => value.
+
+    Notes
+    -----
+    From primitive tests, the `~adaptive.SequenceLearner` appears to have a
+    similar performance to `ipyparallel`\s `load_balanced_view().map`. With
+    the added benefit of having results in the local kernel already.
     """
 
     def __init__(self, function, sequence):
