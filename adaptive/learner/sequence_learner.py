@@ -1,49 +1,62 @@
 import sys
-import warnings
 from copy import copy
+
+from sortedcontainers import SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
 
 inf = sys.float_info.max
 
 
-def ensure_hashable(x):
-    try:
-        hash(x)
-        return x
-    except TypeError:
-        msg = "The items in `sequence` need to be hashable, {}. Make sure you reflect this in your function."
-        if isinstance(x, dict):
-            warnings.warn(msg.format("we converted `dict` to `tuple(dict.items())`"))
-            return tuple(x.items())
-        else:
-            warnings.warn(msg.format("we tried to cast the items to a tuple"))
-            return tuple(x)
+class _IgnoreFirstArgument:
+    """Remove the first argument from the call signature.
+
+    The SequenceLearner's function receives a tuple ``(index, point)``
+    but the original function only takes ``point``.
+
+    This is the same as `lambda x: function(x[1])`, however, that is not
+    pickable.
+    """
+
+    def __init__(self, function):
+        self.function = function
+
+    def __call__(self, index_point, *args, **kwargs):
+        index, point = index_point
+        return self.function(point, *args, **kwargs)
+
+    def __getstate__(self):
+        return self.function
+
+    def __setstate__(self, function):
+        self.__init__(function)
 
 
 class SequenceLearner(BaseLearner):
     def __init__(self, function, sequence):
-        self.function = function
-
-        # We use a poor man's OrderedSet, a dict that points to None.
-        self._to_do_seq = {ensure_hashable(x): None for x in sequence}
+        self._original_function = function
+        self.function = _IgnoreFirstArgument(function)
+        self._to_do_indices = SortedSet({i for i, _ in enumerate(sequence)})
         self._ntotal = len(sequence)
         self.sequence = copy(sequence)
         self.data = {}
         self.pending_points = set()
 
     def ask(self, n, tell_pending=True):
+        indices = []
         points = []
         loss_improvements = []
-        for point in self._to_do_seq:
+        for index in self._to_do_indices:
             if len(points) >= n:
                 break
-            points.append(point)
+            point = self.sequence[index]
+            indices.append(index)
+            points.append((index, point))
             loss_improvements.append(1 / self._ntotal)
 
         if tell_pending:
-            for p in points:
-                self.tell_pending(p)
+            for i, p in zip(indices, points):
+                self.tell_pending((i, p))
 
         return points, loss_improvements
 
@@ -55,34 +68,36 @@ class SequenceLearner(BaseLearner):
             self.tell_many(*zip(*data.items()))
 
     def loss(self, real=True):
-        if not (self._to_do_seq or self.pending_points):
+        if not (self._to_do_indices or self.pending_points):
             return 0
         else:
             npoints = self.npoints + (0 if real else len(self.pending_points))
             return (self._ntotal - npoints) / self._ntotal
 
     def remove_unfinished(self):
-        for p in self.pending_points:
-            self._to_do_seq[p] = None
+        for i in self.pending_points:
+            self._to_do_indices.add(i)
         self.pending_points = set()
 
     def tell(self, point, value):
-        self.data[point] = value
-        self.pending_points.discard(point)
-        self._to_do_seq.pop(point, None)
+        index, point = point
+        self.data[index] = value
+        self.pending_points.discard(index)
+        self._to_do_indices.discard(index)
 
     def tell_pending(self, point):
-        self.pending_points.add(point)
-        self._to_do_seq.pop(point, None)
+        index, point = point
+        self.pending_points.add(index)
+        self._to_do_indices.discard(index)
 
     def done(self):
-        return not self._to_do_seq and not self.pending_points
+        return not self._to_do_indices and not self.pending_points
 
     def result(self):
         """Get back the data in the same order as ``sequence``."""
         if not self.done():
             raise Exception("Learner is not yet complete.")
-        return [self.data[ensure_hashable(x)] for x in self.sequence]
+        return [self.data[i] for i, _ in enumerate(self.sequence)]
 
     @property
     def npoints(self):
