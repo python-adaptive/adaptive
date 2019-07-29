@@ -294,6 +294,7 @@ the runner stopped due to an exception then asking for the result will
 raise the exception with the stack trace:
 
 .. jupyter-execute::
+    :raises:
 
     runner.task.result()
 
