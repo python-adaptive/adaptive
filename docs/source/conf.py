@@ -15,9 +15,14 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../.."))
+package_path = os.path.abspath("../..")
+# Insert into sys.path so that we can import adaptive here
+sys.path.insert(0, package_path)
 
 import adaptive  # noqa: E402
+
+# Insert into PYTHONPATH so that jupyter-sphinx will pick it up
+os.environ["PYTHONPATH"] = ":".join((package_path, os.environ.get("PYTHONPATH", "")))
 
 # -- Project information -----------------------------------------------------
 
@@ -88,6 +93,7 @@ jupyter_sphinx_thebelab_config = {
     "binderOptions": {"repo": "python-adaptive/adaptive"},
 }
 
+jupyter_execute_disable_stderr = True
 
 # -- Options for HTML output -------------------------------------------------
 
