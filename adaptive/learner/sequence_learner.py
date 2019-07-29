@@ -52,7 +52,7 @@ class SequenceLearner(BaseLearner):
     Notes
     -----
     From primitive tests, the `~adaptive.SequenceLearner` appears to have a
-    similar performance to `ipyparallel`\s `load_balanced_view().map`. With
+    similar performance to `ipyparallel`\s ``load_balanced_view().map``. With
     the added benefit of having results in the local kernel already.
     """
 
@@ -120,7 +120,7 @@ class SequenceLearner(BaseLearner):
         return not self._to_do_indices and not self.pending_points
 
     def result(self):
-        """Get back the data in the same order as ``sequence``."""
+        """Get the function values in the same order as ``sequence``."""
         if not self.done():
             raise Exception("Learner is not yet complete.")
         return list(self.data.values())
