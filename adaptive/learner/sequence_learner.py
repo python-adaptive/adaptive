@@ -1,11 +1,8 @@
-import sys
 from copy import copy
 
 from sortedcontainers import SortedSet, SortedDict
 
 from adaptive.learner.base_learner import BaseLearner
-
-inf = sys.float_info.max
 
 
 class _IgnoreFirstArgument:
@@ -33,7 +30,8 @@ class _IgnoreFirstArgument:
 
 
 class SequenceLearner(BaseLearner):
-    r"""A learner that will learn a sequence.
+    r"""A learner that will learn a sequence. It simply returns
+    the points in the provided sequence when asked.
 
     This is useful when your problem cannot be formulated in terms of
     another adaptive learner, but you still want to use Adaptive's
