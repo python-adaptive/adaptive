@@ -12,7 +12,7 @@ dependencies:
   - bokeh=1.0.4
   - plotly=3.9.0
   - ipywidgets=7.4.2
+  - jupyter_sphinx=0.2.0
   - pip:
-    - git+https://github.com/basnijholt/jupyter-sphinx.git@widgets_execute
     - sphinx_fontawesome==0.0.6
     - m2r==0.2.1

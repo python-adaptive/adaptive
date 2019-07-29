@@ -22,7 +22,7 @@ import adaptive  # noqa: E402
 # -- Project information -----------------------------------------------------
 
 project = "adaptive"
-copyright = "2018, Adaptive Authors"
+copyright = "2018-2019, Adaptive Authors"
 author = "Adaptive Authors"
 
 # The short X.Y version
@@ -81,6 +81,12 @@ exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
+
+
+jupyter_sphinx_thebelab_config = {
+    "requestKernel": True,
+    "binderOptions": {"repo": "python-adaptive/adaptive"},
+}
 
 
 # -- Options for HTML output -------------------------------------------------

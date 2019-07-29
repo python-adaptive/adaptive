@@ -10,6 +10,8 @@ Advanced Topics
     The complete source code of this tutorial can be found in
     :jupyter-download:notebook:`tutorial.advanced-topics`
 
+.. thebe-button:: Run the code live inside the documentation!
+
 .. jupyter-execute::
     :hide-code:
 
