@@ -10,8 +10,6 @@ Tutorial `~adaptive.SequenceLearner`
     The complete source code of this tutorial can be found in
     :jupyter-download:notebook:`tutorial.SequenceLearner`
 
-.. thebe-button:: Run the code live inside the documentation!
-
 .. jupyter-execute::
     :hide-code:
 
