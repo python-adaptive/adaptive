@@ -98,7 +98,6 @@ Inside the job script using a job queuing system use:
 
 .. code:: python
 
-    export MPI4PY_MAX_WORKERS=15
     mpiexec -n 16 python -m mpi4py.futures run_learner.py
 
 How you call MPI might depend on your specific queuing system, with SLURM for example it's:
@@ -109,5 +108,4 @@ How you call MPI might depend on your specific queuing system, with SLURM for ex
     #SBATCH --job-name adaptive-example
     #SBATCH --ntasks 100
 
-    export MPI4PY_MAX_WORKERS=$SLURM_NTASKS
     srun -n $SLURM_NTASKS --mpi=pmi2 ~/miniconda3/envs/py37_min/bin/python -m mpi4py.futures run_learner.py
