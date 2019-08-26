@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import traceback
+import types
 import warnings
 from contextlib import suppress
 
@@ -493,6 +494,14 @@ class AsyncRunner(BaseRunner):
 
             def goal(_):
                 return False
+
+        if isinstance(learner.function, types.LambdaType) and executor is None:
+            raise ValueError(
+                "A lambda function cannot be pickled and "
+                "therefore doesn't work with the default executor."
+                "Either do not use a lamdba or use a framework that"
+                " allows this, i.e. `ipyparallel` with `dill`."
+            )
 
         super().__init__(
             learner,
