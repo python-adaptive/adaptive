@@ -95,7 +95,7 @@ On your laptop/desktop you can run this script like:
     export MPI4PY_MAX_WORKERS=15
     mpiexec -n 1 python run_learner.py
 
-Or you can pass ``max_workers=15`` programmatically when creating the executor instance.
+Or you can pass ``max_workers=15`` programmatically when creating the `MPIPoolExecutor` instance.
 
 Inside the job script using a job queuing system use:
 
