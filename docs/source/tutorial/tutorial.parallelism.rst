@@ -84,6 +84,9 @@ For example, you create the following file called ``run_learner.py``:
     # block until runner goal reached
     runner.ioloop.run_until_complete(runner.task)
 
+    # save one final time before exiting
+    learner.save(fname)
+
 
 On your laptop/desktop you can run this script like:
 
