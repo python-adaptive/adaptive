@@ -7,6 +7,8 @@ import pickle
 from contextlib import contextmanager
 from itertools import product
 
+from atomicwrites import AtomicWriter
+
 
 def named_product(**items):
     names = items.keys()
@@ -44,9 +46,13 @@ def save(fname, data, compress=True):
     dirname = os.path.dirname(fname)
     if dirname:
         os.makedirs(dirname, exist_ok=True)
-    _open = gzip.open if compress else open
-    with _open(fname, "wb") as f:
-        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    blob = pickle.dumps(data, protocol=pickle.HIGHEST_PROTOCOL)
+    if compress:
+        blob = gzip.compress(blob)
+
+    with AtomicWriter(fname, "wb", overwrite=True).open() as f:
+        f.write(blob)
 
 
 def load(fname, compress=True):

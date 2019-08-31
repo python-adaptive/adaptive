@@ -558,12 +558,12 @@ class AsyncRunner(BaseRunner):
         """
         self.task.cancel()
 
-    def live_plot(self, *, plotter=None, update_interval=2, name=None):
+    def live_plot(self, *, plotter=None, update_interval=2, name=None, normalize=True):
         """Live plotting of the learner's data.
 
         Parameters
         ----------
-        runner : `Runner`
+        runner : `~adaptive.Runner`
         plotter : function
             A function that takes the learner as a argument and returns a
             holoviews object. By default ``learner.plot()`` will be called.
@@ -573,6 +573,8 @@ class AsyncRunner(BaseRunner):
             Name for the `live_plot` task in `adaptive.active_plotting_tasks`.
             By default the name is None and if another task with the same name
             already exists that other `live_plot` is canceled.
+        normalize : bool
+            Normalize (scale to fit) the frame upon each update.
 
         Returns
         -------

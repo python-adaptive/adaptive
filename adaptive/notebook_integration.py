@@ -96,7 +96,7 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=T
 
     Parameters
     ----------
-    runner : `Runner`
+    runner : `~adaptive.Runner`
     plotter : function
         A function that takes the learner as a argument and returns a
         holoviews object. By default ``learner.plot()`` will be called.
@@ -136,6 +136,7 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=T
 
     streams = [hv.streams.Stream.define("Next")()]
     dm = hv.DynamicMap(plot_generator(), streams=streams)
+    dm.cache_size = 1
 
     if normalize:
         # XXX: change when https://github.com/pyviz/holoviews/issues/3637

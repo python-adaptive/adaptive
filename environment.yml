@@ -16,3 +16,4 @@ dependencies:
   - ipywidgets
   - scikit-optimize
   - plotly
+  - atomicwrites

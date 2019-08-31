@@ -291,8 +291,11 @@ class BalancingLearner(BaseLearner):
 
         dm = hv.DynamicMap(plot_function, kdims=list(d.keys()))
         dm = dm.redim.values(**d)
+        dm.cache_size = 1
 
         if dynamic:
+            # XXX: change when https://github.com/pyviz/holoviews/issues/3637
+            # is fixed.
             return dm.map(lambda obj: obj.opts(framewise=True), hv.Element)
         else:
             # XXX: change when https://github.com/ioam/holoviews/issues/3085
