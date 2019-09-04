@@ -146,7 +146,7 @@ class BalancingLearner(BaseLearner):
             selected.append(((index, point), loss_improvement))
             self.tell_pending((index, point))
 
-        points, loss_improvements = map(list, zip(*selected))
+        points, loss_improvements = map(list, zip(*selected)) if selected else [], []
         return points, loss_improvements
 
     def _ask_and_tell_based_on_loss(self, n):
@@ -168,7 +168,7 @@ class BalancingLearner(BaseLearner):
             selected.append(((index, points[0]), loss_improvements[0]))
             self.tell_pending((index, points[0]))
 
-        points, loss_improvements = map(list, zip(*selected))
+        points, loss_improvements = map(list, zip(*selected)) if selected else [], []
         return points, loss_improvements
 
     def _ask_and_tell_based_on_npoints(self, n):
@@ -186,7 +186,7 @@ class BalancingLearner(BaseLearner):
             selected.append(((index, points[0]), loss_improvements[0]))
             self.tell_pending((index, points[0]))
 
-        points, loss_improvements = map(list, zip(*selected))
+        points, loss_improvements = map(list, zip(*selected)) if selected else [], []
         return points, loss_improvements
 
     def _ask_and_tell_based_on_cycle(self, n):
