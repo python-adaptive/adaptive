@@ -119,20 +119,28 @@ class BalancingLearner(BaseLearner):
                 ' strategy="npoints", or strategy="cycle" is implemented.'
             )
 
+    def _to_select(self, total_points):
+        to_select = []
+        for index, learner in enumerate(self.learners):
+            # Take the points from the cache
+            if index not in self._ask_cache:
+                self._ask_cache[index] = learner.ask(n=1, tell_pending=False)
+            points, loss_improvements = self._ask_cache[index]
+            if not points:
+                # cannot ask for more points
+                return to_select
+            to_select.append(
+                ((index, points[0]), (loss_improvements[0], -total_points[index]))
+            )
+        return to_select
+
     def _ask_and_tell_based_on_loss_improvements(self, n):
         selected = []  # tuples ((learner_index, point), loss_improvement)
         total_points = [l.npoints + len(l.pending_points) for l in self.learners]
         for _ in range(n):
-            to_select = []
-            for index, learner in enumerate(self.learners):
-                # Take the points from the cache
-                if index not in self._ask_cache:
-                    self._ask_cache[index] = learner.ask(n=1, tell_pending=False)
-                points, loss_improvements = self._ask_cache[index]
-                to_select.append(
-                    ((index, points[0]), (loss_improvements[0], -total_points[index]))
-                )
-
+            to_select = self._to_select(total_points)
+            if not to_select:
+                break
             # Choose the optimal improvement.
             (index, point), (loss_improvement, _) = max(to_select, key=itemgetter(1))
             total_points[index] += 1
