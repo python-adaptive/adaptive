@@ -126,8 +126,7 @@ class BalancingLearner(BaseLearner):
             if index not in self._ask_cache:
                 self._ask_cache[index] = learner.ask(n=1, tell_pending=False)
             points, loss_improvements = self._ask_cache[index]
-            if not points:
-                # cannot ask for more points
+            if not points:  # cannot ask for more points
                 return to_select
             to_select.append(
                 ((index, points[0]), (loss_improvements[0], -total_points[index]))
@@ -139,7 +138,7 @@ class BalancingLearner(BaseLearner):
         total_points = [l.npoints + len(l.pending_points) for l in self.learners]
         for _ in range(n):
             to_select = self._to_select(total_points)
-            if not to_select:
+            if not to_select:  # cannot ask for more points
                 break
             # Choose the optimal improvement.
             (index, point), (loss_improvement, _) = max(to_select, key=itemgetter(1))
@@ -164,7 +163,8 @@ class BalancingLearner(BaseLearner):
             if index not in self._ask_cache:
                 self._ask_cache[index] = self.learners[index].ask(n=1)
             points, loss_improvements = self._ask_cache[index]
-
+            if not points:  # cannot ask for more points
+                break
             selected.append(((index, points[0]), loss_improvements[0]))
             self.tell_pending((index, points[0]))
 
@@ -180,6 +180,8 @@ class BalancingLearner(BaseLearner):
             if index not in self._ask_cache:
                 self._ask_cache[index] = self.learners[index].ask(n=1)
             points, loss_improvements = self._ask_cache[index]
+            if not points:  # cannot ask for more points
+                break
             total_points[index] += 1
             selected.append(((index, points[0]), loss_improvements[0]))
             self.tell_pending((index, points[0]))
