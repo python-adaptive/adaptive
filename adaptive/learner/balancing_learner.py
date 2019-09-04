@@ -119,7 +119,7 @@ class BalancingLearner(BaseLearner):
                 ' strategy="npoints", or strategy="cycle" is implemented.'
             )
 
-    def _to_select(self, total_points):
+    def _ask_all_learners(self, total_points):
         to_select = []
         for index, learner in enumerate(self.learners):
             # Take the points from the cache
@@ -137,7 +137,7 @@ class BalancingLearner(BaseLearner):
         selected = []  # tuples ((learner_index, point), loss_improvement)
         total_points = [l.npoints + len(l.pending_points) for l in self.learners]
         for _ in range(n):
-            to_select = self._to_select(total_points)
+            to_select = self._ask_all_learners(total_points)
             if not to_select:  # cannot ask for more points
                 break
             # Choose the optimal improvement.
