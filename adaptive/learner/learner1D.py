@@ -580,7 +580,7 @@ class Learner1D(BaseLearner):
         loss = mapping[ival]
         return finite_loss(ival, loss, self._scale[0])
 
-    def plot(self):
+    def plot(self, *, scatter_or_line=None):
         """Returns a plot of the evaluated data.
 
         Returns
@@ -588,14 +588,25 @@ class Learner1D(BaseLearner):
         plot : `holoviews.element.Scatter` (if vdim=1)\
                else `holoviews.element.Path`
             Plot of the evaluated data.
+        scatter_or_line : str, optional
+            Plot as a scatter plot ("scatter") or a line plot ("line").
+            By default a line plot will be chosen if the data consists of
+            vectors, otherwise it is a scatter plot.
         """
         hv = ensure_holoviews()
 
         xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
         if self.vdim == 1:
-            p = hv.Path([]) * hv.Scatter((xs, ys))
+            if scatter_or_line is None or scatter_or_line == "scatter":
+                p = hv.Path([]) * hv.Scatter((xs, ys))
+            else:
+                p = hv.Path((xs, ys)) * hv.Scatter()
         else:
-            p = hv.Path((xs, ys)) * hv.Scatter([])
+            if scatter_or_line is None or scatter_or_line == "line":
+                p = hv.Path((xs, ys)) * hv.Scatter([])
+            else:
+                scatters = [hv.Scatter((xs, _ys)) for _ys in np.transpose(ys)]
+                p = hv.Path([]) * hv.Overlay(scatters)
 
         # Plot with 5% empty margins such that the boundary points are visible
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
