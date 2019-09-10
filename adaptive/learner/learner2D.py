@@ -345,6 +345,38 @@ class Learner2D(BaseLearner):
             (p in self.pending_points or p in self._stack) for p in self._bounds_points
         )
 
+    def data_on_grid(self, n=None):
+        """Get the interpolated data on a grid.
+
+        Parameters
+        ----------
+        n : int, optional
+            Number of points in x and y. If None (default) this number is
+            evaluated by looking at the size of the smallest triangle.
+
+        Returns
+        -------
+        xs : 1D numpy.ndarray, optional
+        ys : 1D numpy.ndarray, optional
+        data_on_grid : 2D numpy.ndarray
+        """
+        ip = self.ip()
+        if n is None:
+            # Calculate how many grid points are needed.
+            # factor from A=√3/4 * a² (equilateral triangle)
+            n = int(0.658 / sqrt(areas(ip).min()))
+            n = max(n, 10)
+
+        # The bounds of the linspace should be (-0.5, 0.5) but because of
+        # numerical precision problems it could (for example) be
+        # (-0.5000000000000001, 0.49999999999999983), then any point at exact
+        # boundary would be outside of the domain. See #181.
+        eps = 1e-13
+        xs = ys = np.linspace(-0.5 + eps, 0.5 - eps, n)
+        zs = ip(xs[:, None], ys[None, :] * self.aspect_ratio).squeeze()
+        xs, ys = self._unscale(np.vstack([xs, ys]).T).T
+        return xs, ys, zs
+
     def _data_in_bounds(self):
         if self.data:
             points = np.array(list(self.data.keys()))
@@ -542,20 +574,7 @@ class Learner2D(BaseLearner):
 
         if len(self.data) >= 4:
             ip = self.ip()
-
-            if n is None:
-                # Calculate how many grid points are needed.
-                # factor from A=√3/4 * a² (equilateral triangle)
-                n = int(0.658 / sqrt(areas(ip).min()))
-                n = max(n, 10)
-
-            # The bounds of the linspace should be (-0.5, 0.5) but because of
-            # numerical precision problems it could (for example) be
-            # (-0.5000000000000001, 0.49999999999999983), then any point at exact
-            # boundary would be outside of the domain. See #181.
-            eps = 1e-13
-            x = y = np.linspace(-0.5 + eps, 0.5 - eps, n)
-            z = ip(x[:, None], y[None, :] * self.aspect_ratio).squeeze()
+            x, y, z = self.data_on_grid(n)
 
             if self.vdim > 1:
                 ims = {
