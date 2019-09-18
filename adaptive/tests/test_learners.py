@@ -30,7 +30,7 @@ from adaptive.runner import simple
 
 try:
     from adaptive.learner import SKOptLearner
-except ModuleNotFoundError:
+except (ModuleNotFoundError, ImportError):
     SKOptLearner = None
 
 
@@ -454,50 +454,6 @@ def test_learner_performance_is_invariant_under_scaling(
 
     # Check if the losses are close
     assert math.isclose(learner.loss(), control.loss(), rel_tol=1e-10)
-
-
-@run_with(
-    Learner1D,
-    Learner2D,
-    LearnerND,
-    AverageLearner,
-    SequenceLearner,
-    with_all_loss_functions=False,
-)
-def test_balancing_learner(learner_type, f, learner_kwargs):
-    """Test if the BalancingLearner works with the different types of learners."""
-    learners = [
-        learner_type(generate_random_parametrization(f), **learner_kwargs)
-        for i in range(4)
-    ]
-
-    learner = BalancingLearner(learners)
-
-    # Emulate parallel execution
-    stash = []
-
-    for i in range(100):
-        n = random.randint(1, 10)
-        m = random.randint(0, n)
-        xs, _ = learner.ask(n, tell_pending=False)
-
-        # Save 'm' random points out of `xs` for later
-        random.shuffle(xs)
-        for _ in range(m):
-            stash.append(xs.pop())
-
-        for x in xs:
-            learner.tell(x, learner.function(x))
-
-        # Evaluate and add 'm' random points from `stash`
-        random.shuffle(stash)
-        for _ in range(m):
-            x = stash.pop()
-            learner.tell(x, learner.function(x))
-
-    assert all(l.npoints > 10 for l in learner.learners), [
-        l.npoints for l in learner.learners
-    ]
 
 
 @run_with(

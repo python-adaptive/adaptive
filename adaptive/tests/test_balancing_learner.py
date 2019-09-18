@@ -1,10 +1,20 @@
 # -*- coding: utf-8 -*-
 
+import random
+
 import pytest
 
-from adaptive.learner import BalancingLearner, Learner1D
+from adaptive.learner import (
+    BalancingLearner,
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    AverageLearner,
+    SequenceLearner,
+)
 from adaptive.runner import simple
 
+from .test_learners import generate_random_parametrization, run_with
 
 strategies = ["loss", "loss_improvements", "npoints", "cycle"]
 
@@ -65,3 +75,48 @@ def test_strategies(strategy, goal):
     learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
     learner = BalancingLearner(learners, strategy=strategy)
     simple(learner, goal=goal)
+
+
+@run_with(
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    AverageLearner,
+    SequenceLearner,
+    with_all_loss_functions=False,
+)
+@pytest.mark.parametrize("strategy", ["loss", "loss_improvements", "npoints", "cycle"])
+def test_balancing_learner(learner_type, f, learner_kwargs, strategy):
+    """Test if the BalancingLearner works with the different types of learners."""
+    learners = [
+        learner_type(generate_random_parametrization(f), **learner_kwargs)
+        for i in range(4)
+    ]
+
+    learner = BalancingLearner(learners, strategy=strategy)
+
+    # Emulate parallel execution
+    stash = []
+
+    for i in range(100):
+        n = random.randint(1, 10)
+        m = random.randint(0, n)
+        xs, _ = learner.ask(n, tell_pending=False)
+
+        # Save 'm' random points out of `xs` for later
+        random.shuffle(xs)
+        for _ in range(m):
+            stash.append(xs.pop())
+
+        for x in xs:
+            learner.tell(x, learner.function(x))
+
+        # Evaluate and add 'm' random points from `stash`
+        random.shuffle(stash)
+        for _ in range(m):
+            x = stash.pop()
+            learner.tell(x, learner.function(x))
+
+    assert all(l.npoints > 10 for l in learner.learners), [
+        l.npoints for l in learner.learners
+    ]
