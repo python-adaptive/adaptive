@@ -312,6 +312,7 @@ class LearnerND(BaseLearner):
         self.data = OrderedDict()
         self.pending_points = set()
 
+        self.bounds = bounds
         if isinstance(bounds, scipy.spatial.ConvexHull):
             hull_points = bounds.points[bounds.vertices]
             self._bounds_points = sorted(list(map(tuple, hull_points)))
