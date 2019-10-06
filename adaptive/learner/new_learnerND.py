@@ -88,7 +88,7 @@ class Interval(Domain):
             a, b = subdomain
             points = np.linspace(a, b, 2 + n)
             self.sub_intervals[subdomain] = sortedcontainers.SortedList(points)
-            return [(x,) for x in points[1:-1]]
+            return points[1:-1]
 
         # XXX: allow this
         if n != 1:
@@ -98,10 +98,9 @@ class Interval(Domain):
         a, b = max(subsubdomains, key=lambda ival: ival[1] - ival[0])
         m = (b - a) / 2
         p.add(m)
-        return [(m,)]
+        return [m]
 
     def insert_into(self, subdomain, x, *, _check_membership=True):
-        x, = x
         a, b = subdomain
         if _check_membership:
             if subdomain not in self:
@@ -117,7 +116,6 @@ class Interval(Domain):
             p.add(x)
 
     def split_at(self, x, *, _check_membership=True):
-        x, = x
         a, b = self.bounds
         if _check_membership:
             if not (a < x < b):
@@ -146,7 +144,6 @@ class Interval(Domain):
         return [old_interval], new_intervals
 
     def which_subdomain(self, x):
-        x, = x
         a, b = self.bounds
         if not (a <= x <= b):
             raise ValueError("{} is outside the interval".format(x))
@@ -317,7 +314,7 @@ class DistanceLoss(LossFunction):
     def __call__(self, domain, subdomain, codomain_bounds, data):
         # XXX: this is specialised to 1D
         a, b = subdomain
-        ya, yb = data[(a,)], data[(b,)]
+        ya, yb = data[a], data[b]
         return sqrt((b - a) ** 2 + (yb - ya) ** 2)
 
 
@@ -332,7 +329,7 @@ class LearnerND(BaseLearner):
     def __init__(self, f, bounds, loss=None):
 
         if len(bounds) == 1:
-            (a, b), = bounds
+            (a, b), = bound_points, = bounds
             self.domain = Interval(a, b)
             self.loss = loss or DistanceLoss()
         else:
@@ -344,9 +341,7 @@ class LearnerND(BaseLearner):
 
         # Evaluate boundary points right away to avoid handling edge
         # cases in the ask and tell logic
-        bound_points = sorted(map(tuple, itertools.product(*bounds)))
         for x in bound_points:
-            y = f(x)
             self.data[x] = f(x)
 
         vals = list(self.data.values())
