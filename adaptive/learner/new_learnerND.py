@@ -215,50 +215,66 @@ class Interval(Domain):
 
 
 class Queue:
-    "Priority queue supporting update and removal at arbitrary position."
+    """Priority queue supporting update and removal at arbitrary position.
 
-    def __init__(self):
-        self.queue = sortedcontainers.SortedDict()
-        # 'self.queue' cannot be keyed only on priority, as there may be several
+    Parameters
+    ----------
+    entries : iterable of (item, priority)
+        The initial data in the queue. Providing this is faster than
+        calling 'insert' a bunch of times.
+    """
+
+    def __init__(self, entries=()):
+        self._queue = sortedcontainers.SortedDict(
+            ((priority, n), item)
+            for n, (item, priority) in enumerate(entries)
+        )
+        # 'self._queue' cannot be keyed only on priority, as there may be several
         # items that have the same priority. To keep unique elements the key
-        # will be '(priority, self.n)', where 'self.n' is incremented whenever
+        # will be '(priority, self._n)', where 'self._n' is incremented whenever
         # we add a new element.
-        self.n = 0
+        self._n = len(self._queue)
         # To efficiently support updating and removing items if their priority
-        # is unknown we have to keep the reverse map of 'self.queue'. Because
+        # is unknown we have to keep the reverse map of 'self._queue'. Because
         # items may not be hashable we cannot use a SortedDict, so we use a
         # SortedList storing '(item, key)'.
-        self.items = sortedcontainers.SortedList()
+        self._items = sortedcontainers.SortedList(
+            ((v, k) for k, v in self._queue.items())
+        )
+
+    def items(self):
+        "Return an iterator over the items in the queue in priority order."
+        return reversed(self._queue.values())
 
     def peek(self):
         "Return the item and priority at the front of the queue."
-        ((priority, _), item) = self.queue.peekitem()
+        ((priority, _), item) = self._queue.peekitem()
         return item, priority
 
     def pop(self):
         "Remove and return the item and priority at the front of the queue."
-        (key, item) = self.queue.popitem()
-        i = self.items.index((item, key))
-        del self.items[i]
+        (key, item) = self._queue.popitem()
+        i = self._items.index((item, key))
+        del self._items[i]
         priority, _ = key
         return item, priority
 
     def insert(self, item, priority):
         "Insert 'item' into the queue with the given priority."
-        key = (priority, self.n)
-        self.items.add((item, key))
-        self.queue[key] = item
-        self.n += 1
+        key = (priority, self._n)
+        self._items.add((item, key))
+        self._queue[key] = item
+        self._n += 1
 
     def remove(self, item):
         "Remove the 'item' from the queue."
-        i = self.items.bisect_left((item, ()))
-        should_be, key = self.items[i]
+        i = self._items.bisect_left((item, ()))
+        should_be, key = self._items[i]
         if item != should_be:
             raise KeyError("item is not in queue")
 
-        del self.queue[key]
-        del self.items[i]
+        del self._queue[key]
+        del self._items[i]
 
     def update(self, item, new_priority):
         """Update 'item' in the queue with the given priority.
@@ -267,18 +283,18 @@ class Queue:
         ------
         KeyError : if 'item' is not in the queue.
         """
-        i = self.items.bisect_left((item, ()))
-        should_be, key = self.items[i]
+        i = self._items.bisect_left((item, ()))
+        should_be, key = self._items[i]
         if item != should_be:
             raise KeyError("item is not in queue")
 
         _, n = key
         new_key = (new_priority, n)
 
-        del self.queue[key]
-        self.queue[new_key] = item
-        del self.items[i]
-        self.items.add((item, new_key))
+        del self._queue[key]
+        self._queue[new_key] = item
+        del self._items[i]
+        self._items.add((item, new_key))
 
 
 class LossFunction:
