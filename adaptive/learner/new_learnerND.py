@@ -46,7 +46,12 @@ class Domain:
         "Return all the subdomains in the domain."
 
     def clear_subdomains(self):
-        "Remove all points from the interior of subdomains."
+        """Remove all points from the interior of subdomains.
+
+        Returns
+        -------
+        subdomains : the subdomains who's interior points were removed
+        """
 
     def volume(self, subdomain):
         "Return the volume of a subdomain."
@@ -183,7 +188,9 @@ class Interval(Domain):
         return zip(p, p.islice(1))
 
     def clear_subdomains(self):
+        subdomains = list(self.sub_intervals.keys())
         self.sub_intervals = dict()
+        return subdomains
 
     def volume(self, subdomain):
         "Return the volume of a subdomain"
@@ -381,7 +388,11 @@ class LearnerND(BaseLearner):
 
     def remove_unfinished(self):
         self.data = {k: v for k, v in self.data.items() if v is not None}
-        self.domain.clear_subdomains()
+        cleared_subdomains = self.domain.clear_subdomains()
+        # Subdomains who had internal points removed need their losses updating
+        for subdomain in cleared_subdomains:
+            loss = _scaled_loss(self.loss, self.domain, subdomain, self.data)
+            self.queue.update(subdomain, priority=loss)
 
     def loss(self):
         _, loss = self.queue.peek()
