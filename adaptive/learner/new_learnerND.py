@@ -351,10 +351,12 @@ class LearnerND(BaseLearner):
             self.data[x] = f(x)
 
         vals = list(self.data.values())
-        self.codomain_bounds = (
-            np.min(vals, axis=0),
-            np.max(vals, axis=0),
-        )
+        codomain_min = np.min(vals, axis=0)
+        codomain_max = np.max(vals, axis=0)
+        self.codomain_bounds = (codomain_min, codomain_max)
+        self.codomain_scale_at_last_update = codomain_max - codomain_min
+
+        self.need_loss_update_factor = 1.1
 
         try:
             self.vdim = len(np.squeeze(self.data[x]))
@@ -394,6 +396,8 @@ class LearnerND(BaseLearner):
         for x, y in zip(xs, ys):
             self.data[x] = y
 
+        need_loss_update = self._update_codomain_bounds(ys)
+
         old = set()
         new = set()
         for x in xs:
@@ -405,21 +409,56 @@ class LearnerND(BaseLearner):
 
         for subdomain in old:
             self.queue.remove(subdomain)
-        for subdomain in new:
-            loss = _scaled_loss(self.loss, self.domain, subdomain,
-                                self.codomain_bounds, self.data)
-            self.queue.insert(subdomain, priority=loss)
 
-        if self.loss.n_neighbors > 0:
-            subdomains_to_update = sum(
-                (set(self.domain.neighbors(d, self.loss.n_neighbors)) for d in new),
-                set(),
+        if need_loss_update:
+            # Need to recalculate all losses anyway
+            subdomains = itertools.chain(self.queue.items(), new)
+            self.queue = Queue(
+                (subdomain, _scaled_loss(self.loss, self.domain, subdomain,
+                                         self.codomain_bounds, self.data))
+                for subdomain in itertools.chain(self.queue.items(), new)
             )
-            subdomains_to_update -= new
-            for subdomain in subdomains_to_update:
+        else:
+            # Compute the losses for the new subdomains and re-compute the
+            # losses for the neighboring subdomains, if necessary.
+            for subdomain in new:
                 loss = _scaled_loss(self.loss, self.domain, subdomain,
                                     self.codomain_bounds, self.data)
-                self.queue.update(subdomain, priority=loss)
+                self.queue.insert(subdomain, priority=loss)
+
+            if self.loss.n_neighbors > 0:
+                subdomains_to_update = sum(
+                    (set(self.domain.neighbors(d, self.loss.n_neighbors)) for d in new),
+                    set(),
+                )
+                subdomains_to_update -= new
+                for subdomain in subdomains_to_update:
+                    loss = _scaled_loss(self.loss, self.domain, subdomain,
+                                        self.codomain_bounds, self.data)
+                    self.queue.update(subdomain, priority=loss)
+
+    def _update_codomain_bounds(self, ys):
+        mn, mx = self.codomain_bounds
+        if self.vdim == 1:
+            mn = min(mn, *ys)
+            mx = max(mx, *ys)
+        else:
+            mn = np.min(np.vstack([mn, ys]), axis=0)
+            mx = np.max(np.vstack([mx, ys]), axis=0)
+        self.codomain_bounds = (mn, mx)
+
+        scale = mx - mn
+
+        scale_factor = (scale / self.codomain_scale_at_last_update)
+        if self.vdim == 1:
+            need_loss_update = scale_factor > self.need_loss_update_factor
+        else:
+            need_loss_update = np.any(scale_factor > self.need_loss_update_factor)
+        if need_loss_update:
+            self.codomain_scale_at_last_update = scale
+            return True
+        else:
+            return False
 
     def remove_unfinished(self):
         self.data = {k: v for k, v in self.data.items() if v is not None}
