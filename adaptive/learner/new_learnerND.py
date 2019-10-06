@@ -226,8 +226,7 @@ class Queue:
 
     def __init__(self, entries=()):
         self._queue = sortedcontainers.SortedDict(
-            ((priority, n), item)
-            for n, (item, priority) in enumerate(entries)
+            ((priority, n), item) for n, (item, priority) in enumerate(entries)
         )
         # 'self._queue' cannot be keyed only on priority, as there may be several
         # items that have the same priority. To keep unique elements the key
@@ -377,8 +376,9 @@ class LearnerND(BaseLearner):
             subdomain, _ = self.queue.pop()
             new_point, = self.domain.insert_points(subdomain, 1)
             self.data[new_point] = None
-            new_loss = _scaled_loss(self.loss, self.domain, subdomain,
-                                    self.codomain_bounds, self.data)
+            new_loss = _scaled_loss(
+                self.loss, self.domain, subdomain, self.codomain_bounds, self.data
+            )
             self.queue.insert(subdomain, priority=new_loss)
             new_points.append(new_point)
             new_losses.append(new_loss)
@@ -388,8 +388,9 @@ class LearnerND(BaseLearner):
         self.data[x] = None
         subdomain = self.domain.which_subdomain(x)
         self.domain.insert_into(subdomain, x)
-        loss = _scaled_loss(self.loss, self.domain, subdomain,
-                            self.codomain_bounds, self.data)
+        loss = _scaled_loss(
+            self.loss, self.domain, subdomain, self.codomain_bounds, self.data
+        )
         self.queue.update(subdomain, priority=loss)
 
     def tell_many(self, xs, ys):
@@ -414,16 +415,25 @@ class LearnerND(BaseLearner):
             # Need to recalculate all losses anyway
             subdomains = itertools.chain(self.queue.items(), new)
             self.queue = Queue(
-                (subdomain, _scaled_loss(self.loss, self.domain, subdomain,
-                                         self.codomain_bounds, self.data))
+                (
+                    subdomain,
+                    _scaled_loss(
+                        self.loss,
+                        self.domain,
+                        subdomain,
+                        self.codomain_bounds,
+                        self.data,
+                    ),
+                )
                 for subdomain in itertools.chain(self.queue.items(), new)
             )
         else:
             # Compute the losses for the new subdomains and re-compute the
             # losses for the neighboring subdomains, if necessary.
             for subdomain in new:
-                loss = _scaled_loss(self.loss, self.domain, subdomain,
-                                    self.codomain_bounds, self.data)
+                loss = _scaled_loss(
+                    self.loss, self.domain, subdomain, self.codomain_bounds, self.data
+                )
                 self.queue.insert(subdomain, priority=loss)
 
             if self.loss.n_neighbors > 0:
@@ -433,8 +443,13 @@ class LearnerND(BaseLearner):
                 )
                 subdomains_to_update -= new
                 for subdomain in subdomains_to_update:
-                    loss = _scaled_loss(self.loss, self.domain, subdomain,
-                                        self.codomain_bounds, self.data)
+                    loss = _scaled_loss(
+                        self.loss,
+                        self.domain,
+                        subdomain,
+                        self.codomain_bounds,
+                        self.data,
+                    )
                     self.queue.update(subdomain, priority=loss)
 
     def _update_codomain_bounds(self, ys):
@@ -449,7 +464,7 @@ class LearnerND(BaseLearner):
 
         scale = mx - mn
 
-        scale_factor = (scale / self.codomain_scale_at_last_update)
+        scale_factor = scale / self.codomain_scale_at_last_update
         if self.vdim == 1:
             need_loss_update = scale_factor > self.need_loss_update_factor
         else:
@@ -465,8 +480,9 @@ class LearnerND(BaseLearner):
         cleared_subdomains = self.domain.clear_subdomains()
         # Subdomains who had internal points removed need their losses updating
         for subdomain in cleared_subdomains:
-            loss = _scaled_loss(self.loss, self.domain, subdomain,
-                                self.codomain_bounds, self.data)
+            loss = _scaled_loss(
+                self.loss, self.domain, subdomain, self.codomain_bounds, self.data
+            )
             self.queue.update(subdomain, priority=loss)
 
     def loss(self):
