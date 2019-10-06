@@ -96,7 +96,7 @@ class Interval(Domain):
 
         subsubdomains = zip(p, p.islice(1))
         a, b = max(subsubdomains, key=lambda ival: ival[1] - ival[0])
-        m = (b - a) / 2
+        m = a + (b - a) / 2
         p.add(m)
         return [m]
 
