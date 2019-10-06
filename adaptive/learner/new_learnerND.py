@@ -39,6 +39,9 @@ class Domain:
         ValueError: if x is on a subdomain boundary
         """
 
+    def transform(self, x):
+        "Transform 'x' to the unit hypercube"
+
     def neighbors(self, subdomain, n=1):
         "Return all neighboring subdomains up to degree 'n'."
 
@@ -161,6 +164,10 @@ class Interval(Domain):
         except ValueError:
             return False
         return ia + 1 == ib
+
+    def transform(self, x):
+        a, b = self.bounds
+        return (x - a) / (b - a)
 
     def neighbors(self, subdomain, n=1):
         "Return all neighboring subdomains up to degree 'n'."
@@ -292,17 +299,17 @@ class DistanceLoss(LossFunction):
     def n_neighbors(self):
         return 0
 
-    def __call__(self, domain, subdomain, data):
+    def __call__(self, domain, subdomain, codomain_bounds, data):
         # XXX: this is specialised to 1D
         a, b = subdomain
         ya, yb = data[(a,)], data[(b,)]
         return sqrt((b - a) ** 2 + (yb - ya) ** 2)
 
 
-def _scaled_loss(loss, domain, subdomain, data):
+def _scaled_loss(loss, domain, subdomain, codomain_bounds, data):
     subvolumes = domain.subvolumes(subdomain)
     max_relative_subvolume = max(subvolumes) / sum(subvolumes)
-    L_0 = loss(domain, subdomain, data)
+    L_0 = loss(domain, subdomain, codomain_bounds, data)
     return max_relative_subvolume * L_0
 
 
@@ -324,7 +331,14 @@ class LearnerND(BaseLearner):
         # cases in the ask and tell logic
         bound_points = sorted(map(tuple, itertools.product(*bounds)))
         for x in bound_points:
+            y = f(x)
             self.data[x] = f(x)
+
+        vals = list(self.data.values())
+        self.codomain_bounds = (
+            np.min(vals, axis=0),
+            np.max(vals, axis=0),
+        )
 
         try:
             self.vdim = len(np.squeeze(self.data[x]))
@@ -332,7 +346,8 @@ class LearnerND(BaseLearner):
             self.vdim = 1
 
         d, = self.domain.subdomains()
-        self.queue.insert(d, priority=self.loss(self.domain, d, self.data))
+        loss = self.loss(self.domain, d, self.codomain_bounds, self.data)
+        self.queue.insert(d, priority=loss)
 
     def ask(self, n, tell_pending=True):
         if not tell_pending:
@@ -344,7 +359,8 @@ class LearnerND(BaseLearner):
             subdomain, _ = self.queue.pop()
             new_point, = self.domain.insert_points(subdomain, 1)
             self.data[new_point] = None
-            new_loss = _scaled_loss(self.loss, self.domain, subdomain, self.data)
+            new_loss = _scaled_loss(self.loss, self.domain, subdomain,
+                                    self.codomain_bounds, self.data)
             self.queue.insert(subdomain, priority=new_loss)
             new_points.append(new_point)
             new_losses.append(new_loss)
@@ -354,7 +370,8 @@ class LearnerND(BaseLearner):
         self.data[x] = None
         subdomain = self.domain.which_subdomain(x)
         self.domain.insert_into(subdomain, x)
-        loss = _scaled_loss(self.loss, self.domain, subdomain, self.data)
+        loss = _scaled_loss(self.loss, self.domain, subdomain,
+                            self.codomain_bounds, self.data)
         self.queue.update(subdomain, priority=loss)
 
     def tell_many(self, xs, ys):
@@ -373,7 +390,8 @@ class LearnerND(BaseLearner):
         for subdomain in old:
             self.queue.remove(subdomain)
         for subdomain in new:
-            loss = _scaled_loss(self.loss, self.domain, subdomain, self.data)
+            loss = _scaled_loss(self.loss, self.domain, subdomain,
+                                self.codomain_bounds, self.data)
             self.queue.insert(subdomain, priority=loss)
 
         if self.loss.n_neighbors > 0:
@@ -383,7 +401,8 @@ class LearnerND(BaseLearner):
             )
             subdomains_to_update -= new
             for subdomain in subdomains_to_update:
-                loss = _scaled_loss(self.loss, self.domain, subdomain, self.data)
+                loss = _scaled_loss(self.loss, self.domain, subdomain,
+                                    self.codomain_bounds, self.data)
                 self.queue.update(subdomain, priority=loss)
 
     def remove_unfinished(self):
@@ -391,7 +410,8 @@ class LearnerND(BaseLearner):
         cleared_subdomains = self.domain.clear_subdomains()
         # Subdomains who had internal points removed need their losses updating
         for subdomain in cleared_subdomains:
-            loss = _scaled_loss(self.loss, self.domain, subdomain, self.data)
+            loss = _scaled_loss(self.loss, self.domain, subdomain,
+                                self.codomain_bounds, self.data)
             self.queue.update(subdomain, priority=loss)
 
     def loss(self):
