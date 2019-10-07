@@ -1,10 +1,14 @@
 from math import sqrt
 import itertools
+from collections.abc import Iterable
 
 import numpy as np
+import scipy.spatial
+import scipy.interpolate
 from sortedcontainers import SortedList, SortedDict
 
 from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.triangulation import Triangulation, simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
 
 
@@ -214,6 +218,174 @@ class Interval(Domain):
             return [self.volume(s) for s in zip(p, p.islice(1))]
 
 
+class ConvexHull(Domain):
+    """A convex hull domain in $ℝ^N$ (N >=2).
+
+    Subdomains are simplices represented by integer tuples of length (N + 1).
+    """
+
+    def __init__(self, hull):
+        assert isinstance(hull, scipy.spatial.ConvexHull)
+
+        self.bounds = hull
+        self.triangulation = Triangulation(hull.points[hull.vertices])
+        # if a subdomain has interior points, then it appears as a key
+        # in 'sub_domains' and maps to a 'Triangulation' of the
+        # interior of the subdomain.
+        self.sub_domains = dict()
+
+    @property
+    def bounding_box(self):
+        hull_points = self.bounds.points[self.bounds.vertices]
+        return tuple(zip(hull_points.min(axis=0), hull_points.max(axis=0)))
+
+    def insert_points(self, subdomain, n, *, _check_membership=True):
+        assert n > 0
+        tri = self.triangulation
+        if _check_membership and subdomain not in tri.simplices:
+            raise ValueError("{} is not present in this domain".format(subdomain))
+        try:
+            subtri = self.sub_domains[subdomain]
+        except KeyError:  # No points in the interior of this subdomain yet
+            subtri = Triangulation([tri.vertices[x] for x in subdomain])
+            self.sub_domains[subdomain] = subtri
+
+        # Choose new points in the centre of the largest sub-subdomain
+        # of this subdomain
+        points = []
+        for _ in range(n):
+            # O(N) in the number of sub-simplices, but typically we only have a few
+            largest_simplex = max(subtri.simplices, key=lambda s: subtri.volume(s))
+            simplex_vertices = np.array([subtri.vertices[s] for s in largest_simplex])
+            # XXX: choose the centre of the simplex. Update this to be able to handle
+            #      choosing points on a face. This requires updating the ABC and having
+            #      this method also return the subdomains that are affected by the new
+            #      points
+            point = np.average(simplex_vertices, axis=0)
+            subtri.add_point(point, largest_simplex)
+            points.append(point)
+
+        return [tuple(p) for p in points]
+
+    def insert_into(self, subdomain, x, *, _check_membership=True):
+        tri = self.triangulation
+        if _check_membership:
+            if subdomain not in tri.simplices:
+                raise ValueError("{} is not present in this domain".format(subdomain))
+            if not tri.point_in_simplex(x, subdomain):
+                raise ValueError("{} is not present in this subdomain".format(x))
+
+        try:
+            subtri = self.sub_domains[subdomain]
+        except KeyError:  # No points in the interior of this subdomain yet
+            subtri = Triangulation([tri.vertices[x] for x in subdomain])
+            self.sub_domains[subdomain] = subtri
+
+        subtri.add_point(x)
+
+    def split_at(self, x, *, _check_membership=True):
+        tri = self.triangulation
+        # XXX: O(N) in the number of simplices. As typically 'x' will have been
+        #      obtained by 'insert_points' or by calling 'insert_into' we can keep
+        #      a hashmap of x→simplex to make this lookup faster and fall back to
+        #      'locate_point' otherwise
+        simplex = tri.locate_point(x)
+        if not simplex:
+            raise ValueError("Can only split at points within the domain.")
+
+        old_subdomains, new_subdomains = tri.add_point(x, simplex)
+
+        if _check_membership:
+            assert not any(s in self.sub_domains for s in new_subdomains)
+
+        # Re-assign all the interior points of 'old_subdomains' to 'new_subdomains'
+
+        interior_points = []
+        for d in old_subdomains:
+            try:
+                subtri = self.sub_domains.pop(d)
+            except KeyError:
+                continue
+            else:
+                # Get the points in the interior of the subtriangulation
+                verts = set(range(len(subtri.vertices))) - subtri.hull
+                assert verts
+                verts = np.array([subtri.vertices[i] for i in verts])
+                # Remove 'x' if it is one of the points
+                verts = verts[np.all(verts != x, axis=1)]
+                interior_points.append(verts)
+        if interior_points:
+            interior_points = np.vstack(interior_points)
+        for p in interior_points:
+            # XXX: handle case where points lie on simplex boundaries
+            for subdomain in new_subdomains:
+                if tri.point_in_simplex(p, subdomain):
+                    try:
+                        subtri = self.sub_domains[subdomain]
+                    except KeyError:  # No points in this subdomain yet
+                        subtri = Triangulation([tri.vertices[i] for i in subdomain])
+                        self.sub_domains[subdomain] = subtri
+                    subtri.add_point(p)
+                    break
+            else:
+                assert False, "{} was not in the interior of new simplices".format(x)
+
+        return old_subdomains, new_subdomains
+
+    def which_subdomain(self, x):
+        tri = self.triangulation
+        member = np.array([tri.point_in_simplex(x, s) for s in tri.simplices])
+        n_simplices = member.sum()
+        if n_simplices < 1:
+            raise ValueError("{} is not in the domain".format(x))
+        elif n_simplices == 1:
+            return member.argmax()
+        else:
+            raise ValueError("{} is on a subdomain boundary".format(x))
+
+    def transform(self, x):
+        # XXX: implement this
+        raise NotImplementedError()
+
+    def neighbors(self, subdomain, n=1):
+        "Return all neighboring subdomains up to degree 'n'."
+        tri = self.triangulation
+        neighbors = {subdomain}
+        for _ in range(n):
+            for face in tri.faces(simplices=neighbors):
+                neighbors.update(tri.containing(face))
+        neighbors.remove(subdomain)
+        return neighbors
+
+    def subdomains(self):
+        "Return all the subdomains in the domain."
+        return self.triangulation.simplices
+
+    def clear_subdomains(self):
+        """Remove all points from the interior of subdomains.
+
+        Returns
+        -------
+        subdomains : the subdomains who's interior points were removed
+        """
+        sub_domains = list(self.sub_domains.keys())
+        self.sub_domains = dict()
+        return sub_domains
+
+    def volume(self, subdomain):
+        "Return the volume of a subdomain."
+        return self.triangulation.volume(subdomain)
+
+    def subvolumes(self, subdomain):
+        "Return the volumes of the sub-subdomains."
+        try:
+            subtri = self.sub_domains[subdomain]
+        except KeyError:
+            return [self.triangulation.volume(subdomain)]
+        else:
+            return [subtri.volume(s) for s in subtri.simplices]
+
+
 class Queue:
     """Priority queue supporting update and removal at arbitrary position.
 
@@ -237,9 +409,7 @@ class Queue:
         # is unknown we have to keep the reverse map of 'self._queue'. Because
         # items may not be hashable we cannot use a SortedDict, so we use a
         # SortedList storing '(item, key)'.
-        self._items = SortedList(
-            ((v, k) for k, v in self._queue.items())
-        )
+        self._items = SortedList(((v, k) for k, v in self._queue.items()))
 
     def items(self):
         "Return an iterator over the items in the queue in priority order."
@@ -315,10 +485,26 @@ class DistanceLoss(LossFunction):
         return 0
 
     def __call__(self, domain, subdomain, codomain_bounds, data):
-        # XXX: this is specialised to 1D
+        assert isinstance(domain, Interval)
         a, b = subdomain
         ya, yb = data[a], data[b]
         return sqrt((b - a) ** 2 + (yb - ya) ** 2)
+
+
+class EmbeddedVolumeLoss(LossFunction):
+    @property
+    def n_neighbors(self):
+        return 0
+
+    def __call__(self, domain, subdomain, codomain_bounds, data):
+        assert isinstance(domain, ConvexHull)
+        xs = [tuple(domain.triangulation.vertices[x]) for x in subdomain]
+        ys = [data[x] for x in xs]
+        if isinstance(ys[0], Iterable):
+            pts = [(*x, *y) for x, y in zip(xs, ys)]
+        else:
+            pts = [(*x, y) for x, y in zip(xs, ys)]
+        return simplex_volume_in_embedding(pts)
 
 
 def _scaled_loss(loss, domain, subdomain, codomain_bounds, data):
@@ -332,11 +518,15 @@ class LearnerND(BaseLearner):
     def __init__(self, f, bounds, loss=None):
 
         if len(bounds) == 1:
-            (a, b), = bound_points, = bounds
+            (a, b), = (bound_points,) = bounds
             self.domain = Interval(a, b)
             self.loss = loss or DistanceLoss()
+            self.ndim = 1
         else:
-            raise ValueError("Can only handle 1D functions for now")
+            bound_points = sorted(tuple(p) for p in itertools.product(*bounds))
+            self.domain = ConvexHull(scipy.spatial.ConvexHull(bound_points))
+            self.loss = loss or EmbeddedVolumeLoss()
+            self.ndim = len(bound_points[0])
 
         self.queue = Queue()
         self.data = dict()
@@ -360,9 +550,13 @@ class LearnerND(BaseLearner):
         except TypeError:  # Trying to take the length of a number
             self.vdim = 1
 
-        d, = self.domain.subdomains()
-        loss = self.loss(self.domain, d, self.codomain_bounds, self.data)
-        self.queue.insert(d, priority=loss)
+        for subdomain in self.domain.subdomains():
+            # NOTE: could just call 'self.loss' here, as we *know* that each
+            #       subdomain does not have internal points.
+            loss = _scaled_loss(
+                self.loss, self.domain, subdomain, self.codomain_bounds, self.data
+            )
+            self.queue.insert(subdomain, priority=loss)
 
     def ask(self, n, tell_pending=True):
         if not tell_pending:
@@ -411,7 +605,6 @@ class LearnerND(BaseLearner):
 
         if need_loss_update:
             # Need to recalculate all losses anyway
-            subdomains = itertools.chain(self.queue.items(), new)
             self.queue = Queue(
                 (
                     subdomain,
@@ -487,8 +680,76 @@ class LearnerND(BaseLearner):
         _, loss = self.queue.peek()
         return loss
 
-    def plot(self):
-        # XXX: specialized to 1D
+    def plot(self, **kwargs):
+        if isinstance(self.domain, Interval):
+            return self._plot_1d(**kwargs)
+        elif isinstance(self.domain, ConvexHull):
+            return self._plot_nd(**kwargs)
+
+    def _plot_nd(self, n=None, tri_alpha=0):
+        # XXX: Copied from LearnerND. At the moment we reach deep into internal
+        #      datastructures of self.domain. We should see what data we need and
+        #      add APIs to 'Domain' to support this.
+        hv = ensure_holoviews()
+        if self.vdim > 1:
+            raise NotImplementedError(
+                "holoviews currently does not support", "3D surface plots in bokeh."
+            )
+        if self.ndim != 2:
+            raise NotImplementedError(
+                "Only 2D plots are implemented: You can "
+                "plot a 2D slice with 'plot_slice'."
+            )
+        x, y = self.domain.bounding_box
+        lbrt = x[0], y[0], x[1], y[1]
+
+        if len(self.data) >= 4:
+            if n is None:
+                # Calculate how many grid points are needed.
+                # factor from A=√3/4 * a² (equilateral triangle)
+                scale_factor = 1  # np.product(np.diag(self._transform))
+                min_volume = min(map(self.domain.volume, self.domain.subdomains()))
+                a_sq = np.sqrt(scale_factor * min_volume)
+                n = max(10, int(0.658 / a_sq))
+
+            xs = ys = np.linspace(0, 1, n)
+            xs = xs * (x[1] - x[0]) + x[0]
+            ys = ys * (y[1] - y[0]) + y[0]
+            keys = np.array(list(self.data.keys()))
+            values = np.array(list(self.data.values()))
+            interpolator = scipy.interpolate.LinearNDInterpolator(keys, values)
+            z = interpolator(xs[:, None], ys[None, :]).squeeze()
+
+            im = hv.Image(np.rot90(z), bounds=lbrt)
+
+            if tri_alpha:
+                points = np.array(
+                    [
+                        [self.domain.triangulation.vertices[i] for i in s]
+                        for s in self.domain.subdomains()
+                    ]
+                )
+                points = np.pad(
+                    points[:, [0, 1, 2, 0], :],
+                    pad_width=((0, 0), (0, 1), (0, 0)),
+                    mode="constant",
+                    constant_values=np.nan,
+                ).reshape(-1, 2)
+                tris = hv.EdgePaths([points])
+            else:
+                tris = hv.EdgePaths([])
+        else:
+            im = hv.Image([], bounds=lbrt)
+            tris = hv.EdgePaths([])
+
+        im_opts = dict(cmap="viridis")
+        tri_opts = dict(line_width=0.5, alpha=tri_alpha)
+        no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
+
+        return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
+
+    def _plot_1d(self):
+        assert isinstance(self.domain, Interval)
         hv = ensure_holoviews()
 
         xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
