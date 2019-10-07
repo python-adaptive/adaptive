@@ -10,18 +10,24 @@ from adaptive.notebook_integration import ensure_holoviews
 
 class Domain:
     def insert_points(self, subdomain, n):
-        "Insert 'n' points into 'subdomain'."
+        """Insert 'n' points into 'subdomain'.
+
+        May not return a point on the boundary of subdomain.
+        """
 
     def insert_into(self, subdomain, x):
         """Insert 'x' into 'subdomain'.
 
         Raises
         ------
-        ValueError : if x is outside of subdomain or on its boundary
+        ValueError : if x is outside subdomain or exists already
+        NotImplementedError : if x is on the boundary of subdomain
         """
 
     def split_at(self, x):
         """Split the domain at 'x'.
+
+        Removes and adds subdomains.
 
         Returns
         -------
@@ -29,6 +35,10 @@ class Domain:
             The subdomains that were removed when splitting at 'x'.
         new_subdomains : list of subdomains
             The subdomains that were added when splitting at 'x'.
+
+        Raises
+        ------
+        ValueError : if x is outside of the domain or exists already
         """
 
     def which_subdomain(self, x):
@@ -36,7 +46,8 @@ class Domain:
 
         Raises
         ------
-        ValueError: if x is on a subdomain boundary
+        ValueError : if x is outside of the domain
+        NotImplementedError : if x is on a subdomain boundary
         """
 
     def transform(self, x):
@@ -80,17 +91,20 @@ class Interval(Domain):
         self.points = SortedList([a, b])
 
     def insert_points(self, subdomain, n, *, _check_membership=True):
+        assert n > 0
         if _check_membership and subdomain not in self:
             raise ValueError("{} is not present in this interval".format(subdomain))
         try:
             p = self.sub_intervals[subdomain]
-        except KeyError:  # first point in the interior of this subdomain
+        except KeyError:  # No points yet in the interior of this subdomain
             a, b = subdomain
             p = SortedList(subdomain)
             self.sub_intervals[subdomain] = p
 
+        # Choose new points in the centre of the largest subdomain
+        # of this subinterval.
         points = []
-        subsubdomains = SortedList(zip(p, p.islice(1)), key=lambda iv: iv[1] - iv[0])
+        subsubdomains = SortedList(zip(p, p.islice(1)), key=self.volume)
         for _ in range(n):
             a, b = subsubdomains.pop()
             m = a + (b - a) / 2
@@ -150,7 +164,7 @@ class Interval(Domain):
         p = self.points
         i = p.bisect_left(x)
         if p[i] == x:
-            raise ValueError("{} belongs to 2 subdomains".format(x))
+            raise NotImplementedError("{} is on a subdomain boundary".format(x))
         return (p[i], p[i + 1])
 
     def __contains__(self, subdomain):
