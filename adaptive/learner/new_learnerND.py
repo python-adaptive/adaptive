@@ -2,7 +2,7 @@ from math import sqrt
 import itertools
 
 import numpy as np
-import sortedcontainers
+from sortedcontainers import SortedList, SortedDict
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
@@ -77,7 +77,7 @@ class Interval(Domain):
         # in 'sub_intervals' in a SortedList.
         self.bounds = (a, b)
         self.sub_intervals = dict()
-        self.points = sortedcontainers.SortedList([a, b])
+        self.points = SortedList([a, b])
 
     def insert_points(self, subdomain, n, *, _check_membership=True):
         if _check_membership and subdomain not in self:
@@ -86,19 +86,19 @@ class Interval(Domain):
             p = self.sub_intervals[subdomain]
         except KeyError:  # first point in the interior of this subdomain
             a, b = subdomain
-            points = np.linspace(a, b, 2 + n)
-            self.sub_intervals[subdomain] = sortedcontainers.SortedList(points)
-            return points[1:-1]
+            p = SortedList(subdomain)
+            self.sub_intervals[subdomain] = p
 
-        # XXX: allow this
-        if n != 1:
-            raise ValueError("Can't add more than one point to a full subinterval")
+        points = []
+        subsubdomains = SortedList(zip(p, p.islice(1)), key=lambda iv: iv[1] - iv[0])
+        for _ in range(n):
+            a, b = subsubdomains.pop()
+            m = a + (b - a) / 2
+            subsubdomains.update([(a, m), (m, b)])
+            points.append(m)
+        p.update(points)
 
-        subsubdomains = zip(p, p.islice(1))
-        a, b = max(subsubdomains, key=lambda ival: ival[1] - ival[0])
-        m = a + (b - a) / 2
-        p.add(m)
-        return [m]
+        return points
 
     def insert_into(self, subdomain, x, *, _check_membership=True):
         a, b = subdomain
@@ -111,7 +111,7 @@ class Interval(Domain):
         try:
             p = self.sub_intervals[subdomain]
         except KeyError:
-            self.sub_intervals[subdomain] = sortedcontainers.SortedList([a, x, b])
+            self.sub_intervals[subdomain] = SortedList([a, x, b])
         else:
             p.add(x)
 
@@ -135,7 +135,7 @@ class Interval(Domain):
             pass
         else:  # update sub_intervals
             for ival in new_intervals:
-                new_sub_points = sortedcontainers.SortedList(sub_points.irange(*ival))
+                new_sub_points = SortedList(sub_points.irange(*ival))
                 if x not in new_sub_points:
                     new_sub_points.add(x)
                 if len(new_sub_points) > 2:
@@ -211,7 +211,7 @@ class Queue:
     """
 
     def __init__(self, entries=()):
-        self._queue = sortedcontainers.SortedDict(
+        self._queue = SortedDict(
             ((priority, n), item) for n, (item, priority) in enumerate(entries)
         )
         # 'self._queue' cannot be keyed only on priority, as there may be several
@@ -223,7 +223,7 @@ class Queue:
         # is unknown we have to keep the reverse map of 'self._queue'. Because
         # items may not be hashable we cannot use a SortedDict, so we use a
         # SortedList storing '(item, key)'.
-        self._items = sortedcontainers.SortedList(
+        self._items = SortedList(
             ((v, k) for k, v in self._queue.items())
         )
 
@@ -261,8 +261,8 @@ class Queue:
         del self._queue[key]
         del self._items[i]
 
-    def update(self, item, new_priority):
-        """Update 'item' in the queue with the given priority.
+    def update(self, item, priority):
+        """Update 'item' in the queue to have the given priority.
 
         Raises
         ------
@@ -274,7 +274,7 @@ class Queue:
             raise KeyError("item is not in queue")
 
         _, n = key
-        new_key = (new_priority, n)
+        new_key = (priority, n)
 
         del self._queue[key]
         self._queue[new_key] = item
