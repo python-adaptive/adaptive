@@ -167,7 +167,6 @@ class Interval(Domain):
         return (x - a) / (b - a)
 
     def neighbors(self, subdomain, n=1):
-        "Return all neighboring subdomains up to degree 'n'."
         a, b = subdomain
         p = self.points
         ia = p.index(a)
@@ -179,15 +178,7 @@ class Interval(Domain):
                 neighbors.append((p[ia + i + 1], p[ia + i + 2]))
         return neighbors
 
-    def points(self, subdomain):
-        "Return all the points that define a given subdomain."
-        try:
-            return self.sub_intervals[subdomain]
-        except KeyError:
-            return subdomain
-
     def subdomains(self):
-        "Return all the subdomains in the domain."
         p = self.points
         return zip(p, p.islice(1))
 
@@ -197,12 +188,10 @@ class Interval(Domain):
         return subdomains
 
     def volume(self, subdomain):
-        "Return the volume of a subdomain"
         a, b = subdomain
         return b - a
 
     def subvolumes(self, subdomain):
-        "Return the volumes of the sub-subdomains."
         try:
             p = self.sub_intervals[subdomain]
         except KeyError:
