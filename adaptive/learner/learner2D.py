@@ -354,7 +354,7 @@ class Learner2D(BaseLearner):
         ys : 1D numpy.ndarray
         interpolated_on_grid : 2D numpy.ndarray
         """
-        ip = self.interpolate(scaled=True)
+        ip = self.interpolator(scaled=True)
         if n is None:
             # Calculate how many grid points are needed.
             # factor from A=√3/4 * a² (equilateral triangle)
@@ -384,7 +384,7 @@ class Learner2D(BaseLearner):
         if self.pending_points:
             points = list(self.pending_points)
             if self.bounds_are_done:
-                ip = self.interpolate(scaled=True)
+                ip = self.interpolator(scaled=True)
                 values = ip(self._scale(points))
             else:
                 # Without the bounds the interpolation cannot be done properly,
@@ -403,15 +403,15 @@ class Learner2D(BaseLearner):
         return points_combined, values_combined
 
     def ip(self):
-        """Deprecated, use `self.interpolate(scaled=True)`"""
+        """Deprecated, use `self.interpolator(scaled=True)`"""
         warnings.warn(
-            "`learner.ip()` is deprecated, use `learner.interpolate(scaled=True)`."
+            "`learner.ip()` is deprecated, use `learner.interpolator(scaled=True)`."
             " This will be removed in v1.0.",
             DeprecationWarning,
         )
-        return self.interpolate(scaled=True)
+        return self.interpolator(scaled=True)
 
-    def interpolate(self, *, scaled=False):
+    def interpolator(self, *, scaled=False):
         """A `scipy.interpolate.LinearNDInterpolator` instance
         containing the learner's data.
 
@@ -541,7 +541,7 @@ class Learner2D(BaseLearner):
     def loss(self, real=True):
         if not self.bounds_are_done:
             return np.inf
-        ip = self.interpolate(scaled=True) if real else self._interpolate_combined()
+        ip = self.interpolator(scaled=True) if real else self._interpolate_combined()
         losses = self.loss_per_triangle(ip)
         return losses.max()
 
@@ -586,7 +586,7 @@ class Learner2D(BaseLearner):
         lbrt = x[0], y[0], x[1], y[1]
 
         if len(self.data) >= 4:
-            ip = self.interpolate(scaled=True)
+            ip = self.interpolator(scaled=True)
             x, y, z = self.interpolated_on_grid(n)
 
             if self.vdim > 1:
