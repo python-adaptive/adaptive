@@ -400,7 +400,9 @@ def test_expected_loss_improvement_is_less_than_total_loss(
     _, loss_improvements = learner.ask(M)
 
     if learner_type is Learner2D:
-        assert sum(loss_improvements) < sum(learner.loss_per_triangle(learner.ip()))
+        assert sum(loss_improvements) < sum(
+            learner.loss_per_triangle(learner.interpolator(scaled=True))
+        )
     elif learner_type is Learner1D:
         assert sum(loss_improvements) < sum(learner.losses.values())
     elif learner_type is AverageLearner:
