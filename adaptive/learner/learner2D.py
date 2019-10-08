@@ -459,11 +459,11 @@ class Learner2D(BaseLearner):
 
         Returns
         -------
-        interpolate : `scipy.interpolate.LinearNDInterpolator`
+        interpolator : `scipy.interpolate.LinearNDInterpolator`
 
         Examples
         --------
-        >>> xs, ys = [np.linspace(*b, n=100) for b in learner.bounds]
+        >>> xs, ys = [np.linspace(*b, num=100) for b in learner.bounds]
         >>> ip = learner.interpolator()
         >>> zs = ip(xs[:, None], ys[None, :])
         """
