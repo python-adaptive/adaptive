@@ -760,9 +760,16 @@ class LearnerND(BaseLearner):
             new_losses.append(new_loss)
 
         if not tell_pending:
-            # XXX: (1) revert subdomain losses to their original values
-            #      (2) remove points from 'self.domain'
-            raise NotImplementedError("tell_pending=False not supported yet")
+
+            affected_subdomains = set()
+            for point in new_points:
+                del self.data[point]
+                affected_subdomains.update(self.domain.remove(point))
+            for subdomain in affected_subdomains:
+                new_loss = _scaled_loss(
+                    self.loss, self.domain, subdomain, self.codomain_bounds, self.data
+                )
+                self.queue.update(subdomain, priority=new_loss)
         return new_points, new_losses
 
     def tell_pending(self, x):
