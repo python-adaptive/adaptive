@@ -396,8 +396,7 @@ class ConvexHull(Domain):
         return [tuple(p) for p in points], affected_subdomains
 
     def insert(self, x, *, _check_membership=True):
-        tri = self.triangulation
-        # O(N) in the number of simplices
+        # XXX: O(N) in the number of simplices
         affected_subdomains = self.which_subdomains(x)
         if not affected_subdomains:
             raise ValueError("{} is not present in this domain".format(x))
@@ -410,13 +409,14 @@ class ConvexHull(Domain):
         return affected_subdomains
 
     def remove(self, x):
+        # XXX: O(N) in the number of simplices
         affected_subdomains = self.which_subdomains(x)
-        for subdomains in affected_subdomains:
+        for subdomain in affected_subdomains:
             # Check that it's not a vertex of the subdomain
-            if any(x == tri.vertices[i] for i in subdomain):
+            if any(x == self.triangulation.vertices[i] for i in subdomain):
                 raise ValueError("Cannot remove subdomain vertices")
             try:
-                subtri = self.sub_domains[subdomains]
+                subtri = self.sub_domains[subdomain]
             except KeyError:
                 raise ValueError("{} not present in any subdomain".format(x))
             else:
@@ -650,7 +650,6 @@ class TriangleLoss(LossFunction):
 
     def __call__(self, domain, subdomain, codomain_bounds, data):
         assert isinstance(domain, ConvexHull)
-        loss = EmbeddedVolumeLoss()
         neighbors = domain.neighbors(subdomain, self.n_neighbors)
         if not neighbors:
             return 0
