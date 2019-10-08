@@ -29,8 +29,8 @@ class Domain:
             subdomains.
         """
 
-    def insert_into(self, subdomain, x):
-        """Insert 'x' into 'subdomain'.
+    def insert(self, x):
+        """Insert 'x' into any subdomains to which it belongs.
 
         Returns
         -------
@@ -41,7 +41,7 @@ class Domain:
 
         Raises
         ------
-        ValueError : if x is outside subdomain or exists already
+        ValueError : if x is outside the domain or exists already
         """
 
     def split_at(self, x):
@@ -139,19 +139,25 @@ class Interval(Domain):
 
         return points, [subdomain]
 
-    def insert_into(self, subdomain, x, *, _check_membership=True):
-        a, b = subdomain
+    def insert(self, x, *, _check_membership=True):
         if _check_membership:
-            if subdomain not in self:
-                raise ValueError("{} is not present in this interval".format(subdomain))
+            a, b = self.bounds
             if not (a < x < b):
-                raise ValueError("{} is not in ({}, {})".format(x, a, b))
+                raise ValueError("{} is outside of this interval".format(x))
+
+        p = self.points
+        i = p.bisect_left(x)
+        if p[i] == x:
+            raise ValueError("{} exists in this interval already".format(x))
+        subdomain = p[i - 1], p[i]
 
         try:
             p = self.sub_intervals[subdomain]
         except KeyError:
             self.sub_intervals[subdomain] = SortedList([a, x, b])
         else:
+            if x in p:
+                raise ValueError("{} exists in a subinterval already".format(x))
             p.add(x)
 
         return [subdomain]
@@ -190,9 +196,15 @@ class Interval(Domain):
             raise ValueError("{} is outside the interval".format(x))
         p = self.points
         i = p.bisect_left(x)
-        if p[i] == x:
-            # XXX
-            return (p[i - 1], p[i]), (p[i], p[i + 1])
+        if p[i] != x:  # general point inside a subinterval
+            return [(p[i - 1], p[i])]
+        else:  # boundary of a subinterval
+            neighbors = []
+            if i > 0:
+                neighbors.append((p[i - 1], p[i]))
+            if i < len(p) - 1:
+                neighbors.append((p[i], p[i + 1]))
+            return neighbors
         return [(p[i], p[i + 1])]
 
     def __contains__(self, subdomain):
@@ -243,50 +255,44 @@ class Interval(Domain):
 
 
 def _choose_point_in_simplex(simplex, transform=None):
+    """Choose a good point at which to split a simplex.
+
+    Parameters
+    ----------
+    simplex : (n+1, n) array
+        The simplex vertices
+    transform : (n, n) array
+        The linear transform to apply to the simplex vertices
+        before determining which point to choose. Must be
+        invertible.
+
+    Returns
+    -------
+    point : (n,) array
+        The point that was chosen in the simplex
+    face : tuple of int
+        If the chosen point was
+    """
     if transform is not None:
         simplex = np.dot(simplex, transform)
 
-    # choose center if and only if the shape of the simplex is nice,
+    # Choose center only if the shape of the simplex is nice,
     # otherwise: the center the longest edge
     center, _radius = circumsphere(simplex)
     if point_in_simplex(center, simplex):
         point = np.average(simplex, axis=0)
-        edge = ()
+        face = ()
     else:
         distances = scipy.spatial.distance.pdist(simplex)
         distance_matrix = scipy.spatial.distance.squareform(distances)
         i, j = np.unravel_index(np.argmax(distance_matrix), distance_matrix.shape)
         point = (simplex[i, :] + simplex[j, :]) / 2
-        edge = (i, j)
+        face = (i, j)
 
     if transform is not None:
         point = np.linalg.solve(transform, point)  # undo the transform
 
-    return point, edge
-
-
-def _face(simplex, x, eps=1e-8):
-    # Given simplex [(N + 1, N) array] and a point [(N,) array] return
-    # the face that x belongs to, or the empty tuple if not on a face.
-    # The face is returned as a tuple of integers, the vertices of
-    # 'simplex' that bound the face.
-    raise NotImplementedError()
-    x0 = np.asarray(simplex[0], dtype=float)
-    vectors = np.asarray(simplex[1:], dtype=float) - x0
-    t = np.linalg.solve(vectors.T, x - x0)
-    if not all(t > -eps) and sum(t) < 1 + eps:
-        raise ValueError("{} not in simplex".format(x))
-    points = set(range(len(simplex)))
-    where, = np.where(t < eps)
-    for i in where:
-        points.remove(i + 1)
-    if 1 - eps < sum(t) < 1 + eps:
-        points.remove(0)
-    if len(points) == len(simplex):
-        # At a general point in the simplex
-        return ()
-    else:
-        return tuple(sorted(points))
+    return point, face
 
 
 class ConvexHull(Domain):
@@ -342,7 +348,7 @@ class ConvexHull(Domain):
             # If we chose a point on a face (or edge) of 'subdomain' then we need to
             # add it to the subtriangulations of the neighboring subdomains.
             # The first 'ndim + 1' points are the boundary points of the subtriangulation
-            # because it is by definition a simplex.
+            # because it is a simplex by definition.
             if face and all(f < self.ndim + 1 for f in face):
                 # Translate vertex indices from subtriangulation to triangulation
                 face = [subdomain[f] for f in face]
@@ -355,26 +361,17 @@ class ConvexHull(Domain):
 
         return [tuple(p) for p in points], affected_subdomains
 
-    def insert_into(self, subdomain, x, *, _check_membership=True):
+    def insert(self, x, *, _check_membership=True):
         tri = self.triangulation
-        if _check_membership:
-            if subdomain not in tri.simplices:
-                raise ValueError("{} is not present in this domain".format(subdomain))
-            if not tri.point_in_simplex(x, subdomain):
-                raise ValueError("{} is not present in this subdomain".format(x))
-
-        subtri = self._get_subtriangulation(subdomain)
-        subtri.add_point(x)
-
-        affected_subdomains = set()
-        simplex = [tri.vertices[i] for i in subdomain]
-        face = [subdomain[i] for i in _face(simplex, x)]
-        if face:
-            for i in tri.containing(face):
-                sd = tri.simplices[i]
-                if sd != subdomain:
-                    self._get_subtriangulation(sd).add_point(point)
-                    affected_subdomains.add(sd)
+        # O(N) in the number of simplices
+        affected_subdomains = self.which_subdomains(x)
+        if not affected_subdomains:
+            raise ValueError("{} is not present in this domain".format(x))
+        for subdomain in affected_subdomains:
+            subtri = self._get_subtriangulation(subdomain)
+            if x in subtri.vertices:  # O(N) in the number of vertices
+                raise ValueError("{} exists in a subinterval already".format(x))
+            subtri.add_point(x)
 
         return affected_subdomains
 
@@ -396,7 +393,8 @@ class ConvexHull(Domain):
         # Re-assign all the interior points of 'old_subdomains' to 'new_subdomains'
 
         # Keep the interior points as a set, because interior points on a shared face
-        # appear in the subtriangulations of both the neighboring simplices
+        # appear in the subtriangulations of both the neighboring simplices, and we
+        # don't want those points to appear twice.
         interior_points = set()
         for d in old_subdomains:
             try:
@@ -404,18 +402,14 @@ class ConvexHull(Domain):
             except KeyError:
                 continue
             else:
-                # Get the points in the interior of the subtriangulation.
-                # Because a subtriangulation is always defined over a simplex,
-                # the first ndim + 1 points are the boundary points
+                # Get all points in the subtriangulation except the boundary
+                # points. Because a subtriangulation is always defined over
+                # a simplex, the first ndim + 1 points are the boundary points.
                 interior = set(range(self.ndim + 1, len(subtri.vertices)))
-                # If the subtriangulation was in 'self.sub_domains' there must
-                # be at least 1 interior point.
-                assert interior
                 interior = [subtri.vertices[i] for i in interior]
                 # Remove 'x' if it is one of the points
                 interior = [i for i in interior if i != x]
-                if interior:
-                    interior_points.update(interior)
+                interior_points.update(interior)
         for p in interior_points:
             # Try to add 'p' to all the new subdomains. It may belong to more than 1
             # if it lies on a subdomain boundary.
@@ -438,12 +432,10 @@ class ConvexHull(Domain):
     def which_subdomains(self, x):
         tri = self.triangulation
         # XXX: O(N) in the number of simplices
-        member = np.array([tri.point_in_simplex(x, s) for s in tri.simplices])
-        n_simplices = member.sum()
-        if n_simplices < 1:
+        subdomains = [s for s in tri.simplices if tri.point_in_simplex(x, s)]
+        if not subdomains:
             raise ValueError("{} is not in the domain".format(x))
-        which = np.argwhere(member).squeeze()
-        return [tri.simplices[i] for i in which]
+        return subdomains
 
     def transform(self, x):
         # XXX: implement this
@@ -453,7 +445,7 @@ class ConvexHull(Domain):
         tri = self.triangulation
         neighbors = {subdomain}
         for _ in range(n):
-            for face in tri.faces(simplices=neighbors):
+            for face in list(tri.faces(simplices=neighbors)):
                 neighbors.update(tri.containing(face))
         neighbors.remove(subdomain)
         return neighbors
@@ -599,6 +591,56 @@ class EmbeddedVolumeLoss(LossFunction):
         return simplex_volume_in_embedding(pts)
 
 
+class TriangleLoss(LossFunction):
+    @property
+    def n_neighbors(self):
+        return 1
+
+    def __call__(self, domain, subdomain, codomain_bounds, data):
+        assert isinstance(domain, ConvexHull)
+        loss = EmbeddedVolumeLoss()
+        neighbors = domain.neighbors(subdomain, self.n_neighbors)
+        if not neighbors:
+            return 0
+        neighbor_points = set.union(*(set(n) - set(subdomain) for n in neighbors))
+
+        neighbor_points = [domain.triangulation.vertices[p] for p in neighbor_points]
+
+        simplex = [domain.triangulation.vertices[p] for p in subdomain]
+
+        z = data[simplex[0]]
+        if isinstance(z, Iterable):
+            s = [(*x, *data[x]) for x in simplex]
+            n = [(*x, *data[x]) for x in neighbor_points]
+        else:
+            s = [(*x, data[x]) for x in simplex]
+            n = [(*x, data[x]) for x in neighbor_points]
+
+        return sum(simplex_volume_in_embedding([*s, neigh]) for neigh in n) / len(
+            neighbors
+        )
+
+
+class CurvatureLoss(LossFunction):
+    def __init__(self, exploration=0.05):
+        self.exploration = exploration
+
+    @property
+    def n_neighbors(self):
+        return 1
+
+    def __call__(self, domain, subdomain, codomain_bounds, data):
+        dim = domain.ndim
+
+        loss_input_volume = domain.volume(subdomain)
+        triangle_loss = TriangleLoss()
+
+        loss_curvature = triangle_loss(domain, subdomain, codomain_bounds, data)
+        return (
+            loss_curvature + self.exploration * loss_input_volume ** ((2 + dim) / dim)
+        ) ** (1 / (2 + dim))
+
+
 def _scaled_loss(loss, domain, subdomain, codomain_bounds, data):
     subvolumes = domain.subvolumes(subdomain)
     max_relative_subvolume = max(subvolumes) / sum(subvolumes)
@@ -651,9 +693,6 @@ class LearnerND(BaseLearner):
             self.queue.insert(subdomain, priority=loss)
 
     def ask(self, n, tell_pending=True):
-        if not tell_pending:
-            # XXX: handle this case
-            raise RuntimeError("tell_pending=False not supported yet")
         new_points = []
         new_losses = []
         for _ in range(n):
@@ -667,12 +706,16 @@ class LearnerND(BaseLearner):
                 self.queue.update(subdomain, priority=new_loss)
             new_points.append(new_point)
             new_losses.append(new_loss)
+
+        if not tell_pending:
+            # XXX: (1) revert subdomain losses to their original values
+            #      (2) remove points from 'self.domain'
+            raise NotImplementedError("tell_pending=False not supported yet")
         return new_points, new_losses
 
     def tell_pending(self, x):
         self.data[x] = None
-        subdomain = self.domain.which_subdomain(x)
-        affected_subdomains = self.domain.insert_into(subdomain, x)
+        affected_subdomains = self.domain.insert(x)
         for subdomain in affected_subdomains:
             loss = _scaled_loss(
                 self.loss, self.domain, subdomain, self.codomain_bounds, self.data
@@ -722,10 +765,11 @@ class LearnerND(BaseLearner):
                 self.queue.insert(subdomain, priority=loss)
 
             if self.loss.n_neighbors > 0:
-                subdomains_to_update = sum(
-                    (set(self.domain.neighbors(d, self.loss.n_neighbors)) for d in new),
-                    set(),
-                )
+                subdomains_to_update = set()
+                for subdomain in new:
+                    subdomains_to_update.update(
+                        self.domain.neighbors(subdomain, self.loss.n_neighbors)
+                    )
                 subdomains_to_update -= new
                 for subdomain in subdomains_to_update:
                     loss = _scaled_loss(
