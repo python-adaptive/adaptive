@@ -5,7 +5,6 @@ import pytest
 from adaptive.learner import BalancingLearner, Learner1D
 from adaptive.runner import simple
 
-
 strategies = ["loss", "loss_improvements", "npoints", "cycle"]
 
 

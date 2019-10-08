@@ -1,6 +1,6 @@
 from copy import copy
 
-from sortedcontainers import SortedSet, SortedDict
+from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
 

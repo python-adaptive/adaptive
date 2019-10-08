@@ -13,8 +13,8 @@ from adaptive.learner import (
     Learner1D,
     Learner2D,
     LearnerND,
-    make_datasaver,
     SequenceLearner,
+    make_datasaver,
 )
 from adaptive.notebook_integration import (
     active_plotting_tasks,

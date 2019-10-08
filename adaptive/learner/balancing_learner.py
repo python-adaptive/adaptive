@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import itertools
 from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
 from functools import partial
-import itertools
 from operator import itemgetter
 
 import numpy as np
