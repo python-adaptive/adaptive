@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import itertools
+import warnings
 from collections import OrderedDict
 from copy import copy
 from math import sqrt
-import warnings
 
 import numpy as np
 from scipy import interpolate
@@ -95,9 +95,11 @@ def uniform_loss(ip):
     ...     x, y = xy
     ...     return x**2 + y**2
     >>>
-    >>> learner = adaptive.Learner2D(f,
-    ...                              bounds=[(-1, -1), (1, 1)],
-    ...                              loss_per_triangle=uniform_loss)
+    >>> learner = adaptive.Learner2D(
+    ...     f,
+    ...     bounds=[(-1, -1), (1, 1)],
+    ...     loss_per_triangle=uniform_loss,
+    ... )
     >>>
     """
     return np.sqrt(areas(ip))
@@ -123,10 +125,7 @@ def resolution_loss_function(min_distance=0, max_distance=1):
     ...     return x**2 + y**2
     >>>
     >>> loss = resolution_loss_function(min_distance=0.01, max_distance=1)
-    >>> learner = adaptive.Learner2D(f,
-    ...                              bounds=[(-1, -1), (1, 1)],
-    ...                              loss_per_triangle=loss)
-    >>>
+    >>> learner = adaptive.Learner2D(f, bounds=[(-1, -1), (1, 1)], loss_per_triangle=loss)
     """
 
     def resolution_loss(ip):
@@ -192,7 +191,7 @@ def minimize_triangle_surface_loss(ip):
 
 
 def default_loss(ip):
-    """Loss function that combines
+    """Loss function that combines `deviations` and `areas` of the triangles.
 
     Works with `~adaptive.Learner2D` only.
 
@@ -222,15 +221,15 @@ def choose_point_in_triangle(triangle, max_badness):
 
     Parameters
     ----------
-    triangle : numpy array
-        The coordinates of a triangle with shape (3, 2)
+    triangle : numpy.ndarray
+        The coordinates of a triangle with shape (3, 2).
     max_badness : int
         The badness at which the point is either chosen on a edge or
         in the middle.
 
     Returns
     -------
-    point : numpy array
+    point : numpy.ndarray
         The x and y coordinate of the suggested new point.
     """
     a, b, c = triangle
