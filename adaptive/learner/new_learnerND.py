@@ -44,6 +44,20 @@ class Domain:
         ValueError : if x is outside the domain or exists already
         """
 
+    def remove(self, x):
+        """Remove 'x' from any subdomains to which it belongs.
+
+        Returns
+        -------
+        affected_subdomains : Iterable of subdomains
+            The subdomains from which 'x' was removed.
+
+        Raises
+        ------
+        ValueError : if x is a subdomain vertex
+        ValueError : if x is not in any subdomain
+        """
+
     def split_at(self, x):
         """Split the domain at 'x'.
 
@@ -161,6 +175,26 @@ class Interval(Domain):
             p.add(x)
 
         return [subdomain]
+
+    def remove(self, x, *, _check_membership=True):
+        if _check_membership:
+            a, b = self.bounds
+            if not (a <= x <= b):
+                raise ValueError("{} is outside of this interval".format(x))
+
+        p = self.points
+        i = p.bisect_left(x)
+        if p[i] == x:
+            raise ValueError("Cannot remove subdomain vertices")
+        subdomain = (p[i - 1], p[i])
+
+        try:
+            sub_points = self.sub_domains[subdomain]
+        except KeyError:
+            raise ValueError("{} not in any subdomain".format(x))
+        else:
+            sub_points.remove(x)
+            return [subdomain]
 
     def split_at(self, x, *, _check_membership=True):
         a, b = self.bounds
@@ -374,6 +408,24 @@ class ConvexHull(Domain):
             subtri.add_point(x)
 
         return affected_subdomains
+
+    def remove(self, x):
+        affected_subdomains = self.which_subdomains(x)
+        for subdomains in affected_subdomains:
+            # Check that it's not a vertex of the subdomain
+            if any(x == tri.vertices[i] for i in subdomain):
+                raise ValueError("Cannot remove subdomain vertices")
+            try:
+                subtri = self.sub_domains[subdomains]
+            except KeyError:
+                raise ValueError("{} not present in any subdomain".format(x))
+            else:
+                if x not in subtri.vertices:
+                    raise ValueError("{} not present in any subdomain".format(x))
+                # Rebuild the subtriangulation from scratch
+                self.sub_domains[subdomain] = Triangulation(
+                    [v for v in subtri.vertices if v != x]
+                )
 
     def split_at(self, x, *, _check_membership=True):
         tri = self.triangulation
