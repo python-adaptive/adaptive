@@ -248,12 +248,6 @@ class Learner2D(BaseLearner):
         triangles will be stretched along ``x``, otherwise
         along ``y``.
 
-    Methods
-    -------
-    data_combined : dict
-        Sampled points and values so far including
-        the unknown interpolated points in `pending_points`.
-
     Notes
     -----
     Adapted from an initial implementation by Pauli Virtanen.
@@ -407,13 +401,6 @@ class Learner2D(BaseLearner):
         points_combined = np.vstack([points, points_interp])
         values_combined = np.vstack([values, values_interp])
         return points_combined, values_combined
-
-    def data_combined(self):
-        """Like `data`, however this includes the points in
-        `pending_points` for which the values are interpolated."""
-        # Interpolate the unfinished points
-        points, values = self._data_combined()
-        return {tuple(k): v for k, v in zip(points, values)}
 
     def ip(self):
         """Deprecated, use `self.interpolate()`"""
