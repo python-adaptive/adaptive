@@ -4,6 +4,7 @@ import itertools
 from collections import OrderedDict
 from copy import copy
 from math import sqrt
+import warnings
 
 import numpy as np
 from scipy import interpolate
@@ -230,7 +231,6 @@ class Learner2D(BaseLearner):
         triangle area, to determine the loss. See the notes
         for more details.
 
-
     Attributes
     ----------
     data : dict
@@ -384,7 +384,7 @@ class Learner2D(BaseLearner):
         if self.pending_points:
             points = list(self.pending_points)
             if self.bounds_are_done:
-                ip = self.interpolate()
+                ip = self.interpolate(scaled=True)
                 values = ip(self._scale(points))
             else:
                 # Without the bounds the interpolation cannot be done properly,
@@ -403,17 +403,24 @@ class Learner2D(BaseLearner):
         return points_combined, values_combined
 
     def ip(self):
-        """Deprecated, use `self.interpolate()`"""
+        """Deprecated, use `self.interpolate(scaled=True)`"""
+        warnings.warn(
+            "`learner.ip()` is deprecated, use `learner.interpolate(scaled=True)`."
+            " This will be removed in v1.0.",
+            DeprecationWarning,
+        )
         return self.interpolate(scaled=True)
 
-    def interpolate(self, *, scaled=True):
+    def interpolate(self, *, scaled=False):
         """A `scipy.interpolate.LinearNDInterpolator` instance
         containing the learner's data.
 
         Parameters
         ----------
         scaled : bool
-            True if all points are inside the unit-square [(-0.5, 0.5), (-0.5, 0.5)].
+            Use True if all points are inside the
+            unit-square [(-0.5, 0.5), (-0.5, 0.5)] or False if
+            the data points are inside the ``learner.bounds``.
 
         Returns
         -------
@@ -534,7 +541,7 @@ class Learner2D(BaseLearner):
     def loss(self, real=True):
         if not self.bounds_are_done:
             return np.inf
-        ip = self.interpolate() if real else self._interpolate_combined()
+        ip = self.interpolate(scaled=True) if real else self._interpolate_combined()
         losses = self.loss_per_triangle(ip)
         return losses.max()
 
@@ -579,8 +586,8 @@ class Learner2D(BaseLearner):
         lbrt = x[0], y[0], x[1], y[1]
 
         if len(self.data) >= 4:
-            ip = self.interpolate()
-            x, y, z = self.data_on_grid(n)
+            ip = self.interpolate(scaled=True)
+            x, y, z = self.interpolated_on_grid(n)
 
             if self.vdim > 1:
                 ims = {
