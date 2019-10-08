@@ -345,7 +345,7 @@ class Learner2D(BaseLearner):
             (p in self.pending_points or p in self._stack) for p in self._bounds_points
         )
 
-    def data_on_grid(self, n=None):
+    def interpolated_on_grid(self, n=None):
         """Get the interpolated data on a grid.
 
         Parameters
@@ -356,11 +356,11 @@ class Learner2D(BaseLearner):
 
         Returns
         -------
-        xs : 1D numpy.ndarray, optional
-        ys : 1D numpy.ndarray, optional
-        data_on_grid : 2D numpy.ndarray
+        xs : 1D numpy.ndarray
+        ys : 1D numpy.ndarray
+        interpolated_on_grid : 2D numpy.ndarray
         """
-        ip = self.ip()
+        ip = self.interpolate(scaled=True)
         if n is None:
             # Calculate how many grid points are needed.
             # factor from A=√3/4 * a² (equilateral triangle)
@@ -390,7 +390,8 @@ class Learner2D(BaseLearner):
         if self.pending_points:
             points = list(self.pending_points)
             if self.bounds_are_done:
-                values = self.ip()(self._scale(points))
+                ip = self.interpolate()
+                values = ip(self._scale(points))
             else:
                 # Without the bounds the interpolation cannot be done properly,
                 # so we just set everything to zero.
@@ -415,15 +416,33 @@ class Learner2D(BaseLearner):
         return {tuple(k): v for k, v in zip(points, values)}
 
     def ip(self):
-        """A `scipy.interpolate.LinearNDInterpolator` instance
-        containing the learner's data."""
-        if self._ip is None:
-            points, values = self._data_in_bounds()
-            points = self._scale(points)
-            self._ip = interpolate.LinearNDInterpolator(points, values)
-        return self._ip
+        """Deprecated, use `self.interpolate()`"""
+        return self.interpolate(scaled=True)
 
-    def ip_combined(self):
+    def interpolate(self, *, scaled=True):
+        """A `scipy.interpolate.LinearNDInterpolator` instance
+        containing the learner's data.
+
+        Parameters
+        ----------
+        scaled : bool
+            True if all points are inside the unit-square [(-0.5, 0.5), (-0.5, 0.5)].
+
+        Returns
+        -------
+        interpolate : `scipy.interpolate.LinearNDInterpolator`
+        """
+        if scaled:
+            if self._ip is None:
+                points, values = self._data_in_bounds()
+                points = self._scale(points)
+                self._ip = interpolate.LinearNDInterpolator(points, values)
+            return self._ip
+        else:
+            points, values = self._data_in_bounds()
+            return interpolate.LinearNDInterpolator(points, values)
+
+    def _interpolate_combined(self):
         """A `scipy.interpolate.LinearNDInterpolator` instance
         containing the learner's data *and* interpolated data of
         the `pending_points`."""
@@ -460,7 +479,7 @@ class Learner2D(BaseLearner):
             raise ValueError("too few points...")
 
         # Interpolate
-        ip = self.ip_combined()
+        ip = self._interpolate_combined()
 
         losses = self.loss_per_triangle(ip)
 
@@ -528,7 +547,7 @@ class Learner2D(BaseLearner):
     def loss(self, real=True):
         if not self.bounds_are_done:
             return np.inf
-        ip = self.ip() if real else self.ip_combined()
+        ip = self.interpolate() if real else self._interpolate_combined()
         losses = self.loss_per_triangle(ip)
         return losses.max()
 
@@ -573,7 +592,7 @@ class Learner2D(BaseLearner):
         lbrt = x[0], y[0], x[1], y[1]
 
         if len(self.data) >= 4:
-            ip = self.ip()
+            ip = self.interpolate()
             x, y, z = self.data_on_grid(n)
 
             if self.vdim > 1:
