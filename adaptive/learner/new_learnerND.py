@@ -142,14 +142,14 @@ class Interval(Domain):
     def insert(self, x, *, _check_membership=True):
         if _check_membership:
             a, b = self.bounds
-            if not (a < x < b):
+            if not (a <= x <= b):
                 raise ValueError("{} is outside of this interval".format(x))
 
         p = self.points
         i = p.bisect_left(x)
         if p[i] == x:
             raise ValueError("{} exists in this interval already".format(x))
-        subdomain = p[i - 1], p[i]
+        subdomain = (p[i - 1], p[i])
 
         try:
             p = self.sub_intervals[subdomain]
