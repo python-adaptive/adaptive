@@ -27,7 +27,7 @@ def deviations(ip):
 
     Returns
     -------
-    numpy array
+    deviations : numpy.ndarray
         The deviation per triangle.
     """
     values = ip.values / (ip.values.ptp(axis=0).max() or 1)
@@ -65,7 +65,7 @@ def areas(ip):
 
     Returns
     -------
-    numpy array
+    areas : numpy.ndarray
         The area per triangle in ``ip.tri``.
     """
     p = ip.tri.points[ip.tri.vertices]
@@ -78,6 +78,15 @@ def uniform_loss(ip):
     """Loss function that samples the domain uniformly.
 
     Works with `~adaptive.Learner2D` only.
+
+    Parameters
+    ----------
+    ip : `scipy.interpolate.LinearNDInterpolator` instance
+
+    Returns
+    -------
+    losses : numpy.ndarray
+        Loss per triangle in ``ip.tri``.
 
     Examples
     --------
@@ -102,6 +111,10 @@ def resolution_loss_function(min_distance=0, max_distance=1):
 
     The arguments `min_distance` and `max_distance` should be in between 0 and 1
     because the total area is normalized to 1.
+
+    Returns
+    -------
+    loss_function : callable
 
     Examples
     --------
@@ -133,11 +146,20 @@ def resolution_loss_function(min_distance=0, max_distance=1):
 
 
 def minimize_triangle_surface_loss(ip):
-    """Loss function that is similar to the default loss function in the
+    """Loss function that is similar to the distance loss function in the
     `~adaptive.Learner1D`. The loss is the area spanned by the 3D
     vectors of the vertices.
 
     Works with `~adaptive.Learner2D` only.
+
+    Parameters
+    ----------
+    ip : `scipy.interpolate.LinearNDInterpolator` instance
+
+    Returns
+    -------
+    losses : numpy.ndarray
+        Loss per triangle in ``ip.tri``.
 
     Examples
     --------
@@ -170,6 +192,19 @@ def minimize_triangle_surface_loss(ip):
 
 
 def default_loss(ip):
+    """Loss function that combines
+
+    Works with `~adaptive.Learner2D` only.
+
+    Parameters
+    ----------
+    ip : `scipy.interpolate.LinearNDInterpolator` instance
+
+    Returns
+    -------
+    losses : numpy.ndarray
+        Loss per triangle in ``ip.tri``.
+    """
     dev = np.sum(deviations(ip), axis=0)
     A = areas(ip)
     losses = dev * np.sqrt(A) + 0.3 * A
@@ -425,6 +460,12 @@ class Learner2D(BaseLearner):
         Returns
         -------
         interpolate : `scipy.interpolate.LinearNDInterpolator`
+
+        Examples
+        --------
+        >>> xs, ys = [np.linspace(*b, n=100) for b in learner.bounds]
+        >>> ip = learner.interpolator()
+        >>> zs = ip(xs[:, None], ys[None, :])
         """
         if scaled:
             if self._ip is None:
