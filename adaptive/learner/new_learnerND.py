@@ -701,13 +701,6 @@ class CurvatureLoss(LossFunction):
         ) ** (1 / (2 + dim))
 
 
-def _scaled_loss(loss, domain, subdomain, codomain_bounds, data):
-    subvolumes = domain.subvolumes(subdomain)
-    max_relative_subvolume = max(subvolumes) / sum(subvolumes)
-    L_0 = loss(domain, subdomain, codomain_bounds, data)
-    return max_relative_subvolume * L_0
-
-
 class LearnerND(BaseLearner):
     def __init__(self, f, bounds, loss=None):
 
@@ -735,11 +728,8 @@ class LearnerND(BaseLearner):
         self.codomain_bounds = None
         self.codomain_scale_at_last_update = None
 
-        # No points are yet evaluated, so we assign equal loss to each subdomain.
-        # We will not split the subdomains until we have data for all the boundary
-        # points.
         for subdomain in self.domain.subdomains():
-            self.queue.insert(subdomain, priority=1)
+            self.queue.insert(subdomain, priority=self.priority(subdomain))
 
     def _finalize_initialization(self):
         assert all(x in self.data for x in self.boundary_points)
@@ -762,26 +752,33 @@ class LearnerND(BaseLearner):
 
         self.queue = Queue()
         for subdomain in self.domain.subdomains():
-            loss = _scaled_loss(
-                self.loss, self.domain, subdomain, self.codomain_bounds, self.data
-            )
-            self.queue.insert(subdomain, priority=loss)
+            self.queue.insert(subdomain, priority=self.priority(subdomain))
 
         self._initialized = True
 
+    def priority(self, subdomain):
+        if self._initialized:
+            L_0 = self.loss(self.domain, subdomain, self.codomain_bounds, self.data)
+        else:
+            # Before we're initialized we don't have enough data to calculate losses,
+            # so we just assign the same loss to each subdomain
+            L_0 = 1
+        subvolumes = self.domain.subvolumes(subdomain)
+        return (max(subvolumes) / sum(subvolumes)) * L_0
+
     def ask(self, n, tell_pending=True):
-        loss = self.loss if self._initialized else lambda *_: 1
         if self.n_asked >= len(self.boundary_points):
-            points, losses = self._ask(n, tell_pending, loss)
+            points, losses = self._ask(n, tell_pending)
         else:
             points = self.boundary_points[self.n_asked:self.n_asked + n]
+            # The boundary points should always be evaluated with the highest priority
             losses = [float('inf')] * len(points)
             if tell_pending:
                 for x in points:
                     self.pending_points.add(x)
             n_extra = n - len(points)
             if n_extra > 0:
-                extra_points, extra_losses = self._ask(n_extra, tell_pending, loss)
+                extra_points, extra_losses = self._ask(n_extra, tell_pending)
                 points += tuple(extra_points)
                 losses += tuple(extra_losses)
 
@@ -790,7 +787,7 @@ class LearnerND(BaseLearner):
 
         return points, losses
 
-    def _ask(self, n, tell_pending, loss):
+    def _ask(self, n, tell_pending):
         new_points = []
         new_losses = []
         for _ in range(n):
@@ -798,9 +795,7 @@ class LearnerND(BaseLearner):
             (new_point,), affected_subdomains = self.domain.insert_points(subdomain, 1)
             self.pending_points.add(new_point)
             for subdomain in affected_subdomains:
-                new_loss = _scaled_loss(
-                    loss, self.domain, subdomain, self.codomain_bounds, self.data
-                )
+                new_loss = self.priority(subdomain)
                 self.queue.update(subdomain, priority=new_loss)
             new_points.append(new_point)
             # XXX: this is not correct; need to set loss to loss of 'subdomain'
@@ -812,20 +807,14 @@ class LearnerND(BaseLearner):
                 self.pending_points.remove(point)
                 affected_subdomains.update(self.domain.remove(point))
             for subdomain in affected_subdomains:
-                new_loss = _scaled_loss(
-                    loss, self.domain, subdomain, self.codomain_bounds, self.data
-                )
-                self.queue.update(subdomain, priority=new_loss)
+                self.queue.update(subdomain, priority=self.priority(subdomain))
         return new_points, new_losses
 
     def tell_pending(self, x):
         self.pending_points.add(x)
         affected_subdomains = self.domain.insert(x)
         for subdomain in affected_subdomains:
-            loss = _scaled_loss(
-                self.loss, self.domain, subdomain, self.codomain_bounds, self.data
-            )
-            self.queue.update(subdomain, priority=loss)
+            self.queue.update(subdomain, priority=self.priority(subdomain))
 
     def tell_many(self, xs, ys):
         for x, y in zip(xs, ys):
@@ -853,26 +842,14 @@ class LearnerND(BaseLearner):
         if need_loss_update:
             # Need to recalculate all losses anyway
             self.queue = Queue(
-                (
-                    subdomain,
-                    _scaled_loss(
-                        self.loss,
-                        self.domain,
-                        subdomain,
-                        self.codomain_bounds,
-                        self.data,
-                    ),
-                )
+                (subdomain, self.priority(subdomain))
                 for subdomain in itertools.chain(self.queue.items(), new)
             )
         else:
             # Compute the losses for the new subdomains and re-compute the
             # losses for the neighboring subdomains, if necessary.
             for subdomain in new:
-                loss = _scaled_loss(
-                    self.loss, self.domain, subdomain, self.codomain_bounds, self.data
-                )
-                self.queue.insert(subdomain, priority=loss)
+                self.queue.insert(subdomain, priority=self.priority(subdomain))
 
             if self.loss.n_neighbors > 0:
                 subdomains_to_update = set()
@@ -882,14 +859,7 @@ class LearnerND(BaseLearner):
                     )
                 subdomains_to_update -= new
                 for subdomain in subdomains_to_update:
-                    loss = _scaled_loss(
-                        self.loss,
-                        self.domain,
-                        subdomain,
-                        self.codomain_bounds,
-                        self.data,
-                    )
-                    self.queue.update(subdomain, priority=loss)
+                    self.queue.update(subdomain, priority=self.priority(subdomain))
 
     def _update_codomain_bounds(self, ys):
         mn, mx = self.codomain_bounds
@@ -917,15 +887,12 @@ class LearnerND(BaseLearner):
     def remove_unfinished(self):
         self.pending_points = set()
         cleared_subdomains = self.domain.clear_subdomains()
-        # Subdomains who had internal points removed need their losses updating
-        loss = self.loss if self._initialized else lambda *_: 1
+        # Subdomains who had internal points removed need their priority updating
         for subdomain in cleared_subdomains:
-            new_loss = _scaled_loss(
-                loss, self.domain, subdomain, self.codomain_bounds, self.data
-            )
-            self.queue.update(subdomain, priority=new_loss)
+            self.queue.update(subdomain, priority=self.priority(subdomain))
 
     def loss(self):
+        # XXX: update this to return the *loss*, rather than the priority
         _, loss = self.queue.peek()
         return loss
 
