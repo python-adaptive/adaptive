@@ -476,7 +476,7 @@ class Learner2D(BaseLearner):
             points, values = self._data_in_bounds()
             return interpolate.LinearNDInterpolator(points, values)
 
-    def _interpolate_combined(self):
+    def _interpolator_combined(self):
         """A `scipy.interpolate.LinearNDInterpolator` instance
         containing the learner's data *and* interpolated data of
         the `pending_points`."""
@@ -513,7 +513,7 @@ class Learner2D(BaseLearner):
             raise ValueError("too few points...")
 
         # Interpolate
-        ip = self._interpolate_combined()
+        ip = self._interpolator_combined()
 
         losses = self.loss_per_triangle(ip)
 
@@ -581,7 +581,7 @@ class Learner2D(BaseLearner):
     def loss(self, real=True):
         if not self.bounds_are_done:
             return np.inf
-        ip = self.interpolator(scaled=True) if real else self._interpolate_combined()
+        ip = self.interpolator(scaled=True) if real else self._interpolator_combined()
         losses = self.loss_per_triangle(ip)
         return losses.max()
 
