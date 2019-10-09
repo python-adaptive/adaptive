@@ -835,8 +835,8 @@ class LearnerND(BaseLearner):
             self.queue.update(subdomain, priority=self.priority(subdomain))
 
     def tell_many(self, xs, ys):
-        for x, y in zip(xs, ys):
-            self.data[x] = y
+        self.data.update(zip(xs, ys))
+        self.pending_points -= set(xs)
 
         if not self._initialized:
             if all(x in self.data for x in self.boundary_points):
