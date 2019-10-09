@@ -35,9 +35,7 @@ class Domain:
         Returns
         -------
         affected_subdomains : Iterable of subdomains
-            If some points were added on the boundary of 'subdomain'
-            then they will also have been added to the neighboring
-            subdomains.
+            The subdomains to which 'x' was added.
 
         Raises
         ------
