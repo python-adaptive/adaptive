@@ -555,11 +555,11 @@ class Queue:
         self._items = SortedList(((v, k) for k, v in self._queue.items()))
 
     def items(self):
-        "Return an iterator over the items in the queue in priority order."
+        "Return an iterator over the items in the queue in arbitrary order."
         return reversed(self._queue.values())
 
     def priorities(self):
-        "Return an iterator over the priorities in the queue."
+        "Return an iterator over the priorities in the queue in arbitrary order."
         return reversed(self._queue)
 
     def peek(self):
