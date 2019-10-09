@@ -813,6 +813,9 @@ class LearnerND(BaseLearner):
             for subdomain in affected_subdomains:
                 self.queue.update(subdomain, priority=self.priority(subdomain))
             new_points.append(new_point)
+            # TODO: don't call 'priority' again here: we already called it above, we just
+            #       need to identify 'subdomin' within 'affected_subdomains'. Maybe change
+            #       the API of 'Domain.insert_points' to not return 'subdomain'...
             point_priorities.append(self.priority(subdomain))
 
         if not tell_pending:
@@ -822,6 +825,7 @@ class LearnerND(BaseLearner):
                 affected_subdomains.update(self.domain.remove(point))
             for subdomain in affected_subdomains:
                 self.queue.update(subdomain, priority=self.priority(subdomain))
+
         return new_points, point_priorities
 
     def tell_pending(self, x):
