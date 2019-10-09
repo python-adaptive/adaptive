@@ -329,7 +329,7 @@ def _choose_point_in_simplex(simplex, transform=None):
     if transform is not None:
         point = np.linalg.solve(transform, point)  # undo the transform
 
-    return point, face
+    return tuple(point), face
 
 
 class ConvexHull(Domain):
