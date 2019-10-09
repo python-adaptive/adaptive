@@ -712,16 +712,17 @@ class LearnerND(BaseLearner):
     def __init__(self, f, bounds, loss=None):
 
         if len(bounds) == 1:
-            (a, b), = (bound_points,) = bounds
+            (a, b), = (boundary_points,) = bounds
             self.domain = Interval(a, b)
             self.loss = loss or DistanceLoss()
             self.ndim = 1
         else:
-            bound_points = sorted(tuple(p) for p in itertools.product(*bounds))
-            self.domain = ConvexHull(scipy.spatial.ConvexHull(bound_points))
+            boundary_points = sorted(tuple(p) for p in itertools.product(*bounds))
+            self.domain = ConvexHull(scipy.spatial.ConvexHull(boundary_points))
             self.loss = loss or EmbeddedVolumeLoss()
-            self.ndim = len(bound_points[0])
+            self.ndim = len(boundary_points[0])
 
+        self.boundary_points = boundary_points
         self.queue = Queue()
         self.data = dict()
         self.function = f
