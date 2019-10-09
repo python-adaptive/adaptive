@@ -560,6 +560,10 @@ class Queue:
         "Return an iterator over the items in the queue in priority order."
         return reversed(self._queue.values())
 
+    def priorities(self):
+        "Return an iterator over the priorities in the queue."
+        return reversed(self._queue)
+
     def peek(self):
         "Return the item and priority at the front of the queue."
         ((priority, _), item) = self._queue.peekitem()
@@ -764,7 +768,9 @@ class LearnerND(BaseLearner):
             # so we just assign the same loss to each subdomain
             L_0 = 1
         subvolumes = self.domain.subvolumes(subdomain)
-        return (max(subvolumes) / sum(subvolumes)) * L_0
+        # We use this tuple as the priority, and we also store the loss directly so that
+        # we can easily look it up later.
+        return ((max(subvolumes) / sum(subvolumes)) * L_0, L_0)
 
     def ask(self, n, tell_pending=True):
         if self.n_asked >= len(self.boundary_points):
@@ -891,10 +897,18 @@ class LearnerND(BaseLearner):
         for subdomain in cleared_subdomains:
             self.queue.update(subdomain, priority=self.priority(subdomain))
 
-    def loss(self):
-        # XXX: update this to return the *loss*, rather than the priority
-        _, loss = self.queue.peek()
-        return loss
+    def loss(self, real=True):
+        if real:
+            # NOTE: O(N) in the number of subintervals, but with a low prefactor.
+            #       We have to do this because the queue is sorted in *priority*
+            #       order, and it's possible that a subinterval with a high loss
+            #       may have a low priority (if there are many pending points).
+            return max(loss for _, loss in self.queue.priorities())
+        else:
+            # This depends on the implementation of 'self.priority'. Currently
+            # it returns a tuple (priority, loss).
+            _, (priority, _) = self.queue.peek()
+            return priority
 
     def plot(self, **kwargs):
         if isinstance(self.domain, Interval):
