@@ -778,10 +778,9 @@ class LearnerND(BaseLearner):
             # Before we have all the boundary points we can't calculate losses because we
             # do not have enough data. We just assign a constant loss to each subdomain.
             L_0 = 1
+
         subvolumes = self.domain.subvolumes(subdomain)
-        # We use this tuple as the priority, and we also store the loss directly so that
-        # we can easily look it up later.
-        return ((max(subvolumes) / sum(subvolumes)) * L_0, L_0)
+        return (max(subvolumes) / sum(subvolumes)) * L_0
 
     def ask(self, n, tell_pending=True):
         if self.n_asked >= len(self.boundary_points):
@@ -914,11 +913,11 @@ class LearnerND(BaseLearner):
             #       We have to do this because the queue is sorted in *priority*
             #       order, and it's possible that a subinterval with a high loss
             #       may have a low priority (if there are many pending points).
-            return max(loss for _, loss in self.queue.priorities())
+            return max(self.losses.values())
         else:
             # This depends on the implementation of 'self.priority'. Currently
             # it returns a tuple (priority, loss).
-            _, (priority, _) = self.queue.peek()
+            _, priority = self.queue.peek()
             return priority
 
     def plot(self, **kwargs):
