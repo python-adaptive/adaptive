@@ -27,7 +27,7 @@ def deviations(ip):
 
     Returns
     -------
-    deviations : numpy.ndarray
+    deviations : list
         The deviation per triangle.
     """
     values = ip.values / (ip.values.ptp(axis=0).max() or 1)
