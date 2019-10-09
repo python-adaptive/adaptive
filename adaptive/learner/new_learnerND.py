@@ -793,17 +793,15 @@ class LearnerND(BaseLearner):
 
     def _ask(self, n, tell_pending):
         new_points = []
-        new_losses = []
+        point_priorities = []
         for _ in range(n):
             subdomain, _ = self.queue.peek()
             (new_point,), affected_subdomains = self.domain.insert_points(subdomain, 1)
             self.pending_points.add(new_point)
             for subdomain in affected_subdomains:
-                new_loss = self.priority(subdomain)
-                self.queue.update(subdomain, priority=new_loss)
+                self.queue.update(subdomain, priority=self.priority(subdomain))
             new_points.append(new_point)
-            # XXX: this is not correct; need to set loss to loss of 'subdomain'
-            new_losses.append(new_loss)
+            point_priorities.append(self.priority(subdomain))
 
         if not tell_pending:
             affected_subdomains = set()
@@ -812,7 +810,7 @@ class LearnerND(BaseLearner):
                 affected_subdomains.update(self.domain.remove(point))
             for subdomain in affected_subdomains:
                 self.queue.update(subdomain, priority=self.priority(subdomain))
-        return new_points, new_losses
+        return new_points, point_priorities
 
     def tell_pending(self, x):
         self.pending_points.add(x)
