@@ -130,13 +130,13 @@ class Interval(Domain):
         self.ndim = 1
 
     def insert_points(self, subdomain, n, *, _check_membership=True):
-        assert n > 0
+        if n <= 0:
+            raise ValueError("n must be positive")
         if _check_membership and subdomain not in self:
             raise ValueError("{} is not present in this interval".format(subdomain))
         try:
             p = self.sub_intervals[subdomain]
         except KeyError:  # No points yet in the interior of this subdomain
-            a, b = subdomain
             p = SortedList(subdomain)
             self.sub_intervals[subdomain] = p
 
@@ -199,13 +199,13 @@ class Interval(Domain):
     def split_at(self, x, *, _check_membership=True):
         a, b = self.bounds
         if _check_membership:
-            if not (a < x < b):
+            if not (a <= x <= b):
                 raise ValueError("Can only split at points within the interval")
-            if x in self.points:
-                raise ValueError("Cannot split at an existing point")
 
         p = self.points
         i = p.bisect_left(x)
+        if p[i] == x:
+            raise ValueError("Cannot split at an existing point")
         a, b = old_interval = p[i - 1], p[i]
         new_intervals = [(a, x), (x, b)]
 
@@ -214,12 +214,16 @@ class Interval(Domain):
             sub_points = self.sub_intervals.pop(old_interval)
         except KeyError:
             pass
-        else:  # update sub_intervals
+        else:
+            # Update subintervals
             for ival in new_intervals:
                 new_sub_points = SortedList(sub_points.irange(*ival))
                 if x not in new_sub_points:
+                    # This should add 'x' to the start or the end
                     new_sub_points.add(x)
                 if len(new_sub_points) > 2:
+                    # We don't store subintervals if they don't contain
+                    # any points in their interior.
                     self.sub_intervals[ival] = new_sub_points
 
         return [old_interval], new_intervals
@@ -230,16 +234,17 @@ class Interval(Domain):
             raise ValueError("{} is outside the interval".format(x))
         p = self.points
         i = p.bisect_left(x)
-        if p[i] != x:  # general point inside a subinterval
+        if p[i] != x:
+            # general point inside a subinterval
             return [(p[i - 1], p[i])]
-        else:  # boundary of a subinterval
+        else:
+            # boundary of a subinterval
             neighbors = []
             if i > 0:
                 neighbors.append((p[i - 1], p[i]))
             if i < len(p) - 1:
                 neighbors.append((p[i], p[i + 1]))
             return neighbors
-        return [(p[i], p[i + 1])]
 
     def __contains__(self, subdomain):
         a, b = subdomain
@@ -362,13 +367,17 @@ class ConvexHull(Domain):
         return subtri
 
     def insert_points(self, subdomain, n, *, _check_membership=True):
-        assert n > 0
+        if n <= 0:
+            raise ValueError("n must be positive")
         tri = self.triangulation
         if _check_membership and subdomain not in tri.simplices:
             raise ValueError("{} is not present in this domain".format(subdomain))
 
         subtri = self._get_subtriangulation(subdomain)
 
+        # Choose the largest volume sub-simplex and insert a point into it.
+        # Also insert the point into neighboring subdomains if it was chosen
+        # on the subdomain boundary.
         points = []
         affected_subdomains = {subdomain}
         for _ in range(n):
@@ -376,13 +385,13 @@ class ConvexHull(Domain):
             largest_simplex = max(subtri.simplices, key=subtri.volume)
             simplex_vertices = np.array([subtri.vertices[s] for s in largest_simplex])
             point, face = _choose_point_in_simplex(simplex_vertices)
-            face = [largest_simplex[i] for i in face]
             points.append(point)
             subtri.add_point(point, largest_simplex)
             # If we chose a point on a face (or edge) of 'subdomain' then we need to
             # add it to the subtriangulations of the neighboring subdomains.
-            # The first 'ndim + 1' points are the boundary points of the subtriangulation
-            # because it is a simplex by definition.
+            # This check relies on the fact that the first 'ndim + 1' points in the
+            # subtriangulation are the boundary points.
+            face = [largest_simplex[i] for i in face]
             if face and all(f < self.ndim + 1 for f in face):
                 # Translate vertex indices from subtriangulation to triangulation
                 face = [subdomain[f] for f in face]
