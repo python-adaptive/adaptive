@@ -736,6 +736,8 @@ class LearnerND(BaseLearner):
     def _finalize_initialization(self):
         assert all(x in self.data for x in self.boundary_points)
 
+        self._initialized = True
+
         vals = list(self.data.values())
         codomain_min = np.min(vals, axis=0)
         codomain_max = np.max(vals, axis=0)
@@ -756,14 +758,13 @@ class LearnerND(BaseLearner):
         for subdomain in self.domain.subdomains():
             self.queue.insert(subdomain, priority=self.priority(subdomain))
 
-        self._initialized = True
 
     def priority(self, subdomain):
         if self._initialized:
             L_0 = self.loss_function(self.domain, subdomain, self.codomain_bounds, self.data)
         else:
-            # Before we're initialized we don't have enough data to calculate losses,
-            # so we just assign the same loss to each subdomain
+            # Before we have all the boundary points we can't calculate losses because we
+            # do not have enough data. We just assign a constant loss to each subdomain.
             L_0 = 1
         subvolumes = self.domain.subvolumes(subdomain)
         # We use this tuple as the priority, and we also store the loss directly so that
@@ -842,14 +843,14 @@ class LearnerND(BaseLearner):
             self.queue.remove(subdomain)
 
         if need_loss_update:
-            # Need to recalculate all losses anyway
+            # Need to recalculate all priorities anyway
             self.queue = Queue(
                 (subdomain, self.priority(subdomain))
                 for subdomain in itertools.chain(self.queue.items(), new)
             )
         else:
-            # Compute the losses for the new subdomains and re-compute the
-            # losses for the neighboring subdomains, if necessary.
+            # Compute the priorities for the new subdomains and re-compute the
+            # priorities for the neighboring subdomains, if necessary.
             for subdomain in new:
                 self.queue.insert(subdomain, priority=self.priority(subdomain))
 
