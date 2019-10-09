@@ -725,6 +725,15 @@ class LearnerND(BaseLearner):
         self.function = f
         self.n_asked = 0
 
+        # As an optimization we keep a map from subdomain to loss.
+        # This is updated in 'self.priority' whenever the loss function is evaluated
+        # for a new subdomain. 'self.tell_many' removes subdomains from here when
+        # they are split, and also removes neighboring subdomains from here (to force
+        # a loss function recomputation)
+        self.losses = dict()
+
+        # We must wait until the boundary points have been evaluated before we can
+        # set these attributes.
         self._initialized = False
         self.vdim = None
         self.codomain_bounds = None
@@ -758,10 +767,13 @@ class LearnerND(BaseLearner):
         for subdomain in self.domain.subdomains():
             self.queue.insert(subdomain, priority=self.priority(subdomain))
 
-
     def priority(self, subdomain):
         if self._initialized:
-            L_0 = self.loss_function(self.domain, subdomain, self.codomain_bounds, self.data)
+            if subdomain in self.losses:
+                L_0 = self.losses[subdomain]
+            else:
+                L_0 = self.loss_function(self.domain, subdomain, self.codomain_bounds, self.data)
+                self.losses[subdomain] = L_0
         else:
             # Before we have all the boundary points we can't calculate losses because we
             # do not have enough data. We just assign a constant loss to each subdomain.
@@ -841,6 +853,7 @@ class LearnerND(BaseLearner):
 
         for subdomain in old:
             self.queue.remove(subdomain)
+            del self.losses[subdomain]
 
         if need_loss_update:
             # Need to recalculate all priorities anyway
@@ -862,6 +875,7 @@ class LearnerND(BaseLearner):
                     )
                 subdomains_to_update -= new
                 for subdomain in subdomains_to_update:
+                    del self.losses[subdomain]  # Force loss recomputation
                     self.queue.update(subdomain, priority=self.priority(subdomain))
 
     def _update_codomain_bounds(self, ys):
