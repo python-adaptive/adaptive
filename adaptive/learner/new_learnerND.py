@@ -707,12 +707,12 @@ class LearnerND(BaseLearner):
         if len(bounds) == 1:
             (a, b), = (boundary_points,) = bounds
             self.domain = Interval(a, b)
-            self.loss = loss or DistanceLoss()
+            self.loss_function = loss or DistanceLoss()
             self.ndim = 1
         else:
             boundary_points = sorted(tuple(p) for p in itertools.product(*bounds))
             self.domain = ConvexHull(scipy.spatial.ConvexHull(boundary_points))
-            self.loss = loss or EmbeddedVolumeLoss()
+            self.loss_function = loss or EmbeddedVolumeLoss()
             self.ndim = len(boundary_points[0])
 
         self.boundary_points = boundary_points
@@ -758,7 +758,7 @@ class LearnerND(BaseLearner):
 
     def priority(self, subdomain):
         if self._initialized:
-            L_0 = self.loss(self.domain, subdomain, self.codomain_bounds, self.data)
+            L_0 = self.loss_function(self.domain, subdomain, self.codomain_bounds, self.data)
         else:
             # Before we're initialized we don't have enough data to calculate losses,
             # so we just assign the same loss to each subdomain
@@ -851,11 +851,11 @@ class LearnerND(BaseLearner):
             for subdomain in new:
                 self.queue.insert(subdomain, priority=self.priority(subdomain))
 
-            if self.loss.n_neighbors > 0:
+            if self.loss_function.n_neighbors > 0:
                 subdomains_to_update = set()
                 for subdomain in new:
                     subdomains_to_update.update(
-                        self.domain.neighbors(subdomain, self.loss.n_neighbors)
+                        self.domain.neighbors(subdomain, self.loss_function.n_neighbors)
                     )
                 subdomains_to_update -= new
                 for subdomain in subdomains_to_update:
