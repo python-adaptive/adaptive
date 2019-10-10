@@ -28,7 +28,7 @@ def create_and_run_learner():
 
 def plot_learner_and_save(learner, fname):
     fig, ax = plt.subplots()
-    tri = learner.ip().tri
+    tri = learner.interpolator(scaled=True).tri
     triang = mtri.Triangulation(*tri.points.T, triangles=tri.vertices)
     ax.triplot(triang, c="k", lw=0.8)
     ax.imshow(learner.plot().Image.I.data, extent=(-0.5, 0.5, -0.5, 0.5))

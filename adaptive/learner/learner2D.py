@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import itertools
+import warnings
 from collections import OrderedDict
 from copy import copy
 from math import sqrt
@@ -26,7 +27,7 @@ def deviations(ip):
 
     Returns
     -------
-    numpy array
+    deviations : list
         The deviation per triangle.
     """
     values = ip.values / (ip.values.ptp(axis=0).max() or 1)
@@ -64,7 +65,7 @@ def areas(ip):
 
     Returns
     -------
-    numpy array
+    areas : numpy.ndarray
         The area per triangle in ``ip.tri``.
     """
     p = ip.tri.points[ip.tri.vertices]
@@ -78,6 +79,15 @@ def uniform_loss(ip):
 
     Works with `~adaptive.Learner2D` only.
 
+    Parameters
+    ----------
+    ip : `scipy.interpolate.LinearNDInterpolator` instance
+
+    Returns
+    -------
+    losses : numpy.ndarray
+        Loss per triangle in ``ip.tri``.
+
     Examples
     --------
     >>> from adaptive.learner.learner2D import uniform_loss
@@ -85,9 +95,11 @@ def uniform_loss(ip):
     ...     x, y = xy
     ...     return x**2 + y**2
     >>>
-    >>> learner = adaptive.Learner2D(f,
-    ...                              bounds=[(-1, -1), (1, 1)],
-    ...                              loss_per_triangle=uniform_loss)
+    >>> learner = adaptive.Learner2D(
+    ...     f,
+    ...     bounds=[(-1, -1), (1, 1)],
+    ...     loss_per_triangle=uniform_loss,
+    ... )
     >>>
     """
     return np.sqrt(areas(ip))
@@ -102,6 +114,10 @@ def resolution_loss_function(min_distance=0, max_distance=1):
     The arguments `min_distance` and `max_distance` should be in between 0 and 1
     because the total area is normalized to 1.
 
+    Returns
+    -------
+    loss_function : callable
+
     Examples
     --------
     >>> def f(xy):
@@ -109,10 +125,7 @@ def resolution_loss_function(min_distance=0, max_distance=1):
     ...     return x**2 + y**2
     >>>
     >>> loss = resolution_loss_function(min_distance=0.01, max_distance=1)
-    >>> learner = adaptive.Learner2D(f,
-    ...                              bounds=[(-1, -1), (1, 1)],
-    ...                              loss_per_triangle=loss)
-    >>>
+    >>> learner = adaptive.Learner2D(f, bounds=[(-1, -1), (1, 1)], loss_per_triangle=loss)
     """
 
     def resolution_loss(ip):
@@ -132,11 +145,20 @@ def resolution_loss_function(min_distance=0, max_distance=1):
 
 
 def minimize_triangle_surface_loss(ip):
-    """Loss function that is similar to the default loss function in the
+    """Loss function that is similar to the distance loss function in the
     `~adaptive.Learner1D`. The loss is the area spanned by the 3D
     vectors of the vertices.
 
     Works with `~adaptive.Learner2D` only.
+
+    Parameters
+    ----------
+    ip : `scipy.interpolate.LinearNDInterpolator` instance
+
+    Returns
+    -------
+    losses : numpy.ndarray
+        Loss per triangle in ``ip.tri``.
 
     Examples
     --------
@@ -169,6 +191,19 @@ def minimize_triangle_surface_loss(ip):
 
 
 def default_loss(ip):
+    """Loss function that combines `deviations` and `areas` of the triangles.
+
+    Works with `~adaptive.Learner2D` only.
+
+    Parameters
+    ----------
+    ip : `scipy.interpolate.LinearNDInterpolator` instance
+
+    Returns
+    -------
+    losses : numpy.ndarray
+        Loss per triangle in ``ip.tri``.
+    """
     dev = np.sum(deviations(ip), axis=0)
     A = areas(ip)
     losses = dev * np.sqrt(A) + 0.3 * A
@@ -186,15 +221,15 @@ def choose_point_in_triangle(triangle, max_badness):
 
     Parameters
     ----------
-    triangle : numpy array
-        The coordinates of a triangle with shape (3, 2)
+    triangle : numpy.ndarray
+        The coordinates of a triangle with shape (3, 2).
     max_badness : int
         The badness at which the point is either chosen on a edge or
         in the middle.
 
     Returns
     -------
-    point : numpy array
+    point : numpy.ndarray
         The x and y coordinate of the suggested new point.
     """
     a, b, c = triangle
@@ -230,7 +265,6 @@ class Learner2D(BaseLearner):
         triangle area, to determine the loss. See the notes
         for more details.
 
-
     Attributes
     ----------
     data : dict
@@ -247,12 +281,6 @@ class Learner2D(BaseLearner):
         needs to be adjusted. When ``aspect_ratio > 1`` the
         triangles will be stretched along ``x``, otherwise
         along ``y``.
-
-    Methods
-    -------
-    data_combined : dict
-        Sampled points and values so far including
-        the unknown interpolated points in `pending_points`.
 
     Notes
     -----
@@ -345,6 +373,38 @@ class Learner2D(BaseLearner):
             (p in self.pending_points or p in self._stack) for p in self._bounds_points
         )
 
+    def interpolated_on_grid(self, n=None):
+        """Get the interpolated data on a grid.
+
+        Parameters
+        ----------
+        n : int, optional
+            Number of points in x and y. If None (default) this number is
+            evaluated by looking at the size of the smallest triangle.
+
+        Returns
+        -------
+        xs : 1D numpy.ndarray
+        ys : 1D numpy.ndarray
+        interpolated_on_grid : 2D numpy.ndarray
+        """
+        ip = self.interpolator(scaled=True)
+        if n is None:
+            # Calculate how many grid points are needed.
+            # factor from A=√3/4 * a² (equilateral triangle)
+            n = int(0.658 / sqrt(areas(ip).min()))
+            n = max(n, 10)
+
+        # The bounds of the linspace should be (-0.5, 0.5) but because of
+        # numerical precision problems it could (for example) be
+        # (-0.5000000000000001, 0.49999999999999983), then any point at exact
+        # boundary would be outside of the domain. See #181.
+        eps = 1e-13
+        xs = ys = np.linspace(-0.5 + eps, 0.5 - eps, n)
+        zs = ip(xs[:, None], ys[None, :] * self.aspect_ratio).squeeze()
+        xs, ys = self._unscale(np.vstack([xs, ys]).T).T
+        return xs, ys, zs
+
     def _data_in_bounds(self):
         if self.data:
             points = np.array(list(self.data.keys()))
@@ -358,7 +418,8 @@ class Learner2D(BaseLearner):
         if self.pending_points:
             points = list(self.pending_points)
             if self.bounds_are_done:
-                values = self.ip()(self._scale(points))
+                ip = self.interpolator(scaled=True)
+                values = ip(self._scale(points))
             else:
                 # Without the bounds the interpolation cannot be done properly,
                 # so we just set everything to zero.
@@ -375,23 +436,47 @@ class Learner2D(BaseLearner):
         values_combined = np.vstack([values, values_interp])
         return points_combined, values_combined
 
-    def data_combined(self):
-        """Like `data`, however this includes the points in
-        `pending_points` for which the values are interpolated."""
-        # Interpolate the unfinished points
-        points, values = self._data_combined()
-        return {tuple(k): v for k, v in zip(points, values)}
-
     def ip(self):
-        """A `scipy.interpolate.LinearNDInterpolator` instance
-        containing the learner's data."""
-        if self._ip is None:
-            points, values = self._data_in_bounds()
-            points = self._scale(points)
-            self._ip = interpolate.LinearNDInterpolator(points, values)
-        return self._ip
+        """Deprecated, use `self.interpolator(scaled=True)`"""
+        warnings.warn(
+            "`learner.ip()` is deprecated, use `learner.interpolator(scaled=True)`."
+            " This will be removed in v1.0.",
+            DeprecationWarning,
+        )
+        return self.interpolator(scaled=True)
 
-    def ip_combined(self):
+    def interpolator(self, *, scaled=False):
+        """A `scipy.interpolate.LinearNDInterpolator` instance
+        containing the learner's data.
+
+        Parameters
+        ----------
+        scaled : bool
+            Use True if all points are inside the
+            unit-square [(-0.5, 0.5), (-0.5, 0.5)] or False if
+            the data points are inside the ``learner.bounds``.
+
+        Returns
+        -------
+        interpolator : `scipy.interpolate.LinearNDInterpolator`
+
+        Examples
+        --------
+        >>> xs, ys = [np.linspace(*b, num=100) for b in learner.bounds]
+        >>> ip = learner.interpolator()
+        >>> zs = ip(xs[:, None], ys[None, :])
+        """
+        if scaled:
+            if self._ip is None:
+                points, values = self._data_in_bounds()
+                points = self._scale(points)
+                self._ip = interpolate.LinearNDInterpolator(points, values)
+            return self._ip
+        else:
+            points, values = self._data_in_bounds()
+            return interpolate.LinearNDInterpolator(points, values)
+
+    def _interpolator_combined(self):
         """A `scipy.interpolate.LinearNDInterpolator` instance
         containing the learner's data *and* interpolated data of
         the `pending_points`."""
@@ -428,7 +513,7 @@ class Learner2D(BaseLearner):
             raise ValueError("too few points...")
 
         # Interpolate
-        ip = self.ip_combined()
+        ip = self._interpolator_combined()
 
         losses = self.loss_per_triangle(ip)
 
@@ -496,7 +581,7 @@ class Learner2D(BaseLearner):
     def loss(self, real=True):
         if not self.bounds_are_done:
             return np.inf
-        ip = self.ip() if real else self.ip_combined()
+        ip = self.interpolator(scaled=True) if real else self._interpolator_combined()
         losses = self.loss_per_triangle(ip)
         return losses.max()
 
@@ -541,21 +626,8 @@ class Learner2D(BaseLearner):
         lbrt = x[0], y[0], x[1], y[1]
 
         if len(self.data) >= 4:
-            ip = self.ip()
-
-            if n is None:
-                # Calculate how many grid points are needed.
-                # factor from A=√3/4 * a² (equilateral triangle)
-                n = int(0.658 / sqrt(areas(ip).min()))
-                n = max(n, 10)
-
-            # The bounds of the linspace should be (-0.5, 0.5) but because of
-            # numerical precision problems it could (for example) be
-            # (-0.5000000000000001, 0.49999999999999983), then any point at exact
-            # boundary would be outside of the domain. See #181.
-            eps = 1e-13
-            x = y = np.linspace(-0.5 + eps, 0.5 - eps, n)
-            z = ip(x[:, None], y[None, :] * self.aspect_ratio).squeeze()
+            ip = self.interpolator(scaled=True)
+            x, y, z = self.interpolated_on_grid(n)
 
             if self.vdim > 1:
                 ims = {
