@@ -200,7 +200,7 @@ class Interval(Domain):
         subdomain = (p[i - 1], p[i])
 
         try:
-            sub_points = self.sub_domains[subdomain]
+            sub_points = self.sub_intervals[subdomain]
         except KeyError:
             raise ValueError("{} not in any subdomain".format(x))
         else:
@@ -430,6 +430,7 @@ class ConvexHull(Domain):
         return [tuple(p) for p in points], affected_subdomains
 
     def insert(self, x, *, _check_membership=True):
+        x = tuple(x)
         # XXX: O(N) in the number of simplices
         affected_subdomains = self.which_subdomains(x)
         if not affected_subdomains:
@@ -443,6 +444,7 @@ class ConvexHull(Domain):
         return affected_subdomains
 
     def remove(self, x):
+        x = tuple(x)
         # XXX: O(N) in the number of simplices
         affected_subdomains = self.which_subdomains(x)
         for subdomain in affected_subdomains:
@@ -462,6 +464,7 @@ class ConvexHull(Domain):
                 )
 
     def split_at(self, x, *, _check_membership=True):
+        x = tuple(x)
         tri = self.triangulation
         # XXX: O(N) in the number of simplices. As typically 'x' will have been
         #      obtained by 'insert_points' or by calling 'insert_into' we can keep
@@ -516,6 +519,7 @@ class ConvexHull(Domain):
         return old_subdomains, new_subdomains
 
     def which_subdomains(self, x):
+        x = tuple(x)
         tri = self.triangulation
         # XXX: O(N) in the number of simplices
         subdomains = [s for s in tri.simplices if tri.point_in_simplex(x, s)]
