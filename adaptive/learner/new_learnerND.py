@@ -86,6 +86,9 @@ class Domain:
         ValueError : if x is outside of the domain
         """
 
+    def vertices(self):
+        """Returns the vertices of the domain."""
+
     def transform(self, x):
         "Transform 'x' to the unit hypercube"
 
@@ -94,6 +97,9 @@ class Domain:
 
     def subdomains(self):
         "Return all the subdomains in the domain."
+
+    def subpoints(self, subdomain):
+        "Return all points in the interior of a subdomain."
 
     def clear_subdomains(self):
         """Remove all points from the interior of subdomains.
@@ -253,6 +259,9 @@ class Interval(Domain):
             return False
         return ia + 1 == ib
 
+    def vertices(self):
+        return self.points
+
     def transform(self, x):
         a, b = self.bounds
         return (x - a) / (b - a)
@@ -272,6 +281,17 @@ class Interval(Domain):
     def subdomains(self):
         p = self.points
         return zip(p, p.islice(1))
+
+    def subpoints(self, subdomain, *, _check_membership=True):
+        if _check_membership and subdomain not in self:
+            raise ValueError("{} is not present in this interval".format(subdomain))
+        try:
+            p = self.sub_intervals[subdomain]
+        except KeyError:
+            return []
+        else:
+            # subinterval points contain the vertex points
+            return p[1:-1]
 
     def clear_subdomains(self):
         subdomains = list(self.sub_intervals.keys())
@@ -511,6 +531,21 @@ class ConvexHull(Domain):
 
     def subdomains(self):
         return self.triangulation.simplices
+
+    def vertices(self):
+        return self.triangulation.vertices
+
+    def subpoints(self, subdomain, *, _check_membership=True):
+        if _check_membership and subdomain not in self:
+            raise ValueError("{} is not present in this domain".format(subdomain))
+        try:
+            subtri = self.sub_domains[subdomain]
+        except KeyError:
+            return []
+        else:
+            # Subtriangulations are, by definition, over simplices. This means
+            # that the first ndim + 1 points are the simplex vertices, which we skip
+            return subtri.vertices[self.ndim + 1:]
 
     def clear_subdomains(self):
         sub_domains = list(self.sub_domains.keys())
