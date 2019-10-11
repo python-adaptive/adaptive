@@ -116,6 +116,13 @@ class Domain:
         "Return the volumes of the sub-subdomains."
 
 
+def _choose_point_in_subinterval(a, b):
+    m = a + (b - a) / 2
+    if not a < m < b:
+        raise ValueError("{} cannot be split further".format(subinterval))
+    return m
+
+
 class Interval(Domain):
     """A 1D domain (an interval).
 
@@ -150,7 +157,7 @@ class Interval(Domain):
         subsubdomains = SortedList(zip(p, p.islice(1)), key=self.volume)
         for _ in range(n):
             a, b = subsubdomains.pop()
-            m = a + (b - a) / 2
+            m = _choose_point_in_subinterval(a, b)
             subsubdomains.update([(a, m), (m, b)])
             points.append(m)
         p.update(points)
