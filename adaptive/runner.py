@@ -5,6 +5,7 @@ import asyncio
 import concurrent.futures as concurrent
 import inspect
 import os
+import pickle
 import sys
 import time
 import traceback
@@ -495,13 +496,18 @@ class AsyncRunner(BaseRunner):
             def goal(_):
                 return False
 
-        if isinstance(learner.function, types.LambdaType) and executor is None:
-            raise ValueError(
-                "A lambda function cannot be pickled and "
-                "therefore doesn't work with the default executor."
-                "Either do not use a lamdba or use a framework that"
-                " allows this, i.e. `ipyparallel` with `dill`."
-            )
+        if executor is None:
+            if isinstance(learner.function, types.LambdaType):
+                raise ValueError(
+                    "A lambda function cannot be pickled and "
+                    "therefore doesn't work with the default executor."
+                    "Either do not use a lamdba or use a framework that"
+                    " allows this, e.g. `ipyparallel` with `dill`."
+                )
+            try:
+                pickle.dumps(learner.function)
+            except pickle.PicklingError:
+                raise ValueError("`learner.function` needs to be pickleble.")
 
         super().__init__(
             learner,
