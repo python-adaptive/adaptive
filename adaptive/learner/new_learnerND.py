@@ -825,8 +825,8 @@ class LearnerND(BaseLearner):
                 self.losses[subdomain] = L_0
         else:
             # Before we have all the boundary points we can't calculate losses because we
-            # do not have enough data. We just assign a constant loss to each subdomain.
-            L_0 = 1
+            # do not have enough data. We just assign the subdomain volume as the loss.
+            L_0 = self.domain.volume(subdomain)
 
         subvolumes = self.domain.subvolumes(subdomain)
         return (max(subvolumes) / sum(subvolumes)) * L_0
