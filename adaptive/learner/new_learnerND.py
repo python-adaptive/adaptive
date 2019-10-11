@@ -527,6 +527,9 @@ class ConvexHull(Domain):
             raise ValueError("{} is not in the domain".format(x))
         return subdomains
 
+    def __contains__(self, subdomain):
+        return subdomain in self.triangulation.simplices
+
     def transform(self, x):
         # XXX: implement this
         raise NotImplementedError()
