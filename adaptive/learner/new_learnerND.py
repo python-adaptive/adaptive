@@ -388,6 +388,8 @@ class LearnerND(BaseLearner):
 
     def loss(self, real=True):
         if real:
+            if not self.losses:
+                return math.inf
             # NOTE: O(N) in the number of subintervals, but with a low prefactor.
             #       We have to do this because the queue is sorted in *priority*
             #       order, and it's possible that a subinterval with a high loss
