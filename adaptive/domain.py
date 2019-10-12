@@ -484,11 +484,11 @@ class ConvexHull(Domain):
         self.bounds = hull
         self.triangulation = Triangulation(hull.points[hull.vertices])
         # if a subdomain has interior points, then it appears as a key
-        # in 'sub_domains' and maps to a 'Triangulation' of the
+        # in 'sub_triangulations' and maps to a 'Triangulation' of the
         # interior of the subdomain. By definition the triangulation
         # is over a simplex, and the first 'ndim + 1' points in the
         # triangulation are the boundary points.
-        self.sub_domains = dict()
+        self.sub_triangulations = dict()
         self.ndim = self.bounds.points.shape[1]
 
         # As an optimization we store any points inserted with 'insert_points'
@@ -504,11 +504,11 @@ class ConvexHull(Domain):
 
     def _get_subtriangulation(self, subdomain):
         try:
-            subtri = self.sub_domains[subdomain]
+            subtri = self.sub_triangulations[subdomain]
         except KeyError:  # No points in the interior of this subdomain yet
             points = [self.triangulation.vertices[x] for x in subdomain]
             subtri = _make_new_subtriangulation(points)
-            self.sub_domains[subdomain] = subtri
+            self.sub_triangulations[subdomain] = subtri
         return subtri
 
     def insert_points(self, subdomain, n, *, _check_membership=True):
@@ -571,15 +571,15 @@ class ConvexHull(Domain):
             raise ValueError("Can only remove points inside subdomains")
         for subdomain in affected_subdomains:
             # Check that it's not a vertex of the subdomain
-            subtri = self.sub_domains[subdomain]
+            subtri = self.sub_triangulations[subdomain]
             assert x in subtri.vertices
             points = [v for v in subtri.vertices if v != x]
             if len(points) == self.ndim + 1:
                 # No more points inside the subdomain
-                del self.sub_domains[subdomain]
+                del self.sub_triangulations[subdomain]
             else:
                 # Rebuild the subtriangulation from scratch
-                self.sub_domains[subdomain] = _make_new_subtriangulation(points)
+                self.sub_triangulations[subdomain] = _make_new_subtriangulation(points)
 
     def split_at(self, x, *, _check_membership=True):
         x = tuple(x)
@@ -597,7 +597,7 @@ class ConvexHull(Domain):
         old_subdomains, new_subdomains = tri.add_point(x, subdomain)
 
         if _check_membership:
-            assert not any(s in self.sub_domains for s in new_subdomains)
+            assert not any(s in self.sub_triangulations for s in new_subdomains)
 
         # Re-assign all the interior points of 'old_subdomains' to 'new_subdomains'
 
@@ -607,7 +607,7 @@ class ConvexHull(Domain):
         interior_points = set()
         for d in old_subdomains:
             try:
-                subtri = self.sub_domains.pop(d)
+                subtri = self.sub_triangulations.pop(d)
             except KeyError:
                 continue
             else:
@@ -675,7 +675,7 @@ class ConvexHull(Domain):
         if _check_membership and subdomain not in self:
             raise ValueError("{} is not present in this domain".format(subdomain))
         try:
-            subtri = self.sub_domains[subdomain]
+            subtri = self.sub_triangulations[subdomain]
         except KeyError:
             return []
         else:
@@ -684,16 +684,16 @@ class ConvexHull(Domain):
             return subtri.vertices[self.ndim + 1 :]
 
     def clear_subdomains(self):
-        sub_domains = list(self.sub_domains.keys())
-        self.sub_domains = dict()
-        return sub_domains
+        sub_triangulations = list(self.sub_triangulations.keys())
+        self.sub_triangulations = dict()
+        return sub_triangulations
 
     def volume(self, subdomain):
         return self.triangulation.volume(subdomain)
 
     def subvolumes(self, subdomain):
         try:
-            subtri = self.sub_domains[subdomain]
+            subtri = self.sub_triangulations[subdomain]
         except KeyError:
             return [self.triangulation.volume(subdomain)]
         else:
