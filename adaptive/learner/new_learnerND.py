@@ -4,6 +4,7 @@ from collections.abc import Iterable
 import math
 
 import numpy as np
+import scipy.spatial
 import scipy.interpolate
 
 from adaptive.learner.base_learner import BaseLearner
@@ -113,7 +114,10 @@ class LearnerND(BaseLearner):
             self.loss_function = loss or DistanceLoss()
             self.ndim = 1
         else:
-            boundary_points = sorted(tuple(p) for p in itertools.product(*bounds))
+            if isinstance(bounds, scipy.spatial.ConvexHull):
+                boundary_points = bounds.points[bounds.vertices]
+            else:
+                boundary_points = sorted(tuple(p) for p in itertools.product(*bounds))
             self.domain = ConvexHull(boundary_points)
             self.loss_function = loss or EmbeddedVolumeLoss()
             self.ndim = len(boundary_points[0])
