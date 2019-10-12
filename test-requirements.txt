@@ -3,4 +3,5 @@ pytest
 pytest-cov
 pytest-randomly
 pytest-timeout
+hypothesis[numpy,pytest]
 pre_commit
