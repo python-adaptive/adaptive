@@ -1,6 +1,7 @@
 from math import sqrt
 import itertools
 import functools
+from collections import defaultdict
 from collections.abc import Iterable
 
 import numpy as np
@@ -487,6 +488,12 @@ class ConvexHull(Domain):
         self.sub_domains = dict()
         self.ndim = self.bounds.points.shape[1]
 
+        # As an optimization we store any points inserted with 'insert_points'
+        # and 'insert' and point to the subdomains to which they belong. This
+        # allows 'which_subdomains' and 'split_at' to work faster when given points
+        # that were previously added with 'insert' or 'insert_points'
+        self.subpoints_to_subdomains = defaultdict(set)
+
     @property
     def bounding_box(self):
         hull_points = self.bounds.points[self.bounds.vertices]
@@ -522,6 +529,7 @@ class ConvexHull(Domain):
             point = _choose_point_in_simplex(simplex_vertices)
             points.append(point)
             subtri.add_point(point, largest_simplex)
+            self.subpoints_to_subdomains[point].add(subdomain)
             # If the point was added to a boundary of the subdomain we should
             # add it to the neighboring subdomains.
             boundary = subtri.on_which_boundary(point)
@@ -533,6 +541,7 @@ class ConvexHull(Domain):
                 for sd in neighbors:
                     self._get_subtriangulation(sd).add_point(point)
                 affected_subdomains.update(neighbors)
+                self.subpoints_to_subdomains[point].update(neighbors)
 
         return [tuple(p) for p in points], affected_subdomains
 
@@ -547,44 +556,42 @@ class ConvexHull(Domain):
             if x in subtri.vertices:  # O(N) in the number of vertices
                 raise ValueError("{} exists in a subinterval already".format(x))
             subtri.add_point(x)
+        self.subpoints_to_subdomains[x].update(affected_subdomains)
 
         return affected_subdomains
 
     def remove(self, x):
         x = tuple(x)
-        # XXX: O(N) in the number of simplices
-        affected_subdomains = self.which_subdomains(x)
+        try:
+            affected_subdomains = self.subpoints_to_subdomains.pop(x)
+        except KeyError:
+            raise ValueError("Can only remove points inside subdomains")
         for subdomain in affected_subdomains:
             # Check that it's not a vertex of the subdomain
-            if any(x == self.triangulation.vertices[i] for i in subdomain):
-                raise ValueError("Cannot remove subdomain vertices")
-            try:
-                subtri = self.sub_domains[subdomain]
-            except KeyError:
-                raise ValueError("{} not present in any subdomain".format(x))
+            subtri = self.sub_domains[subdomain]
+            assert x in subtri.vertices
+            points = [v for v in subtri.vertices if v != x]
+            if len(points) == self.ndim + 1:
+                # No more points inside the subdomain
+                del self.sub_domains[subdomain]
             else:
-                if x not in subtri.vertices:
-                    raise ValueError("{} not present in any subdomain".format(x))
-                points = [v for v in subtri.vertices if v != x]
-                if len(points) == self.ndim + 1:
-                    # No more points inside the subdomain
-                    del self.sub_domains[subdomain]
-                else:
-                    # Rebuild the subtriangulation from scratch
-                    self.sub_domains[subdomain] = _make_new_subtriangulation(points)
+                # Rebuild the subtriangulation from scratch
+                self.sub_domains[subdomain] = _make_new_subtriangulation(points)
 
     def split_at(self, x, *, _check_membership=True):
         x = tuple(x)
         tri = self.triangulation
-        # XXX: O(N) in the number of simplices. As typically 'x' will have been
-        #      obtained by 'insert_points' or by calling 'insert_into' we can keep
-        #      a hashmap of x→simplex to make this lookup faster and fall back to
-        #      'locate_point' otherwise
-        simplex = tri.locate_point(x)
-        if not simplex:
-            raise ValueError("Can only split at points within the domain.")
+        try:
+            containing_subdomains = self.subpoints_to_subdomains.pop(x)
+            # Only need a single subdomaing 'x' to make 'tri.add_point' fast.
+            subdomain = next(iter(containing_subdomains))
+        except KeyError:
+            # XXX: O(N) in the number of simplices.
+            subdomain = tri.locate_point(x)
+            if not subdomain:
+                raise ValueError("Can only split at points within the domain.")
 
-        old_subdomains, new_subdomains = tri.add_point(x, simplex)
+        old_subdomains, new_subdomains = tri.add_point(x, subdomain)
 
         if _check_membership:
             assert not any(s in self.sub_domains for s in new_subdomains)
@@ -604,10 +611,12 @@ class ConvexHull(Domain):
                 # Get all points in the subtriangulation except the boundary
                 # points. Because a subtriangulation is always defined over
                 # a simplex, the first ndim + 1 points are the boundary points.
-                interior = set(range(self.ndim + 1, len(subtri.vertices)))
-                interior = [subtri.vertices[i] for i in interior]
-                # Remove 'x' if it is one of the points
-                interior = [i for i in interior if i != x]
+                interior = [v for v in subtri.vertices[self.ndim + 1 :] if v != x]
+                for v in interior:
+                    s = self.subpoints_to_subdomains[v]
+                    s.remove(d)
+                    if not s:
+                        del self.subpoints_to_subdomains[v]
                 interior_points.update(interior)
         for p in interior_points:
             # Try to add 'p' to all the new subdomains. It may belong to more than 1
@@ -617,6 +626,7 @@ class ConvexHull(Domain):
                 if tri.point_in_simplex(p, subdomain):
                     subtri = self._get_subtriangulation(subdomain)
                     subtri.add_point(p)
+                    self.subpoints_to_subdomains[p].add(subdomain)
                     p_was_added = True
             assert (
                 p_was_added
@@ -627,11 +637,14 @@ class ConvexHull(Domain):
     def which_subdomains(self, x):
         x = tuple(x)
         tri = self.triangulation
-        # XXX: O(N) in the number of simplices
-        subdomains = [s for s in tri.simplices if tri.point_in_simplex(x, s)]
-        if not subdomains:
-            raise ValueError("{} is not in the domain".format(x))
-        return subdomains
+        if x in self.subpoints_to_subdomains:
+            subdomains = self.subpoints_to_subdomains[x]
+        else:
+            # XXX: O(N) in the number of simplices
+            subdomains = [s for s in tri.simplices if tri.point_in_simplex(x, s)]
+            if not subdomains:
+                raise ValueError("{} is not in the domain".format(x))
+        return list(subdomains)
 
     def __contains__(self, subdomain):
         return subdomain in self.triangulation.simplices
