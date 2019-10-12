@@ -487,7 +487,8 @@ class LearnerND(BaseLearner):
         return p.redim(x=dict(range=plot_bounds))
 
     def _get_data(self):
-        pass
+        return self.data
 
     def _set_data(self, data):
-        pass
+        if data:
+            self.tell_many(*zip(*data.items()))
