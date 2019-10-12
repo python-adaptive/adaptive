@@ -1,8 +1,10 @@
 from math import sqrt
 import itertools
+import functools
 from collections.abc import Iterable
 
 import numpy as np
+import scipy.linalg
 import scipy.spatial
 import scipy.interpolate
 from sortedcontainers import SortedList, SortedDict
@@ -334,8 +336,6 @@ def _choose_point_in_simplex(simplex, transform=None):
     -------
     point : (n,) array
         The point that was chosen in the simplex
-    face : tuple of int
-        If the chosen point was
     """
     if transform is not None:
         simplex = np.dot(simplex, transform)
@@ -345,18 +345,116 @@ def _choose_point_in_simplex(simplex, transform=None):
     center, _radius = circumsphere(simplex)
     if point_in_simplex(center, simplex):
         point = np.average(simplex, axis=0)
-        face = ()
     else:
         distances = scipy.spatial.distance.pdist(simplex)
         distance_matrix = scipy.spatial.distance.squareform(distances)
         i, j = np.unravel_index(np.argmax(distance_matrix), distance_matrix.shape)
         point = (simplex[i, :] + simplex[j, :]) / 2
-        face = (i, j)
 
     if transform is not None:
         point = np.linalg.solve(transform, point)  # undo the transform
 
-    return tuple(point), face
+    return tuple(point)
+
+
+def _simplex_facets(ndim):
+    """Return the facets of a simplex in 'ndim' dimensions
+
+    A simplex in 'ndim' dimensions consists of 'ndim + 1' points
+    [0, ndim + 1)
+
+    Parameters
+    ----------
+    ndim : positive int
+
+    Returns
+    -------
+    facets : Iterable of integer tuples
+        Contains 'ndim + 1' tuples, and each tuple contains
+        'ndim' integers.
+    """
+    return itertools.combinations(range(ndim + 1), ndim)
+
+
+def _boundary_equations(simplex):
+    """Return the set of equations defining the boundary of a simplex
+
+    This is slower than using scipy.spatial.ConvexHull, however the ordering
+    of the equations is not clear for that case.
+
+    Care is not taken to orient the facets to point out of the simplex; the
+    equations should only be used for verifying if a point lies on a boundary,
+    rather than if it lies inside the simplex.
+
+    >>> simplex = [(0, 0), (1, 0), (0, 1)]
+    >>> A, b =  _boundary_equations(simplex)
+    >>> x = [0.5, 0]
+    >>> which_boundary = np.isclose(A @ x + b, 0)
+    >>> # facet #0 is the line between (0, 0) and (1, 0)
+    >>> assert which_boundary[0] == True
+
+    Parameters
+    ----------
+    simplex : (N + 1, N) float array-like
+        The vertices of an N-dimensional simplex.
+
+    Returns
+    -------
+    A : (N + 1, N) float array
+        Each row is a normal vector to a facet of 'simplex'.
+        The facets are in the same order as returned by
+        '_simplex_facets(N)'.
+    b : (N + 1,) float array
+        Each element is the offset from the origin of the
+        corresponding facet of 'simplex'
+    """
+    points = np.asarray(simplex)
+    ndim = points.shape[1]
+    assert points.shape == (ndim + 1, ndim)
+    A = np.empty((ndim + 1, ndim), dtype=float)
+    b = np.empty((ndim + 1), dtype=float)
+    for i, (x0, *v) in enumerate(_simplex_facets(ndim)):
+        facet_tangent_space = points[list(v)] - points[x0]
+        facet_normal = scipy.linalg.null_space(facet_tangent_space).squeeze()
+        A[i, :] = facet_normal
+        b[i] = np.dot(points[x0], facet_normal)
+    return A, b
+
+
+def _on_which_boundary(equations, x, eps=1e-8):
+    """Returns the simplex boundary on which 'x' is found.
+
+    >>> simplex = [(0., 0.), (2., 0.), (0., 4.)]
+    >>> eq = _boundary_equations(simplex)
+    >>> x = [0.5, 0.]
+    >>> _on_which_boundary(eq, x) == (0, 1)
+    >>> assert boundary == (0, 1)
+    >>> x = [2., 0.]
+    >>> _on_which_boundary(eq, x) == (1,)
+
+    Parameters
+    ----------
+    equations : the output of _boundary_equations
+        The equations defining a simplex in 'N' dimensions
+    x : (N,) float array-like
+
+    Returns
+    -------
+    None if 'x' is not on a simplex boundary.
+    Otherwise, returns a tuple containing integers defining
+    the boundary on which 'x' is found.
+    """
+    ndim = len(x)
+    A, b = equations
+    assert len(b) == ndim + 1
+    on_boundary = np.isclose(A @ x + b, 0, atol=1e-8)
+    if not any(on_boundary):
+        return None
+    # The point is on the boundary of all the following facets
+    facets = [facet for i, facet in enumerate(_simplex_facets(ndim)) if on_boundary[i]]
+    # If the point is on the boundary of more than 1 facet, then it is on a lower-dimension facet.
+    boundary_facet = set.intersection(*map(set, facets))
+    return tuple(sorted(boundary_facet))
 
 
 class ConvexHull(Domain):
@@ -387,7 +485,11 @@ class ConvexHull(Domain):
         try:
             subtri = self.sub_domains[subdomain]
         except KeyError:  # No points in the interior of this subdomain yet
-            subtri = Triangulation([self.triangulation.vertices[x] for x in subdomain])
+            points = [self.triangulation.vertices[x] for x in subdomain]
+            subtri = Triangulation(points)
+            subtri.on_which_boundary = functools.partial(
+                _on_which_boundary, _boundary_equations(points)
+            )
             self.sub_domains[subdomain] = subtri
         return subtri
 
@@ -409,23 +511,20 @@ class ConvexHull(Domain):
             # O(N) in the number of sub-simplices, but typically we only have a few
             largest_simplex = max(subtri.simplices, key=subtri.volume)
             simplex_vertices = np.array([subtri.vertices[s] for s in largest_simplex])
-            point, face = _choose_point_in_simplex(simplex_vertices)
+            point = _choose_point_in_simplex(simplex_vertices)
             points.append(point)
             subtri.add_point(point, largest_simplex)
-            # If we chose a point on a face (or edge) of 'subdomain' then we need to
-            # add it to the subtriangulations of the neighboring subdomains.
-            # This check relies on the fact that the first 'ndim + 1' points in the
-            # subtriangulation are the boundary points.
-            face = [largest_simplex[i] for i in face]
-            if face and all(f < self.ndim + 1 for f in face):
-                # Translate vertex indices from subtriangulation to triangulation
-                face = [subdomain[f] for f in face]
-                # Loop over the simplices that contain 'face', skipping 'subdomain',
-                # which was already added above.
-                for sd in tri.containing(face):
-                    if sd != subdomain:
-                        self._get_subtriangulation(sd).add_point(point)
-                        affected_subdomains.add(sd)
+            # If the point was added to a boundary of the subdomain we should
+            # add it to the neighboring subdomains.
+            boundary = subtri.on_which_boundary(point)
+            if boundary is not None:
+                # Convert subtriangulation indices to triangulation indices
+                boundary = tuple(sorted(subdomain[i] for i in boundary))
+                neighbors = set(tri.containing(boundary))
+                neighbors.remove(subdomain)
+                for sd in neighbors:
+                    self._get_subtriangulation(sd).add_point(point)
+                affected_subdomains.update(neighbors)
 
         return [tuple(p) for p in points], affected_subdomains
 
