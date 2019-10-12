@@ -20,7 +20,7 @@ class LossFunction(metaclass=abc.ABCMeta):
         "The maximum degree of neighboring subdomains required."
 
     @abc.abstractmethod
-    def __call__(self, domain, subdomain, data):
+    def __call__(self, domain, subdomain, codomain_bounds, data):
         """Return the loss for 'subdomain' given 'data'
 
         Neighboring subdomains can be obtained with
