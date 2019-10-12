@@ -179,7 +179,7 @@ class Interval(Domain):
         i = p.bisect_left(x)
         if p[i] == x:
             raise ValueError("{} exists in this interval already".format(x))
-        subdomain = (p[i - 1], p[i])
+        subdomain = (a, b) = p[i - 1], p[i]
 
         try:
             p = self.sub_intervals[subdomain]
@@ -210,6 +210,8 @@ class Interval(Domain):
             raise ValueError("{} not in any subdomain".format(x))
         else:
             sub_points.remove(x)
+            if len(sub_points) == 2:
+                del self.sub_intervals[subdomain]
             return [subdomain]
 
     def split_at(self, x, *, _check_membership=True):
@@ -587,6 +589,8 @@ class ConvexHull(Domain):
             else:
                 # Rebuild the subtriangulation from scratch
                 self.sub_triangulations[subdomain] = _make_new_subtriangulation(points)
+
+        return affected_subdomains
 
     def split_at(self, x, *, _check_membership=True):
         x = tuple(x)
