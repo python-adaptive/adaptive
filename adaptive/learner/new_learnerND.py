@@ -1,6 +1,6 @@
 import itertools
 from collections.abc import Iterable
-from math import sqrt
+import math
 
 import numpy as np
 import scipy.interpolate
@@ -34,7 +34,7 @@ class DistanceLoss(LossFunction):
         assert isinstance(domain, Interval)
         a, b = subdomain
         ya, yb = data[a], data[b]
-        return sqrt((b - a) ** 2 + (yb - ya) ** 2)
+        return math.sqrt((b - a) ** 2 + (yb - ya) ** 2)
 
 
 class EmbeddedVolumeLoss(LossFunction):
@@ -189,7 +189,7 @@ class LearnerND(BaseLearner):
         else:
             points = self.boundary_points[self.n_asked : self.n_asked + n]
             # The boundary points should always be evaluated with the highest priority
-            losses = [float("inf")] * len(points)
+            losses = [math.inf] * len(points)
             if tell_pending:
                 for x in points:
                     self.pending_points.add(x)
