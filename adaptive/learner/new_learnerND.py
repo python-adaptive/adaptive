@@ -559,7 +559,7 @@ class ConvexHull(Domain):
         else:
             # Subtriangulations are, by definition, over simplices. This means
             # that the first ndim + 1 points are the simplex vertices, which we skip
-            return subtri.vertices[self.ndim + 1:]
+            return subtri.vertices[self.ndim + 1 :]
 
     def clear_subdomains(self):
         sub_domains = list(self.sub_domains.keys())
@@ -838,7 +838,9 @@ class LearnerND(BaseLearner):
             if subdomain in self.losses:
                 L_0 = self.losses[subdomain]
             else:
-                L_0 = self.loss_function(self.domain, subdomain, self.codomain_bounds, self.data)
+                L_0 = self.loss_function(
+                    self.domain, subdomain, self.codomain_bounds, self.data
+                )
                 self.losses[subdomain] = L_0
         else:
             # Before we have all the boundary points we can't calculate losses because we
@@ -852,9 +854,9 @@ class LearnerND(BaseLearner):
         if self.n_asked >= len(self.boundary_points):
             points, losses = self._ask(n, tell_pending)
         else:
-            points = self.boundary_points[self.n_asked:self.n_asked + n]
+            points = self.boundary_points[self.n_asked : self.n_asked + n]
             # The boundary points should always be evaluated with the highest priority
-            losses = [float('inf')] * len(points)
+            losses = [float("inf")] * len(points)
             if tell_pending:
                 for x in points:
                     self.pending_points.add(x)
