@@ -152,7 +152,7 @@ class LearnerND(BaseLearner):
         # information we recompute the losses for all subdomains when the scale
         # changes by more than this factor from the last time we recomputed all
         # the losses.
-        self.need_loss_update_factor = 1.1
+        self._recompute_losses_factor = 1.1
 
         # As an optimization we keep a map from subdomain to loss.
         # This is updated in 'self.priority' whenever the loss function is evaluated
@@ -356,9 +356,9 @@ class LearnerND(BaseLearner):
         # We need to recompute all losses if the scale has increased by more
         # than a certain factor since the last time we recomputed all the losses
         if self.vdim == 1:
-            need_loss_update = scale_factor > self.need_loss_update_factor
+            need_loss_update = scale_factor > self._recompute_losses_factor
         else:
-            need_loss_update = np.any(scale_factor > self.need_loss_update_factor)
+            need_loss_update = np.any(scale_factor > self._recompute_losses_factor)
 
         if need_loss_update:
             self.codomain_scale_at_last_update = scale
