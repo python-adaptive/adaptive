@@ -14,6 +14,7 @@ from hypothesis import given, settings
 
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
+@settings(deadline=500)
 def test_getting_points_are_unique(data, ndim):
     domain = data.draw(make_hypercube_domain(ndim))
     points = []
@@ -134,7 +135,7 @@ def test_inserting_then_removing_points_removes_from_subpoints(data, ndim):
 
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
-@settings(deadline=300)
+@settings(deadline=500)
 def test_inserting_then_splitting_at_points_removes_from_subpoints(data, ndim):
     domain = data.draw(make_hypercube_domain(ndim))
     xs = data.draw(a_few_points_inside(domain))
