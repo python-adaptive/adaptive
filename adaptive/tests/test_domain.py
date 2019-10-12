@@ -6,8 +6,10 @@ from adaptive.tests.domain_utils import (
     a_few_points_inside,
     make_hypercube_domain,
     point_inside,
-    point_outside,
     point_on_shared_face,
+    point_outside,
+    points_inside,
+    points_outside,
 )
 from hypothesis import given, settings
 
@@ -64,6 +66,24 @@ def test_insert_points_outside_domain_raises(data, ndim):
     x = data.draw(point_outside(domain))
     with pytest.raises(ValueError):
         domain.insert(x)
+
+
+@pytest.mark.parametrize("ndim", [1, 2, 3])
+@given(data=st.data())
+def test_encloses(data, ndim):
+    domain = data.draw(make_hypercube_domain(ndim))
+
+    xin = data.draw(point_inside(domain))
+    assert domain.encloses(xin)
+
+    xout = data.draw(point_outside(domain))
+    assert not domain.encloses(xout)
+
+    xins = data.draw(points_inside(domain, 20))
+    assert np.all(domain.encloses(xins))
+
+    xouts = data.draw(points_outside(domain, 20))
+    assert not np.any(domain.encloses(xouts))
 
 
 @pytest.mark.parametrize("ndim", [1, 2, 3])

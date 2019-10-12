@@ -88,6 +88,21 @@ class Domain(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def encloses(self, points):
+        """Return whether the domain encloses the points
+
+        Parameters
+        ----------
+        points : a point or sequence of points
+
+        Returns
+        -------
+        Boolean (if a single point was provided) or an array of booleans
+        if a sequence of points was provided) that is True when
+        the domain encloses the point.
+        """
+
+    @abc.abstractmethod
     def vertices(self):
         """Returns the vertices of the domain."""
 
@@ -275,6 +290,14 @@ class Interval(Domain):
 
     def vertices(self):
         return self.points
+
+    def encloses(self, points):
+        a, b = self.bounds
+        points = np.asarray(points)
+        if points.shape == ():  # single point
+            return a <= points <= b
+        else:
+            return np.logical_and(a <= points, points <= b)
 
     def neighbors(self, subdomain, n=1):
         a, b = subdomain
@@ -678,6 +701,13 @@ class ConvexHull(Domain):
 
     def subdomains(self):
         return self.triangulation.simplices
+
+    def encloses(self, points):
+        points = np.asarray(points).T
+        A, b = self.bounds.equations[:, :-1], self.bounds.equations[:, -1:]
+        if len(points.shape) == 1:
+            points = points[:, None]
+        return np.all(A @ points + b <= 0, axis=0)
 
     def vertices(self):
         return self.triangulation.vertices
