@@ -15,7 +15,7 @@ from adaptive.domain import Interval, ConvexHull
 
 
 class LossFunction(metaclass=abc.ABCMeta):
-    @abc.abtractproperty
+    @abc.abstractproperty
     def n_neighbors(self):
         "The maximum degree of neighboring subdomains required."
 
