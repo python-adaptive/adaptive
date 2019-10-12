@@ -37,7 +37,7 @@ class Queue:
         return len(self._queue)
 
     def items(self):
-        "Return an iterator over the items in the queue in arbitrary order."
+        "Return an iterator over the items in the queue in priority order."
         return reversed(self._queue.values())
 
     def peek(self):

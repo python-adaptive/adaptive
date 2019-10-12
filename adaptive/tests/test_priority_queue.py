@@ -49,12 +49,9 @@ def test_remove_item_inserted_twice_removes_lowest_priority(items, missing_item)
 
 @given(items)
 def test_all_items_in_queue(items):
-    if items:
-        values, _ = zip(*items)
-    else:
-        values = []
-    q = Queue(items)
-    assert sorted(values) == sorted(q.items())
+    # Items should be sorted from largest priority to smallest
+    sorted_items = [item for item, _ in sorted(items, key=lambda x: -x[1])]
+    assert sorted_items == list(Queue(items).items())
 
 
 @given(items)
