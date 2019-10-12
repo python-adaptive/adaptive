@@ -364,7 +364,10 @@ class LearnerND(BaseLearner):
         scale = mx - mn
         # How much has the scale of the outputs changed since the last time
         # we recomputed the losses?
-        scale_factor = scale / self.codomain_scale_at_last_update
+        if self.codomain_scale_at_last_upate == 0:
+            scale_factor = math.inf
+        else:
+            scale_factor = scale / self.codomain_scale_at_last_update
 
         # We need to recompute all losses if the scale has increased by more
         # than a certain factor since the last time we recomputed all the losses
