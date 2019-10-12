@@ -40,10 +40,6 @@ class Queue:
         "Return an iterator over the items in the queue in arbitrary order."
         return reversed(self._queue.values())
 
-    def priorities(self):
-        "Return an iterator over the priorities in the queue in arbitrary order."
-        return reversed(self._queue)
-
     def peek(self):
         "Return the item and priority at the front of the queue."
         self._check_nonempty()
