@@ -422,7 +422,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
-@run_with(Learner1D, xfail(Learner2D), LearnerND)
+@run_with(Learner1D, xfail(Learner2D), LearnerND, xfail(NewLearnerND))
 def test_learner_performance_is_invariant_under_scaling(
     learner_type, f, learner_kwargs
 ):
@@ -619,6 +619,25 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
         simple(control, lambda l: l.npoints > 200)
     finally:
         os.remove(path)
+
+
+@run_with(Learner1D, Learner2D, LearnerND, xfail(NewLearnerND))
+def test_adding_data_outside_of_bounds(learner_type, f, learner_kwargs):
+    # Just test this does not throw an error for now
+    f = generate_random_parametrization(f)
+    learner = learner_type(f, **learner_kwargs)
+
+    points, _ = learner.ask(20)
+    learner.tell_many(points, [learner.function(x) for x in points])
+
+    points, _ = learner.ask(10)
+    points = 1e5 * np.asarray(
+        points
+    )  # outside the bounds for all the test functions we have
+    if len(points.shape) > 1:
+        points = [tuple(x) for x in points]
+
+    learner.tell_many(points, [learner.function(x) for x in points])
 
 
 @pytest.mark.xfail
