@@ -148,7 +148,7 @@ class Interval(Domain):
     def insert_points(self, subdomain, n, *, _check_membership=True):
         if n <= 0:
             raise ValueError("n must be positive")
-        if _check_membership and subdomain not in self:
+        if _check_membership and not self.contains_subdomain(subdomain):
             raise ValueError("{} is not present in this interval".format(subdomain))
         try:
             p = self.sub_intervals[subdomain]
@@ -264,7 +264,7 @@ class Interval(Domain):
                 neighbors.append((p[i], p[i + 1]))
             return neighbors
 
-    def __contains__(self, subdomain):
+    def contains_subdomain(self, subdomain):
         a, b = subdomain
         try:
             ia = self.points.index(a)
@@ -293,7 +293,7 @@ class Interval(Domain):
         return zip(p, p.islice(1))
 
     def subpoints(self, subdomain, *, _check_membership=True):
-        if _check_membership and subdomain not in self:
+        if _check_membership and self.contains_subdomain(subdomain):
             raise ValueError("{} is not present in this interval".format(subdomain))
         try:
             p = self.sub_intervals[subdomain]
@@ -660,7 +660,7 @@ class ConvexHull(Domain):
                 raise ValueError("{} is not in the domain".format(x))
         return list(subdomains)
 
-    def __contains__(self, subdomain):
+    def contains_subdomain(self, subdomain):
         return subdomain in self.triangulation.simplices
 
     def transform(self, x):
@@ -683,7 +683,7 @@ class ConvexHull(Domain):
         return self.triangulation.vertices
 
     def subpoints(self, subdomain, *, _check_membership=True):
-        if _check_membership and subdomain not in self:
+        if _check_membership and not self.contains_subdomain(subdomain):
             raise ValueError("{} is not present in this domain".format(subdomain))
         try:
             subtri = self.sub_triangulations[subdomain]
