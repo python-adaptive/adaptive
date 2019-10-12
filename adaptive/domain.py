@@ -426,7 +426,7 @@ def _boundary_equations(simplex):
         facet_tangent_space = points[list(v)] - points[x0]
         facet_normal = scipy.linalg.null_space(facet_tangent_space).squeeze()
         A[i, :] = facet_normal
-        b[i] = np.dot(points[x0], facet_normal)
+        b[i] = -np.dot(points[x0], facet_normal)
     return A, b
 
 
