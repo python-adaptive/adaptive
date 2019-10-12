@@ -457,6 +457,17 @@ def _on_which_boundary(equations, x, eps=1e-8):
     return tuple(sorted(boundary_facet))
 
 
+def _make_new_subtriangulation(points):
+    points = np.asarray(points)
+    ndim = points.shape[1]
+    boundary_points = points[:ndim + 1]
+    subtri = Triangulation(points)
+    subtri.on_which_boundary = functools.partial(
+        _on_which_boundary, _boundary_equations(boundary_points)
+    )
+    return subtri
+
+
 class ConvexHull(Domain):
     """A convex hull domain in $ℝ^N$ (N >=2).
 
@@ -486,10 +497,7 @@ class ConvexHull(Domain):
             subtri = self.sub_domains[subdomain]
         except KeyError:  # No points in the interior of this subdomain yet
             points = [self.triangulation.vertices[x] for x in subdomain]
-            subtri = Triangulation(points)
-            subtri.on_which_boundary = functools.partial(
-                _on_which_boundary, _boundary_equations(points)
-            )
+            subtri = _make_new_subtriangulation(points)
             self.sub_domains[subdomain] = subtri
         return subtri
 
@@ -557,10 +565,13 @@ class ConvexHull(Domain):
             else:
                 if x not in subtri.vertices:
                     raise ValueError("{} not present in any subdomain".format(x))
-                # Rebuild the subtriangulation from scratch
-                self.sub_domains[subdomain] = Triangulation(
-                    [v for v in subtri.vertices if v != x]
-                )
+                points = [v for v in subtri.vertices if v != x]
+                if len(points) == self.ndim + 1:
+                    # No more points inside the subdomain
+                    del self.sub_domains[subdomain]
+                else:
+                    # Rebuild the subtriangulation from scratch
+                    self.sub_domains[subdomain] = _make_new_subtriangulation(points)
 
     def split_at(self, x, *, _check_membership=True):
         x = tuple(x)
@@ -604,11 +615,7 @@ class ConvexHull(Domain):
             p_was_added = False
             for subdomain in new_subdomains:
                 if tri.point_in_simplex(p, subdomain):
-                    try:
-                        subtri = self.sub_domains[subdomain]
-                    except KeyError:  # No points in this subdomain yet
-                        subtri = Triangulation([tri.vertices[i] for i in subdomain])
-                        self.sub_domains[subdomain] = subtri
+                    subtri = self._get_subtriangulation(subdomain)
                     subtri.add_point(p)
                     p_was_added = True
             assert (
