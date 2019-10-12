@@ -460,7 +460,7 @@ def _on_which_boundary(equations, x, eps=1e-8):
 def _make_new_subtriangulation(points):
     points = np.asarray(points)
     ndim = points.shape[1]
-    boundary_points = points[:ndim + 1]
+    boundary_points = points[: ndim + 1]
     subtri = Triangulation(points)
     subtri.on_which_boundary = functools.partial(
         _on_which_boundary, _boundary_equations(boundary_points)
