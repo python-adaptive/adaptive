@@ -26,6 +26,7 @@ from adaptive.learner import (
     LearnerND,
     SequenceLearner,
 )
+from adaptive.learner.new_learnerND import LearnerND as NewLearnerND
 from adaptive.runner import simple
 
 try:
@@ -112,11 +113,13 @@ def maybe_skip(learner):
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
+@learn_with(NewLearnerND, bounds=[(-1, 1)])
 def quadratic(x, m: uniform(0, 10), b: uniform(0, 1)):
     return m * x ** 2 + b
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
+@learn_with(NewLearnerND, bounds=[(-1, 1)])
 @learn_with(SequenceLearner, sequence=np.linspace(-1, 1, 201))
 def linear_with_peak(x, d: uniform(-1, 1)):
     a = 0.01
@@ -124,6 +127,7 @@ def linear_with_peak(x, d: uniform(-1, 1)):
 
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
+@learn_with(NewLearnerND, bounds=((-1, 1), (-1, 1)))
 @learn_with(Learner2D, bounds=((-1, 1), (-1, 1)))
 @learn_with(SequenceLearner, sequence=np.random.rand(1000, 2))
 def ring_of_fire(xy, d: uniform(0.2, 1)):
@@ -133,6 +137,7 @@ def ring_of_fire(xy, d: uniform(0.2, 1)):
 
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
+@learn_with(NewLearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
 @learn_with(SequenceLearner, sequence=np.random.rand(1000, 3))
 def sphere_of_fire(xyz, d: uniform(0.2, 1)):
     a = 0.2
@@ -242,6 +247,7 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
         (Learner1D, (-1, 1)),
         (Learner2D, [(-1, 1), (-1, 1)]),
         (LearnerND, [(-1, 1), (-1, 1), (-1, 1)]),
+        (NewLearnerND, [(-1, 1), (-1, 1), (-1, 1)]),
     ],
 )
 def test_learner_accepts_lists(learner_type, bounds):
@@ -252,7 +258,7 @@ def test_learner_accepts_lists(learner_type, bounds):
     simple(learner, goal=lambda l: l.npoints > 10)
 
 
-@run_with(Learner1D, Learner2D, LearnerND, SequenceLearner)
+@run_with(Learner1D, Learner2D, LearnerND, NewLearnerND, SequenceLearner)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
 
@@ -299,7 +305,14 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
-@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner, SequenceLearner)
+@run_with(
+    Learner1D,
+    xfail(Learner2D),
+    LearnerND,
+    NewLearnerND,
+    AverageLearner,
+    SequenceLearner,
+)
 def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     """Adding data for a point that was not returned by 'ask'."""
     # XXX: learner, control and bounds are not defined
@@ -383,7 +396,7 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
 
 # XXX: the Learner2D fails with ~50% chance
 # see https://github.com/python-adaptive/adaptive/issues/55
-@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner)
+@run_with(Learner1D, xfail(Learner2D), LearnerND, NewLearnerND, AverageLearner)
 def test_expected_loss_improvement_is_less_than_total_loss(
     learner_type, f, learner_kwargs
 ):
@@ -460,6 +473,7 @@ def test_learner_performance_is_invariant_under_scaling(
     Learner1D,
     Learner2D,
     LearnerND,
+    NewLearnerND,
     AverageLearner,
     SequenceLearner,
     with_all_loss_functions=False,
@@ -504,6 +518,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     Learner1D,
     Learner2D,
     LearnerND,
+    NewLearnerND,
     AverageLearner,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
@@ -535,6 +550,7 @@ def test_saving(learner_type, f, learner_kwargs):
     Learner1D,
     Learner2D,
     LearnerND,
+    NewLearnerND,
     AverageLearner,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
@@ -606,7 +622,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
 
 
 @pytest.mark.xfail
-@run_with(Learner1D, Learner2D, LearnerND)
+@run_with(Learner1D, Learner2D, LearnerND, NewLearnerND)
 def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
     """Learners that are learning the same function should converge
     to the same result "eventually" if given the same data, regardless
@@ -618,7 +634,7 @@ def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
 
 
 @pytest.mark.xfail
-@run_with(Learner1D, Learner2D, LearnerND)
+@run_with(Learner1D, Learner2D, LearnerND, NewLearnerND)
 def test_learner_subdomain(learner_type, f, learner_kwargs):
     """Learners that never receive data outside of a subdomain should
        perform 'similarly' to learners defined on that subdomain only."""
