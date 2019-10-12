@@ -359,9 +359,6 @@ def _choose_point_in_simplex(simplex, transform=None):
 def _simplex_facets(ndim):
     """Return the facets of a simplex in 'ndim' dimensions
 
-    A simplex in 'ndim' dimensions consists of 'ndim + 1' points
-    [0, ndim + 1)
-
     Parameters
     ----------
     ndim : positive int
@@ -371,26 +368,20 @@ def _simplex_facets(ndim):
     facets : Iterable of integer tuples
         Contains 'ndim + 1' tuples, and each tuple contains
         'ndim' integers.
+
+    Examples
+    --------
+    In 2D a simplex is a triangle (3 points) and the facets are the lines
+    joining these points:
+
+    >>> list(_simplex_facets(2))
+    [(0, 1), (0, 2), (1, 2)]
     """
     return itertools.combinations(range(ndim + 1), ndim)
 
 
 def _boundary_equations(simplex):
     """Return the set of equations defining the boundary of a simplex
-
-    This is slower than using scipy.spatial.ConvexHull, however the ordering
-    of the equations is not clear for that case.
-
-    Care is not taken to orient the facets to point out of the simplex; the
-    equations should only be used for verifying if a point lies on a boundary,
-    rather than if it lies inside the simplex.
-
-    >>> simplex = [(0, 0), (1, 0), (0, 1)]
-    >>> A, b =  _boundary_equations(simplex)
-    >>> x = [0.5, 0]
-    >>> which_boundary = np.isclose(A @ x + b, 0)
-    >>> # facet #0 is the line between (0, 0) and (1, 0)
-    >>> assert which_boundary[0] == True
 
     Parameters
     ----------
@@ -406,6 +397,25 @@ def _boundary_equations(simplex):
     b : (N + 1,) float array
         Each element is the offset from the origin of the
         corresponding facet of 'simplex'
+
+    Notes
+    -----
+
+    This is slower than using scipy.spatial.ConvexHull, however the ordering
+    of the equations as returned by scipy.spatial.ConvexHull is not clear.
+
+    Care is not taken to orient the facets to point out of the simplex; the
+    equations should only be used for verifying if a point lies on a boundary,
+    rather than if it lies inside the simplex.
+
+    Examples
+    --------
+    >>> simplex = [(0, 0), (1, 0), (0, 1)]
+    >>> A, b =  _boundary_equations(simplex)
+    >>> x = [0.5, 0]
+    >>> which_boundary = np.isclose(A @ x + b, 0)
+    >>> # facet #0 is the line between (0, 0) and (1, 0)
+    >>> assert which_boundary[0] == True
     """
     points = np.asarray(simplex)
     ndim = points.shape[1]
@@ -423,14 +433,6 @@ def _boundary_equations(simplex):
 def _on_which_boundary(equations, x, eps=1e-8):
     """Returns the simplex boundary on which 'x' is found.
 
-    >>> simplex = [(0., 0.), (2., 0.), (0., 4.)]
-    >>> eq = _boundary_equations(simplex)
-    >>> x = [0.5, 0.]
-    >>> _on_which_boundary(eq, x) == (0, 1)
-    >>> assert boundary == (0, 1)
-    >>> x = [2., 0.]
-    >>> _on_which_boundary(eq, x) == (1,)
-
     Parameters
     ----------
     equations : the output of _boundary_equations
@@ -442,6 +444,16 @@ def _on_which_boundary(equations, x, eps=1e-8):
     None if 'x' is not on a simplex boundary.
     Otherwise, returns a tuple containing integers defining
     the boundary on which 'x' is found.
+
+    Examples
+    --------
+    >>> simplex = [(0., 0.), (2., 0.), (0., 4.)]
+    >>> eq = _boundary_equations(simplex)
+    >>> x = [0.5, 0.]
+    >>> _on_which_boundary(eq, x) == (0, 1)
+    >>> assert boundary == (0, 1)
+    >>> x = [2., 0.]
+    >>> _on_which_boundary(eq, x) == (1,)
     """
     ndim = len(x)
     A, b = equations
