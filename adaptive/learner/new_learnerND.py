@@ -288,6 +288,11 @@ class LearnerND(BaseLearner):
             self.queue.update(subdomain, priority=self.priority(subdomain))
 
     def tell_many(self, xs, ys):
+        # Filter out points that are already present
+        if all(x in self.data for x in xs):
+            return
+        xs, ys = zip(*((x, y) for x, y in zip(xs, ys) if x not in self.data))
+
         self.data.update(zip(xs, ys))
         self.pending_points -= set(xs)
 
