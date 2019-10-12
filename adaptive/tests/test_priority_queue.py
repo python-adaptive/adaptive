@@ -46,10 +46,11 @@ def test_remove_item_inserted_twice_removes_lowest_priority(items, missing_item)
         t, prio = q.pop()
     assert prio == 1
 
+
 @given(items)
 def test_all_items_in_queue(items):
     if items:
-        values, _= zip(*items)
+        values, _ = zip(*items)
     else:
         values = []
     q = Queue(items)
@@ -60,10 +61,10 @@ def test_all_items_in_queue(items):
 def test_pop_gives_max(items):
     q = Queue(items)
     if items:
-        l = len(q)
+        lq = len(q)
         should_pop = max(items, key=lambda x: x[1])
         assert should_pop == q.pop()
-        assert len(q) == l - 1
+        assert len(q) == lq - 1
     else:
         with pytest.raises(Empty):
             q.pop()
@@ -73,10 +74,10 @@ def test_pop_gives_max(items):
 def test_peek_gives_max(items):
     q = Queue(items)
     if items:
-        l = len(q)
+        lq = len(q)
         should_peek = max(items, key=lambda x: x[1])
         assert should_peek == q.peek()
-        assert len(q) == l
+        assert len(q) == lq
     else:
         with pytest.raises(Empty):
             q.peek()

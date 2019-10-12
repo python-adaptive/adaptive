@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 
 import hypothesis.strategies as st
@@ -127,7 +125,6 @@ def test_inserting_then_removing_points_removes_from_subpoints(data, ndim):
     domain = data.draw(make_hypercube_domain(ndim))
     xs = data.draw(a_few_points_inside(domain))
 
-    subdomains = dict()
     for x in xs:
         domain.insert(x)
     for x in xs:
@@ -142,7 +139,6 @@ def test_inserting_then_splitting_at_points_removes_from_subpoints(data, ndim):
     domain = data.draw(make_hypercube_domain(ndim))
     xs = data.draw(a_few_points_inside(domain))
 
-    subdomains = dict()
     for x in xs:
         domain.insert(x)
     for x in xs:

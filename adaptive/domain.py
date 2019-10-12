@@ -6,14 +6,9 @@ from collections import defaultdict
 import numpy as np
 import scipy.linalg
 import scipy.spatial
-from sortedcontainers import SortedDict, SortedList
+from sortedcontainers import SortedList
 
-from adaptive.learner.triangulation import (
-    Triangulation,
-    circumsphere,
-    point_in_simplex,
-    simplex_volume_in_embedding,
-)
+from adaptive.learner.triangulation import Triangulation, circumsphere, point_in_simplex
 
 __all__ = ["Domain", "Interval", "ConvexHull"]
 

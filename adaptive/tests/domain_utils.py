@@ -6,7 +6,6 @@ import scipy.spatial
 
 import hypothesis.strategies as st
 from adaptive.learner.new_learnerND import ConvexHull, Interval
-from adaptive.learner.triangulation import point_in_simplex
 from hypothesis.extra import numpy as hynp
 
 
@@ -15,7 +14,9 @@ def reflections(ndim):
 
 
 reals = st.floats(min_value=-100, max_value=100, allow_nan=False, allow_infinity=False)
-positive_reals = st.floats(min_value=1E-3, max_value=100, allow_nan=False, allow_infinity=False)
+positive_reals = st.floats(
+    min_value=1e-3, max_value=100, allow_nan=False, allow_infinity=False
+)
 
 
 @st.composite
@@ -32,7 +33,7 @@ def unique_vectors(xs):
         return False
     d = scipy.spatial.distance_matrix(xs, xs)
     d = np.extract(1 - np.identity(d.shape[0]), d)
-    return not np.any(d < 1E-3 / c)
+    return not np.any(d < 1e-3 / c)
 
 
 @st.composite
@@ -56,10 +57,12 @@ def point_inside_simplex(draw, simplex):
 
 @st.composite
 def points_inside(draw, domain, n):
-    kwargs = dict(allow_nan=False, allow_infinity=False, exclude_min=True, exclude_max=True)
+    kwargs = dict(
+        allow_nan=False, allow_infinity=False, exclude_min=True, exclude_max=True
+    )
     if isinstance(domain, Interval):
         a, b = domain.bounds
-        eps = (b - a) * 1E-2
+        eps = (b - a) * 1e-2
         x = st.floats(min_value=(a + eps), max_value=(b - eps), **kwargs)
     else:
         assert isinstance(domain, ConvexHull)
@@ -90,21 +93,23 @@ def point_outside(draw, domain):
     if isinstance(domain, Interval):
         a, b = domain.bounds
         length = b - a
-        x = (
-            st.floats(a - 10 * length, a, **kwargs)
-            | st.floats(b, b + 10 * length, **kwargs)
-        )
+        before_domain = st.floats(a - 10 * length, a, **kwargs)
+        after_domain = st.floats(b, b + 10 * length, **kwargs)
+        x = before_domain | after_domain
     else:
         assert isinstance(domain, ConvexHull)
         hull = domain.bounds
         # Generate point between bounding box and bounding box * 10
         points = hull.points[hull.vertices]
-        x = st.tuples(*[
-            (st.floats(min_value=a - 10 * (b - a), max_value=a, **kwargs)
-             | st.floats(min_value=b, max_value=b + 10 * (b - a), **kwargs)
-            )
-            for a, b in zip(points.min(axis=0), points.max(axis=0))
-        ])
+        x = st.tuples(
+            *[
+                (
+                    st.floats(min_value=a - 10 * (b - a), max_value=a, **kwargs)
+                    | st.floats(min_value=b, max_value=b + 10 * (b - a), **kwargs)
+                )
+                for a, b in zip(points.min(axis=0), points.max(axis=0))
+            ]
+        )
 
     return draw(x)
 
@@ -119,13 +124,12 @@ def point_on_shared_face(draw, domain, dim):
 
     for face in tri.faces(dim + 1):
         containing_subdomains = tri.containing(face)
-        n_neighbors = len(containing_subdomains)
         if len(containing_subdomains) > 1:
             break
 
     vertices = np.array([tri.vertices[i] for i in face])
 
-    f = st.floats(1E-3, 1 - 1E-3, allow_nan=False, allow_infinity=False)
+    f = st.floats(1e-3, 1 - 1e-3, allow_nan=False, allow_infinity=False)
     xb = draw(st.tuples(*[f] * dim))
 
     x = tuple(vertices[0] + xb @ (vertices[1:] - vertices[0]))
@@ -141,8 +145,11 @@ def make_random_domain(draw, ndim, fill=True):
         limits = draw(st.tuples(reals, reals).map(sorted).filter(lambda x: x[0] < x[1]))
         domain = Interval(*limits)
     else:
-        points = draw(hynp.arrays(np.float, (10, ndim), elements=reals, unique=True)
-                      .filter(unique_vectors))
+        points = draw(
+            hynp.arrays(np.float, (10, ndim), elements=reals, unique=True).filter(
+                unique_vectors
+            )
+        )
         domain = ConvexHull(points)
     return domain
 
