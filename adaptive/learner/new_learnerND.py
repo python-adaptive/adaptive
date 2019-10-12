@@ -1,3 +1,4 @@
+import abc
 import itertools
 from collections.abc import Iterable
 import math
@@ -12,11 +13,12 @@ from adaptive.priority_queue import Queue
 from adaptive.domain import Interval, ConvexHull
 
 
-class LossFunction:
-    @property
+class LossFunction(metaclass=abc.ABCMeta):
+    @abc.abtractproperty
     def n_neighbors(self):
         "The maximum degree of neighboring subdomains required."
 
+    @abc.abstractmethod
     def __call__(self, domain, subdomain, data):
         """Return the loss for 'subdomain' given 'data'
 
