@@ -142,10 +142,6 @@ class LearnerND(BaseLearner):
         self.pending_points = set()
         self.function = f
 
-        # We keep a running total of the number of points that were asked for.
-        # This is used in 'ask' to detect if we should return the boundary points.
-        self.n_asked = 0
-
         # The loss function may depend on the "scale" (i.e. the difference between
         # the maximum and the minimum) of the function values, in addition to the
         # function values themselves. In order to take into account this "global"
@@ -232,11 +228,17 @@ class LearnerND(BaseLearner):
         return (max(subvolumes) / sum(subvolumes)) * L_0
 
     def ask(self, n, tell_pending=True):
-        if self.n_asked >= len(self.boundary_points):
+        if self._initialized:
             points, losses = self._ask(n, tell_pending)
         else:
-            points = self.boundary_points[self.n_asked : self.n_asked + n]
-            # The boundary points should always be evaluated with the highest priority
+            # Give priority to boundary points, but don't include points that
+            # we have data for or have already asked for.
+            points = [
+                x
+                for x in self.boundary_points
+                if x not in self.data and x not in self.pending_points
+            ]
+            # infinite loss so that the boundary points are prioritized
             losses = [math.inf] * len(points)
             if tell_pending:
                 for x in points:
@@ -246,9 +248,6 @@ class LearnerND(BaseLearner):
                 extra_points, extra_losses = self._ask(n_extra, tell_pending)
                 points += tuple(extra_points)
                 losses += tuple(extra_losses)
-
-        if tell_pending:
-            self.n_asked += n
 
         return points, losses
 
