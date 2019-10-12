@@ -106,6 +106,21 @@ class CurvatureLoss(LossFunction):
 
 
 class LearnerND(BaseLearner):
+    """Learns a function 'f: ℝ^N → ℝ^m'.
+
+    Parameters
+    ---------
+    f : callable
+        The function to learn. Must take a tuple of N real parameters and return a real
+        number or an arraylike of length M.
+    bounds : list of 2-tuples or `scipy.spatial.ConvexHull`
+        A list ``[(a_1, b_1), (a_2, b_2), ..., (a_N, b_N)]`` describing a bounding box
+        in N dimensions, or a convex hull that defines the boundary of the domain.
+    loss : callable, optional
+        An instance of a subclass of `LossFunction` that describes the loss
+        of a subdomain.
+    """
+
     def __init__(self, f, bounds, loss=None):
 
         if len(bounds) == 1:
@@ -123,27 +138,43 @@ class LearnerND(BaseLearner):
             self.ndim = len(boundary_points[0])
 
         self.boundary_points = boundary_points
-        self.queue = Queue()
         self.data = dict()  # Contains the evaluated data only
         self.pending_points = set()
-        self.need_loss_update_factor = 1.1
         self.function = f
+
+        # We keep a running total of the number of points that were asked for.
+        # This is used in 'ask' to detect if we should return the boundary points.
         self.n_asked = 0
+
+        # The loss function may depend on the "scale" (i.e. the difference between
+        # the maximum and the minimum) of the function values, in addition to the
+        # function values themselves. In order to take into account this "global"
+        # information we recompute the losses for all subdomains when the scale
+        # changes by more than this factor from the last time we recomputed all
+        # the losses.
+        self.need_loss_update_factor = 1.1
 
         # As an optimization we keep a map from subdomain to loss.
         # This is updated in 'self.priority' whenever the loss function is evaluated
         # for a new subdomain. 'self.tell_many' removes subdomains from here when
         # they are split, and also removes neighboring subdomains from here (to force
-        # a loss function recomputation)
+        # a loss function recomputation).
         self.losses = dict()
 
         # We must wait until the boundary points have been evaluated before we can
         # set these attributes.
         self._initialized = False
+        # The dimension of the output space.
         self.vdim = None
+        # The maximum and minimum values of 'f' seen thus far.
         self.codomain_bounds = None
+        # The difference between the maximum and minimum of 'f' at the last
+        # time all the losses were recomputed.
         self.codomain_scale_at_last_update = None
 
+        # A priority queue of subdomains, which is used to determine where to add
+        # points.
+        self.queue = Queue()
         for subdomain in self.domain.subdomains():
             self.queue.insert(subdomain, priority=self.priority(subdomain))
 
@@ -163,16 +194,24 @@ class LearnerND(BaseLearner):
         except TypeError:  # Trying to take the length of a number
             self.vdim = 1
 
+        # Generate new subdomains using any evaluated points
         for x in self.data:
             if x in self.boundary_points:
                 continue
             self.domain.split_at(x)
 
+        # Recompute all the losses from scratch
         self.queue = Queue()
+        self.losses = dict()
         for subdomain in self.domain.subdomains():
             self.queue.insert(subdomain, priority=self.priority(subdomain))
 
+    @property
+    def npoints(self):
+        return len(self.data)
+
     def priority(self, subdomain):
+        # Compute the loss of 'subdomain'
         if self._initialized:
             if subdomain in self.losses:
                 L_0 = self.losses[subdomain]
@@ -186,6 +225,9 @@ class LearnerND(BaseLearner):
             # do not have enough data. We just assign the subdomain volume as the loss.
             L_0 = self.domain.volume(subdomain)
 
+        # Scale the subdomain loss by the maximum relative volume of its own subdomains
+        # (those formed of pending points within the subdomain). If there are no pending
+        # points in the subdomain then the scaling is 1 and the priority is just the loss.
         subvolumes = self.domain.subvolumes(subdomain)
         return (max(subvolumes) / sum(subvolumes)) * L_0
 
@@ -213,6 +255,9 @@ class LearnerND(BaseLearner):
     def _ask(self, n, tell_pending):
         new_points = []
         point_priorities = []
+        # Insert a point into the subdomain at the front of the queue, and update the
+        # priorities of that subdomain and any neighbors (if the point was added on
+        # a subdomain boundary).
         for _ in range(n):
             subdomain, _ = self.queue.peek()
             (new_point,), affected_subdomains = self.domain.insert_points(subdomain, 1)
@@ -225,6 +270,8 @@ class LearnerND(BaseLearner):
             #       the API of 'Domain.insert_points' to not return 'subdomain'...
             point_priorities.append(self.priority(subdomain))
 
+        # Remove all the points we just added and update the priorities of any subdomains
+        # we touched.
         if not tell_pending:
             affected_subdomains = set()
             for point in new_points:
@@ -258,7 +305,7 @@ class LearnerND(BaseLearner):
             old_subdomains, new_subdomains = self.domain.split_at(x)
             old.update(old_subdomains)
             new.update(new_subdomains)
-        # remove any subdomains that were new at some point but are now old
+        # Remove any subdomains that were new at some point but are now old.
         new -= old
 
         for subdomain in old:
@@ -266,17 +313,18 @@ class LearnerND(BaseLearner):
             del self.losses[subdomain]
 
         if need_loss_update:
-            # Need to recalculate all priorities anyway
             self.queue = Queue(
                 (subdomain, self.priority(subdomain))
                 for subdomain in itertools.chain(self.queue.items(), new)
             )
         else:
-            # Compute the priorities for the new subdomains and re-compute the
-            # priorities for the neighboring subdomains, if necessary.
+            # Insert the newly created subdomains into the queue.
             for subdomain in new:
                 self.queue.insert(subdomain, priority=self.priority(subdomain))
 
+            # If the loss function depends on data in neighboring subdomains then
+            # we must recompute the priorities of all neighboring subdomains of
+            # the subdomains we just added.
             if self.loss_function.n_neighbors > 0:
                 subdomains_to_update = set()
                 for subdomain in new:
@@ -289,6 +337,8 @@ class LearnerND(BaseLearner):
                     self.queue.update(subdomain, priority=self.priority(subdomain))
 
     def _update_codomain_bounds(self, ys):
+        # Update the codomain bounds: the minimum and the maximum values that the
+        # learner has seen thus far.
         mn, mx = self.codomain_bounds
         if self.vdim == 1:
             mn = min(mn, *ys)
@@ -299,12 +349,17 @@ class LearnerND(BaseLearner):
         self.codomain_bounds = (mn, mx)
 
         scale = mx - mn
-
+        # How much has the scale of the outputs changed since the last time
+        # we recomputed the losses?
         scale_factor = scale / self.codomain_scale_at_last_update
+
+        # We need to recompute all losses if the scale has increased by more
+        # than a certain factor since the last time we recomputed all the losses
         if self.vdim == 1:
             need_loss_update = scale_factor > self.need_loss_update_factor
         else:
             need_loss_update = np.any(scale_factor > self.need_loss_update_factor)
+
         if need_loss_update:
             self.codomain_scale_at_last_update = scale
             return True
@@ -314,7 +369,7 @@ class LearnerND(BaseLearner):
     def remove_unfinished(self):
         self.pending_points = set()
         cleared_subdomains = self.domain.clear_subdomains()
-        # Subdomains who had internal points removed need their priority updating
+        # Subdomains that had points removed need their priority updating
         for subdomain in cleared_subdomains:
             self.queue.update(subdomain, priority=self.priority(subdomain))
 
@@ -323,11 +378,11 @@ class LearnerND(BaseLearner):
             # NOTE: O(N) in the number of subintervals, but with a low prefactor.
             #       We have to do this because the queue is sorted in *priority*
             #       order, and it's possible that a subinterval with a high loss
-            #       may have a low priority (if there are many pending points).
+            #       may have a low priority (if it has many pending points).
             return max(self.losses.values())
         else:
-            # This depends on the implementation of 'self.priority'. Currently
-            # it returns a tuple (priority, loss).
+            # The 'not real' loss (which takes pending points into account) is
+            # just the priority in the subdomain queue.
             _, priority = self.queue.peek()
             return priority
 
