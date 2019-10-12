@@ -282,7 +282,16 @@ class LearnerND(BaseLearner):
         return new_points, point_priorities
 
     def tell_pending(self, x):
+        if x in self.data:
+            raise ValueError("Data already present for point {}".format(x))
+
         self.pending_points.add(x)
+
+        # We cannot 'insert' a boundary point into the domain because it already
+        # exists as a vertex. This does not affect the queue ordering.
+        if not self._initialized and x in self.boundary_points:
+            return
+
         affected_subdomains = self.domain.insert(x)
         for subdomain in affected_subdomains:
             self.queue.update(subdomain, priority=self.priority(subdomain))
