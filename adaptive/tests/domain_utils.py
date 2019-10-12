@@ -88,13 +88,13 @@ def a_few_points_inside(draw, domain):
 
 
 @st.composite
-def point_outside(draw, domain):
+def points_outside(draw, domain, n):
     kwargs = dict(allow_nan=False, allow_infinity=False)
     if isinstance(domain, Interval):
         a, b = domain.bounds
         length = b - a
-        before_domain = st.floats(a - 10 * length, a, **kwargs)
-        after_domain = st.floats(b, b + 10 * length, **kwargs)
+        before_domain = st.floats(a - 10 * length, a, exclude_max=True, **kwargs)
+        after_domain = st.floats(b, b + 10 * length, exclude_min=True, **kwargs)
         x = before_domain | after_domain
     else:
         assert isinstance(domain, ConvexHull)
@@ -104,14 +104,20 @@ def point_outside(draw, domain):
         x = st.tuples(
             *[
                 (
-                    st.floats(min_value=a - 10 * (b - a), max_value=a, **kwargs)
-                    | st.floats(min_value=b, max_value=b + 10 * (b - a), **kwargs)
+                    st.floats(a - 10 * (b - a), a, exclude_max=True, **kwargs)
+                    | st.floats(b, b + 10 * (b - a), exclude_min=True, **kwargs)
                 )
                 for a, b in zip(points.min(axis=0), points.max(axis=0))
             ]
         )
 
-    return draw(x)
+    xs = st.tuples(*[x] * n).filter(unique_vectors)
+    return draw(xs)
+
+
+@st.composite
+def point_outside(draw, domain):
+    return draw(points_outside(domain, 1))[0]
 
 
 @st.composite
