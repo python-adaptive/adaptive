@@ -476,7 +476,6 @@ def _on_which_boundary(equations, x, eps=1e-8):
     >>> eq = _boundary_equations(simplex)
     >>> x = [0.5, 0.]
     >>> _on_which_boundary(eq, x) == (0, 1)
-    >>> assert boundary == (0, 1)
     >>> x = [2., 0.]
     >>> _on_which_boundary(eq, x) == (1,)
     """
