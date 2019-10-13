@@ -190,11 +190,15 @@ class LearnerND(BaseLearner):
         except TypeError:  # Trying to take the length of a number
             self.vdim = 1
 
-        # Generate new subdomains using any evaluated points
-        for x in self.data:
-            if x in self.boundary_points:
-                continue
-            self.domain.split_at(x)
+        # Generate new subdomains using any evaluated points, skipping the boundary
+        # points (these are already vertices in the domain) and discarding any points
+        # that are outside the domain.
+        xs = list(x for x in self.data.keys() if x not in self.boundary_points)
+        if xs:
+            xs = np.array(xs)
+            xs = xs[self.domain.encloses(xs)]
+            for x in xs:
+                self.domain.split_at(x)
 
         # Recompute all the losses from scratch
         self.queue = Queue()
@@ -309,6 +313,14 @@ class LearnerND(BaseLearner):
             if all(x in self.data for x in self.boundary_points):
                 self._finalize_initialization()
             return
+
+        # Filter out any points that are outside the domain. These still appear in
+        # 'self.data', but they are not added to the domain, and so have no effect
+        # on the learning.
+        are_inside = self.domain.encloses(xs)
+        if not np.any(are_inside):
+            return
+        xs, ys = zip(*((x, y) for x, y, inside in zip(xs, ys, are_inside) if inside))
 
         need_loss_update = self._update_codomain_bounds(ys)
 

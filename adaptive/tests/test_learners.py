@@ -621,7 +621,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
         os.remove(path)
 
 
-@run_with(Learner1D, Learner2D, LearnerND, xfail(NewLearnerND))
+@run_with(Learner1D, Learner2D, LearnerND, NewLearnerND)
 def test_adding_data_outside_of_bounds(learner_type, f, learner_kwargs):
     # Just test this does not throw an error for now
     f = generate_random_parametrization(f)
