@@ -189,10 +189,28 @@ def test_clear_subdomains_removes_all_points(data, ndim):
     assert 0 == sum(len(domain.subpoints(s)) for s in domain.subdomains())
 
 
-### Interval tests
+@pytest.mark.parametrize("ndim", [1, 2, 3])
+@given(data=st.data())
+def test_split_at_reassigns_all_internal_points(data, ndim):
+    domain = data.draw(make_hypercube_domain(ndim))
+    x_split, *xs = data.draw(a_few_points_inside(domain))
+
+    for x in xs:
+        domain.insert(x)
+
+    # The subdomains where the points were assigned initially
+    subpoints = {s: set(domain.subpoints(s)) for s in domain.subdomains()}
+    # Sanity check; all the inserted points are in *some* subdomain
+    assert set.union(*subpoints.values()) == set(xs)
+
+    old_subdomains, new_subdomains = domain.split_at(x_split)
+
+    old_subpoints = set.union(*(subpoints[s] for s in old_subdomains))
+    new_subpoints = set.union(*(set(domain.subpoints(s)) for s in new_subdomains))
+    assert old_subpoints == new_subpoints
 
 
-### ConvexHull tests
+### ConvexHull-specific tests
 
 
 @pytest.mark.parametrize("ndim", [2, 3])
@@ -206,16 +224,3 @@ def test_inserting_point_on_boundary_adds_to_all_subtriangulations(data, ndim):
     x = data.draw(point_on_shared_face(domain, 1))
     affected_subdomains = domain.insert(x)
     assert all(x in set(domain.subpoints(s)) for s in affected_subdomains)
-
-
-@pytest.mark.parametrize("ndim", [2, 3])
-@given(data=st.data())
-def test_split_at_reassigns_all_internal_points(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
-    xs = data.draw(a_few_points_inside(domain))
-
-    for x in xs:
-        domain.insert(x)
-    _, new_subdomains = domain.split_at(xs[0])
-    subpoints = set.union(*(set(domain.subpoints(s)) for s in new_subdomains))
-    assert set(xs[1:]) == subpoints
