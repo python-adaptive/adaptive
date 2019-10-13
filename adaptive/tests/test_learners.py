@@ -639,6 +639,8 @@ def test_adding_data_outside_of_bounds(learner_type, f, learner_kwargs):
 
     learner.tell_many(points, [learner.function(x) for x in points])
 
+    learner.ask(10)
+
 
 @pytest.mark.xfail
 @run_with(Learner1D, Learner2D, LearnerND, NewLearnerND)
