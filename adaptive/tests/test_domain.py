@@ -88,11 +88,20 @@ def test_encloses(data, ndim):
 
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
-def test_split_at_point_outside_domain_raises(data, ndim):
+def test_insert_point_outside_domain_raises(data, ndim):
     domain = data.draw(make_hypercube_domain(ndim))
     x = data.draw(point_outside(domain))
     with pytest.raises(ValueError):
         domain.insert(x)
+
+
+@pytest.mark.parametrize("ndim", [1, 2, 3])
+@given(data=st.data())
+def test_split_at_point_outside_domain_raises(data, ndim):
+    domain = data.draw(make_hypercube_domain(ndim))
+    x = data.draw(point_outside(domain))
+    with pytest.raises(ValueError):
+        domain.split_at(x)
 
 
 @pytest.mark.parametrize("ndim", [1, 2, 3])
