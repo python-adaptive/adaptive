@@ -38,6 +38,7 @@ def unique_vectors(xs):
 
 @st.composite
 def point_inside_simplex(draw, simplex):
+    simplex = draw(simplex)
     simplex = np.asarray(simplex)
     dim = simplex.shape[1]
     # Set the numpy random seed
@@ -68,9 +69,10 @@ def points_inside(draw, domain, n):
         assert isinstance(domain, ConvexHull)
         tri = domain.triangulation
         simplices = list(tri.simplices)
-        simplex = draw(st.sampled_from(simplices))
-        vertices = [tri.vertices[s] for s in simplex]
-        x = point_inside_simplex(vertices)
+        simplex = st.sampled_from(simplices).map(
+            lambda simplex: [tri.vertices[s] for s in simplex]
+        )
+        x = point_inside_simplex(simplex)
 
     xs = st.tuples(*[x] * n).filter(unique_vectors)
     return draw(xs)
