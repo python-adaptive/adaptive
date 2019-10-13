@@ -41,13 +41,23 @@ class Queue:
         return reversed(self._queue.values())
 
     def peek(self):
-        "Return the item and priority at the front of the queue."
+        """Return the item and priority at the front of the queue.
+
+        Raises
+        ------
+        Empty : if the queue is empty
+        """
         self._check_nonempty()
         ((priority, _), item) = self._queue.peekitem()
         return item, priority
 
     def pop(self):
-        "Remove and return the item and priority at the front of the queue."
+        """Remove and return the item and priority at the front of the queue.
+
+        Raises
+        ------
+        Empty : if the queue is empty
+        """
         self._check_nonempty()
         (key, item) = self._queue.popitem()
         i = self._items.index((item, key))
@@ -78,7 +88,12 @@ class Queue:
         return i, key
 
     def remove(self, item):
-        "Remove the 'item' from the queue."
+        """Remove the 'item' from the queue.
+
+        Raises
+        ------
+        KeyError : if 'item' is not in the queue.
+        """
         i, key = self._find_first(item)
         del self._queue[key]
         del self._items[i]
