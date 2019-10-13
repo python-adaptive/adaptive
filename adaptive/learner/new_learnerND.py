@@ -279,7 +279,8 @@ class LearnerND(BaseLearner):
             affected_subdomains = set()
             for point in new_points:
                 self.pending_points.remove(point)
-                affected_subdomains.update(self.domain.remove(point))
+                sd = self.domain.remove(point)
+                affected_subdomains.update(sd)
             for subdomain in affected_subdomains:
                 self.queue.update(subdomain, priority=self.priority(subdomain))
 
