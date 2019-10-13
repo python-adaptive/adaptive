@@ -4,7 +4,7 @@ import hypothesis.strategies as st
 import pytest
 from adaptive.tests.domain_utils import (
     a_few_points_inside,
-    make_hypercube_domain,
+    make_random_domain,
     point_inside,
     point_on_shared_face,
     point_outside,
@@ -18,7 +18,7 @@ from hypothesis import given, settings
 @given(data=st.data())
 @settings(deadline=500)
 def test_getting_points_are_unique(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     points = []
     for subdomain in domain.subdomains():
         p, _ = domain.insert_points(subdomain, 10)
@@ -30,7 +30,7 @@ def test_getting_points_are_unique(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_sum_subvolumes_equals_volume(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     xs = data.draw(a_few_points_inside(domain))
 
     for x in xs:
@@ -42,7 +42,7 @@ def test_sum_subvolumes_equals_volume(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_split_at_vertex_raises(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     x = data.draw(point_inside(domain))
     domain.split_at(x)
     with pytest.raises(ValueError):
@@ -52,7 +52,7 @@ def test_split_at_vertex_raises(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_inserting_point_twice_raises(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     x = data.draw(point_inside(domain))
     domain.insert(x)
     with pytest.raises(ValueError):
@@ -62,7 +62,7 @@ def test_inserting_point_twice_raises(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_insert_points_outside_domain_raises(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     x = data.draw(point_outside(domain))
     with pytest.raises(ValueError):
         domain.insert(x)
@@ -71,7 +71,7 @@ def test_insert_points_outside_domain_raises(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_encloses(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
 
     xin = data.draw(point_inside(domain))
     assert domain.encloses(xin)
@@ -89,7 +89,7 @@ def test_encloses(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_insert_point_outside_domain_raises(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     x = data.draw(point_outside(domain))
     with pytest.raises(ValueError):
         domain.insert(x)
@@ -98,7 +98,7 @@ def test_insert_point_outside_domain_raises(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_split_at_point_outside_domain_raises(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     x = data.draw(point_outside(domain))
     with pytest.raises(ValueError):
         domain.split_at(x)
@@ -107,7 +107,7 @@ def test_split_at_point_outside_domain_raises(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_removing_domain_vertex_raises(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     x = data.draw(point_inside(domain))
     domain.split_at(x)
     with pytest.raises(ValueError):
@@ -117,7 +117,7 @@ def test_removing_domain_vertex_raises(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_removing_nonexistant_point_raises(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     x = data.draw(point_inside(domain))
     with pytest.raises(ValueError):
         domain.remove(x)
@@ -126,7 +126,7 @@ def test_removing_nonexistant_point_raises(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_splitting_at_point_adds_to_vertices(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     xs = data.draw(a_few_points_inside(domain))
 
     for x in xs:
@@ -138,7 +138,7 @@ def test_splitting_at_point_adds_to_vertices(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_inserting_points_adds_to_subpoints(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     xs = data.draw(a_few_points_inside(domain))
 
     subdomains = dict()
@@ -152,7 +152,7 @@ def test_inserting_points_adds_to_subpoints(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_inserting_then_removing_points_removes_from_subpoints(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     xs = data.draw(a_few_points_inside(domain))
 
     for x in xs:
@@ -166,7 +166,7 @@ def test_inserting_then_removing_points_removes_from_subpoints(data, ndim):
 @given(data=st.data())
 @settings(deadline=500)
 def test_inserting_then_splitting_at_points_removes_from_subpoints(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     xs = data.draw(a_few_points_inside(domain))
 
     for x in xs:
@@ -179,7 +179,7 @@ def test_inserting_then_splitting_at_points_removes_from_subpoints(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_clear_subdomains_removes_all_points(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     xs = data.draw(a_few_points_inside(domain))
 
     for x in xs:
@@ -192,7 +192,7 @@ def test_clear_subdomains_removes_all_points(data, ndim):
 @pytest.mark.parametrize("ndim", [1, 2, 3])
 @given(data=st.data())
 def test_split_at_reassigns_all_internal_points(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     x_split, *xs = data.draw(a_few_points_inside(domain))
 
     for x in xs:
@@ -216,7 +216,7 @@ def test_split_at_reassigns_all_internal_points(data, ndim):
 @pytest.mark.parametrize("ndim", [2, 3])
 @given(data=st.data())
 def test_inserting_point_on_boundary_adds_to_all_subtriangulations(data, ndim):
-    domain = data.draw(make_hypercube_domain(ndim))
+    domain = data.draw(make_random_domain(ndim))
     xs = data.draw(a_few_points_inside(domain))
 
     for x in xs:
