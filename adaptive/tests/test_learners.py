@@ -589,6 +589,7 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     Learner1D,
     Learner2D,
     LearnerND,
+    NewLearnerND,
     AverageLearner,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
