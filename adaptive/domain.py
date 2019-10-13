@@ -316,7 +316,7 @@ class Interval(Domain):
         return zip(p, p.islice(1))
 
     def subpoints(self, subdomain, *, _check_membership=True):
-        if _check_membership and self.contains_subdomain(subdomain):
+        if _check_membership and not self.contains_subdomain(subdomain):
             raise ValueError("{} is not present in this interval".format(subdomain))
         try:
             p = self.sub_intervals[subdomain]
