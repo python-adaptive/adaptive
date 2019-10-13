@@ -110,6 +110,6 @@ class Queue:
         new_key = (priority, n)
 
         del self._queue[key]
-        self._queue[new_key] = item
         del self._items[i]
+        self._queue[new_key] = item
         self._items.add((item, new_key))
