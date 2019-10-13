@@ -233,7 +233,7 @@ class LearnerND(BaseLearner):
 
     def ask(self, n, tell_pending=True):
         if self._initialized:
-            points, losses = self._ask(n, tell_pending)
+            points, point_priorities = self._ask(n, tell_pending)
         else:
             # Give priority to boundary points, but don't include points that
             # we have data for or have already asked for.
@@ -242,18 +242,18 @@ class LearnerND(BaseLearner):
                 for x in self.boundary_points
                 if x not in self.data and x not in self.pending_points
             ]
-            # infinite loss so that the boundary points are prioritized
-            losses = [math.inf] * len(points)
+            # Infinite priority so that the boundary points are prioritized
+            point_priorities = [math.inf] * len(points)
             if tell_pending:
                 for x in points:
                     self.pending_points.add(x)
             n_extra = n - len(points)
             if n_extra > 0:
-                extra_points, extra_losses = self._ask(n_extra, tell_pending)
+                extra_points, extra_point_priorities = self._ask(n_extra, tell_pending)
                 points += tuple(extra_points)
-                losses += tuple(extra_losses)
+                point_priorities += tuple(extra_point_priorities)
 
-        return points, losses
+        return points, point_priorities
 
     def _ask(self, n, tell_pending):
         new_points = []
