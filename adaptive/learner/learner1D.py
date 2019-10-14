@@ -580,23 +580,35 @@ class Learner1D(BaseLearner):
         loss = mapping[ival]
         return finite_loss(ival, loss, self._scale[0])
 
-    def plot(self):
+    def plot(self, *, scatter_or_line="scatter"):
         """Returns a plot of the evaluated data.
+
+        Parameters
+        ----------
+        scatter_or_line : str, default: "scatter"
+            Plot as a scatter plot ("scatter") or a line plot ("line").
 
         Returns
         -------
-        plot : `holoviews.element.Scatter` (if vdim=1)\
-               else `holoviews.element.Path`
+        plot : `holoviews.Overlay`
             Plot of the evaluated data.
         """
+        if scatter_or_line not in ("scatter", "line"):
+            raise ValueError("scatter_or_line must be 'scatter' or 'line'")
         hv = ensure_holoviews()
 
         xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
-        if self.vdim == 1:
-            p = hv.Path([]) * hv.Scatter((xs, ys))
+        if scatter_or_line == "scatter":
+            if self.vdim == 1:
+                plots = [hv.Scatter((xs, ys))]
+            else:
+                plots = [hv.Scatter((xs, _ys)) for _ys in np.transpose(ys)]
         else:
-            p = hv.Path((xs, ys)) * hv.Scatter([])
+            plots = [hv.Path((xs, ys))]
 
+        # Put all plots in an Overlay because a DynamicMap can't handle changing
+        # datatypes, e.g. when `vdim` isn't yet known and the live_plot is running.
+        p = hv.Overlay(plots)
         # Plot with 5% empty margins such that the boundary points are visible
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
         plot_bounds = (self.bounds[0] - margin, self.bounds[1] + margin)
