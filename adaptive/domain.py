@@ -565,7 +565,9 @@ class ConvexHull(Domain):
             subtri.add_point(point, largest_simplex)
             self.subpoints_to_subdomains[point].add(subdomain)
             # If the point was added to a boundary of the subdomain we should
-            # add it to the neighboring subdomains.
+            # add it to the neighboring subdomains. If we do not do this, then
+            # if 'insert_points' is called for the neighboring subdomains, it is
+            # possible that 'point' may be returned, which is inconsistent.
             boundary = subtri.on_which_boundary(point)
             if boundary is not None:
                 # Convert subtriangulation indices to triangulation indices
