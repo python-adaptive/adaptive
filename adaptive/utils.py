@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import abc
 import functools
 import gzip
 import os
@@ -67,3 +68,14 @@ def copy_docstring_from(other):
         return functools.wraps(other)(method)
 
     return decorator
+
+
+class _RequireAttrsABCMeta(abc.ABCMeta):
+    required_attributes = []
+
+    def __call__(self, *args, **kwargs):
+        obj = super().__call__(*args, **kwargs)
+        for name in obj.required_attributes:
+            if not hasattr(obj, name):
+                raise ValueError(f"Required attribute {name} not set in __init__.")
+        return obj
