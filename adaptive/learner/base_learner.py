@@ -4,7 +4,7 @@ import abc
 from contextlib import suppress
 from copy import deepcopy
 
-from adaptive.utils import load, save
+from adaptive.utils import load, save, _RequireAttrsABCMeta
 
 
 def uses_nth_neighbors(n):
@@ -61,7 +61,7 @@ def uses_nth_neighbors(n):
     return _wrapped
 
 
-class BaseLearner(metaclass=abc.ABCMeta):
+class BaseLearner(metaclass=_RequireAttrsABCMeta):
     """Base class for algorithms for learning a function 'f: X → Y'.
 
     Attributes
@@ -84,6 +84,8 @@ class BaseLearner(metaclass=abc.ABCMeta):
     Subclasses may define a ``plot`` method that takes no parameters
     and returns a holoviews plot.
     """
+
+    required_attributes = ["data", "npoints", "pending_points"]
 
     def tell(self, x, y):
         """Tell the learner about a single value.
