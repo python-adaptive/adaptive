@@ -496,7 +496,8 @@ def _make_new_subtriangulation(points):
     points = np.asarray(points)
     ndim = points.shape[1]
     boundary_points = points[: ndim + 1]
-    subtri = Triangulation(points)
+    # _check_vertices=False to speed up the initial triangulation
+    subtri = Triangulation(points, _check_vertices=False)
     subtri.on_which_boundary = functools.partial(
         _on_which_boundary, _boundary_equations(boundary_points)
     )

@@ -266,7 +266,7 @@ class Triangulation:
         or more simplices in the
     """
 
-    def __init__(self, coords):
+    def __init__(self, coords, *, _check_vertices=True):
         if not is_iterable_and_sized(coords):
             raise TypeError("Please provide a 2-dimensional list of points")
         coords = list(coords)
@@ -287,23 +287,28 @@ class Triangulation:
             raise ValueError("Please provide at least one simplex")
 
         coords = list(map(tuple, coords))
-        vectors = np.subtract(coords[1:], coords[0])
-        if np.linalg.matrix_rank(vectors) < dim:
-            raise ValueError(
-                "Initial simplex has zero volumes "
-                "(the points are linearly dependent)"
-            )
+        if _check_vertices:
+            vectors = np.subtract(coords[1:], coords[0])
+            if np.linalg.matrix_rank(vectors) < dim:
+                raise ValueError(
+                    "Initial simplex has zero volumes "
+                    "(the points are linearly dependent)"
+                )
 
         self.vertices = list(coords)
         self.simplices = set()
         # initialise empty set for each vertex
         self.vertex_to_simplices = [set() for _ in coords]
 
-        # find a Delaunay triangulation to start with, then we will throw it
-        # away and continue with our own algorithm
-        initial_tri = scipy.spatial.Delaunay(coords)
-        for simplex in initial_tri.simplices:
-            self.add_simplex(simplex)
+        if len(coords) == dim + 1:
+            # There is just a single simplex
+            self.add_simplex(tuple(range(dim + 1)))
+        else:
+            # find a Delaunay triangulation to start with, then we will throw it
+            # away and continue with our own algorithm
+            initial_tri = scipy.spatial.Delaunay(coords)
+            for simplex in initial_tri.simplices:
+                self.add_simplex(simplex)
 
     def delete_simplex(self, simplex):
         simplex = tuple(sorted(simplex))
