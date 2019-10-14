@@ -580,33 +580,32 @@ class Learner1D(BaseLearner):
         loss = mapping[ival]
         return finite_loss(ival, loss, self._scale[0])
 
-    def plot(self, *, scatter_or_line=None):
+    def plot(self, *, scatter_or_line="scatter"):
         """Returns a plot of the evaluated data.
+
+        Parameters
+        ----------
+        scatter_or_line : str, default: "scatter"
+            Plot as a scatter plot ("scatter") or a line plot ("line").
 
         Returns
         -------
-        plot : `holoviews.element.Scatter` (if vdim=1)\
-               else `holoviews.element.Path`
+        plot : `holoviews.Scatter`, `holoviews.Path`, or `holoviews.Overlay`
             Plot of the evaluated data.
-        scatter_or_line : str, optional
-            Plot as a scatter plot ("scatter") or a line plot ("line").
-            By default a line plot will be chosen if the data consists of
-            vectors, otherwise it is a scatter plot.
         """
+        if scatter_or_line not in ("scatter", "line"):
+            raise ValueError("scatter_or_line must be 'scatter' or 'line'")
         hv = ensure_holoviews()
 
         xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
-        if self.vdim == 1:
-            if scatter_or_line is None or scatter_or_line == "scatter":
-                p = hv.Path([]) * hv.Scatter((xs, ys))
-            else:
-                p = hv.Path((xs, ys)) * hv.Scatter()
-        else:
-            if scatter_or_line is None or scatter_or_line == "line":
-                p = hv.Path((xs, ys)) * hv.Scatter([])
+        if scatter_or_line == "scatter":
+            if self.vdim == 1:
+                p = hv.Scatter((xs, ys))
             else:
                 scatters = [hv.Scatter((xs, _ys)) for _ys in np.transpose(ys)]
-                p = hv.Path([]) * hv.Overlay(scatters)
+                p = hv.Overlay(scatters)
+        else:
+            p = hv.Path((xs, ys))
 
         # Plot with 5% empty margins such that the boundary points are visible
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
