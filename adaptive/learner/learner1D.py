@@ -590,7 +590,7 @@ class Learner1D(BaseLearner):
 
         Returns
         -------
-        plot : `holoviews.Scatter`, `holoviews.Path`, or `holoviews.Overlay`
+        plot : `holoviews.Overlay`
             Plot of the evaluated data.
         """
         if scatter_or_line not in ("scatter", "line"):
@@ -600,13 +600,15 @@ class Learner1D(BaseLearner):
         xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
         if scatter_or_line == "scatter":
             if self.vdim == 1:
-                p = hv.Scatter((xs, ys))
+                plots = [hv.Scatter((xs, ys))]
             else:
-                scatters = [hv.Scatter((xs, _ys)) for _ys in np.transpose(ys)]
-                p = hv.Overlay(scatters)
+                plots = [hv.Scatter((xs, _ys)) for _ys in np.transpose(ys)]
         else:
-            p = hv.Path((xs, ys))
+            plots = [hv.Path((xs, ys))]
 
+        # Put all plots in an Overlay because a DynamicMap can't handle changing
+        # datatypes, e.g. when `vdim` isn't yet known and the live_plot is running.
+        p = hv.Overlay(plots)
         # Plot with 5% empty margins such that the boundary points are visible
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
         plot_bounds = (self.bounds[0] - margin, self.bounds[1] + margin)
