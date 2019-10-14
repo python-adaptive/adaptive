@@ -10,6 +10,7 @@ import numpy as np
 from scipy import interpolate
 
 from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest
 
@@ -245,6 +246,45 @@ def choose_point_in_triangle(triangle, max_badness):
     else:
         point = triangle.mean(axis=0)
     return point
+
+
+def triangle_loss(ip):
+    r"""Computes the average of the volumes of the simplex combined with each
+    neighbouring point.
+
+    Parameters
+    ----------
+    ip : `scipy.interpolate.LinearNDInterpolator` instance
+
+    Returns
+    -------
+    triangle_loss : list
+        The mean volume per triangle.
+
+    Notes
+    -----
+    This loss function is *extremely* slow. It is here because it gives the
+    same result as the `adaptive.LearnerND`\s
+    `~adaptive.learner.learnerND.triangle_loss`.
+    """
+    tri = ip.tri
+
+    def get_neighbors(i, ip):
+        n = np.array([tri.simplices[n] for n in tri.neighbors[i] if n != -1])
+        # remove the vertices that are in the simplex
+        c = np.setdiff1d(n.reshape(-1), tri.simplices[i])
+        return np.concatenate((tri.points[c], ip.values[c]), axis=-1)
+
+    simplices = np.concatenate(
+        [tri.points[tri.simplices], ip.values[tri.simplices]], axis=-1
+    )
+    neighbors = [get_neighbors(i, ip) for i in range(len(tri.simplices))]
+
+    return [
+        sum(simplex_volume_in_embedding(np.vstack([simplex, n])) for n in neighbors[i])
+        / len(neighbors[i])
+        for i, simplex in enumerate(simplices)
+    ]
 
 
 class Learner2D(BaseLearner):
