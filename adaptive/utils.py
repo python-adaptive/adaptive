@@ -71,11 +71,14 @@ def copy_docstring_from(other):
 
 
 class _RequireAttrsABCMeta(abc.ABCMeta):
-    required_attributes = []
-
     def __call__(self, *args, **kwargs):
         obj = super().__call__(*args, **kwargs)
-        for name in obj.required_attributes:
+        for name, type_ in obj.__annotations__.items():
             if not hasattr(obj, name):
                 raise ValueError(f"Required attribute {name} not set in __init__.")
+            elif not isinstance(getattr(obj, name), type_):
+                raise TypeError(
+                    f"The attribute '{name}' is of {type_} instead of {type(getattr(obj, name))}"
+                )
+
         return obj

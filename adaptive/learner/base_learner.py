@@ -85,7 +85,9 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
     and returns a holoviews plot.
     """
 
-    required_attributes = ["data", "npoints", "pending_points"]
+    data: dict
+    npoints: int
+    pending_points: set
 
     def tell(self, x, y):
         """Tell the learner about a single value.
