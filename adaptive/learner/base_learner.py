@@ -67,17 +67,14 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
     Attributes
     ----------
     function : callable: X → Y
-        The function to learn.
+        The function to learn, the ``learner`` might modify
+        the original function.
     data : dict: X → Y
         `function` evaluated at certain points.
-        The values can be 'None', which indicates that the point
-        will be evaluated, but that we do not have the result yet.
-    npoints : int, optional
-        The number of evaluated points that have been added to the learner.
-        Subclasses do not *have* to implement this attribute.
-    pending_points : set, optional
+    pending_points : set
         Points that have been requested but have not been evaluated yet.
-        Subclasses do not *have* to implement this attribute.
+    npoints : int
+        The number of evaluated points that have been added to the learner.
 
     Notes
     -----
