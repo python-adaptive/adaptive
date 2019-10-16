@@ -82,7 +82,7 @@ class Queue:
         try:
             should_be, key = self._items[i]
         except IndexError:
-            raise KeyError("item is not in queue")
+            raise KeyError("item is not in queue") from None
         if item != should_be:
             raise KeyError("item is not in queue")
         return i, key
