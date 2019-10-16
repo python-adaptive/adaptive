@@ -201,10 +201,11 @@ class LearnerND(BaseLearner):
                 self.domain.split_at(x)
 
         # Recompute all the losses from scratch
-        self.queue = Queue()
         self.losses = dict()
-        for subdomain in self.domain.subdomains():
-            self.queue.insert(subdomain, priority=self.priority(subdomain))
+        self.queue = Queue(
+            (subdomain, self.priority(subdomain))
+            for subdomain in self.domain.subdomains()
+        )
 
     @property
     def npoints(self):
