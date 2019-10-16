@@ -328,27 +328,33 @@ class LearnerND(BaseLearner):
 
         need_loss_update = self._update_codomain_bounds(ys)
 
-        old = set()
-        new = set()
+        to_remove = set()
+        to_add = set()
         for x in xs:
-            old_subdomains, new_subdomains = self.domain.split_at(x)
-            old.update(old_subdomains)
-            new.update(new_subdomains)
-        # Remove any subdomains that were new at some point but are now old.
-        new -= old
+            old_subdomains, new_subdomains = map(set, self.domain.split_at(x))
+            # Subdomains that were added in a prior iteration of this loop,
+            # but which have now been removed to make way for others.
+            temp_subdomains = to_add.intersection(old_subdomains)
+            # We no longer want to add subdomains that have now been removed,
+            # and we want to add the new subdomains.
+            to_add -= temp_subdomains
+            to_add.update(new_subdomains)
+            # We do not want to remove subdomains that were produced on a
+            # prior iteration of this loop, as these will not be in the queue.
+            to_remove.update(old_subdomains - temp_subdomains)
 
-        for subdomain in old:
+        for subdomain in to_remove:
             self.queue.remove(subdomain)
             del self.losses[subdomain]
 
         if need_loss_update:
             self.queue = Queue(
                 (subdomain, self.priority(subdomain))
-                for subdomain in itertools.chain(self.queue.items(), new)
+                for subdomain in itertools.chain(self.queue.items(), to_add)
             )
         else:
             # Insert the newly created subdomains into the queue.
-            for subdomain in new:
+            for subdomain in to_add:
                 self.queue.insert(subdomain, priority=self.priority(subdomain))
 
             # If the loss function depends on data in neighboring subdomains then
@@ -356,11 +362,11 @@ class LearnerND(BaseLearner):
             # the subdomains we just added.
             if self.loss_function.n_neighbors > 0:
                 subdomains_to_update = set()
-                for subdomain in new:
+                for subdomain in to_add:
                     subdomains_to_update.update(
                         self.domain.neighbors(subdomain, self.loss_function.n_neighbors)
                     )
-                subdomains_to_update -= new
+                subdomains_to_update -= to_add
                 for subdomain in subdomains_to_update:
                     del self.losses[subdomain]  # Force loss recomputation
                     self.queue.update(subdomain, priority=self.priority(subdomain))
