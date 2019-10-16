@@ -139,7 +139,7 @@ class Domain(metaclass=abc.ABCMeta):
 def _choose_point_in_subinterval(a, b):
     m = a + (b - a) / 2
     if not a < m < b:
-        raise ValueError("{} cannot be split further".format((a, b)))
+        raise ValueError(f"{(a, b)} cannot be split further")
     return m
 
 
@@ -164,7 +164,7 @@ class Interval(Domain):
         if n <= 0:
             raise ValueError("n must be positive")
         if _check_membership and not self.contains_subdomain(subdomain):
-            raise ValueError("{} is not present in this interval".format(subdomain))
+            raise ValueError(f"{subdomain} is not present in this interval")
         try:
             p = self.sub_intervals[subdomain]
         except KeyError:  # No points yet in the interior of this subdomain
@@ -188,12 +188,12 @@ class Interval(Domain):
         if _check_membership:
             a, b = self.bounds
             if not (a <= x <= b):
-                raise ValueError("{} is outside of this interval".format(x))
+                raise ValueError(f"{x} is outside of this interval")
 
         p = self.points
         i = p.bisect_left(x)
         if p[i] == x:
-            raise ValueError("{} exists in this interval already".format(x))
+            raise ValueError(f"{x} exists in this interval already")
         subdomain = (a, b) = p[i - 1], p[i]
 
         try:
@@ -202,7 +202,7 @@ class Interval(Domain):
             self.sub_intervals[subdomain] = SortedList([a, x, b])
         else:
             if x in p:
-                raise ValueError("{} exists in a subinterval already".format(x))
+                raise ValueError(f"{x} exists in a subinterval already")
             p.add(x)
 
         return [subdomain]
@@ -211,7 +211,7 @@ class Interval(Domain):
         if _check_membership:
             a, b = self.bounds
             if not (a <= x <= b):
-                raise ValueError("{} is outside of this interval".format(x))
+                raise ValueError(f"{x} is outside of this interval")
 
         p = self.points
         i = p.bisect_left(x)
@@ -222,7 +222,7 @@ class Interval(Domain):
         try:
             sub_points = self.sub_intervals[subdomain]
         except KeyError:
-            raise ValueError("{} not in any subdomain".format(x))
+            raise ValueError(f"{x} not in any subdomain")
         else:
             sub_points.remove(x)
             if len(sub_points) == 2:
@@ -264,7 +264,7 @@ class Interval(Domain):
     def which_subdomains(self, x):
         a, b = self.bounds
         if not (a <= x <= b):
-            raise ValueError("{} is outside the interval".format(x))
+            raise ValueError(f"{x} is outside the interval")
         p = self.points
         i = p.bisect_left(x)
         if p[i] != x:
@@ -317,7 +317,7 @@ class Interval(Domain):
 
     def subpoints(self, subdomain, *, _check_membership=True):
         if _check_membership and not self.contains_subdomain(subdomain):
-            raise ValueError("{} is not present in this interval".format(subdomain))
+            raise ValueError(f"{subdomain} is not present in this interval")
         try:
             p = self.sub_intervals[subdomain]
         except KeyError:
@@ -548,7 +548,7 @@ class ConvexHull(Domain):
             raise ValueError("n must be positive")
         tri = self.triangulation
         if _check_membership and subdomain not in tri.simplices:
-            raise ValueError("{} is not present in this domain".format(subdomain))
+            raise ValueError(f"{subdomain} is not present in this domain")
 
         subtri = self._get_subtriangulation(subdomain)
 
@@ -587,11 +587,11 @@ class ConvexHull(Domain):
         # XXX: O(N) in the number of simplices
         affected_subdomains = self.which_subdomains(x)
         if not affected_subdomains:
-            raise ValueError("{} is not present in this domain".format(x))
+            raise ValueError(f"{x} is not present in this domain")
         for subdomain in affected_subdomains:
             subtri = self._get_subtriangulation(subdomain)
             if x in subtri.vertices:  # O(N) in the number of vertices
-                raise ValueError("{} exists in a subinterval already".format(x))
+                raise ValueError(f"{x} exists in a subinterval already")
             subtri.add_point(x)
         self.subpoints_to_subdomains[x].update(affected_subdomains)
 
@@ -667,9 +667,7 @@ class ConvexHull(Domain):
                     subtri.add_point(p)
                     self.subpoints_to_subdomains[p].add(subdomain)
                     p_was_added = True
-            assert (
-                p_was_added
-            ), "{} was not in the interior of any new simplices".format(x)
+            assert p_was_added, f"{x} was not in the interior of any new simplices"
 
         return old_subdomains, new_subdomains
 
@@ -682,7 +680,7 @@ class ConvexHull(Domain):
             # XXX: O(N) in the number of simplices
             subdomains = [s for s in tri.simplices if tri.point_in_simplex(x, s)]
             if not subdomains:
-                raise ValueError("{} is not in the domain".format(x))
+                raise ValueError(f"{x} is not in the domain")
         return list(subdomains)
 
     def contains_subdomain(self, subdomain):
@@ -716,7 +714,7 @@ class ConvexHull(Domain):
 
     def subpoints(self, subdomain, *, _check_membership=True):
         if _check_membership and not self.contains_subdomain(subdomain):
-            raise ValueError("{} is not present in this domain".format(subdomain))
+            raise ValueError(f"{subdomain} is not present in this domain")
         try:
             subtri = self.sub_triangulations[subdomain]
         except KeyError:
