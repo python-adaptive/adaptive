@@ -11,6 +11,8 @@ import random
 import shutil
 import tempfile
 
+import hypothesis.strategies as st
+import hypothesis.stateful as stateful
 import numpy as np
 import pytest
 import scipy.spatial
@@ -622,7 +624,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
         os.remove(path)
 
 
-@run_with(Learner1D, Learner2D, LearnerND, NewLearnerND)
+@run_with(Learner1D, Learner2D, LearnerND, NewLearnerND, with_all_loss_functions=False)
 def test_adding_data_outside_of_bounds(learner_type, f, learner_kwargs):
     # Just test this does not throw an error for now
     f = generate_random_parametrization(f)
@@ -641,6 +643,98 @@ def test_adding_data_outside_of_bounds(learner_type, f, learner_kwargs):
     learner.tell_many(points, [learner.function(x) for x in points])
 
     learner.ask(10)
+
+
+# Hypothesis RuleBasedStateMachine does not allow for parametrization so we have to
+# wrap it in a parametrized test
+@run_with(
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    NewLearnerND,
+    SequenceLearner,
+    AverageLearner,
+    with_all_loss_functions=False,
+)
+def test_simulate_runner(learner_type, f, learner_kwargs):
+
+    g = generate_random_parametrization(f)
+
+    # This simulates the current algorithm used by the Runner, i.e. ask for
+    # 'ncores' points and then tell the results one at a time and ask for
+    # one more point.
+    class Machine(stateful.RuleBasedStateMachine):
+        def __init__(self):
+            super().__init__()
+            self.data = dict()
+            self.learner = learner_type(g, **learner_kwargs)
+
+        pending = stateful.Bundle("pending")
+
+        @stateful.invariant()
+        def learner_contains_all_data(self):
+            # TODO: add more invariants that should be true for all learners
+            assert self.data == self.learner.data
+
+        @stateful.initialize(target=pending, ncores=st.integers(1, 10))
+        def init_learner(self, ncores):
+            points, _ = self.learner.ask(ncores)
+            data = [(x, self.learner.function(x)) for x in points]
+            return stateful.multiple(*data)
+
+        @stateful.rule(target=pending, xy=stateful.consumes(pending))
+        def ask_and_tell(self, xy):
+            x, y = xy
+            self.learner.tell(x, y)
+            self.data[x] = y
+            (x,), _ = self.learner.ask(1)
+            return (x, self.learner.function(x))
+
+    Machine.TestCase().runTest()
+
+
+# Hypothesis RuleBasedStateMachine does not allow for parametrization so we have to
+# wrap it in a parametrized test
+@run_with(
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    NewLearnerND,
+    SequenceLearner,
+    AverageLearner,
+    with_all_loss_functions=False,
+)
+def test_randomly_ask_tell(learner_type, f, learner_kwargs):
+
+    g = generate_random_parametrization(f)
+
+    # This simulates a strategy where we ask for a random number of points,
+    # and then tell a random selection of all the points we've asked for so far
+    class Machine(stateful.RuleBasedStateMachine):
+        def __init__(self):
+            super().__init__()
+            self.data = dict()
+            # We just test on the most trivial function we can
+            self.learner = learner_type(g, **learner_kwargs)
+
+        pending = stateful.Bundle("pending")
+
+        @stateful.invariant()
+        def learner_contains_all_data(self):
+            assert self.data == self.learner.data
+
+        @stateful.rule(target=pending, n=st.integers(1, 10))
+        def ask(self, n):
+            points, _ = self.learner.ask(n)
+            return stateful.multiple(*[(x, self.learner.function(x)) for x in points])
+
+        @stateful.rule(xys=st.lists(stateful.consumes(pending), min_size=1))
+        def tell(self, xys):
+            xs, ys = zip(*xys)
+            self.learner.tell_many(xs, ys)
+            self.data.update(xys)
+
+    Machine.TestCase().runTest()
 
 
 @pytest.mark.xfail
