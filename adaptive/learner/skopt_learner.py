@@ -26,10 +26,12 @@ class SKOptLearner(Optimizer, BaseLearner):
     def __init__(self, function, **kwargs):
         self.function = function
         self.pending_points = set()
+        self.data = {}
         super().__init__(**kwargs)
 
     def tell(self, x, y, fit=True):
         self.pending_points.discard(x)
+        self.data[x] = y
         super().tell([x], y, fit)
 
     def tell_pending(self, x):
