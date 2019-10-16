@@ -242,6 +242,8 @@ class LearnerND(BaseLearner):
                 for x in self.boundary_points
                 if x not in self.data and x not in self.pending_points
             ]
+            # Make sure we don't give more points than asked for
+            points = points[:n]
             # Infinite priority so that the boundary points are prioritized
             point_priorities = [math.inf] * len(points)
             if tell_pending:
