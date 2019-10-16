@@ -368,7 +368,9 @@ class LearnerND(BaseLearner):
                     )
                 subdomains_to_update -= to_add
                 for subdomain in subdomains_to_update:
-                    del self.losses[subdomain]  # Force loss recomputation
+                    # We have more data, so we must force a loss recomputation by
+                    # removing the subdomain from the loss cache.
+                    del self.losses[subdomain]
                     self.queue.update(subdomain, priority=self.priority(subdomain))
 
     def _update_codomain_bounds(self, ys):
