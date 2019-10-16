@@ -33,7 +33,7 @@ def unique_vectors(xs):
         return False
     d = scipy.spatial.distance_matrix(xs, xs)
     d = np.extract(1 - np.identity(d.shape[0]), d)
-    return not np.any(d < 1e-3 / c)
+    return not np.any(d < 1e-3 / c) and np.linalg.cond(xs) < 1e5
 
 
 @st.composite
