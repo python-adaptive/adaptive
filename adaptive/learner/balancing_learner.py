@@ -91,6 +91,24 @@ class BalancingLearner(BaseLearner):
         self.strategy = strategy
 
     @property
+    def data(self):
+        data = {}
+        for i, l in enumerate(self.learners):
+            data.update({(i, p): v for p, v in l.data.items()})
+        return data
+
+    @property
+    def pending_points(self):
+        pending_points = set()
+        for i, l in enumerate(self.learners):
+            pending_points.update({(i, p) for p in l.pending_points})
+        return pending_points
+
+    @property
+    def npoints(self):
+        return sum(l.npoints for l in self.learners)
+
+    @property
     def strategy(self):
         """Can be either 'loss_improvements' (default), 'loss', 'npoints', or
         'cycle'. The points that the `BalancingLearner` choses can be either
