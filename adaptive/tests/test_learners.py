@@ -666,15 +666,11 @@ def test_simulate_runner(learner_type, f, learner_kwargs):
     class Machine(stateful.RuleBasedStateMachine):
         def __init__(self):
             super().__init__()
-            self.data = dict()
             self.learner = learner_type(g, **learner_kwargs)
 
         pending = stateful.Bundle("pending")
 
-        @stateful.invariant()
-        def learner_contains_all_data(self):
-            # TODO: add more invariants that should be true for all learners
-            assert self.data == self.learner.data
+        # TODO: add some invariant checking here
 
         @stateful.initialize(target=pending, ncores=st.integers(1, 10))
         def init_learner(self, ncores):
@@ -686,7 +682,6 @@ def test_simulate_runner(learner_type, f, learner_kwargs):
         def ask_and_tell(self, xy):
             x, y = xy
             self.learner.tell(x, y)
-            self.data[x] = y
             (x,), _ = self.learner.ask(1)
             return (x, self.learner.function(x))
 
@@ -713,15 +708,11 @@ def test_randomly_ask_tell(learner_type, f, learner_kwargs):
     class Machine(stateful.RuleBasedStateMachine):
         def __init__(self):
             super().__init__()
-            self.data = dict()
-            # We just test on the most trivial function we can
             self.learner = learner_type(g, **learner_kwargs)
 
         pending = stateful.Bundle("pending")
 
-        @stateful.invariant()
-        def learner_contains_all_data(self):
-            assert self.data == self.learner.data
+        # TODO: add some invariant checking here
 
         @stateful.rule(target=pending, n=st.integers(1, 10))
         def ask(self, n):
@@ -732,7 +723,6 @@ def test_randomly_ask_tell(learner_type, f, learner_kwargs):
         def tell(self, xys):
             xs, ys = zip(*xys)
             self.learner.tell_many(xs, ys)
-            self.data.update(xys)
 
     Machine.TestCase().runTest()
 
