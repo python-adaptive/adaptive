@@ -67,8 +67,8 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
     Attributes
     ----------
     function : callable: X → Y
-        The function to learn, the ``learner`` might modify
-        the original function.
+        The function to learn. A subclass of BaseLearner might modify
+        the user's supplied function.
     data : dict: X → Y
         `function` evaluated at certain points.
     pending_points : set
