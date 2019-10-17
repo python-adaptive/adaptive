@@ -80,6 +80,6 @@ class _RequireAttrsABCMeta(abc.ABCMeta):
                     raise TypeError(
                         f"The attribute '{name}' is of {type_} instead of {type(x)}."
                     )
-            except AttributeError as e:
-                raise e(f"Required attribute {name} not set in __init__.")
+            except AttributeError:
+                raise AttributeError(f"Required attribute {name} not set in __init__.")
         return obj
