@@ -76,10 +76,12 @@ class _RequireAttrsABCMeta(abc.ABCMeta):
         for name, type_ in obj.__annotations__.items():
             try:
                 x = getattr(obj, name)
-                if not isinstance(x, type_):
-                    raise TypeError(
-                        f"The attribute '{name}' is of {type_} instead of {type(x)}."
-                    )
             except AttributeError:
-                raise AttributeError(f"Required attribute {name} not set in __init__.")
+                raise AttributeError(
+                    f"Required attribute {name} not set in __init__."
+                ) from None
+            else:
+                if not isinstance(x, type_):
+                    msg = f"The attribute '{name}' should be of type {type_}, not {type(x)}."
+                    raise TypeError(msg)
         return obj
