@@ -100,7 +100,7 @@ class _Interval:
         The parent interval.
     children : list of `_Interval`s
         The intervals resulting from a split.
-    done_points : dict
+    data : dict
         A dictionary with the x-values and y-values: `{x1: y1, x2: y2 ...}`.
     done : bool
         The integral and the error for the interval has been calculated.
@@ -133,7 +133,7 @@ class _Interval:
         "ndiv",
         "parent",
         "children",
-        "done_points",
+        "data",
         "done_leaves",
         "depth_complete",
         "removed",
@@ -141,7 +141,7 @@ class _Interval:
 
     def __init__(self, a, b, depth, rdepth):
         self.children = []
-        self.done_points = {}
+        self.data = {}
         self.a = a
         self.b = b
         self.depth = depth
@@ -172,9 +172,9 @@ class _Interval:
 
     def refinement_complete(self, depth):
         """The interval has all the y-values to calculate the intergral."""
-        if len(self.done_points) < ns[depth]:
+        if len(self.data) < ns[depth]:
             return False
-        return all(p in self.done_points for p in self.points(depth))
+        return all(p in self.data for p in self.points(depth))
 
     def points(self, depth=None):
         if depth is None:
@@ -255,7 +255,7 @@ class _Interval:
         assert self.depth_complete is None or self.depth_complete == depth - 1
         self.depth_complete = depth
 
-        fx = [self.done_points[k] for k in self.points(depth)]
+        fx = [self.data[k] for k in self.points(depth)]
         self.fx = np.array(fx)
         force_split = False  # This may change when refining
 
@@ -375,7 +375,7 @@ class IntegratorLearner(BaseLearner):
         self.tol = tol
         self.max_ivals = 1000
         self.priority_split = []
-        self.done_points = {}
+        self.data = {}
         self.pending_points = set()
         self._stack = []
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter("rdepth")))
@@ -391,13 +391,13 @@ class IntegratorLearner(BaseLearner):
     def tell(self, point, value):
         if point not in self.x_mapping:
             raise ValueError(f"Point {point} doesn't belong to any interval")
-        self.done_points[point] = value
+        self.data[point] = value
         self.pending_points.discard(point)
 
         # Select the intervals that have this point
         ivals = self.x_mapping[point]
         for ival in ivals:
-            ival.done_points[point] = value
+            ival.data[point] = value
 
             if ival.depth_complete is None:
                 from_depth = 0 if ival.parent is not None else 2
@@ -438,8 +438,8 @@ class IntegratorLearner(BaseLearner):
         for x in ival.points():
             # Update the mappings
             self.x_mapping[x].add(ival)
-            if x in self.done_points:
-                self.tell(x, self.done_points[x])
+            if x in self.data:
+                self.tell(x, self.data[x])
             elif x not in self.pending_points:
                 self.pending_points.add(x)
                 self._stack.append(x)
@@ -518,7 +518,7 @@ class IntegratorLearner(BaseLearner):
     @property
     def npoints(self):
         """Number of evaluated points."""
-        return len(self.done_points)
+        return len(self.data)
 
     @property
     def igral(self):
@@ -552,11 +552,9 @@ class IntegratorLearner(BaseLearner):
     def plot(self):
         hv = ensure_holoviews()
         ivals = sorted(self.ivals, key=attrgetter("a"))
-        if not self.done_points:
+        if not self.data:
             return hv.Path([])
-        xs, ys = zip(
-            *[(x, y) for ival in ivals for x, y in sorted(ival.done_points.items())]
-        )
+        xs, ys = zip(*[(x, y) for ival in ivals for x, y in sorted(ival.data.items())])
         return hv.Path((xs, ys))
 
     def _get_data(self):
@@ -565,7 +563,7 @@ class IntegratorLearner(BaseLearner):
 
         return (
             self.priority_split,
-            self.done_points,
+            self.data,
             self.pending_points,
             self._stack,
             x_mapping,
@@ -574,7 +572,7 @@ class IntegratorLearner(BaseLearner):
         )
 
     def _set_data(self, data):
-        self.priority_split, self.done_points, self.pending_points, self._stack, x_mapping, self.ivals, self.first_ival = (
+        self.priority_split, self.data, self.pending_points, self._stack, x_mapping, self.ivals, self.first_ival = (
             data
         )
 

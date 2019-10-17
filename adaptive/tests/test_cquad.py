@@ -188,7 +188,7 @@ def test_tell_in_random_order(first_add_33=False):
             learners.append(learner)
 
         # Check whether the points of the learners are identical
-        assert set(learners[0].done_points) == set(learners[1].done_points)
+        assert set(learners[0].data) == set(learners[1].data)
 
         # Test whether approximating_intervals gives a complete set of intervals
         for learner in learners:
