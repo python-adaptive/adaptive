@@ -6,7 +6,6 @@ import scipy.spatial
 
 import hypothesis.strategies as st
 from adaptive.learner.new_learnerND import ConvexHull, Interval
-from hypothesis.extra import numpy as hynp
 
 
 def reflections(ndim):
@@ -153,11 +152,10 @@ def make_random_domain(draw, ndim, fill=True):
         limits = draw(st.tuples(reals, reals).map(sorted).filter(lambda x: x[0] < x[1]))
         domain = Interval(*limits)
     else:
-        points = draw(
-            hynp.arrays(np.float, (10, ndim), elements=reals, unique=True).filter(
-                unique_vectors
-            )
-        )
+        # Set the numpy random seed
+        draw(st.random_module())
+        # Generate points in a hypercube around the origin
+        points = np.random.rand(10, ndim) - 0.5
         domain = ConvexHull(points)
     return domain
 
