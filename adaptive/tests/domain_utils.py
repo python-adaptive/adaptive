@@ -1,47 +1,25 @@
 import itertools
 
 import numpy as np
-import scipy.linalg
-import scipy.spatial
 
 import hypothesis.strategies as st
 from adaptive.learner.new_learnerND import ConvexHull, Interval
 
+# This module contains utilities for producing domains and points inside and outside of them.
+# Because we typically do not want to test very degenerate cases (e.g. points that are almost
+# coincident, very large or very small) we prefer generating points in the interval [0, 1)
+# using numpy.random, rather than drawing from Hypothesis' "floats" strategy.
 
+
+# Return an iterator that yields matrices reflecting in the cartesian
+# coordinate axes in 'ndim' dimensions.
 def reflections(ndim):
     return map(np.diag, itertools.product([1, -1], repeat=ndim))
 
 
-reals = st.floats(min_value=-100, max_value=100, allow_nan=False, allow_infinity=False)
-positive_reals = st.floats(
-    min_value=1e-3, max_value=100, allow_nan=False, allow_infinity=False
-)
-
-
-@st.composite
-def point(draw, ndim):
-    return draw(reals if ndim == 1 else st.tuples(*[reals] * ndim))
-
-
-def unique_vectors(xs):
-    xs = np.asarray(xs)
-    if len(xs.shape) == 1:
-        xs = xs[:, None]
-    c = np.max(np.linalg.norm(xs, axis=1))
-    if c == 0:
-        return False
-    d = scipy.spatial.distance_matrix(xs, xs)
-    d = np.extract(1 - np.identity(d.shape[0]), d)
-    return not np.any(d < 1e-3 / c) and np.linalg.cond(xs) < 1e5
-
-
-@st.composite
-def point_inside_simplex(draw, simplex):
-    simplex = draw(simplex)
+def point_inside_simplex(simplex):
     simplex = np.asarray(simplex)
     dim = simplex.shape[1]
-    # Set the numpy random seed
-    draw(st.random_module())
     # Generate a point in the unit simplex.
     # https://cs.stackexchange.com/questions/3227/uniform-sampling-from-a-simplex
     # We avoid using Hypothesis to generate the points as it typically chooses
@@ -57,13 +35,11 @@ def point_inside_simplex(draw, simplex):
 
 @st.composite
 def points_inside(draw, domain, n):
-    kwargs = dict(
-        allow_nan=False, allow_infinity=False, exclude_min=True, exclude_max=True
-    )
+    # Set the numpy random seed
+    draw(st.random_module())
     if isinstance(domain, Interval):
         a, b = domain.bounds
-        eps = (b - a) * 1e-2
-        x = st.floats(min_value=(a + eps), max_value=(b - eps), **kwargs)
+        return a + (b - a) * np.random.rand(n)
     else:
         assert isinstance(domain, ConvexHull)
         tri = domain.triangulation
@@ -71,10 +47,11 @@ def points_inside(draw, domain, n):
         simplex = st.sampled_from(simplices).map(
             lambda simplex: [tri.vertices[s] for s in simplex]
         )
-        x = point_inside_simplex(simplex)
-
-    xs = st.tuples(*[x] * n).filter(unique_vectors)
-    return draw(xs)
+        # "point_inside_simplex" uses the numpy RNG, and we set the seed above.
+        # Together this means we're almost guaranteed not to get coinciding points.
+        # Note that we draw from the 'simplex' strategy on each iteration, so we
+        # distribute the points between the different simplices in the domain.
+        return [tuple(point_inside_simplex(draw(simplex))) for _ in range(n)]
 
 
 @st.composite
@@ -90,30 +67,26 @@ def a_few_points_inside(draw, domain):
 
 @st.composite
 def points_outside(draw, domain, n):
-    kwargs = dict(allow_nan=False, allow_infinity=False)
+    # set numpy random seed
+    draw(st.random_module())
+
     if isinstance(domain, Interval):
         a, b = domain.bounds
-        length = b - a
-        before_domain = st.floats(a - 10 * length, a, exclude_max=True, **kwargs)
-        after_domain = st.floats(b, b + 10 * length, exclude_min=True, **kwargs)
-        x = before_domain | after_domain
+        ndim = 1
     else:
         assert isinstance(domain, ConvexHull)
         hull = domain.bounds
-        # Generate point between bounding box and bounding box * 10
         points = hull.points[hull.vertices]
-        x = st.tuples(
-            *[
-                (
-                    st.floats(a - 10 * (b - a), a, exclude_max=True, **kwargs)
-                    | st.floats(b, b + 10 * (b - a), exclude_min=True, **kwargs)
-                )
-                for a, b in zip(points.min(axis=0), points.max(axis=0))
-            ]
-        )
+        ndim = points.shape[1]
+        a, b = points.min(axis=0)[None, :], points.max(axis=0)[None, :]
 
-    xs = st.tuples(*[x] * n).filter(unique_vectors)
-    return draw(xs)
+    # Generate a point outside the bounding box of the domain.
+    center = (a + b) / 2
+    border = (b - a) / 2
+    r = border + 10 * border * np.random.rand(n, ndim)
+    quadrant = np.sign(np.random.rand(n, ndim) - 0.5)
+    assert not np.any(quadrant == 0)
+    return center + quadrant * r
 
 
 @st.composite
@@ -127,6 +100,9 @@ def point_on_shared_face(draw, domain, dim):
     assert isinstance(domain, ConvexHull)
     assert 0 < dim < domain.ndim
 
+    # Set the numpy random seed
+    draw(st.random_module())
+
     tri = domain.triangulation
 
     for face in tri.faces(dim + 1):
@@ -136,8 +112,7 @@ def point_on_shared_face(draw, domain, dim):
 
     vertices = np.array([tri.vertices[i] for i in face])
 
-    f = st.floats(1e-3, 1 - 1e-3, allow_nan=False, allow_infinity=False)
-    xb = draw(st.tuples(*[f] * dim))
+    xb = np.random.rand(dim)
 
     x = tuple(vertices[0] + xb @ (vertices[1:] - vertices[0]))
 
@@ -148,12 +123,13 @@ def point_on_shared_face(draw, domain, dim):
 
 @st.composite
 def make_random_domain(draw, ndim, fill=True):
+    # Set the numpy random seed
+    draw(st.random_module())
+
     if ndim == 1:
-        limits = draw(st.tuples(reals, reals).map(sorted).filter(lambda x: x[0] < x[1]))
-        domain = Interval(*limits)
+        a, b = sorted(np.random.rand(2) - 0.5)
+        domain = Interval(a, b)
     else:
-        # Set the numpy random seed
-        draw(st.random_module())
         # Generate points in a hypercube around the origin
         points = np.random.rand(10, ndim) - 0.5
         domain = ConvexHull(points)
@@ -162,12 +138,14 @@ def make_random_domain(draw, ndim, fill=True):
 
 @st.composite
 def make_hypercube_domain(draw, ndim, fill=True):
+    # Set the numpy random seed
+    draw(st.random_module())
+    limit = np.random.rand()
+
     if ndim == 1:
-        limit = draw(positive_reals)
         subdomain = Interval(-limit, limit)
     else:
-        x = draw(positive_reals)
-        point = np.full(ndim, x)
+        point = np.full(ndim, limit)
         boundary_points = [r @ point for r in reflections(ndim)]
         subdomain = ConvexHull(boundary_points)
     return subdomain
