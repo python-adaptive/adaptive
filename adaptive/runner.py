@@ -9,7 +9,6 @@ import pickle
 import sys
 import time
 import traceback
-import types
 import warnings
 from contextlib import suppress
 
@@ -497,17 +496,16 @@ class AsyncRunner(BaseRunner):
                 return False
 
         if executor is None:
-            if isinstance(learner.function, types.LambdaType):
-                raise ValueError(
-                    "A lambda function cannot be pickled and "
-                    "therefore doesn't work with the default executor."
-                    "Either do not use a lamdba or use a framework that"
-                    " allows this, e.g. `ipyparallel` with `dill`."
-                )
             try:
                 pickle.dumps(learner.function)
             except pickle.PicklingError:
-                raise ValueError("`learner.function` needs to be pickleble.")
+                raise ValueError(
+                    "`learner.function` cannot be pickled (is it a lamdba function?)"
+                    " and therefore does not work with the default executor."
+                    " Either make sure the function is pickleble or use an executor"
+                    " that might work with 'hard to pickle'-functions"
+                    " , e.g. `ipyparallel` with `dill`."
+                )
 
         super().__init__(
             learner,
