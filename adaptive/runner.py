@@ -495,7 +495,7 @@ class AsyncRunner(BaseRunner):
             def goal(_):
                 return False
 
-        if executor is None:
+        if executor is None and not inspect.iscoroutinefunction(learner.function):
             try:
                 pickle.dumps(learner.function)
             except pickle.PicklingError:
