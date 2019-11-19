@@ -5,6 +5,7 @@ import asyncio
 import concurrent.futures as concurrent
 import inspect
 import os
+import pickle
 import sys
 import time
 import traceback
@@ -493,6 +494,18 @@ class AsyncRunner(BaseRunner):
 
             def goal(_):
                 return False
+
+        if executor is None and not inspect.iscoroutinefunction(learner.function):
+            try:
+                pickle.dumps(learner.function)
+            except pickle.PicklingError:
+                raise ValueError(
+                    "`learner.function` cannot be pickled (is it a lamdba function?)"
+                    " and therefore does not work with the default executor."
+                    " Either make sure the function is pickleble or use an executor"
+                    " that might work with 'hard to pickle'-functions"
+                    " , e.g. `ipyparallel` with `dill`."
+                )
 
         super().__init__(
             learner,
