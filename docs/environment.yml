@@ -12,9 +12,8 @@ dependencies:
   - bokeh=1.0.4
   - plotly=3.9.0
   - ipywidgets=7.4.2
-  # - jupyter_sphinx=0.2.1
+  - jupyter_sphinx=0.2.2
   - atomicwrites=1.3.0
   - pip:
-    - git+https://github.com/jbweston/jupyter-sphinx.git@feature/disable-stderr  # XXX: removed when merged in
     - sphinx_fontawesome==0.0.6
     - m2r==0.2.1
