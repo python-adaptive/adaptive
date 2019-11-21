@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import time
 
 import pytest
 
@@ -10,6 +11,7 @@ from adaptive.runner import (
     BlockingRunner,
     SequentialExecutor,
     simple,
+    stop_after,
     with_distributed,
     with_ipyparallel,
 )
@@ -101,6 +103,14 @@ def test_concurrent_futures_executor():
         trivial_goal,
         executor=ProcessPoolExecutor(max_workers=1),
     )
+
+
+def test_stop_after_goal():
+    seconds_to_wait = 0.2  # don't make this too large or the test will take ages
+    start_time = time.time()
+    BlockingRunner(Learner1D(linear, (-1, 1)), stop_after(seconds=seconds_to_wait))
+    stop_time = time.time()
+    assert stop_time - start_time > seconds_to_wait
 
 
 @pytest.mark.skipif(not with_ipyparallel, reason="IPyparallel is not installed")
