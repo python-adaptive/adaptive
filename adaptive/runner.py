@@ -712,6 +712,46 @@ def replay_log(learner, log):
         getattr(learner, method)(*args)
 
 
+# --- Useful runner goals
+
+
+def stop_after(*, seconds=0, minutes=0, hours=0):
+    """Stop a runner after a specified time.
+
+    For example, to specify a runner that should stop after
+    5 minutes, one could do the following:
+
+    >>> runner = Runner(learner, goal=stop_after(minutes=5))
+
+    To stop a runner after 2 hours, 10 minutes and 3 seconds,
+    one could do the following:
+
+    >>> runner = Runner(learner, goal=stop_after(hours=2, minutes=10, seconds=3))
+
+    Parameters
+    ----------
+    seconds, minutes, hours : float, default: 0
+        If more than one is specified, then they are added together
+
+    Returns
+    -------
+    goal : callable
+        Can be used as the ``goal`` parameter when constructing
+        a `Runner`.
+
+    Notes
+    -----
+    The duration specified is only a *lower bound* on the time that the
+    runner will run for, because the runner only checks its goal when
+    it adds points to its learner
+    """
+    stop_time = time.time() + seconds + 60 * minutes + 3600 * hours
+    return lambda _: time.time() > stop_time
+
+
+# -- Internal executor-related, things
+
+
 class SequentialExecutor(concurrent.Executor):
     """A trivial executor that runs functions synchronously.
 
