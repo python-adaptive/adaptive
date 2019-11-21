@@ -65,7 +65,7 @@ def test_aync_def_function():
     asyncio.get_event_loop().run_until_complete(runner.task)
 
 
-### Test with different executors
+# --- Test with different executors
 
 
 @pytest.fixture(scope="session")
