@@ -287,8 +287,28 @@ class BaseRunner(metaclass=abc.ABCMeta):
         pass
 
 
-class BlockingRunner(BaseRunner):
+def BlockingRunner(
+    learner,
+    goal,
+    *,
+    executor=None,
+    ntasks=None,
+    log=False,
+    shutdown_executor=False,
+    retries=0,
+    raise_if_retries_exceeded=True,
+):
     """Run a learner synchronously in an executor.
+
+    **This runner is deprecated**, replace:
+
+    >>> r = adaptive.BlockingRunner(...)
+
+    with
+
+    >>> import asyncio
+    >>> r = adaptive.Runner(...)
+    >>> asyncio.run(r)
 
     Parameters
     ----------
@@ -347,62 +367,30 @@ class BlockingRunner(BaseRunner):
 
     """
 
-    def __init__(
-        self,
+    if inspect.iscoroutinefunction(learner.function):
+        raise ValueError("Coroutine functions can only be used " "with 'AsyncRunner'.")
+    warnings.warn(
+        "adaptive.BlockingRunner is deprecated, and will be removed in a "
+        "future version of adaptive.\n"
+        "Replace all uses of adaptive.BlockingRunner(...) with "
+        "asyncio.run(adaptive.Runner(...))",
+        DeprecationWarning,
+    )
+
+    r = AsyncRunner(
         learner,
         goal,
-        *,
-        executor=None,
-        ntasks=None,
-        log=False,
-        shutdown_executor=False,
-        retries=0,
-        raise_if_retries_exceeded=True,
-    ):
-        if inspect.iscoroutinefunction(learner.function):
-            raise ValueError(
-                "Coroutine functions can only be used " "with 'AsyncRunner'."
-            )
-        super().__init__(
-            learner,
-            goal,
-            executor=executor,
-            ntasks=ntasks,
-            log=log,
-            shutdown_executor=shutdown_executor,
-            retries=retries,
-            raise_if_retries_exceeded=raise_if_retries_exceeded,
-        )
-        self._run()
+        executor=executor,
+        ntasks=ntasks,
+        log=log,
+        shutdown_executor=shutdown_executor,
+        retries=retries,
+        raise_if_retries_exceeded=raise_if_retries_exceeded,
+    )
 
-    def _submit(self, x):
-        return self.executor.submit(self.learner.function, x)
+    asyncio.run(r)
 
-    def _run(self):
-        first_completed = concurrent.FIRST_COMPLETED
-
-        if self._get_max_tasks() < 1:
-            raise RuntimeError("Executor has no workers")
-
-        try:
-            while not self.goal(self.learner):
-                futures = self._get_futures()
-                done, _ = concurrent.wait(futures, return_when=first_completed)
-                self._process_futures(done)
-        finally:
-            remaining = self._remove_unfinished()
-            if remaining:
-                concurrent.wait(remaining)
-            self._cleanup()
-
-    def elapsed_time(self):
-        """Return the total time elapsed since the runner
-        was started."""
-        if self.end_time is None:
-            # This shouldn't happen if the BlockingRunner
-            # correctly finished.
-            self.end_time = time.time()
-        return self.end_time - self.start_time
+    return r
 
 
 class AsyncRunner(BaseRunner):
