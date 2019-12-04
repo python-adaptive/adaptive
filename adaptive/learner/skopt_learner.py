@@ -2,6 +2,7 @@
 
 import numpy as np
 from skopt import Optimizer
+from collections import OrderedDict
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
@@ -25,19 +26,24 @@ class SKOptLearner(Optimizer, BaseLearner):
 
     def __init__(self, function, **kwargs):
         self.function = function
-        self.pending_points = set()
-        self.data = {}
+        self.pending_points = list()
+        self.data = OrderedDict()
         super().__init__(**kwargs)
 
     def tell(self, x, y, fit=True):
-        self.pending_points.discard(x)
-        self.data[x] = y
-        super().tell([x], y, fit)
+        if x in self.pending_points:
+            self.pending_points.remove(x)
+        if hasattr(x, '__iter__'):
+            self.data[tuple(x)] = y
+            super().tell(x, y, fit)
+        else:
+            self.data[x] = y
+            super().tell([x], y, fit)
 
     def tell_pending(self, x):
         # 'skopt.Optimizer' takes care of points we
         # have not got results for.
-        self.pending_points.add(x)
+        self.pending_points.append(x)
 
     def remove_unfinished(self):
         pass
