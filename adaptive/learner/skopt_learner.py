@@ -31,7 +31,7 @@ class SKOptLearner(Optimizer, BaseLearner):
         super().__init__(**kwargs)
 
     def tell(self, x, y, fit=True):
-        if hasattr(x, '__iter__'):
+        if hasattr(x, "__iter__"):
             self.pending_points.discard(tuple(x))
             self.data[tuple(x)] = y
             super().tell(x, y, fit)
