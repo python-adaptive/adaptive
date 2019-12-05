@@ -31,7 +31,7 @@ def test_skopt_learner_runs():
 def test_skopt_learner_4D_runs():
     """The SKOptLearner provides very few guarantees about its
        behaviour, so we only test the most basic usage
-       In this case we test also for 2D domain
+       In this case we test also for 4D domain
     """
 
     def g(x, noise_level=0.1):
