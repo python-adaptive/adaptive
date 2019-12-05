@@ -26,24 +26,24 @@ class SKOptLearner(Optimizer, BaseLearner):
 
     def __init__(self, function, **kwargs):
         self.function = function
-        self.pending_points = list()
+        self.pending_points = set()
         self.data = OrderedDict()
         super().__init__(**kwargs)
 
     def tell(self, x, y, fit=True):
-        if x in self.pending_points:
-            self.pending_points.remove(x)
         if hasattr(x, '__iter__'):
+            self.pending_points.discard(tuple(x))
             self.data[tuple(x)] = y
             super().tell(x, y, fit)
         else:
+            self.pending_points.discard(x)
             self.data[x] = y
             super().tell([x], y, fit)
 
     def tell_pending(self, x):
         # 'skopt.Optimizer' takes care of points we
         # have not got results for.
-        self.pending_points.append(x)
+        self.pending_points.add(tuple(x))
 
     def remove_unfinished(self):
         pass
