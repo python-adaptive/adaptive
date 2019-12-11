@@ -6,7 +6,7 @@
 |PyPI| |Conda| |Downloads| |Pipeline status| |DOI| |Binder| |Gitter|
 |Documentation| |GitHub|
 
-**Tools for adaptive parallel sampling of mathematical functions.**
+** *Adaptive*: Parallel active learning of mathematical functions.**
 
 ``adaptive`` is an open-source Python library designed to
 make adaptive parallel function evaluation simple. With ``adaptive`` you
@@ -120,6 +120,21 @@ We implement several other checks in order to maintain a consistent code style. 
     pre-commit install
 
 in the repository.
+
+Citing
+------
+
+If you used Adaptive in a scientific work, please cite it as follows.
+
+.. code::
+
+    @misc{Nijholt2019,
+      doi = {10.5281/zenodo.1182437},
+      author = {Bas Nijholt and Joseph Weston and Jorn Hoofwijk and Anton Akhmerov},
+      title = {\textit{Adaptive}: parallel active learning of mathematical functions},
+      publisher = {Zenodo},
+      year = {2019}
+    }
 
 Credits
 -------
