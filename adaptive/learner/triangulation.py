@@ -228,7 +228,7 @@ def simplex_volume_in_embedding(vertices) -> float:
     # Make matrix and find volume
     sq_dists_mat = scipy.spatial.distance.squareform(bordered)
 
-    coeff = -(-2) ** (num_verts - 1) * factorial(num_verts - 1) ** 2
+    coeff = -((-2) ** (num_verts - 1)) * factorial(num_verts - 1) ** 2
     vol_square = fast_det(sq_dists_mat) / coeff
 
     if vol_square < 0:

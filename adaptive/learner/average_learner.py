@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from math import sqrt
 
 import numpy as np

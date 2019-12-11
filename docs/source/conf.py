@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
 #
@@ -18,11 +17,10 @@ import sys
 package_path = os.path.abspath("../..")
 # Insert into sys.path so that we can import adaptive here
 sys.path.insert(0, package_path)
-
-import adaptive  # noqa: E402
-
 # Insert into PYTHONPATH so that jupyter-sphinx will pick it up
 os.environ["PYTHONPATH"] = ":".join((package_path, os.environ.get("PYTHONPATH", "")))
+
+import adaptive  # noqa: E402, isort:skip
 
 # -- Project information -----------------------------------------------------
 

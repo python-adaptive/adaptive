@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import functools
 import itertools
 import random
@@ -340,8 +338,8 @@ class LearnerND(BaseLearner):
         self._min_value = None
         self._max_value = None
         self._output_multiplier = (
-            1
-        )  # If we do not know anything, do not scale the values
+            1  # If we do not know anything, do not scale the values
+        )
         self._recompute_losses_factor = 1.1
 
         # create a private random number generator with fixed seed

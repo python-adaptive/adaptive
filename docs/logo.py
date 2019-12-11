@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.abspath(".."))  # to get adaptive on the path
 
-import adaptive  # noqa: E402
+import adaptive  # noqa: E402, isort:skip
 
 holoviews.notebook_extension("matplotlib")
 
@@ -19,7 +19,7 @@ def create_and_run_learner():
 
         x, y = xy
         a = 0.2
-        return x + np.exp(-(x ** 2 + y ** 2 - 0.75 ** 2) ** 2 / a ** 4)
+        return x + np.exp(-((x ** 2 + y ** 2 - 0.75 ** 2) ** 2) / a ** 4)
 
     learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
     adaptive.runner.simple(learner, goal=lambda l: l.loss() < 0.01)

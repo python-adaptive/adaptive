@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import pytest
 
 from adaptive.learner import BalancingLearner, Learner1D
