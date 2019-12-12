@@ -22,6 +22,8 @@ def get_version_and_cmdclass(package_name):
 
 version, cmdclass = get_version_and_cmdclass("adaptive")
 
+with open("README.rst") as f:
+    readme = f.read()
 
 install_requires = [
     "scipy",
@@ -47,6 +49,8 @@ extras_require = {
 setup(
     name="adaptive",
     description="Adaptive parallel sampling of mathematical functions",
+    long_description=readme,
+    long_description_content_type="text/x-rst",
     version=version,
     python_requires=">=3.6",
     url="https://adaptive.readthedocs.io/",
@@ -58,6 +62,7 @@ setup(
         "Intended Audience :: Science/Research",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
     packages=find_packages("."),
     install_requires=install_requires,
