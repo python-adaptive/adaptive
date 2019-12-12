@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import collections
 import functools as ft
 import inspect
@@ -129,7 +127,7 @@ def linear_with_peak(x, d: uniform(-1, 1)):
 def ring_of_fire(xy, d: uniform(0.2, 1)):
     a = 0.2
     x, y = xy
-    return x + math.exp(-(x ** 2 + y ** 2 - d ** 2) ** 2 / a ** 4)
+    return x + math.exp(-((x ** 2 + y ** 2 - d ** 2) ** 2) / a ** 4)
 
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
@@ -137,7 +135,7 @@ def ring_of_fire(xy, d: uniform(0.2, 1)):
 def sphere_of_fire(xyz, d: uniform(0.2, 1)):
     a = 0.2
     x, y, z = xyz
-    return x + math.exp(-(x ** 2 + y ** 2 + z ** 2 - d ** 2) ** 2 / a ** 4) + z ** 2
+    return x + math.exp(-((x ** 2 + y ** 2 + z ** 2 - d ** 2) ** 2) / a ** 4) + z ** 2
 
 
 @learn_with(SequenceLearner, sequence=range(1000))

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Based on an adaptive quadrature algorithm by Pedro Gonnet
 
 import sys
@@ -572,9 +571,15 @@ class IntegratorLearner(BaseLearner):
         )
 
     def _set_data(self, data):
-        self.priority_split, self.data, self.pending_points, self._stack, x_mapping, self.ivals, self.first_ival = (
-            data
-        )
+        (
+            self.priority_split,
+            self.data,
+            self.pending_points,
+            self._stack,
+            x_mapping,
+            self.ivals,
+            self.first_ival,
+        ) = data
 
         # Add the pending_points to the _stack such that they are evaluated again
         for x in self.pending_points:

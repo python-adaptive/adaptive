@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Based on an adaptive quadrature algorithm by Pedro Gonnet
 
 from collections import defaultdict

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import itertools
 from collections import Counter
 from math import factorial

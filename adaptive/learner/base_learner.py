@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
-
 import abc
 from contextlib import suppress
 from copy import deepcopy
 
-from adaptive.utils import load, save, _RequireAttrsABCMeta
+from adaptive.utils import _RequireAttrsABCMeta, load, save
 
 
 def uses_nth_neighbors(n):

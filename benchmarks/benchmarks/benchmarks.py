@@ -15,7 +15,7 @@ def f_1d(x, offset=offset):
 def f_2d(xy):
     x, y = xy
     a = 0.2
-    return x + np.exp(-(x ** 2 + y ** 2 - 0.75 ** 2) ** 2 / a ** 4)
+    return x + np.exp(-((x ** 2 + y ** 2 - 0.75 ** 2) ** 2) / a ** 4)
 
 
 class TimeLearner1D:
