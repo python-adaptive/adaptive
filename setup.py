@@ -46,7 +46,7 @@ extras_require = {
 
 setup(
     name="adaptive",
-    description="Adaptive parallel sampling of mathematical functions",
+    description="Parallel active learning of mathematical functions",
     version=version,
     python_requires=">=3.6",
     url="https://adaptive.readthedocs.io/",
