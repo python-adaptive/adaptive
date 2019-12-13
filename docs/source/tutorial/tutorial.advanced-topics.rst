@@ -413,7 +413,7 @@ The simplest way to accomplish this is simply to use the
 
    learner = adaptive.Learner1D(f, (-1, 1))
 
-   adaptive.BlockingRunner(learner, goal=lambda: l: l.loss() < 0.1)
+   adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.1)
 
 If you use `asyncio` already in your script and want to integrate
 ``adaptive`` into it, then you can use the default `~adaptive.Runner` as you

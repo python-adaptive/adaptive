@@ -90,7 +90,7 @@ For example, you create the following file called ``run_learner.py``:
 
 On your laptop/desktop you can run this script like:
 
-.. code:: python
+.. code:: bash
 
     export MPI4PY_MAX_WORKERS=15
     mpiexec -n 1 python run_learner.py
@@ -99,13 +99,13 @@ Or you can pass ``max_workers=15`` programmatically when creating the `MPIPoolEx
 
 Inside the job script using a job queuing system use:
 
-.. code:: python
+.. code:: bash
 
     mpiexec -n 16 python -m mpi4py.futures run_learner.py
 
 How you call MPI might depend on your specific queuing system, with SLURM for example it's:
 
-.. code:: python
+.. code:: bash
 
     #!/bin/bash
     #SBATCH --job-name adaptive-example
