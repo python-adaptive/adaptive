@@ -16,7 +16,7 @@ evaluate functions on a computing cluster, live-plot the data as it
 returns, and fine-tune the adaptive sampling algorithm.
 
 Run the ``adaptive`` example notebook `live on
-Binder <https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb>`_
+Binder <https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb>`_
 to see examples of how to use ``adaptive`` or visit the
 `tutorial on Read the Docs <https://adaptive.readthedocs.io/en/latest/tutorial/tutorial.html>`__.
 
@@ -171,7 +171,7 @@ request <https://github.com/python-adaptive/adaptive/pulls>`_.
 .. |DOI| image:: https://img.shields.io/badge/doi-10.5281%2Fzenodo.1182437-blue.svg
    :target: https://doi.org/10.5281/zenodo.1182437
 .. |Binder| image:: https://mybinder.org/badge.svg
-   :target: https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=learner.ipynb
+   :target: https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb
 .. |Gitter| image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
    :target: https://gitter.im/python-adaptive/adaptive
 .. |Documentation| image:: https://readthedocs.org/projects/adaptive/badge/?version=latest
