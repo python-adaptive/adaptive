@@ -1,8 +1,0 @@
-#!/bin/sh
-
-! for f in $(git ls-files | grep -v \\.diff$); do
-    file $f | grep -q ' text' || continue
-    grep -q '[[:blank:]]$' $f && echo $f: trailing whitespace
-    tail -n1 $f | read -r _ || echo $f: no newline at end of file
-    tail -n1 $f | grep -q '^$' && echo $f: empty line at end of file
-done | grep . >&2
