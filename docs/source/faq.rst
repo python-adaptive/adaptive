@@ -71,6 +71,10 @@ Adaptive is much more simple-minded and it relies only on the local properties o
 We'd say that Bayesian modeling is good for really computationally expensive data, regular grids for really cheap data, and local adaptive algorithms are somewhere in the middle.
 
 
+What is the difference with Kringing?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 What is the difference with adaptive meshing in CFD or computer graphics?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
