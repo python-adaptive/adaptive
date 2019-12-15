@@ -66,5 +66,5 @@ setup(
     install_requires=install_requires,
     extras_require=extras_require,
     cmdclass=cmdclass,
-    ext_modules=[triangulation_module])
+    ext_modules=[triangulation_module]
 )
