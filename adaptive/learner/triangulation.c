@@ -4,6 +4,46 @@
 #include <stdio.h>
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
+static int
+get_tuple_elems(PyObject * tuple, double * first, double * second) {
+    if (PyTuple_Size(tuple) < 2) {
+        PyErr_SetString(PyExc_ValueError, "Tuple must be len 2 or more.");
+        return 0;
+    }
+
+    PyObject * elem = PyTuple_GetItem(tuple, 0);
+    *first = PyFloat_AsDouble(elem);
+    if (first == NULL)
+        return 0;
+    elem = PyTuple_GetItem(tuple, 1);
+    *second = PyFloat_AsDouble(elem);
+    if (second == NULL)
+        return 0;
+    return 1;
+}
+
+static int
+get_triple_tuple_elems(PyObject * tuple, double * first, double * second, double* third) {
+    if (PyTuple_Size(tuple) < 3) {
+        PyErr_SetString(PyExc_ValueError, "Tuple must be len 3 or more.");
+        return 0;
+    }
+
+    PyObject * elem = PyTuple_GetItem(tuple, 0);
+    *first = PyFloat_AsDouble(elem);
+    if (first == NULL)
+        return 0;
+    elem = PyTuple_GetItem(tuple, 1);
+    *second = PyFloat_AsDouble(elem);
+    if (second == NULL)
+        return 0;
+    elem = PyTuple_GetItem(tuple, 2);
+    *third = PyFloat_AsDouble(elem);
+    if (third == NULL)
+        return 0;
+    return 1;
+}
+
 static PyObject *
 fast_norm(PyObject *self, PyObject *args)
 {
@@ -65,41 +105,12 @@ fast_norm(PyObject *self, PyObject *args)
 
 }
 
-static int get_tuple_elems(PyObject * tuple, double * first, double * second) {
-    PyObject * elem = PyTuple_GetItem(tuple, 0);
-    if (elem == NULL)
-        return 0;
-    *first = PyFloat_AsDouble(elem);
-    elem = PyTuple_GetItem(tuple, 1);
-    if (elem == NULL)
-        return 0;
-    *second = PyFloat_AsDouble(elem);
-    return 1;
-}
-
-static int get_triple_tuple_elems(PyObject * tuple, double * first, double * second, double* third) {
-    PyObject * elem = PyTuple_GetItem(tuple, 0);
-    if (elem == NULL)
-        return 0;
-    *first = PyFloat_AsDouble(elem);
-    elem = PyTuple_GetItem(tuple, 1);
-    if (elem == NULL)
-        return 0;
-    *second = PyFloat_AsDouble(elem);
-    elem = PyTuple_GetItem(tuple, 2);
-    if (elem == NULL)
-        return 0;
-    *third = PyFloat_AsDouble(elem);
-    return 1;
-}
-
 static PyObject *
 fast_2d_point_in_simplex(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-    PyObject* point, * simplex;
+    PyObject * point, * simplex;
     double eps = 0.00000001;
 
-    // SystemError: bad format char passed to Py_BuildValue ??
 	static char *kwlist[] = {"point", "simplex", "eps", NULL};
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|d", kwlist, &point, &simplex, &eps))
@@ -126,23 +137,14 @@ fast_2d_point_in_simplex(PyObject *self, PyObject *args, PyObject *kwargs)
 
 
     point = PyList_GetItem(simplex, 0);
-    if (point == NULL)
-        return NULL;
-
     if (!get_tuple_elems(point, &p0x, &p0y))
         return NULL;
 
     point = PyList_GetItem(simplex, 1);
-    if (point == NULL)
-        return NULL;
-
     if (!get_tuple_elems(point, &p1x, &p1y))
         return NULL;
 
     point = PyList_GetItem(simplex, 2);
-    if (point == NULL)
-        return NULL;
-
     if (!get_tuple_elems(point, &p2x, &p2y))
         return NULL;
 
@@ -267,15 +269,19 @@ fast_3d_circumcircle(PyObject *self, PyObject *args)
             return NULL;
     } else if (PyArray_Check(points)) {
         int dims = PyArray_NDIM(points);
+
         if (dims != 2) {
             PyErr_SetString(PyExc_ValueError, "fast_3d_circumcircle requires a two dimensional numpy array.");
             return NULL;
         }
+
         npy_intp * shape = PyArray_DIMS(points);
+
         if ((shape[0] < 4) && (shape[1] != 3)) {
             PyErr_SetString(PyExc_ValueError, "fast_3d_circumcircle requires a numpy array of width 4, height 3.");
             return NULL;
         }
+
         double* values = (double *) PyArray_DATA(points);
         x0 = values[0];
         y0 = values[1];
@@ -289,7 +295,6 @@ fast_3d_circumcircle(PyObject *self, PyObject *args)
         x3 = values[9];
         y3 = values[10];
         z3 = values[11];
-
     } else {
         PyErr_SetString(PyExc_ValueError, "Points must be a list, tuple, or numpy array.");
         return NULL;
@@ -318,27 +323,24 @@ fast_3d_circumcircle(PyObject *self, PyObject *args)
     double x = dx / aa;
     double y = dy / aa;
     double z = dz / aa;
+
     return Py_BuildValue("(fff)f", x + x0, y + y0, z + z0, sqrt(x * x + y * y + z * z));
 }
 
 
 static PyMethodDef triangulation_functions[] = {
     {"fast_norm", fast_norm, METH_VARARGS,
-		"fast_norm(vec)"
-		"Returns the norm of the given array. Requires one dimensional tuple, list, or numpy array."
-		"For large matrices, it is better to use numpy's linear algebra functions. Additionally, if the values in the"
-		"list are particularly small, squaring them may cause them to become zero. If they're very large, squaring them"
-		"may result in numerical overflow (in the case where they're above 10^150). Can not handle complex numbers."},
+		"Returns the norm of the given array. Requires one dimensional tuple, list, or numpy array.\n"
+		"For large matrices, it is better to use numpy's linear algebra functions.\nAdditionally, if the values in the "
+		"list are particularly small, squaring them may cause them to become zero.\nIf they're very large, squaring them "
+		"may result in numerical overflow (in the case where they're above 10^150).\nCan not handle complex numbers."},
     {"fast_2d_circumcircle", fast_2d_circumcircle, METH_VARARGS,
-     		"fast_2d_circumcircle(list)"
-		"Returns center and radius of the circle touching the first three points in the list. Requires a list, tuple,"
+		"Returns center and radius of the circle touching the first three points in the list.\nRequires a list, tuple,"
 		 "or numpy array that is 3x2 in shape."},
     {"fast_3d_circumcircle", fast_3d_circumcircle, METH_VARARGS,
-		"fast_3d_circumcircle(list)"
-		"Returns center and radius of the sphere touching the first four points in the list. Requires a list, tuple,"
+		"Returns center and radius of the sphere touching the first four points in the list.\nRequires a list, tuple,"
 		 "or numpy array that is 4x3 in shape."},
     {"fast_2d_point_in_simplex", (PyCFunction) fast_2d_point_in_simplex, METH_VARARGS | METH_KEYWORDS,
-		"fast_2d_point_in_simplex(point, simplex, eps=1e-8)"
 		"Returns true if the given 2d point is in the simplex, minus some error eps."},
 	{NULL}
 };
