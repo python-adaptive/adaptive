@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import numpy as np
 
 from setuptools import find_packages, setup
 
@@ -43,6 +44,8 @@ extras_require = {
     ]
 }
 
+triangulation_module = Extension("adaptive.triangulation", sources=['./adaptive/learner/triangulation.c'],
+                                 include_dirs=[np.get_include()])
 
 setup(
     name="adaptive",
@@ -63,4 +66,5 @@ setup(
     install_requires=install_requires,
     extras_require=extras_require,
     cmdclass=cmdclass,
+    ext_modules=[triangulation_module])
 )
