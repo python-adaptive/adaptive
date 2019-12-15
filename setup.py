@@ -3,7 +3,7 @@
 import sys
 import numpy as np
 
-from setuptools import find_packages, setup
+from setuptools import Extension, find_packages, setup
 
 if sys.version_info < (3, 6):
     print("adaptive requires Python 3.6 or above.")
