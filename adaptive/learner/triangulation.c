@@ -31,7 +31,7 @@ fast_norm(PyObject *self, PyObject *args)
     if (PyTuple_Check(vect)) {
         Py_ssize_t numElements = PyTuple_Size(vect);
         if (numElements <= 0) {
-            PyErr_SetString(PyExc_ValueError, "fast_norm requires a list of length 1 or greater.");
+            PyErr_SetString(PyExc_ValueError, "fast_norm requires a tuple of length 1 or greater.");
             return NULL;
         }
         double sum = 0;
@@ -105,16 +105,25 @@ fast_2d_point_in_simplex(PyObject *self, PyObject *args, PyObject *kwargs)
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|d", kwlist, &point, &simplex, &eps))
 		return NULL;
 
-
-    if (!PyTuple_Check(point))
+    if (!PyTuple_Check(point)) {
+        PyErr_SetString(PyExc_ValueError, "fast_2d_point_in_simplex requires a tuple as its first argument.");
         return NULL;
+    }
 
-    if (!PyList_Check(simplex))
+    if (!PyList_Check(simplex)) {
+        PyErr_SetString(PyExc_ValueError, "fast_2d_point_in_simplex requires a python list as its argument.");
         return NULL;
+    }
+
+    if (PyObject_Length(simplex) < 3) {
+        PyErr_SetString(PyExc_ValueError, "fast_2d_point_in_simplex requires simplex to contain at least 3 elements.");
+        return NULL;
+    }
 
     double px, py, p0x, p0y, p1x, p1y, p2x, p2y;
     if (!get_tuple_elems(point, &px, &py))
         return NULL;
+
 
     point = PyList_GetItem(simplex, 0);
     if (point == NULL)
@@ -152,37 +161,71 @@ fast_2d_circumcircle(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &points))
 		return NULL;
 
+    double x0, y0, x1, y1, x2, y2;
+
     if (PyList_Check(points)) {
         Py_ssize_t numElements = PyObject_Length(points);
-        if (numElements <= 0) {
-            PyErr_SetString(PyExc_ValueError, "fast_2d_circumcircle requires a list of length 1 or greater.");
+        if (numElements < 3) {
+            PyErr_SetString(PyExc_ValueError, "fast_2d_circumcircle requires a list of length 3 or greater.");
             return NULL;
         }
-        double x0, y0, x1, y1, x2, y2;
         if (!get_tuple_elems(PyList_GetItem(points, 0), &x0, &y0))
             return NULL;
         if (!get_tuple_elems(PyList_GetItem(points, 1), &x1, &y1))
             return NULL;
         if (!get_tuple_elems(PyList_GetItem(points, 2), &x2, &y2))
             return NULL;
+    } else if (PyTuple_Check(points)) {
+        Py_ssize_t numElements = PyTuple_Size(points);
+        if (numElements < 3) {
+            PyErr_SetString(PyExc_ValueError, "fast_2d_circumcircle requires a tuple of length 3 or greater.");
+            return NULL;
+        }
 
-        x1 -= x0;
-        y1 -= y0;
-
-        x2 -= x0;
-        y2 -= y0;
-
-        double l1 = x1 * x1 + y1 * y1;
-        double l2 = x2 * x2 + y2 * y2;
-        double dx = l1 * y2 - l2 * y1;
-        double dy = -l1 * x2 + l2 * x1;
-
-        double aa = 2 * (x1 * y2 - x2 * y1);
-        double x = dx / aa;
-        double y = dy / aa;
-        return Py_BuildValue("(ff)f", x + x0, y + y0, sqrt(x * x + y * y));
+        if (!get_tuple_elems(PyTuple_GetItem(points, 0), &x0, &y0))
+            return NULL;
+        if (!get_tuple_elems(PyTuple_GetItem(points, 1), &x1, &y1))
+            return NULL;
+        if (!get_tuple_elems(PyTuple_GetItem(points, 2), &x2, &y2))
+            return NULL;
+    } else if (PyArray_Check(points)) {
+        int dims = PyArray_NDIM(points);
+        if (dims != 2) {
+            PyErr_SetString(PyExc_ValueError, "fast_2d_circumcircle requires a two dimensional numpy array.");
+            return NULL;
+        }
+        npy_intp * shape = PyArray_DIMS(points);
+        if ((shape[0] < 3) && (shape[1] != 2)) {
+            PyErr_SetString(PyExc_ValueError, "fast_2d_circumcircle requires a numpy array of width 3, height 2.");
+            return NULL;
+        }
+        double* values = (double *) PyArray_DATA(points);
+        x0 = values[0];
+        y0 = values[1];
+        x1 = values[2];
+        y1 = values[3];
+        x2 = values[4];
+        y2 = values[5];
+    } else {
+        PyErr_SetString(PyExc_ValueError, "Points must be a list, tuple, or numpy array.");
+        return NULL;
     }
-    return NULL;
+
+    x1 -= x0;
+    y1 -= y0;
+
+    x2 -= x0;
+    y2 -= y0;
+
+    double l1 = x1 * x1 + y1 * y1;
+    double l2 = x2 * x2 + y2 * y2;
+    double dx = l1 * y2 - l2 * y1;
+    double dy = -l1 * x2 + l2 * x1;
+
+    double aa = 2 * (x1 * y2 - x2 * y1);
+    double x = dx / aa;
+    double y = dy / aa;
+    return Py_BuildValue("(ff)f", x + x0, y + y0, sqrt(x * x + y * y));
 }
 
 static PyObject *
@@ -192,13 +235,14 @@ fast_3d_circumcircle(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &points))
 		return NULL;
 
+    double x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3;
+
     if (PyList_Check(points)) {
         Py_ssize_t numElements = PyObject_Length(points);
-        if (numElements <= 0) {
-            PyErr_SetString(PyExc_ValueError, "fast_2d_circumcircle requires a list of length 1 or greater.");
+        if (numElements < 4) {
+            PyErr_SetString(PyExc_ValueError, "fast_3d_circumcircle requires a list of length 4 or greater.");
             return NULL;
         }
-        double x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3;
         if (!get_triple_tuple_elems(PyList_GetItem(points, 0), &x0, &y0, &z0))
             return NULL;
         if (!get_triple_tuple_elems(PyList_GetItem(points, 1), &x1, &y1, &z1))
@@ -207,45 +251,95 @@ fast_3d_circumcircle(PyObject *self, PyObject *args)
             return NULL;
         if (!get_triple_tuple_elems(PyList_GetItem(points, 3), &x3, &y3, &z3))
             return NULL;
+    } else if (PyTuple_Check(points)) {
+        Py_ssize_t numElements = PyTuple_Size(points);
+        if (numElements < 4) {
+            PyErr_SetString(PyExc_ValueError, "fast_3d_circumcircle requires a tuple of length 4 or greater.");
+            return NULL;
+        }
+        if (!get_triple_tuple_elems(PyTuple_GetItem(points, 0), &x0, &y0, &z0))
+            return NULL;
+        if (!get_triple_tuple_elems(PyTuple_GetItem(points, 1), &x1, &y1, &z1))
+            return NULL;
+        if (!get_triple_tuple_elems(PyTuple_GetItem(points, 2), &x2, &y2, &z2))
+            return NULL;
+        if (!get_triple_tuple_elems(PyTuple_GetItem(points, 3), &x3, &y3, &z3))
+            return NULL;
+    } else if (PyArray_Check(points)) {
+        int dims = PyArray_NDIM(points);
+        if (dims != 2) {
+            PyErr_SetString(PyExc_ValueError, "fast_3d_circumcircle requires a two dimensional numpy array.");
+            return NULL;
+        }
+        npy_intp * shape = PyArray_DIMS(points);
+        if ((shape[0] < 4) && (shape[1] != 3)) {
+            PyErr_SetString(PyExc_ValueError, "fast_3d_circumcircle requires a numpy array of width 4, height 3.");
+            return NULL;
+        }
+        double* values = (double *) PyArray_DATA(points);
+        x0 = values[0];
+        y0 = values[1];
+        z0 = values[2];
+        x1 = values[3];
+        y1 = values[4];
+        z1 = values[5];
+        x2 = values[6];
+        y2 = values[7];
+        z2 = values[8];
+        x3 = values[9];
+        y3 = values[10];
+        z3 = values[11];
 
-        x1 -= x0;
-        y1 -= y0;
-        z1 -= z0;
-
-        x2 -= x0;
-        y2 -= y0;
-        z2 -= z0;
-
-        x3 -= x0;
-        y3 -= y0;
-        z3 -= z0;
-
-        double l1 = x1 * x1 + y1 * y1 + z1 * z1;
-        double l2 = x2 * x2 + y2 * y2 + z2 * z2;
-        double l3 = x3 * x3 + y3 * y3 + z3 * z3;
-        double dx = l1 * (y2 * z3 - z2 * y3) - l2 * (y1 * z3 - z1 * y3) + l3 * (y1 * z2 - z1 * y2);
-        double dy = -l1 * (x2 * z3 - z2 * x3) - l2 * (x1 * z3 - z1 * x3) + l3 * (x1 * z2 - z1 * x2);
-        double dz = l1 * (x2 * y3 - y2 * x3) - l2 * (x1 * y3 - y1 * x3) + l3 * (x1 * y2 - y1 * x2);
-
-        double aa = 2 * (x1 * (y2 * z3 - z2 * y3) - x2 * (y1 * z3 - z1 * y3) + x3 * (y1 * z2 - z1 * y2));
-        double x = dx / aa;
-        double y = dy / aa;
-        double z = dz / aa;
-        return Py_BuildValue("(fff)f", x + x0, y + y0, z + z0, sqrt(x * x + y * y + z * z));
+    } else {
+        PyErr_SetString(PyExc_ValueError, "Points must be a list, tuple, or numpy array.");
+        return NULL;
     }
-    return NULL;
+
+    x1 -= x0;
+    y1 -= y0;
+    z1 -= z0;
+
+    x2 -= x0;
+    y2 -= y0;
+    z2 -= z0;
+
+    x3 -= x0;
+    y3 -= y0;
+    z3 -= z0;
+
+    double l1 = x1 * x1 + y1 * y1 + z1 * z1;
+    double l2 = x2 * x2 + y2 * y2 + z2 * z2;
+    double l3 = x3 * x3 + y3 * y3 + z3 * z3;
+    double dx = l1 * (y2 * z3 - z2 * y3) - l2 * (y1 * z3 - z1 * y3) + l3 * (y1 * z2 - z1 * y2);
+    double dy = -l1 * (x2 * z3 - z2 * x3) - l2 * (x1 * z3 - z1 * x3) + l3 * (x1 * z2 - z1 * x2);
+    double dz = l1 * (x2 * y3 - y2 * x3) - l2 * (x1 * y3 - y1 * x3) + l3 * (x1 * y2 - y1 * x2);
+
+    double aa = 2 * (x1 * (y2 * z3 - z2 * y3) - x2 * (y1 * z3 - z1 * y3) + x3 * (y1 * z2 - z1 * y2));
+    double x = dx / aa;
+    double y = dy / aa;
+    double z = dz / aa;
+    return Py_BuildValue("(fff)f", x + x0, y + y0, z + z0, sqrt(x * x + y * y + z * z));
 }
 
 
 static PyMethodDef triangulation_functions[] = {
     {"fast_norm", fast_norm, METH_VARARGS,
-		"Returns the norm of the given array."},
+		"fast_norm(vec)"
+		"Returns the norm of the given array. Requires one dimensional tuple, list, or numpy array."
+		"For large matrices, it is better to use numpy's linear algebra functions. Additionally, if the values in the"
+		"list are particularly small, squaring them may cause them to become zero. If they're very large, squaring them"
+		"may result in numerical overflow (in the case where they're above 10^150). Can not handle complex numbers."},
     {"fast_2d_circumcircle", fast_2d_circumcircle, METH_VARARGS,
-		"Returns the norm of the given array."},
+     		"fast_2d_circumcircle(list)"
+		"Returns center and radius of the circle touching the first three points in the list. Requires a list, tuple,"
+		 "or numpy array that is 3x2 in shape."},
     {"fast_3d_circumcircle", fast_3d_circumcircle, METH_VARARGS,
-		"Returns the norm of the given array."},
+		"fast_3d_circumcircle(list)"
+		"Returns center and radius of the sphere touching the first four points in the list. Requires a list, tuple,"
+		 "or numpy array that is 4x3 in shape."},
     {"fast_2d_point_in_simplex", (PyCFunction) fast_2d_point_in_simplex, METH_VARARGS | METH_KEYWORDS,
-		"Refer to docs."},
+		"fast_2d_point_in_simplex(point, simplex, eps=1e-8)"
+		"Returns true if the given 2d point is in the simplex, minus some error eps."},
 	{NULL}
 };
 
