@@ -94,8 +94,7 @@ def test_circumsphere():
             )
         if not allclose(radius, circ_radius):
             err_msg += "Calculated radius {} differs from true radius {}".format(
-                circ_radius,
-                radius,
+                circ_radius, radius,
             )
         if err_msg:
             raise AssertionError(err_msg)
