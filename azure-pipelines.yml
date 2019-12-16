@@ -25,8 +25,24 @@ jobs:
     displayName: 'Install tox'
   - script: tox -e py37
     displayName: 'Run the tests'
-  - script: tox -e clean,report
+  - script: tox -e report
     displayName: 'Test coverage'
+  - script: |
+      pip install codecov
+      codecov -t $(CODECOV_TOKEN) -f .coverage.xml
+    displayName: 'Test upload coverage'
+  - script: tox -e clean
+    displayName: 'Test cleanup'
+
+- job: pytest38
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.8'
+  - script: pip install tox
+    displayName: 'Install tox'
+  - script: tox -e py38
+    displayName: 'Run the tests'
 
 - job: pre_commit
   steps:
