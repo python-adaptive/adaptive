@@ -2,7 +2,8 @@
 
 import sys
 
-from setuptools import find_packages, setup
+import numpy as np
+from setuptools import Extension, find_packages, setup
 
 if sys.version_info < (3, 6):
     print("adaptive requires Python 3.6 or above.")
@@ -43,6 +44,11 @@ extras_require = {
     ]
 }
 
+triangulation_module = Extension(
+    "adaptive.triangulation",
+    sources=["./adaptive/learner/triangulation.c"],
+    include_dirs=[np.get_include()],
+)
 
 setup(
     name="adaptive",
@@ -63,4 +69,5 @@ setup(
     install_requires=install_requires,
     extras_require=extras_require,
     cmdclass=cmdclass,
+    ext_modules=[triangulation_module],
 )
