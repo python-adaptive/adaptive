@@ -1,4 +1,5 @@
 import abc
+from collections.abc import Iterable
 from contextlib import suppress
 from copy import deepcopy
 
@@ -189,6 +190,28 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         with suppress(FileNotFoundError, EOFError):
             data = load(fname, compress)
             self._set_data(data)
+
+    def evaluate_X(self, X):
+        """
+        Evaluates the learner's sampling function at the given point
+        or points.
+        Can be used to evaluate some initial points that the learner
+        will remember before running the runner.
+
+        Arguments:
+            X: float, tuple or Iterable
+                Single domain point or iterable of domain points
+                A tuple is assumed to be a single point for a
+                multi-variable domain.
+        """
+        if type(X) is tuple or not isinstance(X, Iterable):
+            # A single-variable domain single point or
+            # a multi-variable domain single point is given
+            self.tell(X, self.function(X))
+        else:
+            # Several points are to be evaluated
+            Y = [self.function(Xi) for Xi in X]
+            self.tell_many(X, Y)
 
     def __getstate__(self):
         return deepcopy(self.__dict__)
