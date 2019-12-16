@@ -2,25 +2,25 @@ from collections import Counter
 from collections.abc import Iterable, Sized
 from itertools import chain, combinations
 from math import factorial, sqrt
-import scipy.spatial
 
+import scipy.spatial
 from numpy import (
-    square,
-    zeros,
-    subtract,
+    abs,
     array,
-    ones,
-    dot,
     asarray,
-    concatenate,
     average,
+    concatenate,
+    dot,
     eye,
     mean,
-    abs,
+    ones,
+    square,
+    subtract,
 )
 from numpy import sum as nsum
+from numpy import zeros
 from numpy.linalg import det as ndet
-from numpy.linalg import slogdet, solve, matrix_rank, norm
+from numpy.linalg import matrix_rank, norm, slogdet, solve
 
 
 def fast_norm(v):
