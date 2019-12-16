@@ -11,10 +11,20 @@ from numpy.linalg import slogdet, solve, matrix_rank, norm
 
 
 def fast_norm(v):
+    """ Manually take the vector norm for len 2, 3 vectors. Defaults to a square root of the dot product
+    for larger vectors. 
+    
+    Note that for large vectors, it is possible for integer overflow to occur. 
+    For instance:
+    vec = [49024, 59454, 12599, -63721, 18517, 27961]
+    dot(vec, vec) = -1602973744
+    
+    """
+    len_v = len(v)
     # notice this method can be even more optimised
-    if len(v) == 2:
+    if len_v == 2:
         return sqrt(v[0] * v[0] + v[1] * v[1])
-    if len(v) == 3:
+    if len_v == 3:
         return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
     return sqrt(dot(v, v))
 
