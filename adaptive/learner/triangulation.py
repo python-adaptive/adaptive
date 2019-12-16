@@ -4,8 +4,8 @@ from itertools import chain, combinations
 from math import factorial, sqrt
 
 import scipy.spatial
+from numpy import abs as np_abs
 from numpy import (
-    abs,
     array,
     asarray,
     average,
@@ -17,7 +17,7 @@ from numpy import (
     square,
     subtract,
 )
-from numpy import sum as nsum
+from numpy import sum as np_sum
 from numpy import zeros
 from numpy.linalg import det as ndet
 from numpy.linalg import matrix_rank, norm, slogdet, solve
@@ -163,7 +163,7 @@ def circumsphere(pts):
         return fast_3d_circumcircle(pts)
 
     # Modified method from http://mathworld.wolfram.com/Circumsphere.html
-    mat = array([[nsum(square(pt)), *pt, 1] for pt in pts])
+    mat = array([[np_sum(square(pt)), *pt, 1] for pt in pts])
     center = zeros(dim)
     a = 1 / (2 * ndet(mat[:, 1:]))
     factor = a
@@ -560,7 +560,7 @@ class Triangulation:
         is to check that a simplex is almost flat."""
         vertices = array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
-        average_edge_length = mean(abs(vectors))
+        average_edge_length = mean(np_abs(vectors))
         return self.volume(simplex) / (average_edge_length ** self.dim)
 
     def add_point(self, point, simplex=None, transform=None):
