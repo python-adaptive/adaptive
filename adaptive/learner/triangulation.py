@@ -4,7 +4,21 @@ from itertools import chain, combinations
 from math import factorial
 import scipy.spatial
 
-from numpy import square, zeros, subtract, array, ones, dot, asarray, concatenate, average, eye, mean, abs, sqrt
+from numpy import (
+    square,
+    zeros,
+    subtract,
+    array,
+    ones,
+    dot,
+    asarray,
+    concatenate,
+    average,
+    eye,
+    mean,
+    abs,
+    sqrt,
+)
 from numpy import sum as nsum
 from numpy.linalg import det as ndet
 from numpy.linalg import slogdet, solve, matrix_rank, norm
@@ -12,13 +26,13 @@ from numpy.linalg import slogdet, solve, matrix_rank, norm
 
 def fast_norm(v):
     """ Manually take the vector norm for len 2, 3 vectors. Defaults to a square root of the dot product
-    for larger vectors. 
-    
-    Note that for large vectors, it is possible for integer overflow to occur. 
+    for larger vectors.
+
+    Note that for large vectors, it is possible for integer overflow to occur.
     For instance:
     vec = [49024, 59454, 12599, -63721, 18517, 27961]
     dot(vec, vec) = -1602973744
-    
+
     """
     len_v = len(v)
     # notice this method can be even more optimised
