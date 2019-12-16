@@ -67,7 +67,7 @@ def test_circumsphere():
     from adaptive.learner.triangulation import circumsphere, fast_norm
     from numpy import allclose
     from numpy.random import normal, uniform
-    center_diff_err = "Calculated center [%s] differs from true center [%s]\n"
+    center_diff_err = "Calculated center (%s) differs from true center (%s)\n"
 
     def generate_random_sphere_points(dim, radius=0):
         """ Refer to https://math.stackexchange.com/a/1585996 """
@@ -88,7 +88,7 @@ def test_circumsphere():
         circ_center, circ_radius = circumsphere(points)
         err_msg = ""
         if not allclose(circ_center, center):
-            err_msg += center_diff_err % (",".join([str(x) for x in circ_center]), ",".join([str(x) for x in center]))
+            err_msg += center_diff_err % (", ".join([str(x) for x in circ_center]), ", ".join([str(x) for x in center]))
         if not allclose(radius, circ_radius):
             err_msg += "Calculated radius %s differs from true radius %s" % (circ_radius, radius)
         if err_msg:
