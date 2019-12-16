@@ -1,33 +1,45 @@
+trigger:
+  branches:
+    include:
+    - master
+pr:
+  - "*"
+
 jobs:
-- job: unit_tests
+- job: pytest36
   steps:
-  - bash: echo "##vso[task.prependpath]/usr/share/miniconda/bin"
-    displayName: Add conda to PATH
-
-  - script: conda env create --quiet --file environment.yml
-    displayName: Create Anaconda environment
-
-  - script: |
-      source activate adaptive
-      pip install -r test-requirements.txt
-    displayName: 'Install test-requirements.txt'
-
-  - script: |
-      source activate adaptive
-      pytest --verbose --cov=adaptive --cov-report term --cov-report html adaptive
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.6'
+  - script: pip install tox
+    displayName: 'Install tox'
+  - script: tox -e py36
     displayName: 'Run the tests'
 
-- job: linting_tests
+- job: pytest37
   steps:
-  - bash: echo "##vso[task.prependpath]/usr/share/miniconda/bin"
-    displayName: Add conda to PATH
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.7'
+  - script: pip install tox
+    displayName: 'Install tox'
+  - script: tox -e py37
+    displayName: 'Run the tests'
+  - script: tox -e clean,report
+    displayName: 'Test coverage'
 
-  - script: |
-      pip install pre_commit
-      pre-commit install
-      pre-commit run --all-files --show-diff-on-failure
-    displayName: 'Run pre-commit'
+- job: pre_commit
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.7'
+  - script: pip install tox
+    displayName: 'Install tox'
+  - script: tox -e pre-commit
+    displayName: 'Lining tests'
 
+- job: authors_check
+  steps:
   - script: |
       MISSING_AUTHORS=$(git shortlog -s HEAD | sed -e "s/^[0-9\t ]*//"| xargs -i sh -c 'grep -q "{}" AUTHORS.md || echo "{} missing from authors"')
       if [ ! -z "$MISSING_AUTHORS" ]; then { echo $MISSING_AUTHORS; exit 1; }; fi
