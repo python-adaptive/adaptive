@@ -316,12 +316,12 @@ fast_3d_circumcircle(PyObject *self, PyObject *args)
     double l2 = x2 * x2 + y2 * y2 + z2 * z2;
     double l3 = x3 * x3 + y3 * y3 + z3 * z3;
     double dx = l1 * (y2 * z3 - z2 * y3) - l2 * (y1 * z3 - z1 * y3) + l3 * (y1 * z2 - z1 * y2);
-    double dy = -l1 * (x2 * z3 - z2 * x3) - l2 * (x1 * z3 - z1 * x3) + l3 * (x1 * z2 - z1 * x2);
+    double dy = l1 * (x2 * z3 - z2 * x3) - l2 * (x1 * z3 - z1 * x3) + l3 * (x1 * z2 - z1 * x2);
     double dz = l1 * (x2 * y3 - y2 * x3) - l2 * (x1 * y3 - y1 * x3) + l3 * (x1 * y2 - y1 * x2);
 
     double aa = 2 * (x1 * (y2 * z3 - z2 * y3) - x2 * (y1 * z3 - z1 * y3) + x3 * (y1 * z2 - z1 * y2));
     double x = dx / aa;
-    double y = dy / aa;
+    double y = -dy / aa;
     double z = dz / aa;
 
     return Py_BuildValue("(fff)f", x + x0, y + y0, z + z0, sqrt(x * x + y * y + z * z));
