@@ -57,7 +57,6 @@ def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
 
 
 def point_in_simplex(point, simplex, eps=1e-8):
-    # simplex is list
     if len(point) == 2:
         return fast_2d_point_in_simplex(point, simplex, eps)
 
@@ -79,7 +78,7 @@ def fast_2d_circumcircle(points):
     Returns
     -------
     tuple
-        (center point : tuple(int), radius: int)
+        (center point : tuple(float), radius: float)
     """
     points = array(points)
     # transform to relative coordinates
@@ -115,7 +114,7 @@ def fast_3d_circumcircle(points):
     Returns
     -------
     tuple
-        (center point : tuple(int), radius: int)
+        (center point : tuple(float), radius: float)
     """
     points = array(points)
     pts = points[1:] - points[0]
@@ -258,7 +257,7 @@ def simplex_volume_in_embedding(vertices) -> float:
     vol_square = fast_det(sq_dists_mat) / coeff
 
     if vol_square < 0:
-        if abs(vol_square) < 1e-15:
+        if -1e-15 < vol_square < 1e-15:
             return 0
         raise ValueError("Provided vertices do not form a simplex")
 
