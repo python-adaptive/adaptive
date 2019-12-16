@@ -40,7 +40,16 @@ extras_require = {
         "bokeh",
         "matplotlib",
         "plotly",
-    ]
+    ],
+    "testing": [
+        "pexpect",
+        "pytest",
+        "pytest-cov",
+        "pytest-randomly",
+        "pytest-timeout",
+        "pre_commit",
+    ],
+    "other": ["ipyparallel", "distributed", "scikit-optimize"],
 }
 
 
