@@ -93,7 +93,7 @@ def test_circumsphere():
                 ",".join([str(x) for x in center]),
             )
         if not allclose(radius, circ_radius):
-            err_msg += "Calculated radius %s differs from true radius %s" % (
+            err_msg += "Calculated radius {} differs from true radius {}".format(
                 circ_radius,
                 radius,
             )
