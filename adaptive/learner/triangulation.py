@@ -1,7 +1,7 @@
 from collections import Counter
 from collections.abc import Iterable, Sized
 from itertools import chain, combinations
-from math import factorial
+from math import factorial, sqrt
 import scipy.spatial
 
 from numpy import (
@@ -17,7 +17,6 @@ from numpy import (
     eye,
     mean,
     abs,
-    sqrt,
 )
 from numpy import sum as nsum
 from numpy.linalg import det as ndet
