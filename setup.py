@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import os
 import sys
 
 from setuptools import find_packages, setup
@@ -30,10 +29,6 @@ install_requires = [
     "sortedcontainers >= 2.0",
     "atomicwrites",
 ]
-
-if os.name == "nt":  # on Windows
-    # distributed provides the default executor on Windows
-    install_requires.append("distributed")
 
 extras_require = {
     "notebook": [
