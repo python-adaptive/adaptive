@@ -36,6 +36,7 @@ Instead you can probably use ``functools.partial`` to accomplish what you want t
 I get "``concurrent.futures.process.BrokenProcessPool``: A process in the process pool was terminated abruptly while the future was running or pending." what does it mean?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+XXX: add answer!
 
 Where can I learn more about the algorithm used?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,17 +83,25 @@ We'd say that Bayesian modeling is good for really computationally expensive dat
 What is the difference with Kringing?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+XXX: add answer!
+
 
 What is the difference with adaptive meshing in CFD or computer graphics?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+XXX: add answer!
 
 
 Can I use this to tune my hyper parameters for machine learning models?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+XXX: add answer!
+
 
 How to use Adaptive with MATLAB?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+XXX: add answer!
 
 
 Missing a question that you think belongs here? Let us `know <https://github.com/python-adaptive/adaptive/issues/new>`_.
