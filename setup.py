@@ -42,14 +42,13 @@ extras_require = {
         "plotly",
     ],
     "testing": [
-        "pexpect",
         "pytest",
         "pytest-cov",
         "pytest-randomly",
         "pytest-timeout",
         "pre_commit",
     ],
-    "other": ["ipyparallel", "distributed", "scikit-optimize"],
+    "other": ["pexpect", "ipyparallel", "distributed", "scikit-optimize"],
 }
 
 
