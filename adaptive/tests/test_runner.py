@@ -87,15 +87,6 @@ def ipyparallel_executor():
         raise RuntimeError("Could not stop ipcluster")
 
 
-@pytest.fixture(scope="session")
-def dask_executor():
-    from distributed import Client
-
-    client = Client(n_workers=1)
-    yield client
-    client.close()
-
-
 def linear(x):
     return x
 
@@ -130,7 +121,11 @@ def test_ipyparallel_executor(ipyparallel_executor):
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(not with_distributed, reason="dask.distributed is not installed")
 @pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="XXX: seems to always fail")
-def test_distributed_executor(dask_executor):
+def test_distributed_executor():
+    from distributed import Client
+
     learner = Learner1D(linear, (-1, 1))
-    BlockingRunner(learner, trivial_goal, executor=dask_executor)
+    client = Client(n_workers=1)
+    BlockingRunner(learner, trivial_goal, executor=client)
+    client.shutdown()
     assert learner.npoints > 0
