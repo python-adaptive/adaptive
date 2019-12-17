@@ -308,7 +308,7 @@ def BlockingRunner(
 
     >>> import asyncio
     >>> r = adaptive.Runner(...)
-    >>> asyncio.run(r)
+    >>> asyncio.get_event_loop().run_until_complete(r.task)
 
     Parameters
     ----------
@@ -388,7 +388,7 @@ def BlockingRunner(
         raise_if_retries_exceeded=raise_if_retries_exceeded,
     )
 
-    asyncio.run(r)
+    r.ioloop.run_until_complete(r.task)
 
     return r
 
