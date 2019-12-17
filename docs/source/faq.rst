@@ -25,6 +25,14 @@ How do I get a `~adaptiveLearner2D`\'s data on a grid?
 Use ``learner.interpolated_on_grid()`` optionally with a argument ``n`` to specify the the amount of points in ``x`` and ``y``.
 
 
+Why can I not use a ``lambda`` function?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The functions evaluations are done on an executor.
+Therefore, the ``function`` needs to be serialized (pickled) and send to the executor, ``lambda``\s cannot be pickled.
+Instead you can probably use ``functools.partial`` to accomplish what you want to do.
+
+
 I get "``concurrent.futures.process.BrokenProcessPool``: A process in the process pool was terminated abruptly while the future was running or pending." what does it mean?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
