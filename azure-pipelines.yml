@@ -13,41 +13,41 @@ jobs:
       UbuntuPython36:
         python.version: '3.6'
         vmImage: 'ubuntu-16.04'
-        tox_env: '36'
+        tox_env: 'py36'
       UbuntuPython37:
         python.version: '3.7'
         vmImage: 'ubuntu-16.04'
-        tox_env: '37'
+        tox_env: 'py37'
       UbuntuPython38:
         python.version: '3.8'
         vmImage: 'ubuntu-16.04'
-        tox_env: '38'
+        tox_env: 'py38'
 
       macOSPython36:
         python.version: '3.6'
         vmImage: 'macOS-10.13'
-        tox_env: '36'
+        tox_env: 'py36'
       macOSPython37:
         python.version: '3.7'
         vmImage: 'macOS-10.13'
-        tox_env: '37'
+        tox_env: 'py37'
       macOSPython38:
         python.version: '3.8'
         vmImage: 'macOS-10.13'
-        tox_env: '38'
+        tox_env: 'py38'
 
       WindowsPython36:
         python.version: '3.6'
         vmImage: 'vs2017-win2016'
-        tox_env: '36'
+        tox_env: 'py36'
       WindowsPython37:
         python.version: '3.7'
         vmImage: 'vs2017-win2016'
-        tox_env: '37'
+        tox_env: 'py37'
       WindowsPython38:
         python.version: '3.8'
         vmImage: 'vs2017-win2016'
-        tox_env: '38'
+        tox_env: 'py38'
   pool:
     vmImage: '$(vmImage)'
   steps:
@@ -56,11 +56,11 @@ jobs:
       versionSpec: '$(python.version)'
   - script: pip install tox
     displayName: Install tox
-  - script: tox -e bare$(tox_env)
-    displayName: Run the bare tests
+  - script: tox -e $(tox_env)-mindeps
+    displayName: Run the tests with minimal dependencies
   - script: tox -e clean
     displayName: Clean
-  - script: tox -e py$(tox_env)
+  - script: tox -e $(tox_env)-alldeps
     displayName: Run the tests
 
 - job: coverage
