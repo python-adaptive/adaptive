@@ -110,7 +110,7 @@ def maybe_skip(learner):
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
-def quadratic(x, m: uniform(0, 10), b: uniform(0, 1)):
+def quadratic(x, m: uniform(1, 4), b: uniform(0, 1)):
     return m * x ** 2 + b
 
 
@@ -132,7 +132,7 @@ def ring_of_fire(xy, d: uniform(0.2, 1)):
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
 @learn_with(SequenceLearner, sequence=np.random.rand(1000, 3))
-def sphere_of_fire(xyz, d: uniform(0.2, 1)):
+def sphere_of_fire(xyz, d: uniform(0.2, 0.5)):
     a = 0.2
     x, y, z = xyz
     return x + math.exp(-((x ** 2 + y ** 2 + z ** 2 - d ** 2) ** 2) / a ** 4) + z ** 2
@@ -141,7 +141,7 @@ def sphere_of_fire(xyz, d: uniform(0.2, 1)):
 @learn_with(SequenceLearner, sequence=range(1000))
 @learn_with(AverageLearner, rtol=1)
 def gaussian(n):
-    return random.gauss(0, 1)
+    return random.gauss(1, 1)
 
 
 # Decorators for tests.
