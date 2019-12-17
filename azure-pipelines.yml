@@ -70,7 +70,7 @@ jobs:
       versionSpec: '3.7'
   - script: pip install tox
     displayName: Install tox
-  - script: tox -e py37,report
+  - script: tox -e py37-alldeps,report
     displayName: Run the tests and generate coverage
   - script: |
       pip install codecov
