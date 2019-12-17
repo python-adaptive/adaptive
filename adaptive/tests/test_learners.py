@@ -519,6 +519,7 @@ def test_saving(learner_type, f, learner_kwargs):
         control._recompute_losses_factor = 1
     simple(learner, lambda l: l.npoints > 100)
     fd, path = tempfile.mkstemp()
+    os.close(fd)
     try:
         learner.save(path)
         control.load(path)
@@ -591,6 +592,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
 
     simple(learner, lambda l: l.npoints > 100)
     fd, path = tempfile.mkstemp()
+    os.close(fd)
     try:
         learner.save(path)
         control.load(path)
