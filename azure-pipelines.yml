@@ -6,43 +6,76 @@ pr:
   - "*"
 
 jobs:
-- job: pytest36
+- job: pytest
+  strategy:
+    # use cross-product when https://github.com/microsoft/azure-pipelines-yaml/issues/20 is solved
+    matrix:
+      UbuntuPython36:
+        python.version: '3.6'
+        vmImage: 'ubuntu-16.04'
+        tox_env: '36'
+      UbuntuPython37:
+        python.version: '3.7'
+        vmImage: 'ubuntu-16.04'
+        tox_env: '37'
+      UbuntuPython38:
+        python.version: '3.8'
+        vmImage: 'ubuntu-16.04'
+        tox_env: '38'
+
+      macOSPython36:
+        python.version: '3.6'
+        vmImage: 'macOS-10.13'
+        tox_env: '36'
+      macOSPython37:
+        python.version: '3.7'
+        vmImage: 'macOS-10.13'
+        tox_env: '37'
+      macOSPython38:
+        python.version: '3.8'
+        vmImage: 'macOS-10.13'
+        tox_env: '38'
+
+      WindowsPython36:
+        python.version: '3.6'
+        vmImage: 'vs2017-win2016'
+        tox_env: '36'
+      WindowsPython37:
+        python.version: '3.7'
+        vmImage: 'vs2017-win2016'
+        tox_env: '37'
+      WindowsPython38:
+        python.version: '3.8'
+        vmImage: 'vs2017-win2016'
+        tox_env: '38'
+  pool:
+    vmImage: '$(vmImage)'
   steps:
   - task: UsePythonVersion@0
     inputs:
-      versionSpec: '3.6'
+      versionSpec: '$(python.version)'
   - script: pip install tox
-    displayName: 'Install tox'
-  - script: tox -e py36
-    displayName: 'Run the tests'
+    displayName: Install tox
+  - script: tox -e bare$(tox_env)
+    displayName: Run the bare tests
+  - script: tox -e clean
+    displayName: Clean
+  - script: tox -e py$(tox_env)
+    displayName: Run the tests
 
-- job: pytest37
+- job: coverage
   steps:
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '3.7'
   - script: pip install tox
-    displayName: 'Install tox'
-  - script: tox -e py37
-    displayName: 'Run the tests'
-  - script: tox -e report
-    displayName: 'Test coverage'
+    displayName: Install tox
+  - script: tox -e py37,report
+    displayName: Run the tests and generate coverage
   - script: |
       pip install codecov
       codecov -t $(CODECOV_TOKEN) -f .coverage.xml
-    displayName: 'Test upload coverage'
-  - script: tox -e clean
-    displayName: 'Test cleanup'
-
-- job: pytest38
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.8'
-  - script: pip install tox
-    displayName: 'Install tox'
-  - script: tox -e py38
-    displayName: 'Run the tests'
+    displayName: Test upload coverage
 
 - job: pre_commit
   steps:
@@ -50,9 +83,9 @@ jobs:
     inputs:
       versionSpec: '3.7'
   - script: pip install tox
-    displayName: 'Install tox'
+    displayName: Install tox
   - script: tox -e pre-commit
-    displayName: 'Lining tests'
+    displayName: Lining tests
 
 - job: authors_check
   steps:
