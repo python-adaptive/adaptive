@@ -308,7 +308,7 @@ def BlockingRunner(
 
     >>> import asyncio
     >>> r = adaptive.Runner(...)
-    >>> asyncio.get_event_loop().run_until_complete(r.task)
+    >>> r.ioloop.run_until_complete(r.task)
 
     Parameters
     ----------
