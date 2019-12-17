@@ -43,6 +43,7 @@ extras_require = {
         "plotly",
     ],
     "testing": [
+        "flaky",
         "pytest",
         "pytest-cov",
         "pytest-randomly",
