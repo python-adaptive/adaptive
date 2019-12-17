@@ -27,7 +27,7 @@ from adaptive.learner import (
 from adaptive.runner import simple
 
 try:
-    from adaptive.learner import SKOptLearner
+    from adaptive.learner.skopt_learner import SKOptLearner
 except ModuleNotFoundError:
     SKOptLearner = None
 
