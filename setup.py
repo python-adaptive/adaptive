@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 
 from setuptools import find_packages, setup
@@ -48,9 +49,13 @@ extras_require = {
         "pytest-timeout",
         "pre_commit",
     ],
-    "other": ["pexpect", "ipyparallel", "distributed", "scikit-optimize"],
+    "other": [
+        "ipyparallel",
+        "distributed",
+        "scikit-optimize",
+        "wexpect" if os.name == "nt" else "pexpect",
+    ],
 }
-
 
 setup(
     name="adaptive",

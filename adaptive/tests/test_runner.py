@@ -1,4 +1,5 @@
 import asyncio
+import os
 import sys
 import time
 
@@ -72,9 +73,13 @@ def test_aync_def_function():
 @pytest.fixture(scope="session")
 def ipyparallel_executor():
     from ipyparallel import Client
-    import pexpect
 
-    child = pexpect.spawn("ipcluster start -n 1")
+    if os.name == "nt":
+        import wexpect as expect
+    else:
+        import pexpect as expect
+
+    child = expect.spawn("ipcluster start -n 1")
     child.expect("Engines appear to have started successfully", timeout=35)
     yield Client()
     if not child.terminate(force=True):
