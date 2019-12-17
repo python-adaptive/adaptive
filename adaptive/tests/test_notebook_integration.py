@@ -9,7 +9,9 @@ except ImportError:
     with_notebook_dependencies = False
 
 
-@pytest.mark.skipif(not with_notebook_dependencies)
+@pytest.mark.skipif(
+    not with_notebook_dependencies, reason="notebook dependencies are not installed"
+)
 def test_private_api_used_in_live_info():
     """We are catching all errors in
     adaptive.notebook_integration.should_update
