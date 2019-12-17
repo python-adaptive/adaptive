@@ -155,6 +155,25 @@ def fast_det(matrix):
 
 
 def circumsphere(pts):
+    """Compute the center and radius of a N dimension sphere which touches each point in pts.
+
+    Parameters
+    ----------
+    pts : array-like, of shape (N-dim + 1, N-dim)
+        The points for which we would like to compute a circumsphere.
+
+    Returns
+    -------
+    center : tuple of floats of size N-dim
+    radius : a positive float
+    A valid center and radius, if a circumsphere is possible, and no points are repeated.
+    If points are repeated, or a circumsphere is not possible, will return nans, and a
+    ZeroDivisionError may occur.
+    Will fail for matrices which are not (N-dim + 1, N-dim) in size due to non-square determinants:
+    will raise numpy.linalg.LinAlgError.
+    May fail for points that are integers (due to 32bit integer overflow).
+    """
+
     dim = len(pts) - 1
     if dim == 2:
         return fast_2d_circumcircle(pts)
@@ -166,6 +185,7 @@ def circumsphere(pts):
     center = zeros(dim)
     a = 1 / (2 * ndet(mat[:, 1:]))
     factor = a
+    # Use ind to index into the matrix columns
     ind = ones((dim + 2,), bool)
     for i in range(1, len(pts)):
         ind[i - 1] = True
@@ -173,8 +193,10 @@ def circumsphere(pts):
         center[i - 1] = factor * ndet(mat[:, ind])
         factor *= -1
 
+    # Use subtract as we don't know the type of x0.
     x0 = pts[0]
     vec = subtract(center, x0)
+    # Vector norm.
     radius = sqrt(dot(vec, vec))
 
     return tuple(center), radius
@@ -223,7 +245,7 @@ def simplex_volume_in_embedding(vertices) -> float:
 
     Returns
     -------
-    volume : int
+    volume : float
         the volume of the simplex with given vertices.
 
     Raises
@@ -257,7 +279,7 @@ def simplex_volume_in_embedding(vertices) -> float:
     vol_square = fast_det(sq_dists_mat) / coeff
 
     if vol_square < 0:
-        if -1e-15 < vol_square < 1e-15:
+        if vol_square > -1e-15:
             return 0
         raise ValueError("Provided vertices do not form a simplex")
 
