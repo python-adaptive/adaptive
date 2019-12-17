@@ -1,7 +1,15 @@
-import ipykernel.iostream
-import zmq
+import pytest
+
+try:
+    import ipykernel.iostream
+    import zmq
+
+    with_notebook_dependencies = True
+except ImportError:
+    with_notebook_dependencies = False
 
 
+@pytest.mark.skipif(not with_notebook_dependencies)
 def test_private_api_used_in_live_info():
     """We are catching all errors in
     adaptive.notebook_integration.should_update
