@@ -495,7 +495,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
             x = stash.pop()
             learner.tell(x, learner.function(x))
 
-    assert all(l.npoints > 10 for l in learner.learners), [
+    assert all(l.npoints > 5 for l in learner.learners), [
         l.npoints for l in learner.learners
     ]
 
