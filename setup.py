@@ -31,7 +31,7 @@ install_requires = [
     "atomicwrites",
 ]
 
-if os.name == 'nt':  # on Windows
+if os.name == "nt":  # on Windows
     # distributed provides the default executor on Windows
     install_requires.append("distributed")
 
