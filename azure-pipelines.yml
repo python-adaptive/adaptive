@@ -10,44 +10,58 @@ jobs:
   strategy:
     # use cross-product when https://github.com/microsoft/azure-pipelines-yaml/issues/20 is solved
     matrix:
-      UbuntuPython36:
+      UbuntuPy36:
         python.version: '3.6'
         vmImage: 'ubuntu-16.04'
         tox_env: 'py36'
-      UbuntuPython37:
+      UbuntuPy37:
         python.version: '3.7'
         vmImage: 'ubuntu-16.04'
         tox_env: 'py37'
-      UbuntuPython38:
+      UbuntuPy38:
         python.version: '3.8'
         vmImage: 'ubuntu-16.04'
         tox_env: 'py38'
 
-      macOSPython36:
+      macOSPy36:
         python.version: '3.6'
         vmImage: 'macOS-10.13'
         tox_env: 'py36'
-      macOSPython37:
+      macOSPy37:
         python.version: '3.7'
         vmImage: 'macOS-10.13'
         tox_env: 'py37'
-      macOSPython38:
+      macOSPy38:
         python.version: '3.8'
         vmImage: 'macOS-10.13'
         tox_env: 'py38'
 
-      WindowsPython36:
+      WindowsServerPy36:
         python.version: '3.6'
         vmImage: 'vs2017-win2016'
         tox_env: 'py36'
-      WindowsPython37:
+      WindowsServerPy37:
         python.version: '3.7'
         vmImage: 'vs2017-win2016'
         tox_env: 'py37'
-      WindowsPython38:
+      WindowsServerPy38:
         python.version: '3.8'
         vmImage: 'vs2017-win2016'
         tox_env: 'py38'
+
+      WindowsPy36:
+        python.version: '3.6'
+        vmImage: 'windows-latest'
+        tox_env: 'py36'
+      WindowsPy37:
+        python.version: '3.7'
+        vmImage: 'windows-latest'
+        tox_env: 'py37'
+      WindowsPy38:
+        python.version: '3.8'
+        vmImage: 'windows-latest'
+        tox_env: 'py38'
+
   pool:
     vmImage: '$(vmImage)'
   steps:
