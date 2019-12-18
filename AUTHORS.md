@@ -11,3 +11,4 @@ Other contributors to Adaptive include:
 + Andrey E. Antipov
 + [Christoph Groth](<http://inac.cea.fr/Pisp/christoph.groth/>)
 + Jorn Hoofwijk
++ Victor Negîrneac (@caenrigen)
