@@ -250,10 +250,14 @@ def _info_html(runner):
         "finished": "green",
     }[status]
 
+    overhead = runner.overhead()
+    red_level = max(0, min(int(255 * overhead / 100), 255))
+    overhead_color = "#{:02x}{:02x}{:02x}".format(red_level, 255 - red_level, 0)
+
     info = [
         ("status", f'<font color="{color}">{status}</font>'),
         ("elapsed time", datetime.timedelta(seconds=runner.elapsed_time())),
-        ("overhead", f"{runner.overhead():.2f}%"),
+        ("overhead", f'<font color="{overhead_color}">{overhead:.2f}%</font>'),
     ]
 
     with suppress(Exception):
