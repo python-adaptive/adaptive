@@ -1,4 +1,5 @@
 import collections
+from typing import Callable, List, Tuple, Union
 
 import numpy as np
 from skopt import Optimizer
@@ -23,13 +24,13 @@ class SKOptLearner(Optimizer, BaseLearner):
         Arguments to pass to ``skopt.Optimizer``.
     """
 
-    def __init__(self, function, **kwargs):
+    def __init__(self, function: Callable, **kwargs) -> None:
         self.function = function
         self.pending_points = set()
         self.data = collections.OrderedDict()
         super().__init__(**kwargs)
 
-    def tell(self, x, y, fit=True):
+    def tell(self, x: Union[float, List[float]], y: float, fit: bool = True) -> None:
         if isinstance(x, collections.abc.Iterable):
             self.pending_points.discard(tuple(x))
             self.data[tuple(x)] = y
@@ -48,7 +49,7 @@ class SKOptLearner(Optimizer, BaseLearner):
         pass
 
     @cache_latest
-    def loss(self, real=True):
+    def loss(self, real: bool = True) -> float:
         if not self.models:
             return np.inf
         else:
@@ -58,7 +59,12 @@ class SKOptLearner(Optimizer, BaseLearner):
             # estimator of loss, but it is the cheapest.
             return 1 - model.score(self.Xi, self.yi)
 
-    def ask(self, n, tell_pending=True):
+    def ask(
+        self, n: int, tell_pending: bool = True
+    ) -> Union[
+        Tuple[List[float], List[float]],
+        Tuple[List[List[float]], List[float]],  # XXX: this indicates a bug!
+    ]:
         if not tell_pending:
             raise NotImplementedError(
                 "Asking points is an irreversible "
@@ -72,7 +78,7 @@ class SKOptLearner(Optimizer, BaseLearner):
             return [p[0] for p in points], [self.loss() / n] * n
 
     @property
-    def npoints(self):
+    def npoints(self) -> int:
         """Number of evaluated points."""
         return len(self.Xi)
 

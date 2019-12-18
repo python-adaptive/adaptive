@@ -1,11 +1,12 @@
 import abc
 from contextlib import suppress
 from copy import deepcopy
+from typing import Any, Callable, Dict
 
 from adaptive.utils import _RequireAttrsABCMeta, load, save
 
 
-def uses_nth_neighbors(n):
+def uses_nth_neighbors(n: int) -> Callable:
     """Decorator to specify how many neighboring intervals the loss function uses.
 
     Wraps loss functions to indicate that they expect intervals together
@@ -84,7 +85,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
     npoints: int
     pending_points: set
 
-    def tell(self, x, y):
+    def tell(self, x: Any, y) -> None:
         """Tell the learner about a single value.
 
         Parameters
@@ -94,7 +95,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         """
         self.tell_many([x], [y])
 
-    def tell_many(self, xs, ys):
+    def tell_many(self, xs: Any, ys: Any) -> None:
         """Tell the learner about some values.
 
         Parameters
@@ -161,7 +162,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         """
         self._set_data(other._get_data())
 
-    def save(self, fname, compress=True):
+    def save(self, fname: str, compress: bool = True) -> None:
         """Save the data of the learner into a pickle file.
 
         Parameters
@@ -175,7 +176,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         data = self._get_data()
         save(fname, data, compress)
 
-    def load(self, fname, compress=True):
+    def load(self, fname: str, compress: bool = True) -> None:
         """Load the data of a learner from a pickle file.
 
         Parameters
@@ -190,8 +191,8 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
             data = load(fname, compress)
             self._set_data(data)
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         return deepcopy(self.__dict__)
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         self.__dict__ = state

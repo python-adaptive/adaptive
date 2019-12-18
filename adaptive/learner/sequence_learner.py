@@ -1,5 +1,7 @@
 from copy import copy
+from typing import Any, Callable, Iterable, List, Tuple, Union
 
+import numpy as np
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
@@ -15,17 +17,19 @@ class _IgnoreFirstArgument:
     pickable.
     """
 
-    def __init__(self, function):
+    def __init__(self, function: Callable) -> None:
         self.function = function
 
-    def __call__(self, index_point, *args, **kwargs):
+    def __call__(
+        self, index_point: Tuple[int, Union[float, np.ndarray]], *args, **kwargs
+    ) -> float:
         index, point = index_point
         return self.function(point, *args, **kwargs)
 
-    def __getstate__(self):
+    def __getstate__(self) -> Callable:
         return self.function
 
-    def __setstate__(self, function):
+    def __setstate__(self, function: Callable) -> None:
         self.__init__(function)
 
 
@@ -56,7 +60,7 @@ class SequenceLearner(BaseLearner):
     the added benefit of having results in the local kernel already.
     """
 
-    def __init__(self, function, sequence):
+    def __init__(self, function: Callable, sequence: Iterable) -> None:
         self._original_function = function
         self.function = _IgnoreFirstArgument(function)
         self._to_do_indices = SortedSet({i for i, _ in enumerate(sequence)})
@@ -65,7 +69,7 @@ class SequenceLearner(BaseLearner):
         self.data = SortedDict()
         self.pending_points = set()
 
-    def ask(self, n, tell_pending=True):
+    def ask(self, n: int, tell_pending: bool = True) -> Tuple[Any, List[float]]:
         indices = []
         points = []
         loss_improvements = []
@@ -83,17 +87,17 @@ class SequenceLearner(BaseLearner):
 
         return points, loss_improvements
 
-    def _get_data(self):
+    def _get_data(self) -> SortedDict:
         return self.data
 
-    def _set_data(self, data):
+    def _set_data(self, data: SortedDict) -> None:
         if data:
             indices, values = zip(*data.items())
             # the points aren't used by tell, so we can safely pass None
             points = [(i, None) for i in indices]
             self.tell_many(points, values)
 
-    def loss(self, real=True):
+    def loss(self, real: bool = True) -> float:
         if not (self._to_do_indices or self.pending_points):
             return 0
         else:
@@ -105,13 +109,13 @@ class SequenceLearner(BaseLearner):
             self._to_do_indices.add(i)
         self.pending_points = set()
 
-    def tell(self, point, value):
+    def tell(self, point: Tuple[int, Any], value: Any,) -> None:
         index, point = point
         self.data[index] = value
         self.pending_points.discard(index)
         self._to_do_indices.discard(index)
 
-    def tell_pending(self, point):
+    def tell_pending(self, point: Any) -> None:
         index, point = point
         self.pending_points.add(index)
         self._to_do_indices.discard(index)
@@ -126,5 +130,5 @@ class SequenceLearner(BaseLearner):
         return list(self.data.values())
 
     @property
-    def npoints(self):
+    def npoints(self) -> int:
         return len(self.data)

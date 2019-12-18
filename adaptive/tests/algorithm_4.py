@@ -2,7 +2,8 @@
 # Copyright 2017 Christoph Groth
 
 from collections import defaultdict
-from fractions import Fraction as Frac
+from fractions import Fraction
+from typing import Callable, List, Tuple, Union
 
 import numpy as np
 from numpy.testing import assert_allclose
@@ -11,7 +12,7 @@ from scipy.linalg import inv, norm
 eps = np.spacing(1)
 
 
-def legendre(n):
+def legendre(n: int) -> List[List[Fraction]]:
     """Return the first n Legendre polynomials.
 
     The polynomials have *standard* normalization, i.e.
@@ -19,12 +20,12 @@ def legendre(n):
 
     The return value is a list of list of fraction.Fraction instances.
     """
-    result = [[Frac(1)], [Frac(0), Frac(1)]]
+    result = [[Fraction(1)], [Fraction(0), Fraction(1)]]
     if n <= 2:
         return result[:n]
     for i in range(2, n):
         # Use Bonnet's recursion formula.
-        new = (i + 1) * [Frac(0)]
+        new = (i + 1) * [Fraction(0)]
         new[1:] = (r * (2 * i - 1) for r in result[-1])
         new[:-2] = (n - r * (i - 1) for n, r in zip(new[:-2], result[-2]))
         new[:] = (n / i for n in new)
@@ -32,7 +33,7 @@ def legendre(n):
     return result
 
 
-def newton(n):
+def newton(n: int) -> np.ndarray:
     """Compute the monomial coefficients of the Newton polynomial over the
     nodes of the n-point Clenshaw-Curtis quadrature rule.
     """
@@ -89,7 +90,7 @@ def newton(n):
     return cf
 
 
-def scalar_product(a, b):
+def scalar_product(a: List[Fraction], b: List[Fraction]) -> Fraction:
     """Compute the polynomial scalar product int_-1^1 dx a(x) b(x).
 
     The args must be sequences of polynomial coefficients.  This
@@ -110,7 +111,7 @@ def scalar_product(a, b):
     return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))
 
 
-def calc_bdef(ns):
+def calc_bdef(ns: Tuple[int, int, int, int]) -> List[np.ndarray]:
     """Calculate the decompositions of Newton polynomials (over the nodes
     of the n-point Clenshaw-Curtis quadrature rule) in terms of
     Legandre polynomials.
@@ -123,7 +124,7 @@ def calc_bdef(ns):
     result = []
     for n in ns:
         poly = []
-        a = list(map(Frac, newton(n)))
+        a = list(map(Fraction, newton(n)))
         for b in legs[: n + 1]:
             igral = scalar_product(a, b)
 
@@ -145,7 +146,7 @@ xi = [(row - row[::-1]) / 2 for row in xi]
 b_def = calc_bdef(n)
 
 
-def calc_V(xi, n):
+def calc_V(xi: np.ndarray, n: int) -> np.ndarray:
     V = [np.ones(xi.shape), xi.copy()]
     for i in range(2, n):
         V.append((2 * i - 1) / i * xi * V[-1] - (i - 1) / i * V[-2])
@@ -183,7 +184,7 @@ alpha = np.sqrt((k + 1) ** 2 / (2 * k + 1) / (2 * k + 3))
 gamma = np.concatenate([[0, 0], np.sqrt(k[2:] ** 2 / (4 * k[2:] ** 2 - 1))])
 
 
-def _downdate(c, nans, depth):
+def _downdate(c: np.ndarray, nans: List[int], depth: int) -> None:
     # This is algorithm 5 from the thesis of Pedro Gonnet.
     b = b_def[depth].copy()
     m = n[depth] - 1
@@ -200,7 +201,7 @@ def _downdate(c, nans, depth):
         m -= 1
 
 
-def _zero_nans(fx):
+def _zero_nans(fx: np.ndarray) -> List[int]:
     nans = []
     for i in range(len(fx)):
         if not np.isfinite(fx[i]):
@@ -209,7 +210,7 @@ def _zero_nans(fx):
     return nans
 
 
-def _calc_coeffs(fx, depth):
+def _calc_coeffs(fx: np.ndarray, depth: int) -> np.ndarray:
     """Caution: this function modifies fx."""
     nans = _zero_nans(fx)
     c_new = V_inv[depth] @ fx
@@ -220,7 +221,7 @@ def _calc_coeffs(fx, depth):
 
 
 class DivergentIntegralError(ValueError):
-    def __init__(self, msg, igral, err, nr_points):
+    def __init__(self, msg: str, igral: float, err: None, nr_points: int) -> None:
         self.igral = igral
         self.err = err
         self.nr_points = nr_points
@@ -230,19 +231,23 @@ class DivergentIntegralError(ValueError):
 class _Interval:
     __slots__ = ["a", "b", "c", "fx", "igral", "err", "depth", "rdepth", "ndiv", "c00"]
 
-    def __init__(self, a, b, depth, rdepth):
+    def __init__(
+        self, a: Union[int, float], b: Union[int, float], depth: int, rdepth: int
+    ) -> None:
         self.a = a
         self.b = b
         self.depth = depth
         self.rdepth = rdepth
 
-    def points(self):
+    def points(self) -> np.ndarray:
         a = self.a
         b = self.b
         return (a + b) / 2 + (b - a) * xi[self.depth] / 2
 
     @classmethod
-    def make_first(cls, f, a, b, depth=2):
+    def make_first(
+        cls, f: Callable, a: int, b: int, depth: int = 2
+    ) -> Tuple["_Interval", int]:
         ival = _Interval(a, b, depth, 1)
         fx = f(ival.points())
         ival.c = _calc_coeffs(fx, depth)
@@ -251,7 +256,7 @@ class _Interval:
         ival.ndiv = 0
         return ival, n[depth]
 
-    def calc_igral_and_err(self, c_old):
+    def calc_igral_and_err(self, c_old: np.ndarray) -> float:
         self.c = c_new = _calc_coeffs(self.fx, self.depth)
         c_diff = np.zeros(max(len(c_old), len(c_new)))
         c_diff[: len(c_old)] = c_old
@@ -262,7 +267,9 @@ class _Interval:
         self.err = w * c_diff
         return c_diff
 
-    def split(self, f):
+    def split(
+        self, f: Callable
+    ) -> Union[Tuple[Tuple[float, float, float], int], Tuple[List["_Interval"], int]]:
         m = (self.a + self.b) / 2
         f_center = self.fx[(len(self.fx) - 1) // 2]
 
@@ -287,7 +294,7 @@ class _Interval:
 
         return ivals, nr_points
 
-    def refine(self, f):
+    def refine(self, f: Callable) -> Tuple[np.ndarray, bool, int]:
         """Increase degree of interval."""
         self.depth = depth = self.depth + 1
         points = self.points()
@@ -299,7 +306,9 @@ class _Interval:
         return points, split, n[depth] - n[depth - 1]
 
 
-def algorithm_4(f, a, b, tol, N_loops=int(1e9)):
+def algorithm_4(
+    f: Callable, a: int, b: int, tol: float, N_loops: int = int(1e9)
+) -> Tuple[float, float, int, List["_Interval"]]:
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
     algorithm uses Clenshaw-Curtis quadrature rules of increasing
     degree in each interval and bisects the interval if either the
@@ -403,29 +412,31 @@ def algorithm_4(f, a, b, tol, N_loops=int(1e9)):
     return igral, err, nr_points, ivals
 
 
-################ Tests ################
+# ############### Tests ################
 
 
-def f0(x):
+def f0(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     return x * np.sin(1 / x) * np.sqrt(abs(1 - x))
 
 
-def f7(x):
+def f7(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     return x ** -0.5
 
 
-def f24(x):
+def f24(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     return np.floor(np.exp(x))
 
 
-def f21(x):
+def f21(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     y = 0
     for i in range(1, 4):
         y += 1 / np.cosh(20 ** i * (x - 2 * i / 10))
     return y
 
 
-def f63(x, alpha, beta):
+def f63(
+    x: Union[float, np.ndarray], alpha: float, beta: float
+) -> Union[float, np.ndarray]:
     return abs(x - beta) ** alpha
 
 
@@ -433,7 +444,7 @@ def F63(x, alpha, beta):
     return (x - beta) * abs(x - beta) ** alpha / (alpha + 1)
 
 
-def fdiv(x):
+def fdiv(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     return abs(x - 0.987654321) ** -1.1
 
 
@@ -461,7 +472,9 @@ def test_scalar_product(n=33):
     selection = [0, 5, 7, n - 1]
     for i in selection:
         for j in selection:
-            assert scalar_product(legs[i], legs[j]) == ((i == j) and Frac(2, 2 * i + 1))
+            assert scalar_product(legs[i], legs[j]) == (
+                (i == j) and Fraction(2, 2 * i + 1)
+            )
 
 
 def simple_newton(n):

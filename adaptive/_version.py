@@ -4,6 +4,7 @@ import os
 import subprocess
 from collections import namedtuple
 from distutils.command.build_py import build_py as build_py_orig
+from typing import Dict
 
 from setuptools.command.sdist import sdist as sdist_orig
 
@@ -19,7 +20,7 @@ distr_root = os.path.dirname(package_root)
 STATIC_VERSION_FILE = "_static_version.py"
 
 
-def get_version(version_file=STATIC_VERSION_FILE):
+def get_version(version_file: str = STATIC_VERSION_FILE) -> str:
     version_info = get_static_version_info(version_file)
     version = version_info["version"]
     if version == "__use_git__":
@@ -33,7 +34,7 @@ def get_version(version_file=STATIC_VERSION_FILE):
         return version
 
 
-def get_static_version_info(version_file=STATIC_VERSION_FILE):
+def get_static_version_info(version_file: str = STATIC_VERSION_FILE) -> Dict[str, str]:
     version_info = {}
     with open(os.path.join(package_root, version_file), "rb") as f:
         exec(f.read(), {}, version_info)
@@ -44,7 +45,7 @@ def version_is_from_git(version_file=STATIC_VERSION_FILE):
     return get_static_version_info(version_file)["version"] == "__use_git__"
 
 
-def pep440_format(version_info):
+def pep440_format(version_info: Version) -> str:
     release, dev, labels = version_info
 
     version_parts = [release]
@@ -61,7 +62,7 @@ def pep440_format(version_info):
     return "".join(version_parts)
 
 
-def get_version_from_git():
+def get_version_from_git() -> Version:
     try:
         p = subprocess.Popen(
             ["git", "rev-parse", "--show-toplevel"],

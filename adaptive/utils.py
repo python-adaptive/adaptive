@@ -5,6 +5,7 @@ import os
 import pickle
 from contextlib import contextmanager
 from itertools import product
+from typing import Any, Callable, Iterator
 
 from atomicwrites import AtomicWriter
 
@@ -16,7 +17,7 @@ def named_product(**items):
 
 
 @contextmanager
-def restore(*learners):
+def restore(*learners) -> Iterator[None]:
     states = [learner.__getstate__() for learner in learners]
     try:
         yield
@@ -25,7 +26,7 @@ def restore(*learners):
             learner.__setstate__(state)
 
 
-def cache_latest(f):
+def cache_latest(f: Callable) -> Callable:
     """Cache the latest return value of the function and add it
     as 'self._cache[f.__name__]'."""
 
@@ -40,7 +41,7 @@ def cache_latest(f):
     return wrapper
 
 
-def save(fname, data, compress=True):
+def save(fname: str, data: Any, compress: bool = True) -> None:
     fname = os.path.expanduser(fname)
     dirname = os.path.dirname(fname)
     if dirname:
@@ -54,14 +55,14 @@ def save(fname, data, compress=True):
         f.write(blob)
 
 
-def load(fname, compress=True):
+def load(fname: str, compress: bool = True):
     fname = os.path.expanduser(fname)
     _open = gzip.open if compress else open
     with _open(fname, "rb") as f:
         return pickle.load(f)
 
 
-def copy_docstring_from(other):
+def copy_docstring_from(other: Callable) -> Callable:
     def decorator(method):
         return functools.wraps(other)(method)
 

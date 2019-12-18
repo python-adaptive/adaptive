@@ -1,4 +1,5 @@
 from math import sqrt
+from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -30,7 +31,12 @@ class AverageLearner(BaseLearner):
         Number of evaluated points.
     """
 
-    def __init__(self, function, atol=None, rtol=None):
+    def __init__(
+        self,
+        function: Callable,
+        atol: Optional[float] = None,
+        rtol: Optional[float] = None,
+    ) -> None:
         if atol is None and rtol is None:
             raise Exception("At least one of `atol` and `rtol` should be set.")
         if atol is None:
@@ -48,10 +54,10 @@ class AverageLearner(BaseLearner):
         self.sum_f_sq = 0
 
     @property
-    def n_requested(self):
+    def n_requested(self) -> int:
         return self.npoints + len(self.pending_points)
 
-    def ask(self, n, tell_pending=True):
+    def ask(self, n: int, tell_pending: bool = True) -> Tuple[List[int], List[float]]:
         points = list(range(self.n_requested, self.n_requested + n))
 
         if any(p in self.data or p in self.pending_points for p in points):
@@ -68,7 +74,7 @@ class AverageLearner(BaseLearner):
                 self.tell_pending(p)
         return points, loss_improvements
 
-    def tell(self, n, value):
+    def tell(self, n: int, value: float) -> None:
         if n in self.data:
             # The point has already been added before.
             return
@@ -79,16 +85,16 @@ class AverageLearner(BaseLearner):
         self.sum_f_sq += value ** 2
         self.npoints += 1
 
-    def tell_pending(self, n):
+    def tell_pending(self, n: int) -> None:
         self.pending_points.add(n)
 
     @property
-    def mean(self):
+    def mean(self) -> float:
         """The average of all values in `data`."""
         return self.sum_f / self.npoints
 
     @property
-    def std(self):
+    def std(self) -> float:
         """The corrected sample standard deviation of the values
         in `data`."""
         n = self.npoints
@@ -101,7 +107,7 @@ class AverageLearner(BaseLearner):
         return sqrt(numerator / (n - 1))
 
     @cache_latest
-    def loss(self, real=True, *, n=None):
+    def loss(self, real: bool = True, *, n=None) -> float:
         if n is None:
             n = self.npoints if real else self.n_requested
         else:
@@ -113,7 +119,7 @@ class AverageLearner(BaseLearner):
             standard_error / self.atol, standard_error / abs(self.mean) / self.rtol
         )
 
-    def _loss_improvement(self, n):
+    def _loss_improvement(self, n: int) -> float:
         loss = self.loss()
         if np.isfinite(loss):
             return loss - self.loss(n=self.npoints + n)
@@ -139,8 +145,8 @@ class AverageLearner(BaseLearner):
         vals = hv.Points(vals)
         return hv.operation.histogram(vals, num_bins=num_bins, dimension=1)
 
-    def _get_data(self):
+    def _get_data(self) -> Tuple[Dict[int, float], int, float, float]:
         return (self.data, self.npoints, self.sum_f, self.sum_f_sq)
 
-    def _set_data(self, data):
+    def _set_data(self, data: Tuple[Dict[int, float], int, float, float]) -> None:
         self.data, self.npoints, self.sum_f, self.sum_f_sq = data
