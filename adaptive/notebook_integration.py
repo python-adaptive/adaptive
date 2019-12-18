@@ -228,14 +228,16 @@ def live_info(runner, *, update_interval=0.5):
 
     runner.ioloop.create_task(update())
 
-    display(
-        ipywidgets.HBox(
-            (status, cancel),
-            layout=ipywidgets.Layout(
-                border="solid 1px", width="200px", align_items="center"
-            ),
-        )
-    )
+    display(ipywidgets.VBox((status, cancel)))
+
+
+def _table_row(i, key, value):
+    """Style the rows of a table. Based on the default Jupyterlab table style."""
+    style_odd = "text-align: right; padding: 0.5em 0.5em; line-height: 1.0;"
+    style_even = style_odd + "background: var(--md-grey-100);"
+    template = '<tr><th style="{style}">{key}</th><th style="{style}">{value}</th></tr>'
+    style = style_odd if i % 2 == 1 else style_even
+    return template.format(style=style, key=key, value=value)
 
 
 def _info_html(runner):
@@ -260,11 +262,10 @@ def _info_html(runner):
     with suppress(Exception):
         info.append(("latest loss", f'{runner.learner._cache["loss"]:.3f}'))
 
-    template = '<dt class="ignore-css">{}</dt><dd>{}</dd>'
-    table = "\n".join(template.format(k, v) for k, v in info)
+    table = "\n".join(_table_row(i, k, v) for i, (k, v) in enumerate(info))
 
     return f"""
-        <dl>
+        <table>
         {table}
-        </dl>
+        </table>
     """
