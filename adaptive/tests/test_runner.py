@@ -120,7 +120,7 @@ def test_ipyparallel_executor(ipyparallel_executor):
 @flaky.flaky(max_runs=5)
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(not with_distributed, reason="dask.distributed is not installed")
-@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="XXX: seems to always fail")
+@pytest.mark.skipif(os.name == "nt", reason="XXX: seems to always fail")
 def test_distributed_executor():
     from distributed import Client
 
