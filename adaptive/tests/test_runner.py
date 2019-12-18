@@ -117,7 +117,7 @@ def test_ipyparallel_executor(ipyparallel_executor):
     assert learner.npoints > 0
 
 
-@flaky.flaky(max_runs=3)
+@flaky.flaky(max_runs=5)
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(not with_distributed, reason="dask.distributed is not installed")
 @pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="XXX: seems to always fail")
