@@ -9,6 +9,7 @@ import random
 import shutil
 import tempfile
 
+import flaky
 import numpy as np
 import pytest
 import scipy.spatial
@@ -27,7 +28,7 @@ from adaptive.learner import (
 from adaptive.runner import simple
 
 try:
-    from adaptive.learner import SKOptLearner
+    from adaptive.learner.skopt_learner import SKOptLearner
 except ModuleNotFoundError:
     SKOptLearner = None
 
@@ -110,7 +111,7 @@ def maybe_skip(learner):
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
-def quadratic(x, m: uniform(0, 10), b: uniform(0, 1)):
+def quadratic(x, m: uniform(1, 4), b: uniform(0, 1)):
     return m * x ** 2 + b
 
 
@@ -132,7 +133,7 @@ def ring_of_fire(xy, d: uniform(0.2, 1)):
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
 @learn_with(SequenceLearner, sequence=np.random.rand(1000, 3))
-def sphere_of_fire(xyz, d: uniform(0.2, 1)):
+def sphere_of_fire(xyz, d: uniform(0.2, 0.5)):
     a = 0.2
     x, y, z = xyz
     return x + math.exp(-((x ** 2 + y ** 2 + z ** 2 - d ** 2) ** 2) / a ** 4) + z ** 2
@@ -141,7 +142,7 @@ def sphere_of_fire(xyz, d: uniform(0.2, 1)):
 @learn_with(SequenceLearner, sequence=range(1000))
 @learn_with(AverageLearner, rtol=1)
 def gaussian(n):
-    return random.gauss(0, 1)
+    return random.gauss(1, 1)
 
 
 # Decorators for tests.
@@ -456,6 +457,7 @@ def test_learner_performance_is_invariant_under_scaling(
     assert math.isclose(learner.loss(), control.loss(), rel_tol=1e-10)
 
 
+@flaky.flaky(max_runs=3)
 @run_with(
     Learner1D,
     Learner2D,
@@ -495,7 +497,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
             x = stash.pop()
             learner.tell(x, learner.function(x))
 
-    assert all(l.npoints > 10 for l in learner.learners), [
+    assert all(l.npoints > 5 for l in learner.learners), [
         l.npoints for l in learner.learners
     ]
 
@@ -519,6 +521,7 @@ def test_saving(learner_type, f, learner_kwargs):
         control._recompute_losses_factor = 1
     simple(learner, lambda l: l.npoints > 100)
     fd, path = tempfile.mkstemp()
+    os.close(fd)
     try:
         learner.save(path)
         control.load(path)
@@ -591,6 +594,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
 
     simple(learner, lambda l: l.npoints > 100)
     fd, path = tempfile.mkstemp()
+    os.close(fd)
     try:
         learner.save(path)
         control.load(path)

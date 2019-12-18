@@ -18,26 +18,15 @@ repos:
     hooks:
     -   id: pyupgrade
         args: ['--py36-plus']
--   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v4.3.21
-    hooks:
-    -   id: isort
-        args:
-          - --multi-line=3
-          - --trailing-comma
-          - --force-grid-wrap=0
-          - --use-parentheses
-          - --line-width=88
 -   repo: https://github.com/asottile/seed-isort-config
     rev: v1.9.3
     hooks:
     -   id: seed-isort-config
+-   repo: https://github.com/pre-commit/mirrors-isort
+    rev: v4.3.21
+    hooks:
+    -   id: isort
 -   repo: https://gitlab.com/pycqa/flake8
     rev: 3.7.9
     hooks:
     -   id: flake8
-        args:
-          - --max-line-length=500
-          - --ignore=E203,E266,E501,W503
-          - --max-complexity=18
-          - --select=B,C,E,F,W,T4,B9

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 try:
-    from adaptive.learner import SKOptLearner
+    from adaptive.learner.skopt_learner import SKOptLearner
 
     with_scikit_optimize = True
 except ModuleNotFoundError:

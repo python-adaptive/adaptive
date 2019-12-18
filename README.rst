@@ -4,7 +4,7 @@
 ===============
 
 |PyPI| |Conda| |Downloads| |Pipeline status| |DOI| |Binder| |Gitter|
-|Documentation| |GitHub|
+|Documentation| |Coverage| |GitHub|
 
   *Adaptive*: parallel active learning of mathematical functions.
 
@@ -178,4 +178,6 @@ request <https://github.com/python-adaptive/adaptive/pulls>`_.
    :target: https://adaptive.readthedocs.io/en/latest/?badge=latest
 .. |GitHub| image:: https://img.shields.io/github/stars/python-adaptive/adaptive.svg?style=social
    :target: https://github.com/python-adaptive/adaptive/stargazers
+.. |Coverage| image:: https://img.shields.io/codecov/c/github/python-adaptive/adaptive
+   :target: https://codecov.io/gh/python-adaptive/adaptive
 .. references-end

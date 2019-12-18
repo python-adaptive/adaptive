@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 
 from setuptools import find_packages, setup
@@ -40,9 +41,22 @@ extras_require = {
         "bokeh",
         "matplotlib",
         "plotly",
-    ]
+    ],
+    "testing": [
+        "flaky",
+        "pytest",
+        "pytest-cov",
+        "pytest-randomly",
+        "pytest-timeout",
+        "pre_commit",
+    ],
+    "other": [
+        "ipyparallel",
+        "distributed",
+        "scikit-optimize",
+        "wexpect" if os.name == "nt" else "pexpect",
+    ],
 }
-
 
 setup(
     name="adaptive",
@@ -58,6 +72,7 @@ setup(
         "Intended Audience :: Science/Research",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
     packages=find_packages("."),
     install_requires=install_requires,
