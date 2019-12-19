@@ -233,11 +233,10 @@ def live_info(runner, *, update_interval=0.5):
 
 def _table_row(i, key, value):
     """Style the rows of a table. Based on the default Jupyterlab table style."""
-    style_odd = "text-align: right; padding: 0.5em 0.5em; line-height: 1.0;"
-    style_even = style_odd + "background: var(--md-grey-100);"
-    template = '<tr><th style="{style}">{key}</th><th style="{style}">{value}</th></tr>'
-    style = style_odd if i % 2 == 1 else style_even
-    return template.format(style=style, key=key, value=value)
+    style = "text-align: right; padding: 0.5em 0.5em; line-height: 1.0;"
+    if i % 2 == 1:
+        style += " background: var(--md-grey-100);"
+    return f'<tr><th style="{style}">{key}</th><th style="{style}">{value}</th></tr>'
 
 
 def _info_html(runner):
