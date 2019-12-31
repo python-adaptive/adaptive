@@ -25,7 +25,7 @@ How do I get a `~adaptive.Learner2D`\'s data on a grid?
 Use ``learner.interpolated_on_grid()`` optionally with a argument ``n`` to specify the the amount of points in ``x`` and ``y``.
 
 
-Why can I not use a ``lambda`` function?
+Why can I not use a ``lambda`` with a learner?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When using the `~adaptive.Runner` the learner's function is evaluated in different Python processes.
