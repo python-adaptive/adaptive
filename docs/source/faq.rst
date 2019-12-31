@@ -19,7 +19,7 @@ My runner failed, how do I get the error message?
 Check ``runner.task.print_stack()``.
 
 
-How do I get a `~adaptiveLearner2D`\'s data on a grid?
+How do I get a `~adaptive.Learner2D`\'s data on a grid?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``learner.interpolated_on_grid()`` optionally with a argument ``n`` to specify the the amount of points in ``x`` and ``y``.
