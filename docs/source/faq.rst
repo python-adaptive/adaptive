@@ -28,7 +28,7 @@ Use ``learner.interpolated_on_grid()`` optionally with a argument ``n`` to speci
 Why can I not use a ``lambda`` function?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The functions evaluations are done on an executor.
+When using the `~adaptive.Runner` the learner's function is evaluated in different Python processes.
 Therefore, the ``function`` needs to be serialized (pickled) and send to the executor, ``lambda``\s cannot be pickled.
 Instead you can probably use ``functools.partial`` to accomplish what you want to do.
 
