@@ -628,3 +628,18 @@ def test_learner_subdomain(learner_type, f, learner_kwargs):
        perform 'similarly' to learners defined on that subdomain only."""
     # XXX: not sure how to implement this. How do we measure "performance"?
     raise NotImplementedError()
+
+
+@run_with(Learner1D, Learner2D, LearnerND)
+def test_add_complex_number_correctly(learner_type, f, learner_kwargs):
+    f = generate_random_parametrization(f)
+
+    def f_complex(x):
+        return [f(x) + 1j]
+
+    learner = learner_type(f_complex, **learner_kwargs)
+    xs, loss_improvements = learner.ask(10)
+    for x in xs:
+        y = learner.function(x)
+        learner.tell(x, y)
+        assert np.iscomplexobj(learner.data[x])
