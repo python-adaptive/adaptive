@@ -95,3 +95,6 @@ ENV/
 benchmarks/html/
 benchmarks/results/
 .asv
+
+# vscode configuration
+.vscode/
