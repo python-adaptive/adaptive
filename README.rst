@@ -89,6 +89,13 @@ The recommended way to install adaptive is using ``conda``:
 The ``[notebook]`` above will also install the optional dependencies for
 running ``adaptive`` inside a Jupyter notebook.
 
+To use Adaptive in Jupyterlab, you need to install the following labextensions.
+
+.. code:: bash
+
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager
+    jupyter labextension install @pyviz/jupyterlab_pyviz
+
 Development
 -----------
 
