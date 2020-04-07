@@ -65,7 +65,7 @@ For example, you create the following file called ``run_learner.py``:
 
     from mpi4py.futures import MPIPoolExecutor
 
-    if __name__ == "__main__":  # ← use this, see warning @ https://bit.ly/2HAk0GG
+    if __name__ == "__main__":  # ← use this, see warning @ https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor
 
         learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
