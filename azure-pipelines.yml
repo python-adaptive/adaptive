@@ -12,28 +12,28 @@ jobs:
     matrix:
       UbuntuPy36:
         python.version: '3.6'
-        vmImage: 'ubuntu-16.04'
+        vmImage: 'ubuntu-latest'
         tox_env: 'py36'
       UbuntuPy37:
         python.version: '3.7'
-        vmImage: 'ubuntu-16.04'
+        vmImage: 'ubuntu-latest'
         tox_env: 'py37'
       UbuntuPy38:
         python.version: '3.8'
-        vmImage: 'ubuntu-16.04'
+        vmImage: 'ubuntu-latest'
         tox_env: 'py38'
 
       macOSPy36:
         python.version: '3.6'
-        vmImage: 'macOS-10.13'
+        vmImage: 'macOS-latest'
         tox_env: 'py36'
       macOSPy37:
         python.version: '3.7'
-        vmImage: 'macOS-10.13'
+        vmImage: 'macOS-latest'
         tox_env: 'py37'
       macOSPy38:
         python.version: '3.8'
-        vmImage: 'macOS-10.13'
+        vmImage: 'macOS-latest'
         tox_env: 'py38'
 
       WindowsServerPy36:

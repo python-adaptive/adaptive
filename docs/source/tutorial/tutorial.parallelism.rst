@@ -65,27 +65,31 @@ For example, you create the following file called ``run_learner.py``:
 
     from mpi4py.futures import MPIPoolExecutor
 
-    learner = adaptive.Learner1D(f, bounds=(-1, 1))
+    # use the idiom below, see the warning at
+    # https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor
+    if __name__ == "__main__":
 
-    # load the data
-    learner.load(fname)
+        learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
-    # run until `goal` is reached with an `MPIPoolExecutor`
-    runner = adaptive.Runner(
-        learner,
-        executor=MPIPoolExecutor(),
-        shutdown_executor=True,
-        goal=lambda l: l.loss() < 0.01,
-    )
+        # load the data
+        learner.load(fname)
 
-    # periodically save the data (in case the job dies)
-    runner.start_periodic_saving(dict(fname=fname), interval=600)
+        # run until `goal` is reached with an `MPIPoolExecutor`
+        runner = adaptive.Runner(
+            learner,
+            executor=MPIPoolExecutor(),
+            shutdown_executor=True,
+            goal=lambda l: l.loss() < 0.01,
+        )
 
-    # block until runner goal reached
-    runner.ioloop.run_until_complete(runner.task)
+        # periodically save the data (in case the job dies)
+        runner.start_periodic_saving(dict(fname=fname), interval=600)
 
-    # save one final time before exiting
-    learner.save(fname)
+        # block until runner goal reached
+        runner.ioloop.run_until_complete(runner.task)
+
+        # save one final time before exiting
+        learner.save(fname)
 
 
 On your laptop/desktop you can run this script like:
