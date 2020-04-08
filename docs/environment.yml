@@ -4,17 +4,18 @@ channels:
   - conda-forge
 
 dependencies:
-  - python=3.7.3
-  - sortedcollections=1.1.2
-  - scikit-optimize=0.5.2
-  - scipy=1.2.1
-  - holoviews=1.11.3
-  - bokeh=1.0.4
-  - plotly=3.9.0
-  - ipywidgets=7.4.2
-  - jupyter_sphinx=0.2.2
-  - atomicwrites=1.3.0
-  - pyviz_comms=0.7.2
+  - python
+  - sortedcollections
+  - scikit-optimize
+  - scipy
+  - holoviews
+  - bokeh
+  - plotly
+  - ipywidgets
+  - jupyter_sphinx
+  - atomicwrites
+  - sphinx_fontawesome
+  - sphinx=2.4.4  # because https://github.com/miyakogi/m2r/pull/55
+  - m2r
   - pip:
-    - sphinx_fontawesome==0.0.6
-    - m2r==0.2.1
+    - sphinx_rtd_theme
