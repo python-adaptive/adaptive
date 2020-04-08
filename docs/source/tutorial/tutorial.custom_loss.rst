@@ -68,6 +68,8 @@ simple (but naive) strategy is to *uniformly* sample the domain:
         return dx
 
     def f_divergent_1d(x):
+        if x == 0:
+            return np.inf
         return 1 / x**2
 
     learner = adaptive.Learner1D(f_divergent_1d, (-1, 1), loss_per_interval=uniform_sampling_1d)
