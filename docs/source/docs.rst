@@ -99,7 +99,7 @@ on the *Play* :fa:`play` button or move the sliders.
     def plot(learner, npoints):
         adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
         learner2 = adaptive.Learner2D(ring, bounds=learner.bounds)
-        xs = ys = np.linspace(*learner.bounds[0], learner.npoints**0.5)
+        xs = ys = np.linspace(*learner.bounds[0], int(learner.npoints**0.5))
         xys = list(itertools.product(xs, ys))
         learner2.tell_many(xys, map(ring, xys))
         return (learner2.plot().relabel('homogeneous grid')
