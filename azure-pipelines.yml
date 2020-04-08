@@ -6,6 +6,20 @@ pr:
   - "*"
 
 jobs:
+- job: documentation_tests
+  steps:
+  - checkout: self
+    persistCredentials: true
+
+  - script: |
+      git branch -D test_documentation
+      git checkout -b test_documentation
+      git push -f origin test_documentation
+    displayName: Push test documentation
+    condition: ne(variables['Build.SourceBranch'], 'refs/heads/master')
+  - bash: echo "##vso[task.prependpath]/usr/share/miniconda/bin"
+    displayName: Add conda to PATH
+
 - job: pytest
   strategy:
     # use cross-product when https://github.com/microsoft/azure-pipelines-yaml/issues/20 is solved
