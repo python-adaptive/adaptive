@@ -113,13 +113,13 @@ jobs:
   steps:
   - checkout: self
     persistCredentials: true
-
   - script: |
       git branch -D test_documentation
       git checkout -b test_documentation
       git push -f origin test_documentation
     displayName: Push test documentation
     condition: ne(variables['Build.SourceBranch'], 'refs/heads/master')
+    continueOnError: true
 
   - bash: echo "##vso[task.prependpath]/usr/share/miniconda/bin"
     displayName: Add conda to PATH
