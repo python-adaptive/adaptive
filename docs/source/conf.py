@@ -146,4 +146,4 @@ html_logo = "logo_docs.png"
 
 
 def setup(app):
-    app.add_stylesheet("custom.css")  # For the `live_info` widget
+    app.add_css_file("custom.css")  # For the `live_info` widget
