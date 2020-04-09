@@ -144,3 +144,16 @@ class AverageLearner(BaseLearner):
 
     def _set_data(self, data):
         self.data, self.npoints, self.sum_f, self.sum_f_sq = data
+
+    def __getstate__(self):
+        return (
+            self.function,
+            self.atol,
+            self.rtol,
+            self._get_data(),
+        )
+
+    def __setstate__(self, state):
+        function, atol, rtol, data = state
+        self.__init__(function, atol, rtol)
+        self._set_data(data)
