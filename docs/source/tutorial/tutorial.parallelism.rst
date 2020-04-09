@@ -120,9 +120,9 @@ How you call MPI might depend on your specific queuing system, with SLURM for ex
 `loky.get_reusable_executor`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This executor is basically a powered up version of `~concurrent.futures.ProcessPoolExecutor`, check its `documentation <https://loky.readthedocs.io/>`_.
-Among other things, it allows one to reuse the executor and uses ``cloudpickle`` on the background.
-This means you can even run closures, lambdas, or other functions that are not picklable with `pickle`.
+This executor is basically a powered-up version of `~concurrent.futures.ProcessPoolExecutor`, check its `documentation <https://loky.readthedocs.io/>`_.
+Among other things, it allows to *reuse* the executor and uses ``cloudpickle`` for serialization.
+This means you can even learn closures, lambdas, or other functions that are not picklable with `pickle`.
 
 .. code:: python
 
