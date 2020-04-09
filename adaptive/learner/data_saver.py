@@ -51,6 +51,18 @@ class DataSaver:
         learner_data, self.extra_data = data
         self.learner._set_data(learner_data)
 
+    def __getstate__(self):
+        return (
+            self.learner,
+            self.arg_picker,
+            self._get_data(),
+        )
+
+    def __setstate__(self, state):
+        learner, arg_picker, data = state
+        self.__init__(learner, arg_picker)
+        self._set_data(data)
+
     @copy_docstring_from(BaseLearner.save)
     def save(self, fname, compress=True):
         # We copy this method because the 'DataSaver' is not a
