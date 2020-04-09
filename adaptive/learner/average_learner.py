@@ -137,7 +137,7 @@ class AverageLearner(BaseLearner):
             return hv.Histogram([[], []])
         num_bins = int(max(5, sqrt(self.npoints)))
         vals = hv.Points(vals)
-        return hv.operation.histogram(vals, num_bins=num_bins)
+        return hv.operation.histogram(vals, num_bins=num_bins, dimension="y")
 
     def _get_data(self):
         return (self.data, self.npoints, self.sum_f, self.sum_f_sq)
