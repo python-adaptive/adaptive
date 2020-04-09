@@ -12,9 +12,13 @@ from contextlib import suppress
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 
 try:
-    import ipyparallel
+    if sys.version_info < (3, 8):
+        # XXX: remove when ipyparallel 6.2.5 is released
+        import ipyparallel
 
-    with_ipyparallel = True
+        with_ipyparallel = True
+    else:
+        with_ipyparallel = False
 except ModuleNotFoundError:
     with_ipyparallel = False
 
