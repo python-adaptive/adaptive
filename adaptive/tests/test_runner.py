@@ -73,6 +73,10 @@ def test_aync_def_function():
 
 @pytest.fixture(scope="session")
 def ipyparallel_executor():
+    if sys.version_info[:2] == (3, 8):
+        # ipyparallel is broken on Python 3.8
+        # https://github.com/ipython/ipyparallel/issues/404
+        pytest.skip()
     from ipyparallel import Client
 
     if os.name == "nt":
@@ -109,8 +113,9 @@ def test_stop_after_goal():
     assert stop_time - start_time > seconds_to_wait
 
 
+# https://github.com/ipython/ipyparallel/issues/404
 @pytest.mark.skipif(not with_ipyparallel, reason="IPyparallel is not installed")
-@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="XXX: seems to always fail")
+@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="ipyparallel broken on 3.8")
 def test_ipyparallel_executor(ipyparallel_executor):
     learner = Learner1D(linear, (-1, 1))
     BlockingRunner(learner, trivial_goal, executor=ipyparallel_executor)
