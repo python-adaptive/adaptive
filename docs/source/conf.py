@@ -142,23 +142,8 @@ intersphinx_mapping = {
 }
 
 
-def get_holoviews_js_css():
-    from holoviews.plotting import Renderer
-
-    dependencies = {**Renderer.core_dependencies, **Renderer.extra_dependencies}
-    required = ["jQueryUI"]  # require, jQuery, and underscore are added by sphinx
-    js = [url for name in required for url in dependencies[name].get("js", [])]
-    css = [url for name in required for url in dependencies[name].get("css", [])]
-    return js, css
-
-
-# js, css = get_holoviews_js_css()
-# html_context = {"holoviews_js_files": js}  # used in source/_templates/layout.html
-
 html_logo = "logo_docs.png"
 
 
 def setup(app):
-    # for url in css:
-    #     app.add_stylesheet(url)
     app.add_stylesheet("custom.css")  # For the `live_info` widget
