@@ -440,3 +440,16 @@ class BalancingLearner(BaseLearner):
     def _set_data(self, data):
         for l, _data in zip(self.learners, data):
             l._set_data(_data)
+
+    def __getstate__(self):
+        return (
+            self.learners,
+            self._cdims_default,
+            self.strategy,
+            self._get_data(),
+        )
+
+    def __setstate__(self, state):
+        learners, cdims, strategy, data = state
+        self.__init__(learners, cdims=cdims, strategy=strategy)
+        self._set_data(data)
