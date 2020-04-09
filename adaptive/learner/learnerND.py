@@ -988,13 +988,6 @@ class LearnerND(BaseLearner):
 
         return plotly.offline.iplot(fig)
 
-    def _get_data(self):
-        return self.data
-
-    def _set_data(self, data):
-        if data:
-            self.tell_many(*zip(*data.items()))
-
     def _get_iso(self, level=0.0, which="surface"):
         if which == "surface":
             if self.ndim != 3 or self.vdim != 1:
@@ -1182,3 +1175,23 @@ class LearnerND(BaseLearner):
             opacity=opacity,
             lighting=lighting,
         )
+
+    def _get_data(self):
+        return self.data
+
+    def _set_data(self, data):
+        if data:
+            self.tell_many(*zip(*data.items()))
+
+    def __getstate__(self):
+        return (
+            self.function,
+            self.bounds,
+            self.loss_per_simplex,
+            self._get_data(),
+        )
+
+    def __setstate__(self, state):
+        function, bounds, loss_per_simplex, data = state
+        self.__init__(function, bounds, loss_per_simplex)
+        self._set_data(data)
