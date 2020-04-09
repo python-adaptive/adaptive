@@ -749,9 +749,16 @@ class SequentialExecutor(concurrent.Executor):
         pass
 
 
+def _default_executor():
+    if with_loky:
+        return loky.get_reusable_executor()
+    else:
+        return concurrent.ProcessPoolExecutor()
+
+
 def _ensure_executor(executor):
     if executor is None:
-        executor = concurrent.ProcessPoolExecutor()
+        executor = _default_executor()
 
     if isinstance(executor, concurrent.Executor):
         return executor
