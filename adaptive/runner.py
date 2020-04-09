@@ -32,6 +32,13 @@ try:
 except ModuleNotFoundError:
     with_mpi4py = False
 
+try:
+    import loky
+
+    with_loky = True
+except ModuleNotFoundError:
+    with_loky = False
+
 with suppress(ModuleNotFoundError):
     import uvloop
 
@@ -764,6 +771,8 @@ def _get_ncores(ex):
     elif isinstance(
         ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
     ):
+        return ex._max_workers  # not public API!
+    elif with_loky and isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
         return ex._max_workers  # not public API!
     elif isinstance(ex, SequentialExecutor):
         return 1
