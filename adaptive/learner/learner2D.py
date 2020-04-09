@@ -706,3 +706,16 @@ class Learner2D(BaseLearner):
         for point in copy(self._stack):
             if point in self.data:
                 self._stack.pop(point)
+
+    def __getstate__(self):
+        return (
+            self.function,
+            self.bounds,
+            self.loss_per_triangle,
+            self._get_data(),
+        )
+
+    def __setstate__(self, state):
+        function, bounds, loss_per_triangle, data = state
+        self.__init__(function, bounds, loss_per_triangle)
+        self._set_data(data)
