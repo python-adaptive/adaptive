@@ -146,6 +146,6 @@ def test_distributed_executor():
 
 @pytest.mark.skipif(not with_loky, reason="loky not installed")
 def test_loky_executor(loky_executor):
-    learner = Learner1D(linear, (-1, 1))
+    learner = Learner1D(lambda x: x, (-1, 1))
     BlockingRunner(learner, trivial_goal, executor=loky_executor)
     assert learner.npoints > 0
