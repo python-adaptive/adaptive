@@ -625,6 +625,19 @@ class Learner1D(BaseLearner):
         if data:
             self.tell_many(*zip(*data.items()))
 
+    def __getstate__(self):
+        return (
+            self.function,
+            self.bounds,
+            self.loss_per_interval,
+            self._get_data(),
+        )
+
+    def __setstate__(self, state):
+        function, bounds, loss_per_interval, data = state
+        self.__init__(function, bounds, loss_per_interval)
+        self._set_data(data)
+
 
 def loss_manager(x_scale):
     def sort_key(ival, loss):
