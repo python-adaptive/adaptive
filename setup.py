@@ -53,6 +53,7 @@ extras_require = {
     "other": [
         "ipyparallel",
         "distributed",
+        "loky",
         "scikit-optimize",
         "wexpect" if os.name == "nt" else "pexpect",
     ],

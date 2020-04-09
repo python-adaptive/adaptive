@@ -12,6 +12,7 @@ dependencies:
   - ipyparallel
   - distributed
   - ipykernel>=4.8*
+  - loky
   - jupyter_client>=5.2.2
   - ipywidgets
   - scikit-optimize
