@@ -49,6 +49,11 @@ with suppress(ModuleNotFoundError):
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 
+_default_executor = (
+    loky.get_reusable_executor if with_loky else concurrent.ProcessPoolExecutor
+)
+
+
 class BaseRunner(metaclass=abc.ABCMeta):
     r"""Base class for runners that use `concurrent.futures.Executors`.
 
@@ -478,7 +483,11 @@ class AsyncRunner(BaseRunner):
             def goal(_):
                 return False
 
-        if executor is None and not inspect.iscoroutinefunction(learner.function):
+        if (
+            executor is None
+            and _default_executor is concurrent.ProcessPoolExecutor
+            and not inspect.iscoroutinefunction(learner.function)
+        ):
             try:
                 pickle.dumps(learner.function)
             except pickle.PicklingError:
@@ -754,13 +763,6 @@ class SequentialExecutor(concurrent.Executor):
 
     def shutdown(self, wait=True):
         pass
-
-
-def _default_executor():
-    if with_loky:
-        return loky.get_reusable_executor()
-    else:
-        return concurrent.ProcessPoolExecutor()
 
 
 def _ensure_executor(executor):
