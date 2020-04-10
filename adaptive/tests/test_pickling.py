@@ -2,8 +2,6 @@ import operator
 import pickle
 import random
 
-import cloudpickle
-import dill
 import pytest
 
 from adaptive.learner import (
@@ -17,6 +15,20 @@ from adaptive.learner import (
     SequenceLearner,
 )
 from adaptive.runner import simple
+
+try:
+    import cloudpickle
+
+    with_cloudpickle = True
+except ModuleNotFoundError:
+    with_cloudpickle = False
+
+try:
+    import dill
+
+    with_dill = True
+except ModuleNotFoundError:
+    with_dill = False
 
 
 def goal_1(learner):
@@ -36,7 +48,11 @@ learners_pairs = [
     (AverageLearner, dict(atol=0.1)),
 ]
 
-serializers = (pickle, dill, cloudpickle)
+serializers = [pickle]
+if with_cloudpickle:
+    serializers.append(cloudpickle)
+if with_dill:
+    serializers.append(dill)
 
 learners = [
     (learner_type, learner_kwargs, serializer)
@@ -45,7 +61,7 @@ learners = [
 ]
 
 
-def f_for_pickle_balancing_learner(x):
+def f_for_pickle(x):
     return 1
 
 
@@ -62,17 +78,21 @@ def test_serialization_for(learner_type, learner_kwargs, serializer):
     def f(x):
         return random.random()
 
+    if serializer is pickle:
+        # f from the local scope cannot be pickled
+        f = f_for_pickle  # noqa: F811
+
     learner = learner_type(f, **learner_kwargs)
 
     simple(learner, goal_1)
-    learner_bytes = cloudpickle.dumps(learner)
+    learner_bytes = serializer.dumps(learner)
 
     if serializer is not pickle:
         # With pickle the functions are only pickled by reference
         del f
         del learner
 
-    learner_loaded = cloudpickle.loads(learner_bytes)
+    learner_loaded = serializer.loads(learner_bytes)
     assert learner_loaded.npoints >= 10
     simple(learner_loaded, goal_2)
     assert learner_loaded.npoints >= 20
@@ -116,7 +136,7 @@ def test_serialization_for_balancing_learner(serializer):
 
     if serializer is pickle:
         # f from the local scope cannot be pickled
-        f = f_for_pickle_balancing_learner  # noqa: F811
+        f = f_for_pickle  # noqa: F811
 
     learner_1 = Learner1D(f, bounds=(-1, 1))
     learner_2 = Learner1D(f, bounds=(-2, 2))

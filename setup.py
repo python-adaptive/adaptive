@@ -43,8 +43,6 @@ extras_require = {
         "plotly",
     ],
     "testing": [
-        "cloudpickle",
-        "dill",
         "flaky",
         "pytest",
         "pytest-cov",
@@ -53,6 +51,8 @@ extras_require = {
         "pre_commit",
     ],
     "other": [
+        "cloudpickle",
+        "dill",
         "distributed",
         "ipyparallel>=6.2.5",  # because of https://github.com/ipython/ipyparallel/issues/404
         "loky",
