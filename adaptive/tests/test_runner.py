@@ -154,6 +154,6 @@ def test_loky_executor(loky_executor):
 
 
 def test_default_executor():
-    learner = Learner1D(lambda x: x, (-1, 1))
+    learner = Learner1D(linear, (-1, 1))
     runner = AsyncRunner(learner, goal=lambda l: l.npoints > 10)
     asyncio.get_event_loop().run_until_complete(runner.task)
