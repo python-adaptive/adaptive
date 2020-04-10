@@ -44,6 +44,7 @@ extras_require = {
     ],
     "testing": [
         "cloudpickle",
+        "dill",
         "flaky",
         "pytest",
         "pytest-cov",
