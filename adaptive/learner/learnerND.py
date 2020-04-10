@@ -131,7 +131,7 @@ def triangle_loss(simplex, values, value_scale, neighbors, neighbor_values):
         The scale of values, where ``values = function_values * value_scale``.
     neighbors : list of tuples
         The neighboring points of the simplex, ordered such that simplex[0]
-        exacly opposes neighbors[0], etc.
+        exactly opposes neighbors[0], etc.
     neighbor_values : list of values
         The function values for each of the neighboring points.
 
@@ -169,7 +169,7 @@ def curvature_loss_function(exploration=0.05):
             The scale of values, where ``values = function_values * value_scale``.
         neighbors : list of tuples
             The neighboring points of the simplex, ordered such that simplex[0]
-            exacly opposes neighbors[0], etc.
+            exactly opposes neighbors[0], etc.
         neighbor_values : list of values
             The scaled function values for each of the neighboring points.
 
