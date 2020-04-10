@@ -116,3 +116,21 @@ How you call MPI might depend on your specific queuing system, with SLURM for ex
     #SBATCH --ntasks 100
 
     srun -n $SLURM_NTASKS --mpi=pmi2 ~/miniconda3/envs/py37_min/bin/python -m mpi4py.futures run_learner.py
+
+`loky.get_reusable_executor`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This executor is basically a powered-up version of `~concurrent.futures.ProcessPoolExecutor`, check its `documentation <https://loky.readthedocs.io/>`_.
+Among other things, it allows to *reuse* the executor and uses ``cloudpickle`` for serialization.
+This means you can even learn closures, lambdas, or other functions that are not picklable with `pickle`.
+
+.. code:: python
+
+    from loky import get_reusable_executor
+    ex = get_reusable_executor()
+
+    f = lambda x: x
+    learner = adaptive.Learner1D(f, bounds=(-1, 1))
+
+    runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01, executor=ex)
+    runner.live_info()

@@ -139,6 +139,7 @@ intersphinx_mapping = {
     "holoviews": ("https://holoviews.org/", None),
     "ipyparallel": ("https://ipyparallel.readthedocs.io/en/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
+    "loky": ("https://loky.readthedocs.io/en/stable/", None),
 }
 
 

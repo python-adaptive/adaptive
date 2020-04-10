@@ -15,6 +15,7 @@ from adaptive.runner import (
     stop_after,
     with_distributed,
     with_ipyparallel,
+    with_loky,
 )
 
 
@@ -91,6 +92,13 @@ def ipyparallel_executor():
         raise RuntimeError("Could not stop ipcluster")
 
 
+@pytest.fixture(scope="session")
+def loky_executor():
+    import loky
+
+    return loky.get_reusable_executor()
+
+
 def linear(x):
     return x
 
@@ -133,4 +141,13 @@ def test_distributed_executor():
     client = Client(n_workers=1)
     BlockingRunner(learner, trivial_goal, executor=client)
     client.shutdown()
+    assert learner.npoints > 0
+
+
+@pytest.mark.skipif(not with_loky, reason="loky not installed")
+def test_loky_executor(loky_executor):
+    learner = Learner1D(lambda x: x, (-1, 1))
+    BlockingRunner(
+        learner, trivial_goal, executor=loky_executor, shutdown_executor=True
+    )
     assert learner.npoints > 0

@@ -12,9 +12,13 @@ from contextlib import suppress
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 
 try:
-    import ipyparallel
+    if sys.version_info < (3, 8):
+        # XXX: remove when ipyparallel 6.2.5 is released
+        import ipyparallel
 
-    with_ipyparallel = True
+        with_ipyparallel = True
+    else:
+        with_ipyparallel = False
 except ModuleNotFoundError:
     with_ipyparallel = False
 
@@ -31,6 +35,13 @@ try:
     with_mpi4py = True
 except ModuleNotFoundError:
     with_mpi4py = False
+
+try:
+    import loky
+
+    with_loky = True
+except ModuleNotFoundError:
+    with_loky = False
 
 with suppress(ModuleNotFoundError):
     import uvloop
@@ -232,10 +243,13 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _cleanup(self):
         if self.shutdown_executor:
-            # XXX: temporary set wait=True for Python 3.7
+            # XXX: temporary set wait=True because of a bug with Python ≥3.7
+            # and loky in any Python version.
             # see https://github.com/python-adaptive/adaptive/issues/156
             # and https://github.com/python-adaptive/adaptive/pull/164
-            self.executor.shutdown(wait=True if sys.version_info >= (3, 7) else False)
+            # and https://bugs.python.org/issue36281
+            # and https://github.com/joblib/loky/issues/241
+            self.executor.shutdown(wait=True)
         self.end_time = time.time()
 
     @property
@@ -269,7 +283,8 @@ class BlockingRunner(BaseRunner):
         the learner as its sole argument, and return True when we should
         stop requesting more points.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
-               `mpi4py.futures.MPIPoolExecutor`, or `ipyparallel.Client`, optional
+               `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
+               `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.ProcessPoolExecutor`.
     ntasks : int, optional
@@ -386,7 +401,8 @@ class AsyncRunner(BaseRunner):
         stop requesting more points. If not provided, the runner will run
         forever, or until ``self.task.cancel()`` is called.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
-               `mpi4py.futures.MPIPoolExecutor`, or `ipyparallel.Client`, optional
+               `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
+               `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.ProcessPoolExecutor`.
     ntasks : int, optional
@@ -740,9 +756,16 @@ class SequentialExecutor(concurrent.Executor):
         pass
 
 
+def _default_executor():
+    if with_loky:
+        return loky.get_reusable_executor()
+    else:
+        return concurrent.ProcessPoolExecutor()
+
+
 def _ensure_executor(executor):
     if executor is None:
-        executor = concurrent.ProcessPoolExecutor()
+        executor = _default_executor()
 
     if isinstance(executor, concurrent.Executor):
         return executor
@@ -764,6 +787,8 @@ def _get_ncores(ex):
     elif isinstance(
         ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
     ):
+        return ex._max_workers  # not public API!
+    elif with_loky and isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
         return ex._max_workers  # not public API!
     elif isinstance(ex, SequentialExecutor):
         return 1
