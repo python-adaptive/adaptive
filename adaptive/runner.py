@@ -243,10 +243,13 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _cleanup(self):
         if self.shutdown_executor:
-            # XXX: temporary set wait=True for Python 3.7
+            # XXX: temporary set wait=True because of a bug with Python ≥3.7
+            # and loky in any Python version.
             # see https://github.com/python-adaptive/adaptive/issues/156
             # and https://github.com/python-adaptive/adaptive/pull/164
-            self.executor.shutdown(wait=True if sys.version_info >= (3, 7) else False)
+            # and https://bugs.python.org/issue36281
+            # and https://github.com/joblib/loky/issues/241
+            self.executor.shutdown(wait=True)
         self.end_time = time.time()
 
     @property
