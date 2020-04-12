@@ -86,6 +86,8 @@ def test_serialization_for(learner_type, learner_kwargs, serializer):
 
     simple(learner, goal_1)
     learner_bytes = serializer.dumps(learner)
+    loss = learner.loss()
+    asked = learner.ask(1)
 
     if serializer is not pickle:
         # With pickle the functions are only pickled by reference
@@ -94,6 +96,15 @@ def test_serialization_for(learner_type, learner_kwargs, serializer):
 
     learner_loaded = serializer.loads(learner_bytes)
     assert learner_loaded.npoints >= 10
+    assert loss == learner_loaded.loss()
+
+    if learner_type is not Learner2D:
+        # cannot test this for Learner2D because
+        # xfailing test_point_adding_order_is_irrelevant
+        assert asked == learner_loaded.ask(1)
+        # load again to undo the ask
+        learner_loaded = serializer.loads(learner_bytes)
+
     simple(learner_loaded, goal_2)
     assert learner_loaded.npoints >= 20
 
