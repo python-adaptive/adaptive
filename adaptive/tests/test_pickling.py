@@ -2,6 +2,7 @@ import operator
 import pickle
 import random
 
+import flaky
 import pytest
 
 from adaptive.learner import (
@@ -69,6 +70,7 @@ def f_for_pickle_datasaver(x):
     return dict(x=x, y=x)
 
 
+@flaky.flaky(max_runs=3)
 @pytest.mark.parametrize(
     "learner_type, learner_kwargs, serializer", learners,
 )
