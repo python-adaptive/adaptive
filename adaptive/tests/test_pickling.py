@@ -33,11 +33,11 @@ except ModuleNotFoundError:
 
 
 def goal_1(learner):
-    return learner.npoints >= 10
+    return learner.npoints == 10
 
 
 def goal_2(learner):
-    return learner.npoints >= 20
+    return learner.npoints == 20
 
 
 learners_pairs = [
@@ -97,7 +97,7 @@ def test_serialization_for(learner_type, learner_kwargs, serializer):
         del learner
 
     learner_loaded = serializer.loads(learner_bytes)
-    assert learner_loaded.npoints >= 10
+    assert learner_loaded.npoints == 10
     assert loss == learner_loaded.loss()
 
     if learner_type is not Learner2D:
@@ -108,7 +108,7 @@ def test_serialization_for(learner_type, learner_kwargs, serializer):
         learner_loaded = serializer.loads(learner_bytes)
 
     simple(learner_loaded, goal_2)
-    assert learner_loaded.npoints >= 20
+    assert learner_loaded.npoints == 20
 
 
 @pytest.mark.parametrize(
