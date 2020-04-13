@@ -137,9 +137,9 @@ def test_serialization_for_datasaver(serializer):
         del learner
 
     learner_loaded = serializer.loads(learner_bytes)
-    assert learner_loaded.npoints >= 10
+    assert learner_loaded.npoints == 10
     simple(learner_loaded, goal_2)
-    assert learner_loaded.npoints >= 20
+    assert learner_loaded.npoints == 20
 
 
 @pytest.mark.parametrize(
@@ -168,6 +168,6 @@ def test_serialization_for_balancing_learner(serializer):
         del learner
 
     learner_loaded = serializer.loads(learner_bytes)
-    assert learner_loaded.npoints >= 10
+    assert learner_loaded.npoints == 10
     simple(learner_loaded, goal_2)
-    assert learner_loaded.npoints >= 20
+    assert learner_loaded.npoints == 20
