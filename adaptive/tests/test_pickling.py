@@ -85,6 +85,8 @@ def test_serialization_for(learner_type, learner_kwargs, serializer):
         f = f_for_pickle  # noqa: F811
 
     learner = learner_type(f, **learner_kwargs)
+    if learner_type is Learner1D:
+        learner._recompute_losses_factor = 1
 
     simple(learner, goal_1)
     learner_bytes = serializer.dumps(learner)
