@@ -712,10 +712,12 @@ class Learner2D(BaseLearner):
             self.function,
             self.bounds,
             self.loss_per_triangle,
+            self._stack,
             self._get_data(),
         )
 
     def __setstate__(self, state):
-        function, bounds, loss_per_triangle, data = state
+        function, bounds, loss_per_triangle, _stack, data = state
         self.__init__(function, bounds, loss_per_triangle)
         self._set_data(data)
+        self._stack = _stack
