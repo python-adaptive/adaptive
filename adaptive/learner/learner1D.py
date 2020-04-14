@@ -630,13 +630,17 @@ class Learner1D(BaseLearner):
             self.function,
             self.bounds,
             self.loss_per_interval,
+            dict(self.losses),  # SortedDict cannot be pickled
+            dict(self.losses_combined),  # ItemSortedDict cannot be pickled
             self._get_data(),
         )
 
     def __setstate__(self, state):
-        function, bounds, loss_per_interval, data = state
+        function, bounds, loss_per_interval, losses, losses_combined, data = state
         self.__init__(function, bounds, loss_per_interval)
         self._set_data(data)
+        self.losses.update(losses)
+        self.losses_combined.update(losses_combined)
 
 
 def loss_manager(x_scale):
