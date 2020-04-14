@@ -87,7 +87,8 @@ def test_serialization_for(learner_type, learner_kwargs, serializer):
     simple(learner, goal_1)
     learner_bytes = serializer.dumps(learner)
     loss = learner.loss()
-    asked = learner.ask(1)
+    asked = learner.ask(10)
+    data = learner.data
 
     if serializer is not pickle:
         # With pickle the functions are only pickled by reference
@@ -97,8 +98,10 @@ def test_serialization_for(learner_type, learner_kwargs, serializer):
     learner_loaded = serializer.loads(learner_bytes)
     assert learner_loaded.npoints == 10
     assert loss == learner_loaded.loss()
+    assert data == learner_loaded.data
 
-    assert asked == learner_loaded.ask(1)
+    assert asked == learner_loaded.ask(10)
+
     # load again to undo the ask
     learner_loaded = serializer.loads(learner_bytes)
 
