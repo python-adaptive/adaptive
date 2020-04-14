@@ -281,19 +281,9 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     M = random.randint(10, 30)
     pls = zip(*learner.ask(M))
     cpls = zip(*control.ask(M))
-    if learner_type is SequenceLearner:
-        # The SequenceLearner's points might not be hasable
-        points, values = zip(*pls)
-        indices, points = zip(*points)
 
-        cpoints, cvalues = zip(*cpls)
-        cindices, cpoints = zip(*cpoints)
-        assert (np.array(points) == np.array(cpoints)).all()
-        assert values == cvalues
-        assert indices == cindices
-    else:
-        # Point ordering is not defined, so compare as sets
-        assert set(pls) == set(cpls)
+    # Point ordering is not defined, so compare as sets
+    assert set(pls) == set(cpls)
 
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
@@ -324,20 +314,9 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     pls = zip(*learner.ask(M))
     cpls = zip(*control.ask(M))
 
-    if learner_type is SequenceLearner:
-        # The SequenceLearner's points might not be hasable
-        points, values = zip(*pls)
-        indices, points = zip(*points)
-
-        cpoints, cvalues = zip(*cpls)
-        cindices, cpoints = zip(*cpoints)
-        assert (np.array(points) == np.array(cpoints)).all()
-        assert values == cvalues
-        assert indices == cindices
-    else:
-        # Point ordering within a single call to 'ask'
-        # is not guaranteed to be the same by the API.
-        assert set(pls) == set(cpls)
+    # Point ordering within a single call to 'ask'
+    # is not guaranteed to be the same by the API.
+    assert set(pls) == set(cpls)
 
 
 @run_with(Learner1D, xfail(Learner2D), xfail(LearnerND), AverageLearner)
