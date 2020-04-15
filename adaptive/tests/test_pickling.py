@@ -1,6 +1,4 @@
-import operator
 import pickle
-import random
 
 import pytest
 
@@ -11,7 +9,6 @@ from adaptive.learner import (
     IntegratorLearner,
     Learner1D,
     Learner2D,
-    LearnerND,
     SequenceLearner,
 )
 from adaptive.runner import simple
@@ -39,48 +36,61 @@ def goal_2(learner):
     return learner.npoints == 20
 
 
+def pickleable_f(x):
+    return hash(str(x)) / 2 ** 63
+
+
+nonpickleable_f = lambda x: hash(str(x)) / 2 ** 63  # noqa: E731
+
+
+def identity_function(x):
+    return x
+
+
+def datasaver(f, learner_type, learner_kwargs):
+    return DataSaver(
+        learner=learner_type(f, **learner_kwargs), arg_picker=identity_function
+    )
+
+
+def balancing_learner(f, learner_type, learner_kwargs):
+    learner_1 = learner_type(f, **learner_kwargs)
+    learner_2 = learner_type(f, **learner_kwargs)
+    return BalancingLearner([learner_1, learner_2])
+
+
 learners_pairs = [
     (Learner1D, dict(bounds=(-1, 1))),
     (Learner2D, dict(bounds=[(-1, 1), (-1, 1)])),
-    (LearnerND, dict(bounds=[(-1, 1), (-1, 1), (-1, 1)])),
     (SequenceLearner, dict(sequence=list(range(100)))),
     (IntegratorLearner, dict(bounds=(0, 1), tol=1e-3)),
     (AverageLearner, dict(atol=0.1)),
+    (datasaver, dict(learner_type=Learner1D, learner_kwargs=dict(bounds=(-1, 1)))),
+    (
+        balancing_learner,
+        dict(learner_type=Learner1D, learner_kwargs=dict(bounds=(-1, 1))),
+    ),
 ]
 
-serializers = [pickle]
+serializers = [(pickle, pickleable_f)]
 if with_cloudpickle:
-    serializers.append(cloudpickle)
+    serializers.append((cloudpickle, nonpickleable_f))
 if with_dill:
-    serializers.append(dill)
+    serializers.append((dill, nonpickleable_f))
+
 
 learners = [
-    (learner_type, learner_kwargs, serializer)
-    for serializer in serializers
+    (learner_type, learner_kwargs, serializer, f)
+    for serializer, f in serializers
     for learner_type, learner_kwargs in learners_pairs
 ]
 
 
-def f_for_pickle(x):
-    return 1
-
-
-def f_for_pickle_datasaver(x):
-    return dict(x=x, y=x)
-
-
 @pytest.mark.parametrize(
-    "learner_type, learner_kwargs, serializer", learners,
+    "learner_type, learner_kwargs, serializer, f", learners,
 )
-def test_serialization_for(learner_type, learner_kwargs, serializer):
+def test_serialization_for(learner_type, learner_kwargs, serializer, f):
     """Test serializing a learner using different serializers."""
-
-    def f(x):
-        return random.random()
-
-    if serializer is pickle:
-        # f from the local scope cannot be pickled
-        f = f_for_pickle  # noqa: F811
 
     learner = learner_type(f, **learner_kwargs)
 
@@ -90,10 +100,8 @@ def test_serialization_for(learner_type, learner_kwargs, serializer):
     asked = learner.ask(10)
     data = learner.data
 
-    if serializer is not pickle:
-        # With pickle the functions are only pickled by reference
-        del f
-        del learner
+    del f
+    del learner
 
     learner_loaded = serializer.loads(learner_bytes)
     assert learner_loaded.npoints == 10
@@ -105,65 +113,5 @@ def test_serialization_for(learner_type, learner_kwargs, serializer):
     # load again to undo the ask
     learner_loaded = serializer.loads(learner_bytes)
 
-    simple(learner_loaded, goal_2)
-    assert learner_loaded.npoints == 20
-
-
-@pytest.mark.parametrize(
-    "serializer", serializers,
-)
-def test_serialization_for_datasaver(serializer):
-    def f(x):
-        return dict(x=1, y=x ** 2)
-
-    if serializer is pickle:
-        # f from the local scope cannot be pickled
-        f = f_for_pickle_datasaver  # noqa: F811
-
-    _learner = Learner1D(f, bounds=(-1, 1))
-    learner = DataSaver(_learner, arg_picker=operator.itemgetter("y"))
-
-    simple(learner, goal_1)
-    learner_bytes = serializer.dumps(learner)
-
-    if serializer is not pickle:
-        # With pickle the functions are only pickled by reference
-        del f
-        del _learner
-        del learner
-
-    learner_loaded = serializer.loads(learner_bytes)
-    assert learner_loaded.npoints == 10
-    simple(learner_loaded, goal_2)
-    assert learner_loaded.npoints == 20
-
-
-@pytest.mark.parametrize(
-    "serializer", serializers,
-)
-def test_serialization_for_balancing_learner(serializer):
-    def f(x):
-        return x ** 2
-
-    if serializer is pickle:
-        # f from the local scope cannot be pickled
-        f = f_for_pickle  # noqa: F811
-
-    learner_1 = Learner1D(f, bounds=(-1, 1))
-    learner_2 = Learner1D(f, bounds=(-2, 2))
-    learner = BalancingLearner([learner_1, learner_2])
-
-    simple(learner, goal_1)
-    learner_bytes = serializer.dumps(learner)
-
-    if serializer is not pickle:
-        # With pickle the functions are only pickled by reference
-        del f
-        del learner_1
-        del learner_2
-        del learner
-
-    learner_loaded = serializer.loads(learner_bytes)
-    assert learner_loaded.npoints == 10
     simple(learner_loaded, goal_2)
     assert learner_loaded.npoints == 20
