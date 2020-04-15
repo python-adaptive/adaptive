@@ -446,10 +446,8 @@ class BalancingLearner(BaseLearner):
             self.learners,
             self._cdims_default,
             self.strategy,
-            self._get_data(),
         )
 
     def __setstate__(self, state):
-        learners, cdims, strategy, data = state
+        learners, cdims, strategy = state
         self.__init__(learners, cdims=cdims, strategy=strategy)
-        self._set_data(data)
