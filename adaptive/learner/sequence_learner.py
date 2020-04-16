@@ -22,12 +22,6 @@ class _IndexToPoint:
     def __call__(self, index, *args, **kwargs):
         return self.function(self.sequence[index], *args, **kwargs)
 
-    def __getstate__(self):
-        return self.function, self.sequence
-
-    def __setstate__(self, state):
-        self.__init__(*state)
-
 
 class SequenceLearner(BaseLearner):
     r"""A learner that will learn a sequence. It simply returns
