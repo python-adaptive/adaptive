@@ -20,8 +20,7 @@ class _IndexToPoint:
         self.sequence = sequence
 
     def __call__(self, index, *args, **kwargs):
-        point = self.sequence[index]
-        return self.function(point, *args, **kwargs)
+        return self.function(self.sequence[index], *args, **kwargs)
 
     def __getstate__(self):
         return self.function, self.sequence
