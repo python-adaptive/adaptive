@@ -5,7 +5,7 @@ from sortedcontainers import SortedDict, SortedSet
 from adaptive.learner.base_learner import BaseLearner
 
 
-class _IndexToPoint:
+class _CallFromSequence:
     """Call function with index of sequence."""
 
     def __init__(self, function, sequence):
@@ -45,7 +45,7 @@ class SequenceLearner(BaseLearner):
 
     def __init__(self, function, sequence):
         self._original_function = function
-        self.function = _IndexToPoint(function, sequence)
+        self.function = _CallFromSequence(function, sequence)
         self._to_do_indices = SortedSet({i for i, _ in enumerate(sequence)})
         self._ntotal = len(sequence)
         self.sequence = copy(sequence)
