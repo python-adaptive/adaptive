@@ -6,14 +6,7 @@ from adaptive.learner.base_learner import BaseLearner
 
 
 class _IndexToPoint:
-    """Call function with index of sequence.
-
-    The SequenceLearner's function receives a tuple ``(index, point)``
-    but the original function only takes ``point``.
-
-    This is the same as `lambda x: function(x[1])`, however, that is not
-    pickable.
-    """
+    """Call function with index of sequence."""
 
     def __init__(self, function, sequence):
         self.function = function
