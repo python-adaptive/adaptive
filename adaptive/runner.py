@@ -55,9 +55,7 @@ _default_executor = (
 
 
 def _key_by_value(dct, value):
-    for k, v in dct.items():
-        if v == value:
-            return k
+    return next((k for k, v in dct.items() if v == value), None)
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
