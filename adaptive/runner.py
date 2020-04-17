@@ -55,7 +55,7 @@ _default_executor = (
 
 
 def _key_by_value(dct, value):
-    return next((k for k, v in dct.items() if v == value), None)
+    return next(k for k, v in dct.items() if v == value)
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
@@ -248,9 +248,9 @@ class BaseRunner(metaclass=abc.ABCMeta):
             fut = self._submit(x)
             fut.start_time = start_time
             self.pending_points[fut] = x
-            i = _key_by_value(self._index_to_point, x)  # O(N)
-            if i is None:
-                # `x` is not a value in `self._index_to_point`
+            try:
+                i = _key_by_value(self._index_to_point, x)  # O(N)
+            except StopIteration:  # `x` is not a value in `self._index_to_point`
                 self._i += 1
                 i = self._i
             self._index_to_point[i] = x
