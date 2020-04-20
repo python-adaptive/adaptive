@@ -134,6 +134,7 @@ def test_ipyparallel_executor(ipyparallel_executor):
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(not with_distributed, reason="dask.distributed is not installed")
 @pytest.mark.skipif(os.name == "nt", reason="XXX: seems to always fail")
+@pytest.mark.skipif(sys.platform == "darwin", reason="XXX: intermittently fails")
 def test_distributed_executor():
     from distributed import Client
 
