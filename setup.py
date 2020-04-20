@@ -51,7 +51,7 @@ extras_require = {
         "pre_commit",
     ],
     "other": [
-        "ipyparallel",
+        "ipyparallel>=6.2.5",  # because of https://github.com/ipython/ipyparallel/issues/404
         "distributed",
         "loky",
         "scikit-optimize",

@@ -9,7 +9,7 @@ dependencies:
   - sortedcollections
   - scipy
   - holoviews
-  - ipyparallel
+  - ipyparallel>=6.2.5
   - distributed
   - ipykernel>=4.8*
   - loky
