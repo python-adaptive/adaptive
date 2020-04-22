@@ -1,7 +1,9 @@
 import abc
 import asyncio
 import concurrent.futures as concurrent
+import functools
 import inspect
+import itertools
 import pickle
 import sys
 import time
@@ -150,9 +152,10 @@ class BaseRunner(metaclass=abc.ABCMeta):
         self._to_retry = {}
         self._tracebacks = {}
 
-        # Keeping track of index -> point
         self._id_to_point = {}
-        self._i = 0  # some unique index to be associated with each point
+        self._next_id = functools.partial(
+            next, itertools.count()
+        )  # some unique id to be associated with each point
 
     def _get_max_tasks(self):
         return self._max_tasks or _get_ncores(self.executor)
@@ -172,10 +175,10 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _ask(self, n):
         points = []
-        for i, index in enumerate(self._to_retry.keys()):
+        for i, _id in enumerate(self._to_retry.keys()):
             if i == n:
                 break
-            point = self._id_to_point[index]
+            point = self._id_to_point[_id]
             if point not in self.pending_points.values():
                 points.append(point)
 
@@ -249,11 +252,10 @@ class BaseRunner(metaclass=abc.ABCMeta):
             fut.start_time = start_time
             self.pending_points[fut] = x
             try:
-                i = _key_by_value(self._id_to_point, x)  # O(N)
+                _id = _key_by_value(self._id_to_point, x)  # O(N)
             except StopIteration:  # `x` is not a value in `self._id_to_point`
-                self._i += 1
-                i = self._i
-            self._id_to_point[i] = x
+                _id = self._next_id()
+            self._id_to_point[_id] = x
 
         # Collect and results and add them to the learner
         futures = list(self.pending_points.keys())
