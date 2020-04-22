@@ -174,22 +174,21 @@ class BaseRunner(metaclass=abc.ABCMeta):
         return self.log is not None
 
     def _ask(self, n):
-        points = []
-        for i, pid in enumerate(self._to_retry.keys()):
-            if i == n:
-                break
-            point = self._id_to_point[pid]
-            if point not in self.pending_points.values():
-                points.append(point)
+        pids = [
+            pid
+            for pid in self._to_retry.keys()
+            if pid not in self.pending_points.values()
+        ][:n]
+        loss_improvements = len(pids) * [float("inf")]
 
-        loss_improvements = len(points) * [float("inf")]
-        if len(points) < n:
-            new_points, new_losses = self.learner.ask(n - len(points))
-            points += new_points
+        if len(pids) < n:
+            new_points, new_losses = self.learner.ask(n - len(pids))
             loss_improvements += new_losses
-            for p in new_points:
-                self._id_to_point[self._next_id()] = p
-        return points, loss_improvements
+            for point in new_points:
+                pid = self._next_id()
+                self._id_to_point[pid] = point
+                pids.append(pid)
+        return pids, loss_improvements
 
     def overhead(self):
         """Overhead of using Adaptive and the executor in percent.
@@ -216,23 +215,22 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _process_futures(self, done_futs):
         for fut in done_futs:
-            x = self.pending_points.pop(fut)
-            i = _key_by_value(self._id_to_point, x)  # O(N)
+            pid = self.pending_points.pop(fut)
             try:
                 y = fut.result()
                 t = time.time() - fut.start_time  # total execution time
             except Exception as e:
-                self._tracebacks[i] = traceback.format_exc()
-                self._to_retry[i] = self._to_retry.get(i, 0) + 1
-                if self._to_retry[i] > self.retries:
-                    self._to_retry.pop(i)
+                self._tracebacks[pid] = traceback.format_exc()
+                self._to_retry[pid] = self._to_retry.get(pid, 0) + 1
+                if self._to_retry[pid] > self.retries:
+                    self._to_retry.pop(pid)
                     if self.raise_if_retries_exceeded:
-                        self._do_raise(e, i)
+                        self._do_raise(e, pid)
             else:
                 self._elapsed_function_time += t / self._get_max_tasks()
-                self._to_retry.pop(i, None)
-                self._tracebacks.pop(i, None)
-                self._id_to_point.pop(i)
+                self._to_retry.pop(pid, None)
+                self._tracebacks.pop(pid, None)
+                x = self._id_to_point.pop(pid)
                 if self.do_log:
                     self.log.append(("tell", x, y))
                 self.learner.tell(x, y)
@@ -246,13 +244,14 @@ class BaseRunner(metaclass=abc.ABCMeta):
         if self.do_log:
             self.log.append(("ask", n_new_tasks))
 
-        points, _ = self._ask(n_new_tasks)
+        pids, _ = self._ask(n_new_tasks)
 
-        for x in points:
+        for pid in pids:
             start_time = time.time()  # so we can measure execution time
-            fut = self._submit(x)
+            point = self._id_to_point[pid]
+            fut = self._submit(point)
             fut.start_time = start_time
-            self.pending_points[fut] = x
+            self.pending_points[fut] = pid
 
         # Collect and results and add them to the learner
         futures = list(self.pending_points.keys())
