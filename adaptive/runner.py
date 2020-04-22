@@ -151,7 +151,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         self._tracebacks = {}
 
         # Keeping track of index -> point
-        self._index_to_point = {}
+        self._id_to_point = {}
         self._i = 0  # some unique index to be associated with each point
 
     def _get_max_tasks(self):
@@ -159,7 +159,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _do_raise(self, e, i):
         tb = self._tracebacks[i]
-        x = self._index_to_point[i]
+        x = self._id_to_point[i]
         raise RuntimeError(
             "An error occured while evaluating "
             f'"learner.function({x})". '
@@ -175,7 +175,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         for i, index in enumerate(self._to_retry.keys()):
             if i == n:
                 break
-            point = self._index_to_point[index]
+            point = self._id_to_point[index]
             if point not in self.pending_points.values():
                 points.append(point)
 
@@ -212,7 +212,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
     def _process_futures(self, done_futs):
         for fut in done_futs:
             x = self.pending_points.pop(fut)
-            i = _key_by_value(self._index_to_point, x)  # O(N)
+            i = _key_by_value(self._id_to_point, x)  # O(N)
             try:
                 y = fut.result()
                 t = time.time() - fut.start_time  # total execution time
@@ -227,7 +227,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
                 self._elapsed_function_time += t / self._get_max_tasks()
                 self._to_retry.pop(i, None)
                 self._tracebacks.pop(i, None)
-                self._index_to_point.pop(i)
+                self._id_to_point.pop(i)
                 if self.do_log:
                     self.log.append(("tell", x, y))
                 self.learner.tell(x, y)
@@ -249,11 +249,11 @@ class BaseRunner(metaclass=abc.ABCMeta):
             fut.start_time = start_time
             self.pending_points[fut] = x
             try:
-                i = _key_by_value(self._index_to_point, x)  # O(N)
-            except StopIteration:  # `x` is not a value in `self._index_to_point`
+                i = _key_by_value(self._id_to_point, x)  # O(N)
+            except StopIteration:  # `x` is not a value in `self._id_to_point`
                 self._i += 1
                 i = self._i
-            self._index_to_point[i] = x
+            self._id_to_point[i] = x
 
         # Collect and results and add them to the learner
         futures = list(self.pending_points.keys())
@@ -300,11 +300,11 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     @property
     def tracebacks(self):
-        return [(self._index_to_point[i], tb) for i, tb in self._tracebacks.items()]
+        return [(self._id_to_point[i], tb) for i, tb in self._tracebacks.items()]
 
     @property
     def to_retry(self):
-        return [(self._index_to_point[i], n) for i, n in self._to_retry.items()]
+        return [(self._id_to_point[i], n) for i, n in self._to_retry.items()]
 
 
 class BlockingRunner(BaseRunner):
