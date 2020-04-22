@@ -56,10 +56,6 @@ _default_executor = (
 )
 
 
-def _key_by_value(dct, value):
-    return next(k for k, v in dct.items() if v == value)
-
-
 class BaseRunner(metaclass=abc.ABCMeta):
     r"""Base class for runners that use `concurrent.futures.Executors`.
 
