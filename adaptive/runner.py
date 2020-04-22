@@ -103,8 +103,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
         in ``runner.tracebacks``.
     tracebacks : list of tuples
         List of of ``(point, tb)`` for points that failed.
-    pending_points : dict
-        A mapping of `~concurrent.futures.Future`\s to points.
+    pending_points : list of tuples
+        A list of tuples with ``(concurrent.futures.Future, point)``.
 
     Methods
     -------
@@ -132,7 +132,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
         self._max_tasks = ntasks
 
-        self.pending_points = {}
+        self._pending_points = {}
 
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
@@ -177,7 +177,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         pids = [
             pid
             for pid in self._to_retry.keys()
-            if pid not in self.pending_points.values()
+            if pid not in self._pending_points.values()
         ][:n]
         loss_improvements = len(pids) * [float("inf")]
 
@@ -215,7 +215,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _process_futures(self, done_futs):
         for fut in done_futs:
-            pid = self.pending_points.pop(fut)
+            pid = self._pending_points.pop(fut)
             try:
                 y = fut.result()
                 t = time.time() - fut.start_time  # total execution time
@@ -239,7 +239,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         # Launch tasks to replace the ones that completed
         # on the last iteration, making sure to fill workers
         # that have started since the last iteration.
-        n_new_tasks = max(0, self._get_max_tasks() - len(self.pending_points))
+        n_new_tasks = max(0, self._get_max_tasks() - len(self._pending_points))
 
         if self.do_log:
             self.log.append(("ask", n_new_tasks))
@@ -251,17 +251,17 @@ class BaseRunner(metaclass=abc.ABCMeta):
             point = self._id_to_point[pid]
             fut = self._submit(point)
             fut.start_time = start_time
-            self.pending_points[fut] = pid
+            self._pending_points[fut] = pid
 
         # Collect and results and add them to the learner
-        futures = list(self.pending_points.keys())
+        futures = list(self._pending_points.keys())
         return futures
 
     def _remove_unfinished(self):
         # remove points with 'None' values from the learner
         self.learner.remove_unfinished()
         # cancel any outstanding tasks
-        remaining = list(self.pending_points.keys())
+        remaining = list(self._pending_points.keys())
         for fut in remaining:
             fut.cancel()
         return remaining
@@ -298,11 +298,17 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     @property
     def tracebacks(self):
-        return [(self._id_to_point[i], tb) for i, tb in self._tracebacks.items()]
+        return [(self._id_to_point[pid], tb) for pid, tb in self._tracebacks.items()]
 
     @property
     def to_retry(self):
-        return [(self._id_to_point[i], n) for i, n in self._to_retry.items()]
+        return [(self._id_to_point[pid], n) for pid, n in self._to_retry.items()]
+
+    @property
+    def pending_points(self):
+        return [
+            (fut, self._id_to_point[pid]) for fut, pid in self._pending_points.items()
+        ]
 
 
 class BlockingRunner(BaseRunner):
@@ -343,14 +349,14 @@ class BlockingRunner(BaseRunner):
     log : list or None
         Record of the method calls made to the learner, in the format
         ``(method_name, *args)``.
-    to_retry : dict
-        Mapping of ``{point: n_fails, ...}``. When a point has failed
+    to_retry : list of tuples
+        List of ``(point, n_fails)``. When a point has failed
         ``runner.retries`` times it is removed but will be present
         in ``runner.tracebacks``.
-    tracebacks : dict
-        A mapping of point to the traceback if that point failed.
-    pending_points : dict
-        A mapping of `~concurrent.futures.Future`\to points.
+    tracebacks : list of tuples
+        List of of ``(point, tb)`` for points that failed.
+    pending_points : list of tuples
+        A list of tuples with ``(concurrent.futures.Future, point)``.
 
     Methods
     -------
@@ -466,14 +472,14 @@ class AsyncRunner(BaseRunner):
     log : list or None
         Record of the method calls made to the learner, in the format
         ``(method_name, *args)``.
-    to_retry : dict
-        Mapping of ``{point: n_fails, ...}``. When a point has failed
+    to_retry : list of tuples
+        List of ``(point, n_fails)``. When a point has failed
         ``runner.retries`` times it is removed but will be present
         in ``runner.tracebacks``.
-    tracebacks : dict
-        A mapping of point to the traceback if that point failed.
-    pending_points : dict
-        A mapping of `~concurrent.futures.Future`\s to points.
+    tracebacks : list of tuples
+        List of of ``(point, tb)`` for points that failed.
+    pending_points : list of tuples
+        A list of tuples with ``(concurrent.futures.Future, point)``.
 
     Methods
     -------
