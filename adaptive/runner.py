@@ -170,11 +170,10 @@ class BaseRunner(metaclass=abc.ABCMeta):
         return self.log is not None
 
     def _ask(self, n):
-        pids = [
-            pid
-            for pid in self._to_retry.keys()
-            if pid not in self._pending_points.values()
-        ][:n]
+        pending_ids = self._pending_points.values()
+        pids_gen = (pid for pid in self._to_retry.keys() if pid not in pending_ids)
+        pids = list(itertools.islice(pids_gen, n))
+
         loss_improvements = len(pids) * [float("inf")]
 
         if len(pids) < n:
