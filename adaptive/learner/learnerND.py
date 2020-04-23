@@ -1177,11 +1177,28 @@ class LearnerND(BaseLearner):
         )
 
     def _get_data(self):
-        return self.data
+        return (
+            self._vdim,
+            self.data,
+            self._tri,
+            self._losses,
+            self._min_value,
+            self._max_value,
+            self._output_multiplier,
+            self._simplex_queue,
+        )
 
-    def _set_data(self, data):
-        if data:
-            self.tell_many(*zip(*data.items()))
+    def _set_data(self, state):
+        (
+            self._vdim,
+            self.data,
+            self._tri,
+            self._losses,
+            self._min_value,
+            self._max_value,
+            self._output_multiplier,
+            self._simplex_queue,
+        ) = state
 
     def __getstate__(self):
         return (
