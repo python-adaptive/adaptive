@@ -128,7 +128,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
         self._max_tasks = ntasks
 
-        self._pending_points = {}
+        self._pending_pids = {}
 
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
@@ -170,7 +170,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         return self.log is not None
 
     def _ask(self, n):
-        pending_ids = self._pending_points.values()
+        pending_ids = self._pending_pids.values()
         pids_gen = (pid for pid in self._to_retry.keys() if pid not in pending_ids)
         pids = list(itertools.islice(pids_gen, n))
 
@@ -210,7 +210,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _process_futures(self, done_futs):
         for fut in done_futs:
-            pid = self._pending_points.pop(fut)
+            pid = self._pending_pids.pop(fut)
             try:
                 y = fut.result()
                 t = time.time() - fut.start_time  # total execution time
@@ -234,7 +234,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         # Launch tasks to replace the ones that completed
         # on the last iteration, making sure to fill workers
         # that have started since the last iteration.
-        n_new_tasks = max(0, self._get_max_tasks() - len(self._pending_points))
+        n_new_tasks = max(0, self._get_max_tasks() - len(self._pending_pids))
 
         if self.do_log:
             self.log.append(("ask", n_new_tasks))
@@ -246,17 +246,17 @@ class BaseRunner(metaclass=abc.ABCMeta):
             point = self._id_to_point[pid]
             fut = self._submit(point)
             fut.start_time = start_time
-            self._pending_points[fut] = pid
+            self._pending_pids[fut] = pid
 
         # Collect and results and add them to the learner
-        futures = list(self._pending_points.keys())
+        futures = list(self._pending_pids.keys())
         return futures
 
     def _remove_unfinished(self):
         # remove points with 'None' values from the learner
         self.learner.remove_unfinished()
         # cancel any outstanding tasks
-        remaining = list(self._pending_points.keys())
+        remaining = list(self._pending_pids.keys())
         for fut in remaining:
             fut.cancel()
         return remaining
@@ -302,7 +302,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
     @property
     def pending_points(self):
         return [
-            (fut, self._id_to_point[pid]) for fut, pid in self._pending_points.items()
+            (fut, self._id_to_point[pid]) for fut, pid in self._pending_pids.items()
         ]
 
 
