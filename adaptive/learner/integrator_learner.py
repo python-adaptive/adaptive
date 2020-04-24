@@ -591,3 +591,16 @@ class IntegratorLearner(BaseLearner):
         self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter("rdepth")))
         for k, _set in x_mapping.items():
             self.x_mapping[k].update(_set)
+
+    def __getstate__(self):
+        return (
+            self.function,
+            self.bounds,
+            self.tol,
+            self._get_data(),
+        )
+
+    def __setstate__(self, state):
+        function, bounds, tol, data = state
+        self.__init__(function, bounds, tol)
+        self._set_data(data)

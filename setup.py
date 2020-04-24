@@ -51,8 +51,10 @@ extras_require = {
         "pre_commit",
     ],
     "other": [
-        "ipyparallel>=6.2.5",  # because of https://github.com/ipython/ipyparallel/issues/404
+        "cloudpickle",
+        "dill",
         "distributed",
+        "ipyparallel>=6.2.5",  # because of https://github.com/ipython/ipyparallel/issues/404
         "loky",
         "scikit-optimize",
         "wexpect" if os.name == "nt" else "pexpect",
