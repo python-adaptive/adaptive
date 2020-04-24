@@ -297,12 +297,12 @@ raise the exception with the stack trace:
     runner.task.result()
 
 
-You can also check ``runner.tracebacks`` which is a mapping from
-point → traceback.
+You can also check ``runner.tracebacks`` which is a list of tuples with
+(point, traceback).
 
 .. jupyter-execute::
 
-    for point, tb in runner.tracebacks.items():
+    for point, tb in runner.tracebacks:
         print(f'point: {point}:\n {tb}')
 
 Logging runners
