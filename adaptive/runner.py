@@ -171,6 +171,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _ask(self, n):
         pending_ids = self._pending_tasks.values()
+        # using generator here because we only need until `n`
         pids_gen = (pid for pid in self._to_retry.keys() if pid not in pending_ids)
         pids = list(itertools.islice(pids_gen, n))
 
