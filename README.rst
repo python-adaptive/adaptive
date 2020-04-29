@@ -55,6 +55,8 @@ In addition to the learners, ``adaptive`` also provides primitives for
 running the sampling across several cores and even several machines,
 with built-in support for
 `concurrent.futures <https://docs.python.org/3/library/concurrent.futures.html>`_,
+`mpi4py <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html>`_,
+`loky <https://loky.readthedocs.io/en/stable/>`_,
 `ipyparallel <https://ipyparallel.readthedocs.io/en/latest/>`_ and
 `distributed <https://distributed.readthedocs.io/en/latest/>`_.
 
