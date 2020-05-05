@@ -1,20 +1,45 @@
-import math
 from collections import Counter
 from collections.abc import Iterable, Sized
 from itertools import chain, combinations
-from math import factorial
+from math import factorial, sqrt
 
-import numpy as np
 import scipy.spatial
+from numpy import abs as np_abs
+from numpy import (
+    array,
+    asarray,
+    average,
+    concatenate,
+    dot,
+    eye,
+    mean,
+    ones,
+    square,
+    subtract,
+)
+from numpy import sum as np_sum
+from numpy import zeros
+from numpy.linalg import det as ndet
+from numpy.linalg import matrix_rank, norm, slogdet, solve
 
 
 def fast_norm(v):
+    """ Manually take the vector norm for len 2, 3 vectors. Defaults to a square root of the dot product
+    for larger vectors.
+
+    Note that for large vectors, it is possible for integer overflow to occur.
+    For instance:
+    vec = [49024, 59454, 12599, -63721, 18517, 27961]
+    dot(vec, vec) = -1602973744
+
+    """
+    len_v = len(v)
     # notice this method can be even more optimised
-    if len(v) == 2:
-        return math.sqrt(v[0] * v[0] + v[1] * v[1])
-    if len(v) == 3:
-        return math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
-    return math.sqrt(np.dot(v, v))
+    if len_v == 2:
+        return sqrt(v[0] * v[0] + v[1] * v[1])
+    if len_v == 3:
+        return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+    return sqrt(dot(v, v))
 
 
 def fast_2d_point_in_simplex(point, simplex, eps=1e-8):
@@ -35,9 +60,9 @@ def point_in_simplex(point, simplex, eps=1e-8):
     if len(point) == 2:
         return fast_2d_point_in_simplex(point, simplex, eps)
 
-    x0 = np.array(simplex[0], dtype=float)
-    vectors = np.array(simplex[1:], dtype=float) - x0
-    alpha = np.linalg.solve(vectors.T, point - x0)
+    x0 = array(simplex[0], dtype=float)
+    vectors = array(simplex[1:], dtype=float) - x0
+    alpha = solve(vectors.T, point - x0)
 
     return all(alpha > -eps) and sum(alpha) < 1 + eps
 
@@ -53,9 +78,9 @@ def fast_2d_circumcircle(points):
     Returns
     -------
     tuple
-        (center point : tuple(int), radius: int)
+        (center point : tuple(float), radius: float)
     """
-    points = np.array(points)
+    points = array(points)
     # transform to relative coordinates
     pts = points[1:] - points[0]
 
@@ -73,7 +98,7 @@ def fast_2d_circumcircle(points):
     # compute center
     x = dx / a
     y = dy / a
-    radius = math.sqrt(x * x + y * y)  # radius = norm([x, y])
+    radius = sqrt(x * x + y * y)  # radius = norm([x, y])
 
     return (x + points[0][0], y + points[0][1]), radius
 
@@ -89,9 +114,9 @@ def fast_3d_circumcircle(points):
     Returns
     -------
     tuple
-        (center point : tuple(int), radius: int)
+        (center point : tuple(float), radius: float)
     """
-    points = np.array(points)
+    points = array(points)
     pts = points[1:] - points[0]
 
     (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) = pts
@@ -119,17 +144,36 @@ def fast_3d_circumcircle(points):
 
 
 def fast_det(matrix):
-    matrix = np.asarray(matrix, dtype=float)
+    matrix = asarray(matrix, dtype=float)
     if matrix.shape == (2, 2):
         return matrix[0][0] * matrix[1][1] - matrix[1][0] * matrix[0][1]
     elif matrix.shape == (3, 3):
         a, b, c, d, e, f, g, h, i = matrix.ravel()
         return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
     else:
-        return np.linalg.det(matrix)
+        return ndet(matrix)
 
 
 def circumsphere(pts):
+    """Compute the center and radius of a N dimension sphere which touches each point in pts.
+
+    Parameters
+    ----------
+    pts : array-like, of shape (N-dim + 1, N-dim)
+        The points for which we would like to compute a circumsphere.
+
+    Returns
+    -------
+    center : tuple of floats of size N-dim
+    radius : a positive float
+    A valid center and radius, if a circumsphere is possible, and no points are repeated.
+    If points are repeated, or a circumsphere is not possible, will return nans, and a
+    ZeroDivisionError may occur.
+    Will fail for matrices which are not (N-dim + 1, N-dim) in size due to non-square determinants:
+    will raise numpy.linalg.LinAlgError.
+    May fail for points that are integers (due to 32bit integer overflow).
+    """
+
     dim = len(pts) - 1
     if dim == 2:
         return fast_2d_circumcircle(pts)
@@ -137,20 +181,23 @@ def circumsphere(pts):
         return fast_3d_circumcircle(pts)
 
     # Modified method from http://mathworld.wolfram.com/Circumsphere.html
-    mat = [[np.sum(np.square(pt)), *pt, 1] for pt in pts]
-
-    center = []
+    mat = array([[np_sum(square(pt)), *pt, 1] for pt in pts])
+    center = zeros(dim)
+    a = 1 / (2 * ndet(mat[:, 1:]))
+    factor = a
+    # Use ind to index into the matrix columns
+    ind = ones((dim + 2,), bool)
     for i in range(1, len(pts)):
-        r = np.delete(mat, i, 1)
-        factor = (-1) ** (i + 1)
-        center.append(factor * fast_det(r))
+        ind[i - 1] = True
+        ind[i] = False
+        center[i - 1] = factor * ndet(mat[:, ind])
+        factor *= -1
 
-    a = fast_det(np.delete(mat, 0, 1))
-    center = [x / (2 * a) for x in center]
-
+    # Use subtract as we don't know the type of x0.
     x0 = pts[0]
-    vec = np.subtract(center, x0)
-    radius = fast_norm(vec)
+    vec = subtract(center, x0)
+    # Vector norm.
+    radius = sqrt(dot(vec, vec))
 
     return tuple(center), radius
 
@@ -174,8 +221,8 @@ def orientation(face, origin):
     If two points lie on the same side of the face, the orientation will
     be equal, if they lie on the other side of the face, it will be negated.
     """
-    vectors = np.array(face)
-    sign, logdet = np.linalg.slogdet(vectors - origin)
+    vectors = array(face)
+    sign, logdet = slogdet(vectors - origin)
     if logdet < -50:  # assume it to be zero when it's close to zero
         return 0
     return sign
@@ -198,7 +245,7 @@ def simplex_volume_in_embedding(vertices) -> float:
 
     Returns
     -------
-    volume : int
+    volume : float
         the volume of the simplex with given vertices.
 
     Raises
@@ -210,20 +257,20 @@ def simplex_volume_in_embedding(vertices) -> float:
     # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
     # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
 
-    vertices = np.asarray(vertices, dtype=float)
+    vertices = asarray(vertices, dtype=float)
     dim = len(vertices[0])
     if dim == 2:
         # Heron's formula
         a, b, c = scipy.spatial.distance.pdist(vertices, metric="euclidean")
         s = 0.5 * (a + b + c)
-        return math.sqrt(s * (s - a) * (s - b) * (s - c))
+        return sqrt(s * (s - a) * (s - b) * (s - c))
 
     # β_ij = |v_i - v_k|²
     sq_dists = scipy.spatial.distance.pdist(vertices, metric="sqeuclidean")
 
     # Add border while compressed
     num_verts = scipy.spatial.distance.num_obs_y(sq_dists)
-    bordered = np.concatenate((np.ones(num_verts), sq_dists))
+    bordered = concatenate((ones(num_verts), sq_dists))
 
     # Make matrix and find volume
     sq_dists_mat = scipy.spatial.distance.squareform(bordered)
@@ -232,11 +279,11 @@ def simplex_volume_in_embedding(vertices) -> float:
     vol_square = fast_det(sq_dists_mat) / coeff
 
     if vol_square < 0:
-        if abs(vol_square) < 1e-15:
+        if vol_square > -1e-15:
             return 0
         raise ValueError("Provided vertices do not form a simplex")
 
-    return np.sqrt(vol_square)
+    return sqrt(vol_square)
 
 
 class Triangulation:
@@ -287,8 +334,8 @@ class Triangulation:
             raise ValueError("Please provide at least one simplex")
 
         coords = list(map(tuple, coords))
-        vectors = np.subtract(coords[1:], coords[0])
-        if np.linalg.matrix_rank(vectors) < dim:
+        vectors = subtract(coords[1:], coords[0])
+        if matrix_rank(vectors) < dim:
             raise ValueError(
                 "Initial simplex has zero volumes "
                 "(the points are linearly dependent)"
@@ -338,9 +385,9 @@ class Triangulation:
         if len(simplex) != self.dim + 1:
             # We are checking whether point belongs to a face.
             simplex = self.containing(simplex).pop()
-        x0 = np.array(self.vertices[simplex[0]])
-        vectors = np.array(self.get_vertices(simplex[1:])) - x0
-        alpha = np.linalg.solve(vectors.T, point - x0)
+        x0 = array(self.vertices[simplex[0]])
+        vectors = array(self.get_vertices(simplex[1:])) - x0
+        alpha = solve(vectors.T, point - x0)
         if any(alpha < -eps) or sum(alpha) > 1 + eps:
             return []
 
@@ -403,7 +450,7 @@ class Triangulation:
         # we do not really need the center, we only need a point that is
         # guaranteed to lie strictly within the hull
         hull_points = self.get_vertices(self.hull)
-        pt_center = np.average(hull_points, axis=0)
+        pt_center = average(hull_points, axis=0)
 
         pt_index = len(self.vertices)
         self.vertices.append(new_vertex)
@@ -447,7 +494,7 @@ class Triangulation:
         tuple (center point, radius)
             The center and radius of the circumscribed circle
         """
-        pts = np.dot(self.get_vertices(simplex), transform)
+        pts = dot(self.get_vertices(simplex), transform)
         return circumsphere(pts)
 
     def point_in_cicumcircle(self, pt_index, simplex, transform):
@@ -455,13 +502,13 @@ class Triangulation:
         eps = 1e-8
 
         center, radius = self.circumscribed_circle(simplex, transform)
-        pt = np.dot(self.get_vertices([pt_index]), transform)[0]
+        pt = dot(self.get_vertices([pt_index]), transform)[0]
 
-        return np.linalg.norm(center - pt) < (radius * (1 + eps))
+        return norm(center - pt) < (radius * (1 + eps))
 
     @property
     def default_transform(self):
-        return np.eye(self.dim)
+        return eye(self.dim)
 
     def bowyer_watson(self, pt_index, containing_simplex=None, transform=None):
         """Modified Bowyer-Watson point adding algorithm.
@@ -532,9 +579,9 @@ class Triangulation:
         volume is only dependent on the shape of the simplex and not on the
         absolute size. Due to the weird scaling, the only use of this method
         is to check that a simplex is almost flat."""
-        vertices = np.array(self.get_vertices(simplex))
+        vertices = array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
-        average_edge_length = np.mean(np.abs(vectors))
+        average_edge_length = mean(np_abs(vectors))
         return self.volume(simplex) / (average_edge_length ** self.dim)
 
     def add_point(self, point, simplex=None, transform=None):
@@ -587,8 +634,8 @@ class Triangulation:
             return self.bowyer_watson(pt_index, actual_simplex, transform)
 
     def volume(self, simplex):
-        prefactor = np.math.factorial(self.dim)
-        vertices = np.array(self.get_vertices(simplex))
+        prefactor = factorial(self.dim)
+        vertices = array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
         return float(abs(fast_det(vectors)) / prefactor)
 
