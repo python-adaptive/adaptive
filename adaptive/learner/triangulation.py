@@ -24,8 +24,8 @@ from numpy.linalg import matrix_rank, norm, slogdet, solve
 
 
 def fast_norm(v):
-    """ Manually take the vector norm for len 2, 3 vectors. Defaults to a square root of the dot product
-    for larger vectors.
+    """Take the vector norm for len 2, 3 vectors.
+    Defaults to a square root of the dot product for larger vectors.
 
     Note that for large vectors, it is possible for integer overflow to occur.
     For instance:
@@ -34,7 +34,6 @@ def fast_norm(v):
 
     """
     len_v = len(v)
-    # notice this method can be even more optimised
     if len_v == 2:
         return sqrt(v[0] * v[0] + v[1] * v[1])
     if len_v == 3:
@@ -104,7 +103,7 @@ def fast_2d_circumcircle(points):
 
 
 def fast_3d_circumcircle(points):
-    """Compute the center and radius of the circumscribed shpere of a simplex.
+    """Compute the center and radius of the circumscribed sphere of a simplex.
 
     Parameters
     ----------

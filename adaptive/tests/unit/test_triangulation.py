@@ -68,7 +68,7 @@ def test_circumsphere():
     from numpy.random import normal, uniform
 
     def generate_random_sphere_points(dim, radius=0):
-        """ Refer to https://math.stackexchange.com/a/1585996 """
+        """https://math.stackexchange.com/a/1585996"""
 
         vec = [None] * (dim + 1)
         center = uniform(-100, 100, dim)
@@ -81,19 +81,15 @@ def test_circumsphere():
 
         return radius, center, vec
 
-    center_diff_err = "Calculated center (%s) differs from true center (%s)\n"
     for dim in range(2, 10):
         radius, center, points = generate_random_sphere_points(dim)
         circ_center, circ_radius = circumsphere(points)
         err_msg = ""
         if not allclose(circ_center, center):
-            err_msg += center_diff_err % (
-                ", ".join([str(x) for x in circ_center]),
-                ", ".join([str(x) for x in center]),
-            )
+            err_msg += f"Calculated center ({circ_center}) differs from true center ({center})\n"
         if not allclose(radius, circ_radius):
-            err_msg += "Calculated radius {} differs from true radius {}".format(
-                circ_radius, radius,
+            err_msg += (
+                f"Calculated radius {circ_radius} differs from true radius {radius}\n"
             )
         if err_msg:
             raise AssertionError(err_msg)
