@@ -379,9 +379,7 @@ class BlockingRunner(BaseRunner):
         raise_if_retries_exceeded=True,
     ):
         if inspect.iscoroutinefunction(learner.function):
-            raise ValueError(
-                "Coroutine functions can only be used " "with 'AsyncRunner'."
-            )
+            raise ValueError("Coroutine functions can only be used with 'AsyncRunner'.")
         super().__init__(
             learner,
             goal,
@@ -549,7 +547,7 @@ class AsyncRunner(BaseRunner):
         if inspect.iscoroutinefunction(learner.function):
             if executor:  # user-provided argument
                 raise RuntimeError(
-                    "Cannot use an executor when learning an " "async function."
+                    "Cannot use an executor when learning an async function."
                 )
             self.executor.shutdown()  # Make sure we don't shoot ourselves later
 

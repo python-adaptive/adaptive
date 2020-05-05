@@ -849,7 +849,7 @@ class LearnerND(BaseLearner):
                 return hv.Scatter([]) * hv.Path([])
             elif self.vdim > 1:
                 raise NotImplementedError(
-                    "multidimensional output not yet" " supported by `plot_slice`"
+                    "multidimensional output not yet supported by `plot_slice`"
                 )
             n = n or 201
             values = [
@@ -869,7 +869,7 @@ class LearnerND(BaseLearner):
         elif plot_dim == 2:
             if self.vdim > 1:
                 raise NotImplementedError(
-                    "holoviews currently does not support" " 3D surface plots in bokeh."
+                    "holoviews currently does not support 3D surface plots in bokeh."
                 )
             if n is None:
                 # Calculate how many grid points are needed.
@@ -1001,7 +1001,7 @@ class LearnerND(BaseLearner):
         elif which == "line":
             if self.ndim != 2 or self.vdim != 1:
                 raise Exception(
-                    "Isoline plotting is only supported" " for a 2D input and 1D output"
+                    "Isoline plotting is only supported for a 2D input and 1D output"
                 )
             get_surface = False
             get_line = True
