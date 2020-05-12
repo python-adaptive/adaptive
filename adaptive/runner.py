@@ -5,7 +5,6 @@ import functools
 import inspect
 import itertools
 import pickle
-import sys
 import time
 import traceback
 import warnings
@@ -14,13 +13,9 @@ from contextlib import suppress
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 
 try:
-    if sys.version_info < (3, 8):
-        # XXX: remove when ipyparallel 6.2.5 is released
-        import ipyparallel
+    import ipyparallel
 
-        with_ipyparallel = True
-    else:
-        with_ipyparallel = False
+    with_ipyparallel = True
 except ModuleNotFoundError:
     with_ipyparallel = False
 
