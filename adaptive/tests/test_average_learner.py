@@ -59,3 +59,13 @@ def test_min_npoints():
         )
         simple(learner, lambda l: l.loss() < 1)
         assert learner.npoints >= max(2, min_npoints)
+            assert abs(learner.sum_f - values.sum()) < 1e-13
+            assert abs(learner.std - std) < 1e-13
+
+
+def test_zero_mean():
+    # see https://github.com/python-adaptive/adaptive/issues/275
+    learner = AverageLearner(None, rtol=0.01)
+    learner.tell(0, -1)
+    learner.tell(1, 1)
+    learner.loss()
