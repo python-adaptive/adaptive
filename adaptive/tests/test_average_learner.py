@@ -50,17 +50,11 @@ def test_avg_std_and_npoints():
 
 
 def test_min_npoints():
-    def f(npoints_similar: int):
-        def _f(seed):
-            if seed < npoints_similar:
-                return 0.1 + 1e-8 * random.random()
-            return random.random()
+    def f(seed):
+        if seed < 2:  # first two numbers are similar
+            return 0.1 + 1e-8 * random.random()
+        return random.random()
 
-        return _f
-
-    for npoints_similar in range(1, 5):
-        learner = AverageLearner(
-            f(npoints_similar), atol=0.01, rtol=0.01, min_npoints=npoints_similar + 1
-        )
-        simple(learner, lambda l: l.loss() < 1)
-        assert learner.npoints > npoints_similar
+    learner = AverageLearner(f, atol=0.01, rtol=0.01, min_npoints=3)
+    simple(learner, lambda l: l.loss() < 1)
+    assert learner.npoints > 2
