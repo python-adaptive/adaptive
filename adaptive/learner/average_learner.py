@@ -33,8 +33,6 @@ class AverageLearner(BaseLearner):
     """
 
     def __init__(self, function, atol=None, rtol=None, min_npoints=2):
-        if min_npoints < 2:
-            raise ValueError("`min_npoints` should be at least 2.")
         if atol is None and rtol is None:
             raise Exception("At least one of `atol` and `rtol` should be set.")
         if atol is None:
@@ -48,7 +46,8 @@ class AverageLearner(BaseLearner):
         self.atol = atol
         self.rtol = rtol
         self.npoints = 0
-        self.min_npoints = min_npoints
+        # Cannot estimate standard deviation with less than 2 points.
+        self.min_npoints = max(min_npoints, 2)
         self.sum_f = 0
         self.sum_f_sq = 0
 
