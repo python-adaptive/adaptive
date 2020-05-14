@@ -20,7 +20,7 @@ class AverageLearner(BaseLearner):
     rtol : float
         Desired relative tolerance.
     min_npoints : int
-        Minimum number of points required to estimate the standard deviation.
+        Minimum number of points to sample.
 
     Attributes
     ----------
