@@ -154,10 +154,11 @@ class AverageLearner(BaseLearner):
             self.function,
             self.atol,
             self.rtol,
+            self.min_npoints,
             self._get_data(),
         )
 
     def __setstate__(self, state):
-        function, atol, rtol, data = state
-        self.__init__(function, atol, rtol)
+        function, atol, rtol, min_npoints, data = state
+        self.__init__(function, atol, rtol, min_npoints)
         self._set_data(data)
