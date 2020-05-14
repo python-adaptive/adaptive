@@ -19,6 +19,8 @@ class AverageLearner(BaseLearner):
         Desired absolute tolerance.
     rtol : float
         Desired relative tolerance.
+    min_npoints : int
+        Minimum number of points required to estimate the standard deviation.
 
     Attributes
     ----------
@@ -30,7 +32,9 @@ class AverageLearner(BaseLearner):
         Number of evaluated points.
     """
 
-    def __init__(self, function, atol=None, rtol=None):
+    def __init__(self, function, atol=None, rtol=None, min_npoints=2):
+        if min_npoints < 2:
+            raise ValueError("`min_npoints` should be at least 2.")
         if atol is None and rtol is None:
             raise Exception("At least one of `atol` and `rtol` should be set.")
         if atol is None:
@@ -44,6 +48,7 @@ class AverageLearner(BaseLearner):
         self.atol = atol
         self.rtol = rtol
         self.npoints = 0
+        self.min_npoints = min_npoints
         self.sum_f = 0
         self.sum_f_sq = 0
 
@@ -92,7 +97,7 @@ class AverageLearner(BaseLearner):
         """The corrected sample standard deviation of the values
         in `data`."""
         n = self.npoints
-        if n < 2:
+        if n < self.min_npoints:
             return np.inf
         numerator = self.sum_f_sq - n * self.mean ** 2
         if numerator < 0:
@@ -106,7 +111,7 @@ class AverageLearner(BaseLearner):
             n = self.npoints if real else self.n_requested
         else:
             n = n
-        if n < 2:
+        if n < self.min_npoints:
             return np.inf
         standard_error = self.std / sqrt(n)
         return max(
