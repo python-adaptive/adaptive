@@ -50,11 +50,12 @@ def test_avg_std_and_npoints():
 
 
 def test_min_npoints():
-    def f(seed):
-        if seed < 2:  # first two numbers are similar
-            return 0.1 + 1e-8 * random.random()
-        return random.random()
+    def constant_function(seed):
+        return 0.1
 
-    learner = AverageLearner(f, atol=0.01, rtol=0.01, min_npoints=3)
-    simple(learner, lambda l: l.loss() < 1)
-    assert learner.npoints > 2
+    for min_npoints in [1, 2, 3]:
+        learner = AverageLearner(
+            constant_function, atol=0.01, rtol=0.01, min_npoints=min_npoints
+        )
+        simple(learner, lambda l: l.loss() < 1)
+        assert learner.npoints >= max(2, min_npoints)
