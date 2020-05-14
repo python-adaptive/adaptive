@@ -46,7 +46,7 @@ class AverageLearner(BaseLearner):
         self.atol = atol
         self.rtol = rtol
         self.npoints = 0
-        # Cannot estimate standard deviation with less than 2 points.
+        # Cannot estimate standard deviation with fewer than 2 points.
         self.min_npoints = max(min_npoints, 2)
         self.sum_f = 0
         self.sum_f_sq = 0
