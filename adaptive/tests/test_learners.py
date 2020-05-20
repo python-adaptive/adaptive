@@ -30,7 +30,7 @@ from adaptive.runner import simple
 try:
     from adaptive.learner.skopt_learner import SKOptLearner
 except (ModuleNotFoundError, ImportError):
-    # XXX: catch the ImportError because of https://github.com/python-adaptive/adaptive/pull/278
+    # XXX: catch the ImportError because of https://github.com/scikit-optimize/scikit-optimize/issues/902
     SKOptLearner = None
 
 
