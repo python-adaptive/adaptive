@@ -29,6 +29,7 @@ install_requires = [
     "sortedcollections >= 1.1",
     "sortedcontainers >= 2.0",
     "atomicwrites",
+    "cloudpickle",
 ]
 
 extras_require = {
@@ -51,7 +52,6 @@ extras_require = {
         "pre_commit",
     ],
     "other": [
-        "cloudpickle",
         "dill",
         "distributed",
         "ipyparallel>=6.2.5",  # because of https://github.com/ipython/ipyparallel/issues/404

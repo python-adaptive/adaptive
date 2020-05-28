@@ -4,6 +4,7 @@ from collections import OrderedDict
 from copy import copy
 from math import sqrt
 
+import cloudpickle
 import numpy as np
 from scipy import interpolate
 
@@ -709,7 +710,7 @@ class Learner2D(BaseLearner):
 
     def __getstate__(self):
         return (
-            self.function,
+            cloudpickle.dumps(self.function),
             self.bounds,
             self.loss_per_triangle,
             self._stack,
@@ -718,6 +719,7 @@ class Learner2D(BaseLearner):
 
     def __setstate__(self, state):
         function, bounds, loss_per_triangle, _stack, data = state
+        function = cloudpickle.loads(function)
         self.__init__(function, bounds, loss_per_triangle)
         self._set_data(data)
         self._stack = _stack

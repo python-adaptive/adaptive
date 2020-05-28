@@ -5,6 +5,7 @@ from collections import defaultdict
 from math import sqrt
 from operator import attrgetter
 
+import cloudpickle
 import numpy as np
 from scipy.linalg import norm
 from sortedcontainers import SortedSet
@@ -594,7 +595,7 @@ class IntegratorLearner(BaseLearner):
 
     def __getstate__(self):
         return (
-            self.function,
+            cloudpickle.dumps(self.function),
             self.bounds,
             self.tol,
             self._get_data(),
@@ -602,5 +603,6 @@ class IntegratorLearner(BaseLearner):
 
     def __setstate__(self, state):
         function, bounds, tol, data = state
+        function = cloudpickle.loads(function)
         self.__init__(function, bounds, tol)
         self._set_data(data)

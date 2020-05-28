@@ -1,5 +1,6 @@
 from copy import copy
 
+import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
@@ -131,12 +132,13 @@ class SequenceLearner(BaseLearner):
 
     def __getstate__(self):
         return (
-            self._original_function,
+            cloudpickle.dumps(self._original_function),
             self.sequence,
             self._get_data(),
         )
 
     def __setstate__(self, state):
         function, sequence, data = state
+        function = cloudpickle.loads(function)
         self.__init__(function, sequence)
         self._set_data(data)

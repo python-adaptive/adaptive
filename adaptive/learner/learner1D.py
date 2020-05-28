@@ -3,6 +3,7 @@ import math
 from collections.abc import Iterable
 from copy import deepcopy
 
+import cloudpickle
 import numpy as np
 import sortedcollections
 import sortedcontainers
@@ -627,7 +628,7 @@ class Learner1D(BaseLearner):
 
     def __getstate__(self):
         return (
-            self.function,
+            cloudpickle.dumps(self.function),
             self.bounds,
             self.loss_per_interval,
             dict(self.losses),  # SortedDict cannot be pickled
@@ -637,6 +638,7 @@ class Learner1D(BaseLearner):
 
     def __setstate__(self, state):
         function, bounds, loss_per_interval, losses, losses_combined, data = state
+        function = cloudpickle.loads(function)
         self.__init__(function, bounds, loss_per_interval)
         self._set_data(data)
         self.losses.update(losses)
