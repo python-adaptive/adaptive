@@ -1,209 +1,398 @@
 # Changelog
-All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [Unreleased](https://github.com/python-adaptive/adaptive/tree/HEAD)
 
-## [unreleased]
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.12.0-dev...HEAD)
+
+**Closed issues:**
+
+- Release v0.11 [\#277](https://github.com/python-adaptive/adaptive/issues/277)
+
+## [v0.12.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.12.0-dev) (2020-05-20)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.0...v0.12.0-dev)
+
+## [v0.11.0](https://github.com/python-adaptive/adaptive/tree/v0.11.0) (2020-05-20)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.0-dev...v0.11.0)
+
+**Implemented enhancements:**
+
+- Make Runner work with unhashable points [\#267](https://github.com/python-adaptive/adaptive/issues/267)
+- AverageLearner: implement min\_npoints [\#274](https://github.com/python-adaptive/adaptive/pull/274) ([basnijholt](https://github.com/basnijholt))
+- make the Runner work with unhashable points [\#268](https://github.com/python-adaptive/adaptive/pull/268) ([basnijholt](https://github.com/basnijholt))
+- make learners picklable [\#264](https://github.com/python-adaptive/adaptive/pull/264) ([basnijholt](https://github.com/basnijholt))
+- add support for loky [\#263](https://github.com/python-adaptive/adaptive/pull/263) ([basnijholt](https://github.com/basnijholt))
+- use \_\_name\_\_ == "\_\_main\_\_" for the MPIPoolExecutor [\#260](https://github.com/python-adaptive/adaptive/pull/260) ([basnijholt](https://github.com/basnijholt))
+
+**Fixed bugs:**
+
+- ipyparallel fails in Python 3.8 [\#249](https://github.com/python-adaptive/adaptive/issues/249)
+- Error on windows: daemonic processes are not allowed to have children [\#225](https://github.com/python-adaptive/adaptive/issues/225)
+- prevent ImportError due to scikit-optimize and sklearn incompatibility [\#278](https://github.com/python-adaptive/adaptive/pull/278) ([basnijholt](https://github.com/basnijholt))
+
+**Closed issues:**
+
+- add minimum number of points parameter to AverageLearner [\#273](https://github.com/python-adaptive/adaptive/issues/273)
+- Release v0.10 [\#258](https://github.com/python-adaptive/adaptive/issues/258)
+
+**Merged pull requests:**
+
+- minimally require ipyparallel 6.2.5 [\#270](https://github.com/python-adaptive/adaptive/pull/270) ([basnijholt](https://github.com/basnijholt))
+- fix docs build and pin pyviz\_comms=0.7.2 [\#261](https://github.com/python-adaptive/adaptive/pull/261) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.11.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.11.0-dev) (2020-01-16)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.10.0...v0.11.0-dev)
+
+## [v0.10.0](https://github.com/python-adaptive/adaptive/tree/v0.10.0) (2020-01-15)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.10.0-dev...v0.10.0)
+
+**Implemented enhancements:**
+
+- use tox for testing [\#238](https://github.com/python-adaptive/adaptive/issues/238)
+- Time-based stop [\#184](https://github.com/python-adaptive/adaptive/issues/184)
+
+**Fixed bugs:**
+
+- live\_info looks is badly formatted in Jupyterlab [\#250](https://github.com/python-adaptive/adaptive/issues/250)
+- SKOptLearner doesn't work for multi variate domain [\#233](https://github.com/python-adaptive/adaptive/issues/233)
+- Does not work with lambda functions [\#206](https://github.com/python-adaptive/adaptive/issues/206)
+
+**Merged pull requests:**
+
+- add instructions for installing labextensions for Jupyterlab [\#257](https://github.com/python-adaptive/adaptive/pull/257) ([basnijholt](https://github.com/basnijholt))
+- MNT: add vscode config directory to .gitignore [\#255](https://github.com/python-adaptive/adaptive/pull/255) ([tacaswell](https://github.com/tacaswell))
+- disable test of runner using distributed [\#253](https://github.com/python-adaptive/adaptive/pull/253) ([basnijholt](https://github.com/basnijholt))
+- color the overhead between red and green [\#252](https://github.com/python-adaptive/adaptive/pull/252) ([basnijholt](https://github.com/basnijholt))
+- improve the style of the live\_info widget, closes \#250 [\#251](https://github.com/python-adaptive/adaptive/pull/251) ([basnijholt](https://github.com/basnijholt))
+- use tox, closes \#238 [\#247](https://github.com/python-adaptive/adaptive/pull/247) ([basnijholt](https://github.com/basnijholt))
+- add a Pull Request template [\#246](https://github.com/python-adaptive/adaptive/pull/246) ([basnijholt](https://github.com/basnijholt))
+- rename learner.ipynb -\> example-notebook.ipynb [\#241](https://github.com/python-adaptive/adaptive/pull/241) ([basnijholt](https://github.com/basnijholt))
+- correct short description in setup.py [\#239](https://github.com/python-adaptive/adaptive/pull/239) ([jbweston](https://github.com/jbweston))
+- Power up pre-commit [\#237](https://github.com/python-adaptive/adaptive/pull/237) ([basnijholt](https://github.com/basnijholt))
+- add a section of "How to cite" Adaptive [\#235](https://github.com/python-adaptive/adaptive/pull/235) ([basnijholt](https://github.com/basnijholt))
+- Fix SKOptLearner for multi variate domain \(issue \#233\) [\#234](https://github.com/python-adaptive/adaptive/pull/234) ([caenrigen](https://github.com/caenrigen))
+- add a time-base stopping criterion for runners [\#229](https://github.com/python-adaptive/adaptive/pull/229) ([jbweston](https://github.com/jbweston))
+- update packages in tutorial's landing page [\#224](https://github.com/python-adaptive/adaptive/pull/224) ([basnijholt](https://github.com/basnijholt))
+- add \_RequireAttrsABCMeta and make the BaseLearner use it [\#222](https://github.com/python-adaptive/adaptive/pull/222) ([basnijholt](https://github.com/basnijholt))
+- 2D: add triangle\_loss [\#221](https://github.com/python-adaptive/adaptive/pull/221) ([basnijholt](https://github.com/basnijholt))
+- 2D: add interpolated\_on\_grid method [\#216](https://github.com/python-adaptive/adaptive/pull/216) ([basnijholt](https://github.com/basnijholt))
+- add scatter\_or\_line argument to Learner1D.plot [\#215](https://github.com/python-adaptive/adaptive/pull/215) ([basnijholt](https://github.com/basnijholt))
+- WIP: raise an error when using a lambda and default executor [\#210](https://github.com/python-adaptive/adaptive/pull/210) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.10.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.10.0-dev) (2019-10-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.9.0...v0.10.0-dev)
+
+**Closed issues:**
+
+- Command-line tool [\#217](https://github.com/python-adaptive/adaptive/issues/217)
+- release v0.9.0 [\#212](https://github.com/python-adaptive/adaptive/issues/212)
+
+## [v0.9.0](https://github.com/python-adaptive/adaptive/tree/v0.9.0) (2019-09-23)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.8.1...v0.9.0)
+
+**Implemented enhancements:**
+
+- jupyter-sphinx update [\#203](https://github.com/python-adaptive/adaptive/issues/203)
+
+**Closed issues:**
+
+- jupyter-sphinx is pinned to non-existing branch [\#199](https://github.com/python-adaptive/adaptive/issues/199)
+
+**Merged pull requests:**
+
+- pass value\_scale to the LearnerND's loss\_per\_simplex function [\#219](https://github.com/python-adaptive/adaptive/pull/219) ([basnijholt](https://github.com/basnijholt))
+- remove MPI4PY\_MAX\_WORKERS where it's not used [\#209](https://github.com/python-adaptive/adaptive/pull/209) ([basnijholt](https://github.com/basnijholt))
+- use jupyter\_sphinx v0.2.0 from conda instead of my branch [\#204](https://github.com/python-adaptive/adaptive/pull/204) ([basnijholt](https://github.com/basnijholt))
+- Authors [\#202](https://github.com/python-adaptive/adaptive/pull/202) ([basnijholt](https://github.com/basnijholt))
+- Update tutorial.parallelism.rst [\#201](https://github.com/python-adaptive/adaptive/pull/201) ([aeantipov](https://github.com/aeantipov))
+- ensure atomic writes when saving a file [\#200](https://github.com/python-adaptive/adaptive/pull/200) ([basnijholt](https://github.com/basnijholt))
+- don't treat the no data case differently in the Learner1D [\#195](https://github.com/python-adaptive/adaptive/pull/195) ([basnijholt](https://github.com/basnijholt))
+- pin everything in the docs/environment.yml file [\#194](https://github.com/python-adaptive/adaptive/pull/194) ([basnijholt](https://github.com/basnijholt))
+- Add a SequenceLearner [\#193](https://github.com/python-adaptive/adaptive/pull/193) ([basnijholt](https://github.com/basnijholt))
+- Use black for code formatting [\#191](https://github.com/python-adaptive/adaptive/pull/191) ([basnijholt](https://github.com/basnijholt))
+- BalancingLearner: add a "cycle" strategy, sampling the learners one by one [\#188](https://github.com/python-adaptive/adaptive/pull/188) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.8.1](https://github.com/python-adaptive/adaptive/tree/v0.8.1) (2019-05-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.9.0-dev...v0.8.1)
+
+**Closed issues:**
+
+- release v0.8.0 [\#165](https://github.com/python-adaptive/adaptive/issues/165)
+
+## [v0.9.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.9.0-dev) (2019-05-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.8.0...v0.9.0-dev)
+
+## [v0.8.0](https://github.com/python-adaptive/adaptive/tree/v0.8.0) (2019-05-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.6...v0.8.0)
+
+**Implemented enhancements:**
+
+- set python\_requires in setup.py [\#179](https://github.com/python-adaptive/adaptive/issues/179)
+
+**Fixed bugs:**
+
+- Learner2D.plot\(\) returns NaN [\#181](https://github.com/python-adaptive/adaptive/issues/181)
+- Runner errors for Python 3.7 when done [\#156](https://github.com/python-adaptive/adaptive/issues/156)
+- 2D: do not return points outside the bounds, closes \#181 [\#182](https://github.com/python-adaptive/adaptive/pull/182) ([basnijholt](https://github.com/basnijholt))
+
+**Closed issues:**
+
+- default loss of LearnerND changed? [\#171](https://github.com/python-adaptive/adaptive/issues/171)
+- Add a page to the documentation of papers where adaptive is used [\#163](https://github.com/python-adaptive/adaptive/issues/163)
+
+**Merged pull requests:**
+
+- add support for mpi4py [\#190](https://github.com/python-adaptive/adaptive/pull/190) ([basnijholt](https://github.com/basnijholt))
+- use pytest rather than py.test [\#189](https://github.com/python-adaptive/adaptive/pull/189) ([basnijholt](https://github.com/basnijholt))
+- renormalize the plots value axis on every update [\#186](https://github.com/python-adaptive/adaptive/pull/186) ([basnijholt](https://github.com/basnijholt))
+- use setup\(..., python\_requires='\>=3.6'\), closes \#179 [\#180](https://github.com/python-adaptive/adaptive/pull/180) ([basnijholt](https://github.com/basnijholt))
+- use the repo code in docs execute [\#177](https://github.com/python-adaptive/adaptive/pull/177) ([basnijholt](https://github.com/basnijholt))
+- do not inline the HoloViews JS [\#176](https://github.com/python-adaptive/adaptive/pull/176) ([basnijholt](https://github.com/basnijholt))
+- add a gallery page of Adaptive uses in scientific works [\#174](https://github.com/python-adaptive/adaptive/pull/174) ([basnijholt](https://github.com/basnijholt))
+- LearnerND: change the required loss to 1e-3 because the loss definition changed [\#172](https://github.com/python-adaptive/adaptive/pull/172) ([basnijholt](https://github.com/basnijholt))
+- Add logo to the documentation [\#170](https://github.com/python-adaptive/adaptive/pull/170) ([basnijholt](https://github.com/basnijholt))
+- import Iterable and Sized from collections.abc [\#161](https://github.com/python-adaptive/adaptive/pull/161) ([basnijholt](https://github.com/basnijholt))
+- invoke conda directly in CI [\#153](https://github.com/python-adaptive/adaptive/pull/153) ([basnijholt](https://github.com/basnijholt))
+- change urls from GitLab to GitHub [\#146](https://github.com/python-adaptive/adaptive/pull/146) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.7.6](https://github.com/python-adaptive/adaptive/tree/v0.7.6) (2019-03-21)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.5...v0.7.6)
+
+**Fixed bugs:**
+
+- live\_plot broken with latest holoviews and bokeh [\#166](https://github.com/python-adaptive/adaptive/issues/166)
+
+**Merged pull requests:**
+
+- do not force shutdown the executor in the cleanup [\#164](https://github.com/python-adaptive/adaptive/pull/164) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.7.5](https://github.com/python-adaptive/adaptive/tree/v0.7.5) (2019-03-19)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.4...v0.7.5)
+
+**Fixed bugs:**
+
+- BalancingLearner puts all points in the first child-learner when asking for points with no data present [\#159](https://github.com/python-adaptive/adaptive/issues/159)
+
+**Merged pull requests:**
+
+- fix live\_plot [\#167](https://github.com/python-adaptive/adaptive/pull/167) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.7.4](https://github.com/python-adaptive/adaptive/tree/v0.7.4) (2019-02-15)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.3...v0.7.4)
+
+**Fixed bugs:**
+
+- Loading data file with no data results in an error for the BalancingLearner  [\#148](https://github.com/python-adaptive/adaptive/issues/148)
+- Returning np.nan breaks the 1D learner [\#145](https://github.com/python-adaptive/adaptive/issues/145)
+- fix bug in curvature\_loss [\#152](https://github.com/python-adaptive/adaptive/pull/152) ([basnijholt](https://github.com/basnijholt))
+
+**Merged pull requests:**
+
+- handle NaN losses and add a test, closes \#145 [\#151](https://github.com/python-adaptive/adaptive/pull/151) ([basnijholt](https://github.com/basnijholt))
+- handle empty data files when loading, closes \#148 [\#149](https://github.com/python-adaptive/adaptive/pull/149) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.7.3](https://github.com/python-adaptive/adaptive/tree/v0.7.3) (2019-01-29)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.2...v0.7.3)
+
+**Implemented enhancements:**
+
+- Add a sequential executor [\#138](https://github.com/python-adaptive/adaptive/issues/138)
+- Add tests for 1D interpolator learner [\#136](https://github.com/python-adaptive/adaptive/issues/136)
+- Add integration learner [\#135](https://github.com/python-adaptive/adaptive/issues/135)
+- Make the runner work with `asyncio` and inside Jupyter notebooks [\#133](https://github.com/python-adaptive/adaptive/issues/133)
+- Add module for notebook integration and shortcuts for common executors [\#132](https://github.com/python-adaptive/adaptive/issues/132)
+- Add homogeneous sampling learner [\#131](https://github.com/python-adaptive/adaptive/issues/131)
+- Add a "balancing" learner [\#130](https://github.com/python-adaptive/adaptive/issues/130)
+- Implement 2D and 3D learners [\#129](https://github.com/python-adaptive/adaptive/issues/129)
+- Add a 0D averaging learner [\#128](https://github.com/python-adaptive/adaptive/issues/128)
+- Write `interpolate` for the 1D learner such that it is more efficient [\#126](https://github.com/python-adaptive/adaptive/issues/126)
+- Gracefully handle exceptions when evaluating the function to be learned [\#125](https://github.com/python-adaptive/adaptive/issues/125)
+- Allow BalancingLearner to return arbitrary number of points from 'choose\_points' [\#124](https://github.com/python-adaptive/adaptive/issues/124)
+- Increase the default refresh rate for 'live\_plot' [\#120](https://github.com/python-adaptive/adaptive/issues/120)
+- remove default number of points to choose in `choose\_points` [\#118](https://github.com/python-adaptive/adaptive/issues/118)
+- Consider using Gaussian process optimization as a learner [\#115](https://github.com/python-adaptive/adaptive/issues/115)
+- Make `distributed.Client` work with automatic scaling of the cluster [\#104](https://github.com/python-adaptive/adaptive/issues/104)
+- Improve plotting for learners [\#83](https://github.com/python-adaptive/adaptive/issues/83)
+- \(refactor\) learner.tell\(x, None\) might be renamed to learner.tell\_pending\(x\) [\#73](https://github.com/python-adaptive/adaptive/issues/73)
+- \(feature\) make interactive plots for learnerND plot\_slice method [\#64](https://github.com/python-adaptive/adaptive/issues/64)
+- \(LearnerND\) make default loss function better [\#63](https://github.com/python-adaptive/adaptive/issues/63)
+- allow for N-d output [\#60](https://github.com/python-adaptive/adaptive/issues/60)
+- add cross-section plot [\#58](https://github.com/python-adaptive/adaptive/issues/58)
+- \(BalancingLearner\) make new balancinglearner that looks at the total loss rather than loss improvement [\#36](https://github.com/python-adaptive/adaptive/issues/36)
+- \(LearnerND\) allow any convex hull as domain [\#25](https://github.com/python-adaptive/adaptive/issues/25)
+- \(Learner1D\) add possibility to use the direct neighbors in the loss [\#20](https://github.com/python-adaptive/adaptive/issues/20)
+
+**Fixed bugs:**
+
+- Distinguish actual loss and estimated loss [\#139](https://github.com/python-adaptive/adaptive/issues/139)
+- Set the bounds in a smarter way [\#127](https://github.com/python-adaptive/adaptive/issues/127)
+- some points get cluttered [\#86](https://github.com/python-adaptive/adaptive/issues/86)
+- 2D learner specifies a 1D point causing 2D learner to fail [\#81](https://github.com/python-adaptive/adaptive/issues/81)
+- Method 'Learner.tell' is ambiguous [\#80](https://github.com/python-adaptive/adaptive/issues/80)
+- Learner1D fails with extremely narrow features [\#78](https://github.com/python-adaptive/adaptive/issues/78)
+- AverageLearner math domain error [\#77](https://github.com/python-adaptive/adaptive/issues/77)
+- \(LearnerND\) scale y-values [\#61](https://github.com/python-adaptive/adaptive/issues/61)
+- Learner1D breaks if right bound is added before the left bound [\#45](https://github.com/python-adaptive/adaptive/issues/45)
+- Learner1D's bound check algo in self.ask doesn't take self.data or self.pending\_points [\#44](https://github.com/python-adaptive/adaptive/issues/44)
+- Learner1D fails when function returns a list instead of a numpy.array [\#43](https://github.com/python-adaptive/adaptive/issues/43)
+- Learner1D fails when a point \(x, None\) is added when x already exists [\#42](https://github.com/python-adaptive/adaptive/issues/42)
+- Learner1D.ask breaks when adding points in some order [\#41](https://github.com/python-adaptive/adaptive/issues/41)
+- Learner1D doesn't correctly set the interpolated loss when a point is added [\#40](https://github.com/python-adaptive/adaptive/issues/40)
+- Learner1D could in some situations return -inf as loss improvement, which would make balancinglearner never choose to improve [\#35](https://github.com/python-adaptive/adaptive/issues/35)
+- LearnerND fails for BalancingLearner test [\#34](https://github.com/python-adaptive/adaptive/issues/34)
+- Learner2D suggests same point twice [\#30](https://github.com/python-adaptive/adaptive/issues/30)
+- \(LearnerND\) if you stop the runner, and then try to continue, it fails. [\#23](https://github.com/python-adaptive/adaptive/issues/23)
+
+**Closed issues:**
+
+- Add Authors file and review license [\#137](https://github.com/python-adaptive/adaptive/issues/137)
+- make the runner request points until it's using all cores [\#123](https://github.com/python-adaptive/adaptive/issues/123)
+- Remove \_choose\_points [\#121](https://github.com/python-adaptive/adaptive/issues/121)
+- Fix extremely long kernel restart times [\#119](https://github.com/python-adaptive/adaptive/issues/119)
+- live plotting: add a universal visual cue that the goal is achieved. [\#117](https://github.com/python-adaptive/adaptive/issues/117)
+- ipyparallel shouldn't be a dependency [\#114](https://github.com/python-adaptive/adaptive/issues/114)
+- adaptive fails to discover features [\#113](https://github.com/python-adaptive/adaptive/issues/113)
+- add tests for 2D learner [\#111](https://github.com/python-adaptive/adaptive/issues/111)
+- DataSaver doesn't work with the BalancingLearner [\#110](https://github.com/python-adaptive/adaptive/issues/110)
+- deleted issue [\#108](https://github.com/python-adaptive/adaptive/issues/108)
+- removing optional dependencies [\#106](https://github.com/python-adaptive/adaptive/issues/106)
+- Improve ipython event loop integration [\#105](https://github.com/python-adaptive/adaptive/issues/105)
+- Use holoviews.TriMesh when it makes it to a release [\#103](https://github.com/python-adaptive/adaptive/issues/103)
+- save live plots into internal datastructure [\#101](https://github.com/python-adaptive/adaptive/issues/101)
+- To-dos before making the repo public [\#100](https://github.com/python-adaptive/adaptive/issues/100)
+- set the correct loss\_improvement for the AverageLearner [\#95](https://github.com/python-adaptive/adaptive/issues/95)
+- Ensure a minimum resolution [\#92](https://github.com/python-adaptive/adaptive/issues/92)
+- change the error message in runner [\#91](https://github.com/python-adaptive/adaptive/issues/91)
+- The ProcessPoolExecutor doesn't work on Windows [\#90](https://github.com/python-adaptive/adaptive/issues/90)
+- 1D and 2D learner: stop interpolating function instead of the loss [\#87](https://github.com/python-adaptive/adaptive/issues/87)
+- Discontinuities in zero should be detected and be approximated with some margin [\#85](https://github.com/python-adaptive/adaptive/issues/85)
+- \(minor bug\) learner.choose\_points gives wrong number of points in one very particular case [\#84](https://github.com/python-adaptive/adaptive/issues/84)
+- 2D: if boundary point fails it will never be re-evaluated ... [\#82](https://github.com/python-adaptive/adaptive/issues/82)
+- Learner2D + BalancingLearner too slow to use on many cores [\#79](https://github.com/python-adaptive/adaptive/issues/79)
+- BalancingLearner.from\_product doesn't work with the DataSaver [\#74](https://github.com/python-adaptive/adaptive/issues/74)
+- Follow-up from "WIP: Add LearnerND that does not interpolate the values of pending points" [\#70](https://github.com/python-adaptive/adaptive/issues/70)
+- \(triangulation\) make method for finding initial simplex part of the triangulation class [\#68](https://github.com/python-adaptive/adaptive/issues/68)
+- \(refactor\) LearnerND.\_ask can be refactored to be so much more readable [\#67](https://github.com/python-adaptive/adaptive/issues/67)
+- \(LearnerND\) make choose point in simplex better [\#62](https://github.com/python-adaptive/adaptive/issues/62)
+- Make learnerND datastructures immutable where possible [\#54](https://github.com/python-adaptive/adaptive/issues/54)
+- Rename LearnerND to TriangulatingLearner [\#51](https://github.com/python-adaptive/adaptive/issues/51)
+- tell\_many method [\#49](https://github.com/python-adaptive/adaptive/issues/49)
+- Set up documentation [\#48](https://github.com/python-adaptive/adaptive/issues/48)
+- DeprecationWarning: sorted\_dict.iloc is deprecated. Use SortedDict.keys\(\) instead. [\#47](https://github.com/python-adaptive/adaptive/issues/47)
+- The example given in data\_saver.py doesn't compile. [\#46](https://github.com/python-adaptive/adaptive/issues/46)
+- What should learners do when fed the same point twice [\#39](https://github.com/python-adaptive/adaptive/issues/39)
+- How should learners handle data that is outside of the domain [\#38](https://github.com/python-adaptive/adaptive/issues/38)
+- No tests for the 'BalancingLearner' [\#37](https://github.com/python-adaptive/adaptive/issues/37)
+- release 0.6.0 [\#33](https://github.com/python-adaptive/adaptive/issues/33)
+- Make BaseRunner an abstract base class [\#32](https://github.com/python-adaptive/adaptive/issues/32)
+- \(BalancingLearner\) loss is cached incorrectly [\#31](https://github.com/python-adaptive/adaptive/issues/31)
+- LearnerND triangulation incomplete [\#29](https://github.com/python-adaptive/adaptive/issues/29)
+- \(LearnerND\) flat simplices are sometimes added on the surface of the triangulation [\#28](https://github.com/python-adaptive/adaptive/issues/28)
+- \(LearnerND\) add iso-surface plot feature [\#27](https://github.com/python-adaptive/adaptive/issues/27)
+- make BalancingLearner work with the live\_plot [\#26](https://github.com/python-adaptive/adaptive/issues/26)
+- test\_balancing\_learner\[Learner2D-ring\_of\_fire-learner\_kwargs2\] fails sometimes [\#24](https://github.com/python-adaptive/adaptive/issues/24)
+- widgets don't show up on adaptive.readthedocs.io [\#21](https://github.com/python-adaptive/adaptive/issues/21)
+- How to handle NaN? [\#18](https://github.com/python-adaptive/adaptive/issues/18)
+- Remove public 'fname' learner attribute [\#17](https://github.com/python-adaptive/adaptive/issues/17)
+- Release v0.7.0 [\#14](https://github.com/python-adaptive/adaptive/issues/14)
+- \(Learner1D\) improve time complexity [\#13](https://github.com/python-adaptive/adaptive/issues/13)
+- Typo in documentation for` adaptive.learner.learner2D.uniform\_loss\(ip\)` [\#12](https://github.com/python-adaptive/adaptive/issues/12)
+- \(LearnerND\) fix plotting of scaled domains [\#11](https://github.com/python-adaptive/adaptive/issues/11)
+- suggested points lie outside of domain [\#7](https://github.com/python-adaptive/adaptive/issues/7)
+- DEVELOPMENT IS ON GITLAB: https://gitlab.kwant-project.org/qt/adaptive [\#5](https://github.com/python-adaptive/adaptive/issues/5)
+
+**Merged pull requests:**
+
+- fix \_get\_data for the BalancingLearner [\#150](https://github.com/python-adaptive/adaptive/pull/150) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.7.2](https://github.com/python-adaptive/adaptive/tree/v0.7.2) (2018-12-17)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.1...v0.7.2)
+
+## [v0.7.1](https://github.com/python-adaptive/adaptive/tree/v0.7.1) (2018-12-17)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.8.0-dev...v0.7.1)
+
+## [v0.8.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.8.0-dev) (2018-12-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.0...v0.8.0-dev)
+
+## [v0.7.0](https://github.com/python-adaptive/adaptive/tree/v0.7.0) (2018-12-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.0-dev...v0.7.0)
+
+**Closed issues:**
+
+- gif in the README [\#1](https://github.com/python-adaptive/adaptive/issues/1)
+
+## [v0.7.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.7.0-dev) (2018-10-09)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.6.0...v0.7.0-dev)
+
+## [v0.6.0](https://github.com/python-adaptive/adaptive/tree/v0.6.0) (2018-10-01)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.5.0...v0.6.0)
+
+## [v0.5.0](https://github.com/python-adaptive/adaptive/tree/v0.5.0) (2018-08-20)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.4.1...v0.5.0)
+
+**Closed issues:**
+
+- Issue using distributed [\#3](https://github.com/python-adaptive/adaptive/issues/3)
+
+## [v0.4.1](https://github.com/python-adaptive/adaptive/tree/v0.4.1) (2018-05-28)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.5.0-dev...v0.4.1)
+
+## [v0.5.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.5.0-dev) (2018-05-24)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.4.0...v0.5.0-dev)
+
+## [v0.4.0](https://github.com/python-adaptive/adaptive/tree/v0.4.0) (2018-05-24)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.4.0-dev...v0.4.0)
+
+## [v0.4.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.4.0-dev) (2018-04-12)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.3.0...v0.4.0-dev)
+
+## [v0.3.0](https://github.com/python-adaptive/adaptive/tree/v0.3.0) (2018-03-28)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.2.1...v0.3.0)
+
+## [v0.2.1](https://github.com/python-adaptive/adaptive/tree/v0.2.1) (2018-03-03)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.3.0-dev...v0.2.1)
+
+## [v0.3.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.3.0-dev) (2018-02-23)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.2.0...v0.3.0-dev)
+
+## [v0.2.0](https://github.com/python-adaptive/adaptive/tree/v0.2.0) (2018-02-23)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.2.0-dev...v0.2.0)
+
+## [v0.2.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.2.0-dev) (2018-02-21)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.1.0...v0.2.0-dev)
+
+## [v0.1.0](https://github.com/python-adaptive/adaptive/tree/v0.1.0) (2018-02-21)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/03236d4aa3919dbc469f26d4925ed5097b1e4a04...v0.1.0)
 
 
-## version 0.9.0
 
-Since [0.8.0](https://github.com/python-adaptive/adaptive/tree/v0.8.0) we fixed the following [issues](https://github.com/python-adaptive/adaptive/issues):
-
-- [#217](https://github.com/python-adaptive/adaptive/issues/217) Command-line tool
-- [#211](https://github.com/python-adaptive/adaptive/issues/211) Defining inside main() in multiprocess will report error
-- [#208](https://github.com/python-adaptive/adaptive/issues/208) Inquiry on implementation of parallelism on the cluster
-- [#207](https://github.com/python-adaptive/adaptive/issues/207) PyYAML yaml.load(input) Deprecation
-- [#203](https://github.com/python-adaptive/adaptive/issues/203) jupyter-sphinx update Documentation enhancement
-- [#199](https://github.com/python-adaptive/adaptive/issues/199) jupyter-sphinx is pinned to non-existing branch
-
-and merged the following [Pull requests](https://github.com/python-adaptive/adaptive/pulls):
-- [#219](https://github.com/python-adaptive/adaptive/pull/219) pass value_scale to the LearnerND's loss_per_simplex function
-- [#209](https://github.com/python-adaptive/adaptive/pull/209) remove MPI4PY_MAX_WORKERS where it's not used
-- [#204](https://github.com/python-adaptive/adaptive/pull/204) use jupyter_sphinx v0.2.0 from conda instead of my branch
-- [#200](https://github.com/python-adaptive/adaptive/pull/200) ensure atomic writes when saving a file
-- [#193](https://github.com/python-adaptive/adaptive/pull/193) Add a SequenceLearner
-- [#188](https://github.com/python-adaptive/adaptive/pull/188) BalancingLearner: add a "cycle" strategy, sampling the learners one by one
-- [#202](https://github.com/python-adaptive/adaptive/pull/202) Authors
-- [#201](https://github.com/python-adaptive/adaptive/pull/201) Update tutorial.parallelism.rst
-- [#197](https://github.com/python-adaptive/adaptive/pull/197) Add option to display a progress bar when loading a BalancingLearner
-- [#195](https://github.com/python-adaptive/adaptive/pull/195) don't treat the no data case differently in the Learner1D  Learner1D
-- [#194](https://github.com/python-adaptive/adaptive/pull/194) pin everything in the docs/environment.yml file
-
-
-## version 0.8.0
-
-Since [0.7.0](https://github.com/python-adaptive/adaptive/tree/v0.7.0) we fixed the following [issues](https://github.com/python-adaptive/adaptive/issues):
-* [#7](https://github.com/python-adaptive/adaptive/issues/7) suggested points lie outside of domain Learner2D
-* [#39](https://github.com/python-adaptive/adaptive/issues/39) What should learners do when fed the same point twice
-* [#159](https://github.com/python-adaptive/adaptive/issues/159) BalancingLearner puts all points in the first child-learner when asking for points with no data present
-* [#148](https://github.com/python-adaptive/adaptive/issues/148) Loading data file with no data results in an error for the BalancingLearner
-* [#145](https://github.com/python-adaptive/adaptive/issues/145) Returning np.nan breaks the 1D learner
-* [#54](https://github.com/python-adaptive/adaptive/issues/54) Make learnerND datastructures immutable where possible
-* [gitlab:#134](https://gitlab.kwant-project.org/qt/adaptive/issues/134) Learner1D.load throws exception when file is empty
-* [#166](https://github.com/python-adaptive/adaptive/issues/166) live_plot broken with latest holoviews and bokeh
-* [#156](https://github.com/python-adaptive/adaptive/issues/156) Runner errors for Python 3.7 when done
-* [#159](https://github.com/python-adaptive/adaptive/issues/159) BalancingLearner puts all points in the first child-learner when asking for points with no data present
-* [#171](https://github.com/python-adaptive/adaptive/issues/171) default loss of LearnerND changed?
-* [#163](https://github.com/python-adaptive/adaptive/issues/163) Add a page to the documentation of papers where adaptive is used
-* [#179](https://github.com/python-adaptive/adaptive/issues/179) set python_requires in setup.py
-* [#175](https://github.com/python-adaptive/adaptive/issues/175) Underlying algorithm and MATLAB integration
-
-
-and merged the following [Pull requests](https://github.com/python-adaptive/adaptive/pulls):
-* [gitlab:!141](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/141): change the simplex_queue to a SortedKeyList
-* [gitlab:!142](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/142): make methods private in the LearnerND, closes #54
-* [#162](https://github.com/python-adaptive/adaptive/pull/162) test flat bands in the LearnerND
-* [#161](https://github.com/python-adaptive/adaptive/pull/161) import Iterable and Sized from collections.abc
-* [#160](https://github.com/python-adaptive/adaptive/pull/160) Distribute first points in a BalancingLearner
-* [#153](https://github.com/python-adaptive/adaptive/pull/153) invoke conda directly in CI
-* [#152](https://github.com/python-adaptive/adaptive/pull/152) fix bug in curvature_loss Learner1D bug
-* [#151](https://github.com/python-adaptive/adaptive/pull/151) handle NaN losses and add a test, closes #145
-* [#150](https://github.com/python-adaptive/adaptive/pull/150) fix `_get_data` for the BalancingLearner
-* [#149](https://github.com/python-adaptive/adaptive/pull/149) handle empty data files when loading, closes #148
-* [#147](https://github.com/python-adaptive/adaptive/pull/147) remove `_deepcopy_fix` and depend on sortedcollections >= 1.1
-* [#168](https://github.com/python-adaptive/adaptive/pull/168) Temporarily fix docs
-* [#167](https://github.com/python-adaptive/adaptive/pull/167) fix live_plot
-* [#164](https://github.com/python-adaptive/adaptive/pull/164) do not force shutdown the executor in the cleanup
-* [#172](https://github.com/python-adaptive/adaptive/issues/172) LearnerND: change the required loss to 1e-3 because the loss definition changed
-* [#177](https://github.com/python-adaptive/adaptive/pull/177) use the repo code in docs execute
-* [#176](https://github.com/python-adaptive/adaptive/pull/176) do not inline the HoloViews JS
-* [#174](https://github.com/python-adaptive/adaptive/pull/174) add a gallery page of Adaptive uses in scientific works
-* [#170](https://github.com/python-adaptive/adaptive/pull/170) Add logo to the documentation
-* [#180](https://github.com/python-adaptive/adaptive/pull/180) use setup(..., python_requires='>=3.6'), closes #179
-* [#182](https://github.com/python-adaptive/adaptive/pull/182) 2D: do not return points outside the bounds, closes #181 bug
-* [#185](https://github.com/python-adaptive/adaptive/pull/185) Add support for neighbours in loss computation in LearnerND
-* [#186](https://github.com/python-adaptive/adaptive/pull/186) renormalize the plots value axis on every update
-* [#189](https://github.com/python-adaptive/adaptive/pull/189) use pytest rather than py.test
-* [#190](https://github.com/python-adaptive/adaptive/pull/190) add support for mpi4py
-
-
-## version 0.7.0
-
-Since [0.6.0](https://gitlab.kwant-project.org/qt/adaptive/tree/v0.6.0) we fixed the following [issues](https://gitlab.kwant-project.org/qt/adaptive/issues):
-* [#122](https://gitlab.kwant-project.org/qt/adaptive/issues/122): Remove public `fname` learner attribute
-* [#119](https://gitlab.kwant-project.org/qt/adaptive/issues/119): (Learner1D) add possibility to use the direct neighbors in the loss
-* [#114](https://gitlab.kwant-project.org/qt/adaptive/issues/114): (LearnerND) allow any convex hull as domain
-* [#121](https://gitlab.kwant-project.org/qt/adaptive/issues/121): How to handle NaN?
-* [#107](https://gitlab.kwant-project.org/qt/adaptive/issues/107): Make BaseRunner an abstract base class
-* [#112](https://gitlab.kwant-project.org/qt/adaptive/issues/112): (LearnerND) add iso-surface plot feature
-* [#56](https://gitlab.kwant-project.org/qt/adaptive/issues/56): Improve plotting for learners
-* [#118](https://gitlab.kwant-project.org/qt/adaptive/issues/118): widgets don't show up on adaptive.readthedocs.io
-* [#91](https://gitlab.kwant-project.org/qt/adaptive/issues/91): Set up documentation
-* [#62](https://gitlab.kwant-project.org/qt/adaptive/issues/62): AverageLearner math domain error
-* [#113](https://gitlab.kwant-project.org/qt/adaptive/issues/113): make BalancingLearner work with the live_plot
-* [#111](https://gitlab.kwant-project.org/qt/adaptive/issues/111): (LearnerND) flat simplices are sometimes added on the surface of the triangulation
-* [#103](https://gitlab.kwant-project.org/qt/adaptive/issues/103): (BalancingLearner) make new balancinglearner that looks at the total loss rather than loss improvement
-* [#110](https://gitlab.kwant-project.org/qt/adaptive/issues/110): LearnerND triangulation incomplete
-* [#127](https://gitlab.kwant-project.org/qt/adaptive/issues/127): Typo in documentation for `adaptive.learner.learner2D.uniform_loss(ip)`
-* [#126](https://gitlab.kwant-project.org/qt/adaptive/issues/126): (Learner1D) improve time complexity
-* [#104](https://gitlab.kwant-project.org/qt/adaptive/issues/104): Learner1D could in some situations return -inf as loss improvement, which would make balancinglearner never choose to improve
-* [#128](https://gitlab.kwant-project.org/qt/adaptive/issues/128): (LearnerND) fix plotting of scaled domains
-* [#78](https://gitlab.kwant-project.org/qt/adaptive/issues/78): (LearnerND) scale y-values
-
-and merged the following [Merge Requests](https://gitlab.kwant-project.org/qt/adaptive/merge_requests):
-* [!131](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/131): Resolve "(Learner1D) add possibility to use the direct neighbors in the loss"
-* [!137](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/137): adhere to PEP008 by using absolute imports
-* [!135](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/135): test all the different loss functions in each test
-* [!133](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/133): make 'fname' a parameter to 'save' and 'load' only
-* [!136](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/136): build the Dockerimage used in CI
-* [!134](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/134): change resolution_loss to a factory function
-* [!118](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/118): add 'save' and 'load' to the learners and periodic saving to the Runner
-* [!127](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/127): Resolve "(LearnerND) allow any convex hull as domain"
-* [!130](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/130): save execution time on futures inside runners
-* [!111](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/111): Resolve "Make BaseRunner an abstract base class"
-* [!124](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/124): Resolve "(LearnerND) add iso-surface plot feature"
-* [!108](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/108): exponentially decay message frequency in live_info
-* [!129](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/129): add tutorials
-* [!120](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/120): add documentation
-* [!125](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/125): update to the latest miniver
-* [!126](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/126): add check_whitespace
-* [!123](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/123): add an option to plot a HoloMap with the BalancingLearner
-* [!122](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/122): implement 'npoints' strategy for the 'BalancingLearner'
-* [!119](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/119): (learnerND) no more (almost) flat simplices in the triangulation
-* [!109](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/109): make a BalancingLearner strategy that compares the total loss rather than loss improvement
-* [!117](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/117): Cache loss and display it in the live_info widget
-* [!121](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/121): 2D: add loss that minimizes the area of the triangle in 3D
-* [!139](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/139): Resolve "(Learner1D) improve time complexity"
-* [!140](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/140): Resolve "(LearnerND) fix plotting of scaled domains"
-* [!128](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/128): LearnerND scale output values before computing loss
-
-
-## version 0.6.0
-
-Since [0.5.0](https://gitlab.kwant-project.org/qt/adaptive/tree/v0.5.0) we fixed the following [issues](https://gitlab.kwant-project.org/qt/adaptive/issues):
-* [#66](https://gitlab.kwant-project.org/qt/adaptive/issues/66): (refactor) learner.tell(x, None) might be renamed to learner.tell_pending(x)
-* [#92](https://gitlab.kwant-project.org/qt/adaptive/issues/92): DeprecationWarning: sorted_dict.iloc is deprecated. Use SortedDict.keys() instead.
-* [#94](https://gitlab.kwant-project.org/qt/adaptive/issues/94): Learner1D breaks if right bound is added before the left bound
-* [#95](https://gitlab.kwant-project.org/qt/adaptive/issues/95): Learner1D's bound check algo in self.ask doesn't take self.data or self.pending_points
-* [#96](https://gitlab.kwant-project.org/qt/adaptive/issues/96): Learner1D fails when function returns a list instead of a numpy.array
-* [#97](https://gitlab.kwant-project.org/qt/adaptive/issues/97): Learner1D fails when a point (x, None) is added when x already exists
-* [#98](https://gitlab.kwant-project.org/qt/adaptive/issues/98): Learner1D.ask breaks when adding points in some order
-* [#99](https://gitlab.kwant-project.org/qt/adaptive/issues/99): Learner1D doesn't correctly set the interpolated loss when a point is added
-* [#101](https://gitlab.kwant-project.org/qt/adaptive/issues/101): How should learners handle data that is outside of the domain
-* [#102](https://gitlab.kwant-project.org/qt/adaptive/issues/102): No tests for the 'BalancingLearner'
-* [#105](https://gitlab.kwant-project.org/qt/adaptive/issues/105): LearnerND fails for BalancingLearner test
-* [#108](https://gitlab.kwant-project.org/qt/adaptive/issues/108): (BalancingLearner) loss is cached incorrectly
-* [#109](https://gitlab.kwant-project.org/qt/adaptive/issues/109): Learner2D suggests same point twice
-
-and merged the following [Merge Requests](https://gitlab.kwant-project.org/qt/adaptive/merge_requests):
-* [!93](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/93): add a release guide
-* [!94](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/94): add runner.max_retries
-* [!95](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/95): 1D: fix the rare case where the right boundary point exists before the left bound
-* [!96](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/96): More efficient 'tell_many'
-* [!97](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/97): Fix #97 and #98
-* [!98](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/98): Resolve "DeprecationWarning: sorted_dict.iloc is deprecated. Use SortedDict.keys() instead."
-* [!99](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/99): Resolve "Learner1D's bound check algo in self.ask doesn't take self.data or self.pending_points"
-* [!100](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/100): Resolve "Learner1D doesn't correctly set the interpolated loss when a point is added"
-* [!101](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/101): Resolve "Learner1D fails when function returns a list instead of a numpy.array"
-* [!102](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/102): introduce 'runner.retries' and 'runner.raise_if_retries_exceeded'
-* [!103](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/103): 2D: rename `learner._interp` to `learner.pending_points` as in other learners
-* [!104](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/104): Make the AverageLearner only return new points ...
-* [!105](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/105): move specific tests for a particular learner to separate files
-* [!107](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/107): Introduce `tell_pending` which replaces `tell(x, None)`
-* [!112](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/112): Resolve "LearnerND fails for BalancingLearner test"
-* [!113](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/113): Resolve "(BalancingLearner) loss is cached incorrectly"
-* [!114](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/114): update release guide to add a `dev` tag on top of regular tags
-* [!115](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/115): Resolve "How should learners handle data that is outside of the domain"
-* [!116](https://gitlab.kwant-project.org/qt/adaptive/merge_requests/116): 2D: fix #109
-
-
-New features
-* add `learner.tell_pending` which replaces `learner.tell(x, None)`
-* add error-handling with `runner.retries` and `runner.raise_if_retries_exceeded`
-* make `learner.pending_points` and `runner.pending_points` public API
-* rename `learner.ask(n, add_data)` -> `learner.ask(n, tell_pending)`
-* added the `overhead` method to the `BlockingRunner`
-
-
-## version 0.5.0
-
-* Introduce `LearnerND` (beta)
-* Add `BalancingLearner.from_product` (see `learner.ipynb` or doc-string for useage example)
-* `runner.live_info()` now shows the learner's efficiency
-* `runner.task.print_stack()` now displays the full traceback
-* Introduced `learner.tell_many` instead of having `learner.tell` figure out whether multiple points are added ([#59](https://gitlab.kwant-project.org/qt/adaptive/issues/59))
-* Fixed a [bug](https://gitlab.kwant-project.org/qt/adaptive/issues/61) that occured when a `Learner1D` had extremely narrow features
-
-And more bugs, see https://github.com/python-adaptive/adaptive/compare/v0.4.1...v0.5.0
-
-
-## version 0.4.0
-
-Rename `choose_points` -> `ask` and `add_point`, `add_data` -> `tell` and
-* several small bug fixes
-* add Jorn Hoofwijk as an author
-
-
-## version 0.2.0
-
-Release with correct licensing information
-Previously Christoph Groth was not properly attributed for his contributions.
-
-This release also contains a bugfix for Windows users
-
-
-## version 0.1.0
-
-Initial interface and algorithm proposal
+\* *This Changelog was automatically generated by [github_changelog_generator](https://github.com/github-changelog-generator/github-changelog-generator)*
