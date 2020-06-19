@@ -19,9 +19,9 @@ class AverageLearner1D(Learner1D):
         if its uncertainty is larger than delta times the smallest neighboring
         interval.
         We strongly recommend 0 < delta <= 1.
-    alfa : float (0 < alfa < 1)
+    alpha : float (0 < alpha < 1)
         The size of the interval of confidence of the estimate of the mean
-        is 1-2*alfa.
+        is 1-2*alpha.
     min_samples : int (0 < min_samples)
         Minimum number of samples at each point x. Each new point is initially
         sampled at least min_samples times.
@@ -34,7 +34,7 @@ class AverageLearner1D(Learner1D):
         Minimum uncertainty. If the uncertainty at a certain point is below this
         threshold, the point will not be resampled again.
 
-        We recommend to keep alfa=0.005.
+        We recommend to keep alpha=0.005.
     """
 
     def __init__(
@@ -43,7 +43,7 @@ class AverageLearner1D(Learner1D):
         bounds,
         loss_per_interval=None,
         delta=0.2,
-        alfa=0.005,
+        alpha=0.005,
         min_samples=50,
         neighbor_sampling=0.3,
         max_samples=np.inf,
@@ -51,7 +51,7 @@ class AverageLearner1D(Learner1D):
     ):
         #  Asserts
         assert delta > 0, "delta should be positive (0 < delta <= 1)."
-        assert alfa > 0 and alfa < 1, "alfa should be positive (0 < alfa < 1)."
+        assert alpha > 0 and alpha < 1, "alpha should be positive (0 < alpha < 1)."
         assert min_samples > 0, "min_samples should be positive."
         assert (
             neighbor_sampling > 0
@@ -63,7 +63,7 @@ class AverageLearner1D(Learner1D):
         super().__init__(function, bounds, loss_per_interval)
 
         self.delta = delta
-        self.alfa = alfa
+        self.alpha = alpha
         self.min_samples = min_samples
         self.min_Delta_g = min_Delta_g
         self.max_samples = max_samples
@@ -294,7 +294,7 @@ class AverageLearner1D(Learner1D):
             variance_in_mean = sum(
                 [(yj - y_avg) ** 2 for yj in self._data_samples[x]]
             ) / (n - 1)
-            t_student = tstud.ppf(1.0 - self.alfa, df=n - 1)
+            t_student = tstud.ppf(1.0 - self.alpha, df=n - 1)
             self._error_in_mean[x] = t_student * (variance_in_mean / n) ** 0.5
 
             self._update_distances(x)
@@ -398,7 +398,7 @@ class AverageLearner1D(Learner1D):
                         self._undersampled_points.discard(x)
                     # _error_in_mean:
                     variance_in_mean = sum([(yj - y_avg) ** 2 for yj in y]) / (n - 1)
-                    t_student = tstud.ppf(1.0 - self.alfa, df=n - 1)
+                    t_student = tstud.ppf(1.0 - self.alpha, df=n - 1)
                     self._error_in_mean[x] = t_student * (variance_in_mean / n) ** 0.5
                     # _update_distances:
                     self._update_distances(x)
