@@ -170,36 +170,32 @@ class AverageLearner1D(Learner1D):
            "resampled". """
         #  Update neighbors
         x_left, x_right = self.neighbors[x]
+        dists = self._distances
         if x_left is None and x_right is None:
             return
+
         if x_left is None:
-            d_left = self._distances[x]
+            d_left = dists[x]
         else:
-            d_left = self._distances[x_left]
+            d_left = dists[x_left]
             if x_left in self._rescaled_error_in_mean:
                 xll = self.neighbors[x_left][0]
-                if xll is None:
-                    self._rescaled_error_in_mean[x_left] = (
-                        self._error_in_mean[x_left] / self._distances[x_left]
-                    )
-                else:
-                    self._rescaled_error_in_mean[x_left] = self._error_in_mean[
-                        x_left
-                    ] / min(self._distances[xll], self._distances[x_left])
+                norm = dists[x_left] if xll is None else min(dists[xll], dists[x_left])
+                self._rescaled_error_in_mean[x_left] = (
+                    self._error_in_mean[x_left] / norm
+                )
+
         if x_right is None:
-            d_right = self._distances[x_left]
+            d_right = dists[x_left]
         else:
-            d_right = self._distances[x]
+            d_right = dists[x]
             if x_right in self._rescaled_error_in_mean:
                 xrr = self.neighbors[x_right][1]
-                norm = (
-                    self._distances[x]
-                    if xrr is None
-                    else min(self._distances[x], self._distances[x_right])
-                )
+                norm = dists[x] if xrr is None else min(dists[x], dists[x_right])
                 self._rescaled_error_in_mean[x_right] = (
                     self._error_in_mean[x_right] / norm
                 )
+
         # Update x
         if point_type == "resampled":
             norm = min(d_left, d_right)
