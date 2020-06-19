@@ -48,16 +48,16 @@ class AverageLearner1D(Learner1D):
         max_samples=np.inf,
         min_Delta_g=0,
     ):
-        #  Asserts
-        assert delta > 0, "delta should be positive (0 < delta <= 1)."
-        assert alpha > 0 and alpha < 1, "alpha should be positive (0 < alpha < 1)."
-        assert min_samples > 0, "min_samples should be positive."
-        assert (
-            neighbor_sampling > 0
-        ), "neighbor_sampling should be positive (0 < neighbor_sampling <= 1)."
-        assert (
-            max_samples > min_samples
-        ), "max_samples should be larger than min_samples."
+        # Checks
+        for k, v in zip(
+            ["delta", "alpha", "neighbor_sampling"], [delta, alpha, neighbor_sampling]
+        ):
+            if not (0 < v <= 1):
+                raise ValueError(f"{k} should be positive (0 < {k} <= 1).")
+        if min_samples < 0:
+            raise ValueError("min_samples should be positive.")
+        if not max_samples > min_samples:
+            raise ValueError("max_samples should be larger than min_samples.")
 
         super().__init__(function, bounds, loss_per_interval)
 
