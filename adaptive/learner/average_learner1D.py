@@ -265,8 +265,9 @@ class AverageLearner1D(Learner1D):
             super()._update_scale(x, y)
             self._update_losses_resampling(x, real=True)  #  XXX: REVIEW
 
-            # XXX: Is the following necessary?
             # If the scale has increased enough, recompute all losses.
+            # We only update the scale considering resampled points, since new
+            # points are more likely to be outliers.
             if self._scale[1] > self._recompute_losses_factor * self._oldscale[1]:
                 for interval in reversed(self.losses):
                     self._update_interpolated_loss_in_interval(*interval)
