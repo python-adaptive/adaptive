@@ -23,15 +23,15 @@ class AverageLearner1D(Learner1D):
     alpha : float (0 < alpha < 1)
         The size of the interval of confidence of the estimate of the mean
         is 1-2*alpha. We recommend to keep alpha=0.005.
-    min_samples : int (0 < min_samples)
-        Minimum number of samples at each point x. Each new point is initially
-        sampled at least min_samples times.
     neighbor_sampling : float (0 < neighbor_sampling <= 1)
         Each new point is initially sampled at least a (neighbor_sampling*100)%
         of the average number of samples of its neighbors.
+    min_samples : int (min_samples > 0)
+        Minimum number of samples at each point x. Each new point is initially
+        sampled at least min_samples times.
     max_samples : int (min_samples < max_samples)
         Maximum number of samples at each point x.
-    min_Delta_g : float (0 <= min_Delta_g)
+    min_Delta_g : float (min_Delta_g >= 0)
         Minimum uncertainty. If the uncertainty at a certain point is below this
         threshold, the point will not be resampled again.
     """
@@ -43,8 +43,8 @@ class AverageLearner1D(Learner1D):
         loss_per_interval=None,
         delta=0.2,
         alpha=0.005,
-        min_samples=50,
         neighbor_sampling=0.3,
+        min_samples=50,
         max_samples=np.inf,
         min_Delta_g=0,
     ):
@@ -56,7 +56,7 @@ class AverageLearner1D(Learner1D):
                 raise ValueError(f"{k} should be positive (0 < {k} <= 1).")
         if min_samples < 0:
             raise ValueError("min_samples should be positive.")
-        if not max_samples > min_samples:
+        if min_samples > max_samples:
             raise ValueError("max_samples should be larger than min_samples.")
 
         super().__init__(function, bounds, loss_per_interval)
