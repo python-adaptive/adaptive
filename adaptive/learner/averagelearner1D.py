@@ -22,7 +22,7 @@ class AverageLearner1D(Learner1D):
         We strongly recommend 0 < delta <= 1.
     alpha : float (0 < alpha < 1)
         The size of the interval of confidence of the estimate of the mean
-        is 1-2*alpha.
+        is 1-2*alpha. We recommend to keep alpha=0.005.
     min_samples : int (0 < min_samples)
         Minimum number of samples at each point x. Each new point is initially
         sampled at least min_samples times.
@@ -34,8 +34,6 @@ class AverageLearner1D(Learner1D):
     min_Delta_g : float (0 <= min_Delta_g)
         Minimum uncertainty. If the uncertainty at a certain point is below this
         threshold, the point will not be resampled again.
-
-        We recommend to keep alpha=0.005.
     """
 
     def __init__(
@@ -226,7 +224,6 @@ class AverageLearner1D(Learner1D):
             if self._scale[1] > self._recompute_losses_factor * self._oldscale[1]:
                 for interval in reversed(self.losses):
                     self._update_interpolated_loss_in_interval(*interval)
-
                 self._oldscale = deepcopy(self._scale)
 
             self._number_samples[x] = 1
@@ -239,7 +236,7 @@ class AverageLearner1D(Learner1D):
         elif point_type == "resampled":
             self._data_samples[x].append(y)
             ns = self._number_samples
-            ns[x] = ns[x] + 1
+            ns[x] += 1
             n = ns[x]
             if (x in self._undersampled_points) and (n >= self.min_samples):
                 x_left, x_right = self.neighbors[x]
@@ -263,17 +260,14 @@ class AverageLearner1D(Learner1D):
             self._update_distances(x)
             self._update_rescaled_error_in_mean(x, "resampled")
 
-            if x in self._rescaled_error_in_mean and (
-                self._error_in_mean[x] <= self.min_Delta_g
-                or self._number_samples[x] >= self.max_samples
-            ):
-                self._rescaled_error_in_mean.pop(x)
+            if self._error_in_mean[x] <= self.min_Delta_g or n >= self.max_samples:
+                self._rescaled_error_in_mean.pop(x, None)
 
             # We also need to update scale and losses
             super()._update_scale(x, y)
-            self._update_losses_resampling(x, real=True)  #  REVIEW
+            self._update_losses_resampling(x, real=True)  #  XXX: REVIEW
 
-            """Is the following necessary?"""
+            # XXX: Is the following necessary?
             # If the scale has increased enough, recompute all losses.
             if self._scale[1] > self._recompute_losses_factor * self._oldscale[1]:
                 for interval in reversed(self.losses):
@@ -330,49 +324,43 @@ class AverageLearner1D(Learner1D):
                   data points. These points will not be included in
                   _rescaled_error_in_mean and therefore will not be resampled.
                 - {x_i: [y_i0, y_i1, ...]} (all data samples at each point)."""
-        for y in ys:
-            # If data_samples is given:
-            if isinstance(y, list):
-                self._data_samples.update(zip(xs, ys))
-                super().tell_many(
-                    xs, [np.mean(y) for y in ys]
-                )  # self.data is updated here
-                ys_len = []
-                ys_avg = []
-                for x, ys_ in zip(xs, ys):
-                    y_avg = np.mean(ys_)
-                    n = len(ys_)
-                    ys_len.append(n)
-                    ys_avg.append(y_avg)
-                    # We include the point in _undersampled_points if there are
-                    # less than min_samples samples, disregarding neighbor_sampling.
-                    # super().tell_many() sometimes calls self.tell(), which includes
-                    # x in _undersampled_points, so we may need to remove it.
-                    if n < self.min_samples:
-                        self._undersampled_points.add(x)
-                    elif n > self.min_samples:
-                        self._undersampled_points.discard(x)
-                    self._error_in_mean[x] = self._calc_error_in_mean(ys_, y_avg, n)
-                    self._update_distances(x)
+        # If data_samples is given:
+        if isinstance(ys[0], list):
+            self._data_samples.update(zip(xs, ys))
+            ys_avg = np.mean(ys, axis=1)
+            super().tell_many(xs, ys_avg)  # self.data is updated here
+            ys_len = []
+            for x, ys_, y_avg in zip(xs, ys, ys_avg):
+                n = len(ys_)
+                ys_len.append(n)
+                # We include the point in _undersampled_points if there are
+                # less than min_samples samples, disregarding neighbor_sampling.
+                # super().tell_many() sometimes calls self.tell(), which includes
+                # x in _undersampled_points, so we may need to remove it.
+                if n < self.min_samples:
+                    self._undersampled_points.add(x)
+                elif n > self.min_samples:
+                    self._undersampled_points.discard(x)
+                self._error_in_mean[x] = self._calc_error_in_mean(ys_, y_avg, n)
+                self._update_distances(x)
 
-                self._number_samples.update(zip(xs, ys_len))
+            self._number_samples.update(zip(xs, ys_len))
 
-                for x in xs:
-                    if self._number_samples[x] == 1:
-                        self._rescaled_error_in_mean[x] = np.inf
-                    elif self._number_samples[x] < self.max_samples:
-                        self._update_rescaled_error_in_mean(x, "resampled")
-                self._data_samples.update(zip(xs, ys))
+            for x in xs:
+                if self._number_samples[x] == 1:
+                    self._rescaled_error_in_mean[x] = np.inf
+                elif self._number_samples[x] < self.max_samples:
+                    self._update_rescaled_error_in_mean(x, "resampled")
+            self._data_samples.update(zip(xs, ys))
 
-            # If data is given:
-            else:
-                super().tell_many(xs, ys)  # self.data is updated here
-                self._data_samples.update(zip(xs, ys))
-                self._number_samples.update(zip(xs, [1] * len(xs)))
-                self._error_in_mean.update(zip(xs, [0] * len(xs)))
-                for x in xs:
-                    self._update_distances(x)
-            break
+        # If data is given:
+        else:
+            super().tell_many(xs, ys)  # self.data is updated here
+            self._data_samples.update(zip(xs, ys))
+            self._number_samples.update(zip(xs, [1] * len(xs)))
+            self._error_in_mean.update(zip(xs, [0] * len(xs)))
+            for x in xs:
+                self._update_distances(x)
 
     def plot(self):
         """Returns a plot of the evaluated data with error bars.
