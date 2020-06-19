@@ -1,9 +1,10 @@
 from copy import deepcopy
+from math import hypot
 
 import numpy as np
-import sortedcollections
-import sortedcontainers
 from scipy.stats import t as tstud
+from sortedcollections import ItemSortedDict
+from sortedcontainers import SortedDict
 
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
@@ -69,57 +70,42 @@ class AverageLearner1D(Learner1D):
         self.max_samples = max_samples
         self.neighbor_sampling = neighbor_sampling
 
-        self._data_samples = (
-            sortedcontainers.SortedDict()
-        )  # This SortedDict contains all samples f(x) for each
+        # Contains all samples f(x) for each
         # point x in the form {x0:[f_0(x0), f_1(x0), ...], ...}
-        self._number_samples = (
-            sortedcontainers.SortedDict()
-        )  # This SortedDict contains the number of samples taken
+        self._data_samples = SortedDict()
+        # Contains the number of samples taken
         # at each point x in the form {x0: n0, x1: n1, ...}
-        self._undersampled_points = (
-            set()
-        )  # This set contains the points x that have less than min_samples
+        self._number_samples = SortedDict()
+        # This set contains the points x that have less than min_samples
         # samples or less than a (neighbor_sampling*100)% of their neighbors
-        self._error_in_mean = (
-            decreasing_dict_initializer()
-        )  # This SortedDict contains the error in the estimate of the
+        self._undersampled_points = set()
+        # Contains the error in the estimate of the
         # mean at each point x in the form {x0: error(x0), ...}
-        self._distances = (
-            decreasing_dict_initializer()
-        )  #  Distance between two neighboring points in the
+        self._error_in_mean = decreasing_dict()
+        #  Distance between two neighboring points in the
         # form {xi: ((xii-xi)^2 + (yii-yi)^2)^0.5, ...}
-        self._rescaled_error_in_mean = (
-            decreasing_dict_initializer()
-        )  # {xii: _error_in_mean[xii]/min(_distances[xi],
-        #  _distances[xii], ...}
+        self._distances = decreasing_dict()
+        # {xii: _error_in_mean[xii]/min(_distances[xi], _distances[xii], ...}
+        self._rescaled_error_in_mean = decreasing_dict()
 
     @property
     def total_samples(self):
         """Returns the total number of samples"""
-        if not len(self.data):
-            return 0
-        else:
-            _, ns = zip(*self._number_samples.items())
-            return sum(ns)
+        return sum(self._number_samples.values())
 
     def ask(self, n, tell_pending=True):
         """Return 'n' points that are expected to maximally reduce the loss."""
         # If some point is undersampled, resample it
         if len(self._undersampled_points):
-            for (
-                x
-            ) in self._undersampled_points:  # This is to get an element from the set
-                break
+            x = next(iter(self._undersampled_points))
             points, loss_improvements = self._ask_for_more_samples(x, n)
         # If less than 2 points were sampled, sample a new one
-        elif not self.data.__len__() or self.data.__len__() == 1:
+        elif len(self.data) <= 1:
             points, loss_improvements = self._ask_for_new_point(n)
         #  Else, check the resampling condition
         else:
-            if len(
-                self._rescaled_error_in_mean
-            ):  # This is in case _rescaled_error_in_mean is empty (e.g. when sigma=0)
+            if len(self._rescaled_error_in_mean):
+                # This is in case _rescaled_error_in_mean is empty (e.g. when sigma=0)
                 x, resc_error = self._rescaled_error_in_mean.peekitem(0)
                 # Resampling condition
                 if resc_error > self.delta:
@@ -154,10 +140,10 @@ class AverageLearner1D(Learner1D):
 
     def tell_pending(self, x):
         if x in self.data:
-            self.pending_points.add(x)  # Note that a set cannot contain duplicates
+            self.pending_points.add(x)
             return
         else:
-            self.pending_points.add(x)  # Note that a set cannot contain duplicates
+            self.pending_points.add(x)
             self._update_neighbors(x, self.neighbors_combined)
             self._update_losses(x, real=False)
 
@@ -171,7 +157,7 @@ class AverageLearner1D(Learner1D):
         if not isinstance(y, (float, int)):
             y = np.asarray(y, dtype=float)
 
-        if not self.data.__contains__(x):
+        if x not in self.data:
             self._update_data(x, y, "new")
             self._update_data_structures(x, y, "new")
         else:
@@ -186,41 +172,41 @@ class AverageLearner1D(Learner1D):
             point_type == "new" or point_type == "resampled"
         ), 'point_type must be "new" or "resampled"'
         #  Update neighbors
-        xleft, xright = self.neighbors[x]
-        if xleft is None and xright is None:
+        x_left, x_right = self.neighbors[x]
+        if x_left is None and x_right is None:
             return
-        if xleft is None:
-            dleft = self._distances[x]
+        if x_left is None:
+            d_left = self._distances[x]
         else:
-            dleft = self._distances[xleft]
-            if self._rescaled_error_in_mean.__contains__(xleft):
-                xll = self.neighbors[xleft][0]
+            d_left = self._distances[x_left]
+            if x_left in self._rescaled_error_in_mean:
+                xll = self.neighbors[x_left][0]
                 if xll is None:
-                    self._rescaled_error_in_mean[xleft] = (
-                        self._error_in_mean[xleft] / self._distances[xleft]
+                    self._rescaled_error_in_mean[x_left] = (
+                        self._error_in_mean[x_left] / self._distances[x_left]
                     )
                 else:
-                    self._rescaled_error_in_mean[xleft] = self._error_in_mean[
-                        xleft
-                    ] / min(self._distances[xll], self._distances[xleft])
-        if xright is None:
-            dright = self._distances[xleft]
+                    self._rescaled_error_in_mean[x_left] = self._error_in_mean[
+                        x_left
+                    ] / min(self._distances[xll], self._distances[x_left])
+        if x_right is None:
+            d_right = self._distances[x_left]
         else:
-            dright = self._distances[x]
-            if self._rescaled_error_in_mean.__contains__(xright):
-                xrr = self.neighbors[xright][1]
+            d_right = self._distances[x]
+            if x_right in self._rescaled_error_in_mean:
+                xrr = self.neighbors[x_right][1]
                 if xrr is None:
-                    self._rescaled_error_in_mean[xright] = (
-                        self._error_in_mean[xright] / self._distances[x]
+                    self._rescaled_error_in_mean[x_right] = (
+                        self._error_in_mean[x_right] / self._distances[x]
                     )
                 else:
-                    self._rescaled_error_in_mean[xright] = self._error_in_mean[
-                        xright
-                    ] / min(self._distances[x], self._distances[xright])
+                    self._rescaled_error_in_mean[x_right] = self._error_in_mean[
+                        x_right
+                    ] / min(self._distances[x], self._distances[x_right])
         # Update x
         if point_type == "resampled":
             self._rescaled_error_in_mean[x] = self._error_in_mean[x] / min(
-                dleft, dright
+                d_left, d_right
             )
         return
 
@@ -272,16 +258,16 @@ class AverageLearner1D(Learner1D):
             n = self._number_samples[x]
 
             if (x in self._undersampled_points) and (n >= self.min_samples):
-                xleft, xright = self.neighbors[x]
+                x_left, x_right = self.neighbors[x]
                 n = self._number_samples[x]
-                if xleft and xright:
+                if x_left and x_right:
                     nneighbor = 0.5 * (
-                        self._number_samples[xleft] + self._number_samples[xright]
+                        self._number_samples[x_left] + self._number_samples[x_right]
                     )
-                elif xleft:
-                    nneighbor = self._number_samples[xleft]
-                elif xright:
-                    nneighbor = self._number_samples[xright]
+                elif x_left:
+                    nneighbor = self._number_samples[x_left]
+                elif x_right:
+                    nneighbor = self._number_samples[x_right]
                 else:
                     nneighbor = 0
                 if n > self.neighbor_sampling * nneighbor:
@@ -301,7 +287,7 @@ class AverageLearner1D(Learner1D):
 
             self._update_rescaled_error_in_mean(x, "resampled")
 
-            if self._rescaled_error_in_mean.__contains__(x) and (
+            if x in self._rescaled_error_in_mean and (
                 self._error_in_mean[x] <= self.min_Delta_g
                 or self._number_samples[x] >= self.max_samples
             ):
@@ -319,17 +305,12 @@ class AverageLearner1D(Learner1D):
                 self._oldscale = deepcopy(self._scale)
 
     def _update_distances(self, x):
-        neighbors = self.neighbors[x]
-        if neighbors[0] is not None:
-            #    self._distances[neighbors[0]] = x-neighbors[0]
-            self._distances[neighbors[0]] = (
-                (x - neighbors[0]) ** 2 + (self.data[x] - self.data[neighbors[0]]) ** 2
-            ) ** 0.5
-        if neighbors[1] is not None:
-            self._distances[x] = (
-                (neighbors[1] - x) ** 2 + (self.data[neighbors[1]] - self.data[x]) ** 2
-            ) ** 0.5
-        return
+        x_left, x_right = self.neighbors[x]
+        y = self.data[x]
+        if x_left is not None:
+            self._distances[x_left] = hypot((x - x_left), (y - self.data[x_left]))
+        if x_right is not None:
+            self._distances[x] = hypot((x_right - x), (self.data[x_right] - y))
 
     def _update_losses_resampling(self, x, real=True):
         """Update all losses that depend on x, whenever the new point is a
@@ -458,10 +439,10 @@ class AverageLearner1D(Learner1D):
         return p.redim(x=dict(range=plot_bounds))
 
 
-def decreasing_dict_initializer():
+def decreasing_dict():
     """This initialization orders the dictionary from large to small values"""
 
     def sorting_rule(key, value):
         return -value
 
-    return sortedcollections.ItemSortedDict(sorting_rule, sortedcontainers.SortedDict())
+    return ItemSortedDict(sorting_rule, SortedDict())
