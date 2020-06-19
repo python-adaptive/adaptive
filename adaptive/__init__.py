@@ -4,6 +4,7 @@ from adaptive import learner, runner, utils
 from adaptive._version import __version__
 from adaptive.learner import (
     AverageLearner,
+    AverageLearner1D,
     BalancingLearner,
     BaseLearner,
     DataSaver,
@@ -11,7 +12,6 @@ from adaptive.learner import (
     Learner1D,
     Learner2D,
     LearnerND,
-    AverageLearner1D,
     SequenceLearner,
     make_datasaver,
 )
