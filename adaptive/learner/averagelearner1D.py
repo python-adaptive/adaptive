@@ -168,9 +168,6 @@ class AverageLearner1D(Learner1D):
     def _update_rescaled_error_in_mean(self, x, point_type):
         """Updates self._rescaled_error_in_mean; point_type must be "new" or
            "resampled". """
-        assert (
-            point_type == "new" or point_type == "resampled"
-        ), 'point_type must be "new" or "resampled"'
         #  Update neighbors
         x_left, x_right = self.neighbors[x]
         if x_left is None and x_right is None:
@@ -195,25 +192,21 @@ class AverageLearner1D(Learner1D):
             d_right = self._distances[x]
             if x_right in self._rescaled_error_in_mean:
                 xrr = self.neighbors[x_right][1]
-                if xrr is None:
-                    self._rescaled_error_in_mean[x_right] = (
-                        self._error_in_mean[x_right] / self._distances[x]
-                    )
-                else:
-                    self._rescaled_error_in_mean[x_right] = self._error_in_mean[
-                        x_right
-                    ] / min(self._distances[x], self._distances[x_right])
+                norm = (
+                    self._distances[x]
+                    if xrr is None
+                    else min(self._distances[x], self._distances[x_right])
+                )
+                self._rescaled_error_in_mean[x_right] = (
+                    self._error_in_mean[x_right] / norm
+                )
         # Update x
         if point_type == "resampled":
-            self._rescaled_error_in_mean[x] = self._error_in_mean[x] / min(
-                d_left, d_right
-            )
+            norm = min(d_left, d_right)
+            self._rescaled_error_in_mean[x] = self._error_in_mean[x] / norm
         return
 
     def _update_data(self, x, y, point_type):
-        assert (
-            point_type == "new" or point_type == "resampled"
-        ), 'point_type must be "new" or "resampled"'
         if point_type == "new":
             self.data[x] = y
         elif point_type == "resampled":
@@ -222,10 +215,6 @@ class AverageLearner1D(Learner1D):
             self.data[x] = new_average
 
     def _update_data_structures(self, x, y, point_type):
-        assert (
-            point_type == "new" or point_type == "resampled"
-        ), 'point_type must be "new" or "resampled"'
-
         if point_type == "new":
             self._data_samples[x] = [y]
 
@@ -253,21 +242,17 @@ class AverageLearner1D(Learner1D):
 
         elif point_type == "resampled":
             self._data_samples[x].append(y)
-
-            self._number_samples[x] = self._number_samples[x] + 1
-            n = self._number_samples[x]
-
+            ns = self._number_samples
+            ns[x] = ns[x] + 1
+            n = ns[x]
             if (x in self._undersampled_points) and (n >= self.min_samples):
                 x_left, x_right = self.neighbors[x]
-                n = self._number_samples[x]
-                if x_left and x_right:
-                    nneighbor = 0.5 * (
-                        self._number_samples[x_left] + self._number_samples[x_right]
-                    )
-                elif x_left:
-                    nneighbor = self._number_samples[x_left]
-                elif x_right:
-                    nneighbor = self._number_samples[x_right]
+                if x_left is not None and x_right is not None:
+                    nneighbor = (ns[x_left] + ns[x_right]) / 2
+                elif x_left is not None:
+                    nneighbor = ns[x_left]
+                elif x_right is not None:
+                    nneighbor = ns[x_right]
                 else:
                     nneighbor = 0
                 if n > self.neighbor_sampling * nneighbor:
@@ -277,21 +262,16 @@ class AverageLearner1D(Learner1D):
             # the std of the mean multiplied by a t-Student factor to ensure that
             # the mean value lies within the correct interval of confidence
             y_avg = self.data[x]
-            variance_in_mean = sum(
-                [(yj - y_avg) ** 2 for yj in self._data_samples[x]]
-            ) / (n - 1)
-            t_student = tstud.ppf(1.0 - self.alpha, df=n - 1)
-            self._error_in_mean[x] = t_student * (variance_in_mean / n) ** 0.5
-
+            ys = self._data_samples[x]
+            self._error_in_mean[x] = self._calc_error_in_mean(ys, y_avg, n)
             self._update_distances(x)
-
             self._update_rescaled_error_in_mean(x, "resampled")
 
             if x in self._rescaled_error_in_mean and (
                 self._error_in_mean[x] <= self.min_Delta_g
                 or self._number_samples[x] >= self.max_samples
             ):
-                _ = self._rescaled_error_in_mean.pop(x)
+                self._rescaled_error_in_mean.pop(x)
 
             # We also need to update scale and losses
             super()._update_scale(x, y)
@@ -342,6 +322,11 @@ class AverageLearner1D(Learner1D):
         if (b is not None) and right_loss_is_unknown:
             self.losses_combined[x, b] = float("inf")
 
+    def _calc_error_in_mean(self, ys, y_avg, n):
+        variance_in_mean = sum((y - y_avg) ** 2 for y in ys) / (n - 1)
+        t_student = tstud.ppf(1 - self.alpha, df=n - 1)
+        return t_student * (variance_in_mean / n) ** 0.5
+
     def tell_many(self, xs, ys, *, force=False):
         """The data should be given as:
                 - {x_i: y_i} (only the mean at each point), in which case the
@@ -349,26 +334,20 @@ class AverageLearner1D(Learner1D):
                   data points. These points will not be included in
                   _rescaled_error_in_mean and therefore will not be resampled.
                 - {x_i: [y_i0, y_i1, ...]} (all data samples at each point)."""
-
         for y in ys:
             # If data_samples is given:
             if isinstance(y, list):
                 self._data_samples.update(zip(xs, ys))
-                print(self._undersampled_points)
-
                 super().tell_many(
                     xs, [np.mean(y) for y in ys]
                 )  # self.data is updated here
-                yslen = []
-                ysavg = []
-                print(self._undersampled_points)
-                for ii in np.arange(len(ys)):
-                    x = xs[ii]
-                    y = ys[ii]
-                    y_avg = np.mean(y)
-                    n = len(y)
-                    yslen.append(n)
-                    ysavg.append(y_avg)
+                ys_len = []
+                ys_avg = []
+                for x, ys_ in zip(xs, ys):
+                    y_avg = np.mean(ys_)
+                    n = len(ys_)
+                    ys_len.append(n)
+                    ys_avg.append(y_avg)
                     # We include the point in _undersampled_points if there are
                     # less than min_samples samples, disregarding neighbor_sampling.
                     # super().tell_many() sometimes calls self.tell(), which includes
@@ -377,15 +356,10 @@ class AverageLearner1D(Learner1D):
                         self._undersampled_points.add(x)
                     elif n > self.min_samples:
                         self._undersampled_points.discard(x)
-                    # _error_in_mean:
-                    variance_in_mean = sum([(yj - y_avg) ** 2 for yj in y]) / (n - 1)
-                    t_student = tstud.ppf(1.0 - self.alpha, df=n - 1)
-                    self._error_in_mean[x] = t_student * (variance_in_mean / n) ** 0.5
-                    # _update_distances:
+                    self._error_in_mean[x] = self._calc_error_in_mean(ys_, y_avg, n)
                     self._update_distances(x)
 
-                self._number_samples.update(zip(xs, yslen))
-                print(self._undersampled_points)
+                self._number_samples.update(zip(xs, ys_len))
 
                 for x in xs:
                     if self._number_samples[x] == 1:
@@ -402,10 +376,7 @@ class AverageLearner1D(Learner1D):
                 self._error_in_mean.update(zip(xs, [0] * len(xs)))
                 for x in xs:
                     self._update_distances(x)
-
             break
-
-        return
 
     def plot(self):
         """Returns a plot of the evaluated data with error bars.
