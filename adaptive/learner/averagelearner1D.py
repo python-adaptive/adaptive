@@ -2,7 +2,7 @@ from copy import deepcopy
 from math import hypot
 
 import numpy as np
-from scipy.stats import t as tstud
+import scipy.stats
 from sortedcollections import ItemSortedDict
 from sortedcontainers import SortedDict
 
@@ -139,7 +139,6 @@ class AverageLearner1D(Learner1D):
     def tell_pending(self, x):
         if x in self.data:
             self.pending_points.add(x)
-            return
         else:
             self.pending_points.add(x)
             self._update_neighbors(x, self.neighbors_combined)
@@ -198,7 +197,6 @@ class AverageLearner1D(Learner1D):
         if point_type == "resampled":
             norm = min(d_left, d_right)
             self._rescaled_error_in_mean[x] = self._error_in_mean[x] / norm
-        return
 
     def _update_data(self, x, y, point_type):
         if point_type == "new":
@@ -314,7 +312,7 @@ class AverageLearner1D(Learner1D):
 
     def _calc_error_in_mean(self, ys, y_avg, n):
         variance_in_mean = sum((y - y_avg) ** 2 for y in ys) / (n - 1)
-        t_student = tstud.ppf(1 - self.alpha, df=n - 1)
+        t_student = scipy.stats.t.ppf(1 - self.alpha, df=n - 1)
         return t_student * (variance_in_mean / n) ** 0.5
 
     def tell_many(self, xs, ys, *, force=False):
@@ -384,8 +382,6 @@ class AverageLearner1D(Learner1D):
             )
         else:
             raise Exception("plot() not implemented for vector functions.")
-            xs, ys = zip(*sorted(self.data.items()))
-            p = hv.Path((xs, ys)) * hv.Scatter([])
 
         # Plot with 5% empty margins such that the boundary points are visible
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
