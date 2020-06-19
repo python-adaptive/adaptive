@@ -1,7 +1,7 @@
 from contextlib import suppress
 
 from adaptive.learner.average_learner import AverageLearner
-from adaptive.learner.averagelearner1D import AverageLearner1D
+from adaptive.learner.average_learner1D import AverageLearner1D
 from adaptive.learner.balancing_learner import BalancingLearner
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.learner.data_saver import DataSaver, make_datasaver

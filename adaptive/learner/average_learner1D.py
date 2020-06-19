@@ -281,8 +281,7 @@ class AverageLearner1D(Learner1D):
             self._distances[x] = hypot((x_right - x), (self.data[x_right] - y))
 
     def _update_losses_resampling(self, x, real=True):
-        """Update all losses that depend on x, whenever the new point is a
-           re-sampled point"""
+        """Update all losses that depend on x, whenever the new point is a re-sampled point."""
         # (x_left, x_right) are the "real" neighbors of 'x'.
         x_left, x_right = self._find_neighbors(x, self.neighbors)
         # (a, b) are the neighbors of the combined interpolated
