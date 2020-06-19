@@ -372,12 +372,13 @@ class AverageLearner1D(Learner1D):
         if not self.data:
             p = hv.Scatter([]) * hv.ErrorBars([]) * hv.Path([])
         elif not self.vdim > 1:
+            xs, ys = zip(*sorted(self.data.items()))
             p = (
                 hv.Scatter(self.data)
                 * hv.ErrorBars(
                     [(x, self.data[x], self._error_in_mean[x]) for x in self.data]
                 )
-                * hv.Path([])
+                * hv.Path((xs, ys))
             )
         else:
             raise Exception("plot() not implemented for vector functions.")
