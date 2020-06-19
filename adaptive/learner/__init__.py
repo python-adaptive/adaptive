@@ -8,6 +8,7 @@ from adaptive.learner.integrator_learner import IntegratorLearner
 from adaptive.learner.learner1D import Learner1D
 from adaptive.learner.learner2D import Learner2D
 from adaptive.learner.learnerND import LearnerND
+from adaptive.learner.averagelearner1D import AverageLearner1D
 from adaptive.learner.sequence_learner import SequenceLearner
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "Learner1D",
     "Learner2D",
     "LearnerND",
+    "AverageLearner1D",
     "SequenceLearner",
 ]
 
