@@ -395,12 +395,13 @@ class AverageLearner1D(Learner1D):
                 print('tell_many() aborted.')
 
     def plot(self):
-        """Returns a plot of the evaluated data with error bars.
+        """Returns a plot of the evaluated data with error bars (not implemented
+           for vector functions, i.e., it requires vdim=1).
 
         Returns
         -------
-        plot : `holoviews.element.Scatter` (if vdim=1)\
-               else `holoviews.element.Path`
+        plot : `holoviews.element.Scatter * holoviews.element.ErroBars *
+                holoviews.element.Path`
             Plot of the evaluated data.
         """
         hv = ensure_holoviews()
