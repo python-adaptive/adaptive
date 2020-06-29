@@ -21,8 +21,10 @@ class AverageLearner1D(Learner1D):
         interval.
         We strongly recommend 0 < delta <= 1.
     alpha : float (0 < alpha < 1)
-        The size of the interval of confidence of the estimate of the mean
-        is 1-2*alpha. We recommend to keep alpha=0.005.
+        The true value of the function at x is within the confidence interval
+        [self.data[x] - self._error_in_mean[x], self.data[x] +
+        self._error_in_mean[x]] with probability 1-2*alpha.
+        We recommend to keep alpha=0.005.
     neighbor_sampling : float (0 < neighbor_sampling <= 1)
         Each new point is initially sampled at least a (neighbor_sampling*100)%
         of the average number of samples of its neighbors.
@@ -31,9 +33,14 @@ class AverageLearner1D(Learner1D):
         sampled at least min_samples times.
     max_samples : int (min_samples < max_samples)
         Maximum number of samples at each point x.
-    min_Delta_g : float (min_Delta_g >= 0)
-        Minimum uncertainty. If the uncertainty at a certain point is below this
-        threshold, the point will not be resampled again.
+    min_error : float (min_error >= 0)
+        Minimum size of the confidence intervals. The true value of the
+        function at x is within the confidence interval [self.data[x] -
+        self._error_in_mean[x], self.data[x] + self._error_in_mean[x]] with
+        probability 1-2*alpha.
+        If self._error_in_mean[x] < min_error, then x will not be resampled
+        anymore, i.e., the smallest confidence interval at x is
+        [self.data[x] - min_error, self.data[x] + min_error].
     """
 
     def __init__(
@@ -46,7 +53,7 @@ class AverageLearner1D(Learner1D):
         neighbor_sampling=0.3,
         min_samples=50,
         max_samples=np.inf,
-        min_Delta_g=0,
+        min_error=0,
     ):
         # Checks
         for k, v in zip(
@@ -64,7 +71,7 @@ class AverageLearner1D(Learner1D):
         self.delta = delta
         self.alpha = alpha
         self.min_samples = min_samples
-        self.min_Delta_g = min_Delta_g
+        self.min_error = min_error
         self.max_samples = max_samples
         self.neighbor_sampling = neighbor_sampling
 
@@ -258,7 +265,7 @@ class AverageLearner1D(Learner1D):
             self._update_distances(x)
             self._update_rescaled_error_in_mean(x, "resampled")
 
-            if self._error_in_mean[x] <= self.min_Delta_g or n >= self.max_samples:
+            if self._error_in_mean[x] <= self.min_error or n >= self.max_samples:
                 self._rescaled_error_in_mean.pop(x, None)
 
             # We also need to update scale and losses
@@ -358,7 +365,7 @@ class AverageLearner1D(Learner1D):
                     self._error_in_mean[x] = self._calc_error_in_mean(self._data_samples[x], y_avg, n)
                     self._update_distances(x)
                     self._update_rescaled_error_in_mean(x, "resampled")
-                    if self._error_in_mean[x] <= self.min_Delta_g or n >= self.max_samples:
+                    if self._error_in_mean[x] <= self.min_error or n >= self.max_samples:
                         self._rescaled_error_in_mean.pop(x, None)
 
                     super()._update_scale(x, y_avg)
