@@ -323,83 +323,76 @@ class AverageLearner1D(Learner1D):
         return t_student * (variance_in_mean / n) ** 0.5
 
     def tell_many(self, xs, ys):
-        """Tell the learner about some values.
+        # Check that all x are within the bounds
+        if not np.prod([x>=self.bounds[0] and x<=self.bounds[1] for x in xs]):
+            raise ValueError(
+                "x value out of bounds, "
+                "remove x or enlarge the bounds of the learner"
+            )
+        x_old = np.inf
+        ys_old = []
+        for x, y in zip(xs,ys):
+            if x == x_old:
+                # Store the y-values until a new x is found in xs
+                ys_old.append(y)
+            else:
+                if len(ys_old)==1:
+                    self.tell(x_old,ys_old[0])
+                elif len(ys_old)>1:
+                    # If we stored more than 1 y-value for the previous x,
+                    # use a more efficient routine to tell many samples
+                    # simultaneously, before we move on to a new x
+                    self.tell_many_samples(x_old,ys_old)
+                x_old = x
+                ys_old = [y]
+        if len(ys_old)==1:
+            self.tell(x_old,ys_old[0])
+        elif len(ys_old)>1:
+            self.tell_many_samples(x_old,ys_old)
+
+    def tell_many_samples(self, x, ys):
+        """Tell the learner about many samples at a certain location x.
 
         Parameters
         ----------
-        xs : Iterable of values from the function domain
-        ys : Iterable of lists of values (several data samples)
-             or scalars from the function image (mean values that
-             are directly included in self.data; the number of samples is then
-             assumed to be 1 and the error 0 for all data points; these points
-             will not be included in _rescaled_error_in_mean and therefore
-             will not be resampled)
-
-        Examples
-        ----------
-        If xs = [0,1] and ys = [[1.2,1.4],[2]], the y-values will be included in
-        self._data_samples.
-        If xs = [0,1] and ys = [1.2,2], the y-values will be directly included
-        in self.data, and the previous self.data[0] and self.data[1] will be erased.
+        x  : Value from the function domain
+        ys : List of data samples at x
         """
-        # Check that all x are within the bounds
-        assert np.prod([x>=self.bounds[0] and x<=self.bounds[1] for x in xs]), 'x value out of bounds: remove x or enlarge the bounds of the learner'
-        # If data_samples is given:
-        if isinstance(ys[0], list):
-            for x, ys_ in zip(xs, ys):
-                y_avg = np.mean(ys_)
-                if x not in self.data:
-                    y = ys_.pop(0)
-                    self._update_data(x, y, "new")
-                    self._update_data_structures(x, y, "new")
-                if len(ys_):
-                    self.data[x] = y_avg
-                    self._data_samples.update({x: ys_+self._data_samples[x]})
-                    n = len(self._data_samples[x])
-                    self._number_samples[x] = n
-                    # self._update_data(x,y,"new") included the point
-                    # in _undersampled_points. We remove it if there are
-                    # more than min_samples samples, disregarding neighbor_sampling.
-                    if n > self.min_samples:
-                        self._undersampled_points.discard(x)
-                    self._error_in_mean[x] = self._calc_error_in_mean(self._data_samples[x], y_avg, n)
-                    self._update_distances(x)
-                    self._update_rescaled_error_in_mean(x, "resampled")
-                    if self._error_in_mean[x] <= self.min_error or n >= self.max_samples:
-                        self._rescaled_error_in_mean.pop(x, None)
+        # Check x is within the bounds
+        if not np.prod(x>=self.bounds[0] and x<=self.bounds[1]):
+            raise ValueError(
+                "x value out of bounds, "
+                "remove x or enlarge the bounds of the learner"
+            )
 
-                    super()._update_scale(x, y_avg)
-                    self._update_losses_resampling(x, real=True)
-                    if self._scale[1] > self._recompute_losses_factor * self._oldscale[1]:
-                        for interval in reversed(self.losses):
-                            self._update_interpolated_loss_in_interval(*interval)
-                        self._oldscale = deepcopy(self._scale)
-
-        # If data is given:
-        else:
-            security_question = input('Function values given as scalars instead of lists. This will potentially overwrite the learner data. Continue? (y/n)')
-            if security_question in ['y','Y','yes','YES','Yes']:
-                for x, y in zip(xs, ys):
-                    self.data[x] = y
-                    self._update_data_structures(x, y, "new")
-                    self._data_samples.update({x: [y]})
-                    self._number_samples[x] = 1
-                    # self._update_data(x,y,"new") included the point
-                    # in _undersampled_points. We remove it since there is
-                    # no need for resampling it (same applies to self._rescaled_error_in_mean).
-                    self._undersampled_points.discard(x)
-                    self._error_in_mean[x] = 0
-                    self._update_distances(x)
-                    self._update_rescaled_error_in_mean(x, "resampled")
-                    self._rescaled_error_in_mean.pop(x, None)
-                    super()._update_scale(x, y)
-                    self._update_losses_resampling(x, real=True)
-                    if self._scale[1] > self._recompute_losses_factor * self._oldscale[1]:
-                        for interval in reversed(self.losses):
-                            self._update_interpolated_loss_in_interval(*interval)
-                        self._oldscale = deepcopy(self._scale)
-            else:
-                print('tell_many() aborted.')
+        y_avg = np.mean(ys)
+        # If x is a new point:
+        if x not in self.data:
+            y = ys.pop(0)
+            self._update_data(x, y, "new")
+            self._update_data_structures(x, y, "new")
+        # If x is not a new point or if there were more than 1 sample in ys:
+        if len(ys):
+            self.data[x] = y_avg
+            self._data_samples.update({x: ys+self._data_samples[x]})
+            n = len(self._data_samples[x])
+            self._number_samples[x] = n
+            # self._update_data(x,y,"new") included the point
+            # in _undersampled_points. We remove it if there are
+            # more than min_samples samples, disregarding neighbor_sampling.
+            if n > self.min_samples:
+                self._undersampled_points.discard(x)
+            self._error_in_mean[x] = self._calc_error_in_mean(self._data_samples[x], y_avg, n)
+            self._update_distances(x)
+            self._update_rescaled_error_in_mean(x, "resampled")
+            if self._error_in_mean[x] <= self.min_error or n >= self.max_samples:
+                self._rescaled_error_in_mean.pop(x, None)
+            super()._update_scale(x, y_avg)
+            self._update_losses_resampling(x, real=True)
+            if self._scale[1] > self._recompute_losses_factor * self._oldscale[1]:
+                for interval in reversed(self.losses):
+                    self._update_interpolated_loss_in_interval(*interval)
+                self._oldscale = deepcopy(self._scale)
 
     def plot(self):
         """Returns a plot of the evaluated data with error bars (not implemented
