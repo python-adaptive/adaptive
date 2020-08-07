@@ -64,8 +64,8 @@ def ensure_plotly():
         import plotly
 
         if not _plotly_enabled:
-            import plotly.graph_objs
             import plotly.figure_factory
+            import plotly.graph_objs
             import plotly.offline
 
             # This injects javascript and should happen only once

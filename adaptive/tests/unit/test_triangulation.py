@@ -63,9 +63,10 @@ def test_triangulation_find_opposing_vertices_raises_if_simplex_is_invalid():
 
 
 def test_circumsphere():
-    from adaptive.learner.triangulation import circumsphere, fast_norm
     from numpy import allclose
     from numpy.random import normal, uniform
+
+    from adaptive.learner.triangulation import circumsphere, fast_norm
 
     def generate_random_sphere_points(dim, radius=0):
         """https://math.stackexchange.com/a/1585996"""

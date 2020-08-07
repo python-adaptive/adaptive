@@ -161,8 +161,8 @@ def test_adding_points_and_skip_one_point():
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 @pytest.mark.xfail
 def test_tell_in_random_order(first_add_33=False):
-    from operator import attrgetter
     import random
+    from operator import attrgetter
 
     tol = 1e-10
     for f, a, b in ([f0, 0, 3], [f21, 0, 1], [f24, 0, 3], [f7, 0, 1]):
