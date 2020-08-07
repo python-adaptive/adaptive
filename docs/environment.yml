@@ -15,7 +15,7 @@ dependencies:
   - jupyter_sphinx
   - atomicwrites
   - sphinx_fontawesome
-  - sphinx=2.4.4  # because https://github.com/miyakogi/m2r/pull/55
-  - m2r
+  - sphinx
+  - m2r2
   - pip:
     - sphinx_rtd_theme
