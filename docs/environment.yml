@@ -13,7 +13,7 @@ dependencies:
   - bokeh
   - plotly
   - ipywidgets
-  - jupyter_sphinx
+  - jupyter_sphinx ==0.2.3 # because of https://github.com/jupyter/jupyter-sphinx/issues/126
   - atomicwrites
   - sphinx_fontawesome
   - sphinx
