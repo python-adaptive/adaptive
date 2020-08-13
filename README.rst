@@ -76,6 +76,7 @@ Adaptively learning a 1D function (the `gif` below) and live-plotting the proces
     learner = Learner1D(peak, bounds=(-1, 1))
     runner = Runner(learner, goal=lambda l: l.loss() < 0.01)
     runner.live_info()
+    runner.live_plot()
 
 
 .. raw:: html
