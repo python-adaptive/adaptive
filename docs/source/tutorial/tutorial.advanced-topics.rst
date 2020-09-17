@@ -14,7 +14,7 @@ Advanced Topics
     :hide-code:
 
     import adaptive
-    adaptive.notebook_extension(_inline_js=False)
+    adaptive.notebook_extension()
 
     import asyncio
     from functools import partial

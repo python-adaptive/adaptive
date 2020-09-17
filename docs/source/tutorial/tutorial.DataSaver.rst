@@ -14,7 +14,7 @@ Tutorial `~adaptive.DataSaver`
     :hide-code:
 
     import adaptive
-    adaptive.notebook_extension(_inline_js=False)
+    adaptive.notebook_extension()
 
 If the function that you want to learn returns a value along with some
 metadata, you can wrap your learner in an `adaptive.DataSaver`.
