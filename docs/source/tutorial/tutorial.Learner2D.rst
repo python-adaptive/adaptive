@@ -14,7 +14,7 @@ Tutorial `~adaptive.Learner2D`
     :hide-code:
 
     import adaptive
-    adaptive.notebook_extension(_inline_js=False)
+    adaptive.notebook_extension()
 
     import numpy as np
     from functools import partial

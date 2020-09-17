@@ -14,7 +14,7 @@ Tutorial `~adaptive.SKOptLearner`
     :hide-code:
 
     import adaptive
-    adaptive.notebook_extension(_inline_js=False)
+    adaptive.notebook_extension()
 
     import holoviews as hv
     import numpy as np

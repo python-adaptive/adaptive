@@ -14,7 +14,7 @@ Tutorial `~adaptive.AverageLearner`
     :hide-code:
 
     import adaptive
-    adaptive.notebook_extension(_inline_js=False)
+    adaptive.notebook_extension()
 
 The next type of learner averages a function until the uncertainty in
 the average meets some condition.

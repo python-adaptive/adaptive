@@ -14,7 +14,7 @@ Custom adaptive logic for 1D and 2D
     :hide-code:
 
     import adaptive
-    adaptive.notebook_extension(_inline_js=False)
+    adaptive.notebook_extension()
 
     # Import modules that are used in multiple cells
     import numpy as np

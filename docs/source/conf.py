@@ -51,7 +51,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    "jupyter_sphinx.execute",
+    "jupyter_sphinx",
     "sphinx_fontawesome",
     "m2r2",
 ]
@@ -142,7 +142,10 @@ intersphinx_mapping = {
     "loky": ("https://loky.readthedocs.io/en/stable/", None),
 }
 
-
+html_js_files = [
+    "https://cdn.bokeh.org/bokeh/release/bokeh-2.2.1.min.js",
+    "https://cdn.bokeh.org/bokeh/release/bokeh-widgets-2.2.1.min.js",
+]
 html_logo = "logo_docs.png"
 
 
