@@ -46,7 +46,9 @@ with suppress(ModuleNotFoundError):
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 
-_default_executor = concurrent.ProcessPoolExecutor
+_default_executor = (
+    loky.get_reusable_executor if with_loky else concurrent.ProcessPoolExecutor
+)
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
