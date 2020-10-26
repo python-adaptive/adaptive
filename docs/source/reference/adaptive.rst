@@ -7,6 +7,7 @@ Learners
 .. toctree::
 
     adaptive.learner.average_learner
+    adaptive.learner.average_learner1D
     adaptive.learner.base_learner
     adaptive.learner.balancing_learner
     adaptive.learner.data_saver
