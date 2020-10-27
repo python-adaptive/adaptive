@@ -626,6 +626,6 @@ def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
 @run_with(Learner1D, Learner2D, LearnerND)
 def test_learner_subdomain(learner_type, f, learner_kwargs):
     """Learners that never receive data outside of a subdomain should
-       perform 'similarly' to learners defined on that subdomain only."""
+    perform 'similarly' to learners defined on that subdomain only."""
     # XXX: not sure how to implement this. How do we measure "performance"?
     raise NotImplementedError()
