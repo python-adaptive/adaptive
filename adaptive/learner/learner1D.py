@@ -51,6 +51,13 @@ def default_loss(xs, ys):
         return np.hypot(dx, dy)
 
 
+@uses_nth_neighbors(0)
+def abs_min_log_loss(xs, ys):
+    """Calculate loss of a single interval that prioritizes the absolute minimum."""
+    ys = [np.log(np.abs(y).min()) for y in ys]
+    return default_loss(xs, ys)
+
+
 @uses_nth_neighbors(1)
 def triangle_loss(xs, ys):
     xs = [x for x in xs if x is not None]
