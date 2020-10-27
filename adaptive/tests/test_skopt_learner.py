@@ -12,7 +12,7 @@ except ModuleNotFoundError:
 @pytest.mark.skipif(not with_scikit_optimize, reason="scikit-optimize is not installed")
 def test_skopt_learner_runs():
     """The SKOptLearner provides very few guarantees about its
-       behaviour, so we only test the most basic usage
+    behaviour, so we only test the most basic usage
     """
 
     def g(x, noise_level=0.1):
@@ -28,8 +28,8 @@ def test_skopt_learner_runs():
 @pytest.mark.skipif(not with_scikit_optimize, reason="scikit-optimize is not installed")
 def test_skopt_learner_4D_runs():
     """The SKOptLearner provides very few guarantees about its
-       behaviour, so we only test the most basic usage
-       In this case we test also for 4D domain
+    behaviour, so we only test the most basic usage
+    In this case we test also for 4D domain
     """
 
     def g(x, noise_level=0.1):

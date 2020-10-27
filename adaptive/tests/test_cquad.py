@@ -242,7 +242,7 @@ def test_approximating_intervals():
 @pytest.mark.xfail
 def test_removed_choose_mutiple_points_at_once():
     """Given that a high-precision interval that was split into 2 low-precision ones,
-       we should use the high-precision interval.
+    we should use the high-precision interval.
     """
     learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
     n = ns[-1] + 2 * (ns[0] - 2)  # first + two children (33+6=39)

@@ -86,9 +86,7 @@ learners = [
 ]
 
 
-@pytest.mark.parametrize(
-    "learner_type, learner_kwargs, serializer, f", learners,
-)
+@pytest.mark.parametrize("learner_type, learner_kwargs, serializer, f", learners)
 def test_serialization_for(learner_type, learner_kwargs, serializer, f):
     """Test serializing a learner using different serializers."""
 
