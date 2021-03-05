@@ -17,6 +17,6 @@ dependencies:
   - atomicwrites=1.4.0
   - sphinx_fontawesome=0.0.6
   - sphinx=3.2.1
-  - m2r2=0.2.5
+  - m2r2=0.2.7
   - pip:
     - sphinx_rtd_theme
