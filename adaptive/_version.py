@@ -3,8 +3,8 @@
 import os
 import subprocess
 from collections import namedtuple
-from distutils.command.build_py import build_py as build_py_orig
 
+from setuptools.command.build_py import build_py as build_py_orig
 from setuptools.command.sdist import sdist as sdist_orig
 
 Version = namedtuple("Version", ("release", "dev", "labels"))
@@ -15,6 +15,13 @@ __all__ = []
 package_root = os.path.dirname(os.path.realpath(__file__))
 package_name = os.path.basename(package_root)
 distr_root = os.path.dirname(package_root)
+# If the package is inside a "src" directory the
+# distribution root is 1 level up.
+if os.path.split(distr_root)[1] == "src":
+    _package_root_inside_src = True
+    distr_root = os.path.dirname(distr_root)
+else:
+    _package_root_inside_src = False
 
 STATIC_VERSION_FILE = "_static_version.py"
 
@@ -189,7 +196,11 @@ class _build_py(build_py_orig):
 class _sdist(sdist_orig):
     def make_release_tree(self, base_dir, files):
         super().make_release_tree(base_dir, files)
-        _write_version(os.path.join(base_dir, package_name, STATIC_VERSION_FILE))
+        if _package_root_inside_src:
+            p = os.path.join("src", package_name)
+        else:
+            p = package_name
+        _write_version(os.path.join(base_dir, p, STATIC_VERSION_FILE))
 
 
 cmdclass = dict(sdist=_sdist, build_py=_build_py)

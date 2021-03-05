@@ -63,6 +63,22 @@ with built-in support for
 Examples
 --------
 
+Adaptively learning a 1D function (the `gif` below) and live-plotting the process in a Jupyter notebook is as easy as
+
+.. code:: python
+
+    from adaptive import notebook_extension, Runner, Learner1D
+    notebook_extension()
+
+    def peak(x, a=0.01):
+        return x + a**2 / (a**2 + x**2)
+
+    learner = Learner1D(peak, bounds=(-1, 1))
+    runner = Runner(learner, goal=lambda l: l.loss() < 0.01)
+    runner.live_info()
+    runner.live_plot()
+
+
 .. raw:: html
 
   <img src="https://user-images.githubusercontent.com/6897215/38739170-6ac7c014-3f34-11e8-9e8f-93b3a3a3d61b.gif" width='20%'> </img> <img src="https://user-images.githubusercontent.com/6897215/35219611-ac8b2122-ff73-11e7-9332-adffab64a8ce.gif" width='40%'> </img> <img src="https://user-images.githubusercontent.com/6897215/47256441-d6d53700-d480-11e8-8224-d1cc49dbdcf5.gif" width='20%'> </img>

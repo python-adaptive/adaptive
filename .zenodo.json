@@ -1,0 +1,35 @@
+{
+  "creators": [
+    {
+      "affiliation": "Microsoft, Station Q",
+      "name": "Nijholt, Bas",
+      "orcid": "0000-0003-0383-4986"
+    },
+    {
+      "affiliation": "Microsoft, Station Q",
+      "name": "Weston, Joseph",
+      "orcid": "0000-0002-7014-7134"
+    },
+    {
+      "affiliation": "Kavli Institute of Nanoscience, Delft University of Technology",
+      "name": "Hoofwijk, Jorn"
+    },
+    {
+      "affiliation": "Kavli Institute of Nanoscience, Delft University of Technology",
+      "name": "Akhmerov, Anton",
+      "orcid": "0000-0001-8031-1340"
+    }
+  ],
+  "keywords": [
+    "adaptive-learning",
+    "machine-learning",
+    "python",
+    "live-plots",
+    "parallel-computing",
+    "adaptive-sampling",
+    "parallel",
+    "adaptive active-learning"
+  ],
+  "license": "BSD-3-Clause",
+  "upload_type": "software"
+}

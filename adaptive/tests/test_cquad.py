@@ -161,8 +161,8 @@ def test_adding_points_and_skip_one_point():
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 @pytest.mark.xfail
 def test_tell_in_random_order(first_add_33=False):
-    from operator import attrgetter
     import random
+    from operator import attrgetter
 
     tol = 1e-10
     for f, a, b in ([f0, 0, 3], [f21, 0, 1], [f24, 0, 3], [f7, 0, 1]):
@@ -242,7 +242,7 @@ def test_approximating_intervals():
 @pytest.mark.xfail
 def test_removed_choose_mutiple_points_at_once():
     """Given that a high-precision interval that was split into 2 low-precision ones,
-       we should use the high-precision interval.
+    we should use the high-precision interval.
     """
     learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
     n = ns[-1] + 2 * (ns[0] - 2)  # first + two children (33+6=39)

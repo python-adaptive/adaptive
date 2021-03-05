@@ -14,7 +14,7 @@ Custom adaptive logic for 1D and 2D
     :hide-code:
 
     import adaptive
-    adaptive.notebook_extension(_inline_js=False)
+    adaptive.notebook_extension()
 
     # Import modules that are used in multiple cells
     import numpy as np
@@ -47,6 +47,7 @@ tl;dr, one can use the following *loss functions* that
 + `adaptive.learner.learner1D.default_loss`
 + `adaptive.learner.learner1D.uniform_loss`
 + `adaptive.learner.learner1D.curvature_loss_function`
++ `adaptive.learner.learner1D.abs_min_log_loss`
 + `adaptive.learner.learner2D.default_loss`
 + `adaptive.learner.learner2D.uniform_loss`
 + `adaptive.learner.learner2D.minimize_triangle_surface_loss`

@@ -14,7 +14,7 @@
         "holoviews": ["1.9.1"],
         "scipy": ["0.19.1"],
         "ipyparallel": ["6.0.2"],
-        "sortedcontainers": ["1.5.7"],
+        "sortedcontainers": ["1.5.7"]
     },
     "benchmark_dir": "benchmarks",
     "env_dir": "env",

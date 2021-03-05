@@ -62,7 +62,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
         the learner as its sole argument, and return True when we should
         stop requesting more points.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
-               `mpi4py.futures.MPIPoolExecutor`, or `ipyparallel.Client`, optional
+               `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
+               `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.ProcessPoolExecutor`.
     ntasks : int, optional
