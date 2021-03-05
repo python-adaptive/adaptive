@@ -1,5 +1,5 @@
 import asyncio
-import os
+import platform
 import sys
 import time
 
@@ -15,8 +15,9 @@ from adaptive.runner import (
     stop_after,
     with_distributed,
     with_ipyparallel,
-    with_loky,
 )
+
+OPERATING_SYSTEM = platform.system()
 
 
 def blocking_runner(learner, goal):
@@ -73,22 +74,6 @@ def test_aync_def_function():
 
 
 @pytest.fixture(scope="session")
-def ipyparallel_executor():
-    from ipyparallel import Client
-
-    if os.name == "nt":
-        import wexpect as expect
-    else:
-        import pexpect as expect
-
-    child = expect.spawn("ipcluster start -n 1")
-    child.expect("Engines appear to have started successfully", timeout=35)
-    yield Client()
-    if not child.terminate(force=True):
-        raise RuntimeError("Could not stop ipcluster")
-
-
-@pytest.fixture(scope="session")
 def loky_executor():
     import loky
 
@@ -118,17 +103,35 @@ def test_stop_after_goal():
 
 
 @pytest.mark.skipif(not with_ipyparallel, reason="IPyparallel is not installed")
-def test_ipyparallel_executor(ipyparallel_executor):
+@pytest.mark.skipif(
+    OPERATING_SYSTEM == "Windows" and sys.version_info >= (3, 7),
+    reason="Gets stuck in CI",
+)
+def test_ipyparallel_executor():
+    from ipyparallel import Client
+
+    if OPERATING_SYSTEM == "Windows":
+        import wexpect as expect
+    else:
+        import pexpect as expect
+
+    child = expect.spawn("ipcluster start -n 1")
+    child.expect("Engines appear to have started successfully", timeout=35)
+    ipyparallel_executor = Client()
     learner = Learner1D(linear, (-1, 1))
     BlockingRunner(learner, trivial_goal, executor=ipyparallel_executor)
+
     assert learner.npoints > 0
+
+    if not child.terminate(force=True):
+        raise RuntimeError("Could not stop ipcluster")
 
 
 @flaky.flaky(max_runs=5)
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(not with_distributed, reason="dask.distributed is not installed")
-@pytest.mark.skipif(os.name == "nt", reason="XXX: seems to always fail")
-@pytest.mark.skipif(sys.platform == "darwin", reason="XXX: intermittently fails")
+@pytest.mark.skipif(OPERATING_SYSTEM == "Windows", reason="XXX: seems to always fail")
+@pytest.mark.skipif(OPERATING_SYSTEM == "Darwin", reason="XXX: intermittently fails")
 def test_distributed_executor():
     from distributed import Client
 
@@ -139,7 +142,6 @@ def test_distributed_executor():
     assert learner.npoints > 0
 
 
-@pytest.mark.skipif(not with_loky, reason="loky not installed")
 def test_loky_executor(loky_executor):
     learner = Learner1D(lambda x: x, (-1, 1))
     BlockingRunner(
