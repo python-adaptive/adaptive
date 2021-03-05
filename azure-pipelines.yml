@@ -6,16 +6,6 @@ pr:
   - "*"
 
 jobs:
-- job: pre_commit
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.7'
-  - script: pip install tox
-    displayName: Install tox
-  - script: tox -e pre-commit
-    displayName: Lining tests
-
 - job: authors_check
   steps:
   - script: |
