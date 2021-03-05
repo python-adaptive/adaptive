@@ -1,0 +1,22 @@
+name: Test coverage
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  coverage:
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install tox tox-gh-actions codecov
+    - name: Test with tox
+      run: tox -e py37-alldeps-linux,report
+    - name: Upload test coverage
+      run: codecov -t ${{ secrets.CODECOV_TOKEN }} -f .coverage.xml

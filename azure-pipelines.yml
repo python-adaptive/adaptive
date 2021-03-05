@@ -6,20 +6,6 @@ pr:
   - "*"
 
 jobs:
-- job: coverage
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.7'
-  - script: pip install tox
-    displayName: Install tox
-  - script: tox -e py37-alldeps,report
-    displayName: Run the tests and generate coverage
-  - script: |
-      pip install codecov
-      codecov -t $(CODECOV_TOKEN) -f .coverage.xml
-    displayName: Test upload coverage
-
 - job: pre_commit
   steps:
   - task: UsePythonVersion@0
