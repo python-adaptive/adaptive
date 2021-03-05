@@ -28,6 +28,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install tox tox-gh-actions pytest-github-actions-annotate-failures
     - name: Test with tox
-      run: tox -vv
+      run: tox
       env:
         PLATFORM: ${{ matrix.platform }}
