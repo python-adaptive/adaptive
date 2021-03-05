@@ -15,6 +15,6 @@ jobs:
     - name: Install dependencies
       run: pip install tox codecov
     - name: Test with tox
-      run: tox -e py37-alldeps,report
+      run: tox -e py3.7-alldeps,report
     - name: Upload test coverage
       run: codecov -t ${{ secrets.CODECOV_TOKEN }} -f .coverage.xml
