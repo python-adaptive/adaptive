@@ -49,9 +49,9 @@ else:
     # On Windows and MacOS functions, the __main__ module must be
     # importable by worker subprocesses. This means that
     # ProcessPoolExecutor will not work in the interactive interpreter.
-    # On Linux the whole environment is forked, so the issue does
-    # not appear.
+    # On Linux the whole process is forked, so the issue does not appear.
     # See https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor
+    # and https://github.com/python-adaptive/adaptive/issues/301
     _default_executor = loky.get_reusable_executor
 
 
@@ -69,7 +69,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
-        If not provided, a new `~concurrent.futures.ProcessPoolExecutor`.
+        If not provided, a new `~concurrent.futures.ProcessPoolExecutor` on
+        Linux, and a `loky.get_reusable_executor` on MacOS and Windows.
     ntasks : int, optional
         The number of concurrent function evaluations. Defaults to the number
         of cores available in `executor`.
@@ -321,7 +322,8 @@ class BlockingRunner(BaseRunner):
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
-        If not provided, a new `~concurrent.futures.ProcessPoolExecutor`.
+        If not provided, a new `~concurrent.futures.ProcessPoolExecutor` on
+        Linux, and a `loky.get_reusable_executor` on MacOS and Windows.
     ntasks : int, optional
         The number of concurrent function evaluations. Defaults to the number
         of cores available in `executor`.
@@ -437,7 +439,8 @@ class AsyncRunner(BaseRunner):
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
-        If not provided, a new `~concurrent.futures.ProcessPoolExecutor`.
+        If not provided, a new `~concurrent.futures.ProcessPoolExecutor` on
+        Linux, and a `loky.get_reusable_executor` on MacOS and Windows.
     ntasks : int, optional
         The number of concurrent function evaluations. Defaults to the number
         of cores available in `executor`.
