@@ -1,5 +1,6 @@
 from math import sqrt
 
+import cloudpickle
 import numpy as np
 
 from adaptive.learner.base_learner import BaseLearner
@@ -151,7 +152,7 @@ class AverageLearner(BaseLearner):
 
     def __getstate__(self):
         return (
-            self.function,
+            cloudpickle.dumps(self.function),
             self.atol,
             self.rtol,
             self.min_npoints,
@@ -160,5 +161,6 @@ class AverageLearner(BaseLearner):
 
     def __setstate__(self, state):
         function, atol, rtol, min_npoints, data = state
+        function = cloudpickle.loads(function)
         self.__init__(function, atol, rtol, min_npoints)
         self._set_data(data)
