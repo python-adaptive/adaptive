@@ -2,10 +2,10 @@ name: Test coverage
 
 on:
   - push
-  - pull_request
 
 jobs:
   coverage:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python ${{ matrix.python-version }}
