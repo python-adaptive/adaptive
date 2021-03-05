@@ -15,7 +15,6 @@ from adaptive.runner import (
     stop_after,
     with_distributed,
     with_ipyparallel,
-    with_loky,
 )
 
 
@@ -139,7 +138,6 @@ def test_distributed_executor():
     assert learner.npoints > 0
 
 
-@pytest.mark.skipif(not with_loky, reason="loky not installed")
 def test_loky_executor(loky_executor):
     learner = Learner1D(lambda x: x, (-1, 1))
     BlockingRunner(
