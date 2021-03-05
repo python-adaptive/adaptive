@@ -1,11 +1,11 @@
-name: Python package
+name: tox
 
 on:
   - push
   - pull_request
 
 jobs:
-  build:
+  test:
     runs-on: ${{ matrix.platform }}
     strategy:
       fail-fast: false
