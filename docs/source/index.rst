@@ -20,3 +20,4 @@
    tutorial/tutorial
    usage_examples
    reference/adaptive
+   CHANGELOG
