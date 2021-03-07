@@ -23,7 +23,7 @@ def test_only_returns_new_points():
     assert learner.ask(1)[0][0] == 10
 
 
-@flaky.flaky(max_runs=3)
+@flaky.flaky(max_runs=5)
 def test_avg_std_and_npoints():
     learner = AverageLearner(lambda x: x, atol=None, rtol=0.01)
 
