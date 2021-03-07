@@ -9,8 +9,8 @@ dependencies:
   - scikit-optimize=0.8.1
   - scikit-learn=0.24.1
   - scipy=1.6.1
-  - holoviews=1.14.2
-  - bokeh=2.3.0
+  - holoviews=1.13.3
+  - bokeh=2.2.1
   - plotly=4.14.3
   - ipywidgets=7.6.3
   - jupyter_sphinx=0.3.1
