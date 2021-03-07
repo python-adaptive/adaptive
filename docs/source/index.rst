@@ -19,4 +19,5 @@
    docs
    tutorial/tutorial
    usage_examples
+   CHANGELOG
    reference/adaptive
