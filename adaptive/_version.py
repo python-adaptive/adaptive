@@ -92,7 +92,7 @@ def get_version_from_git():
     for opts in [["--first-parent"], []]:
         try:
             p = subprocess.Popen(
-                ["git", "describe", "--long", "--always"] + opts,
+                ["git", "describe", "--long", "--always", "--tags"] + opts,
                 cwd=distr_root,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
