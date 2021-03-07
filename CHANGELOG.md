@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/python-adaptive/adaptive/tree/HEAD)
+## [v0.11.3](https://github.com/python-adaptive/adaptive/tree/v0.11.3) (2021-03-07)
 
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.2...HEAD)
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.2...v0.11.3)
 
 **Fixed bugs:**
 
@@ -108,7 +108,6 @@
 - 2D: add interpolated\_on\_grid method [\#216](https://github.com/python-adaptive/adaptive/pull/216) ([basnijholt](https://github.com/basnijholt))
 - add scatter\_or\_line argument to Learner1D.plot [\#215](https://github.com/python-adaptive/adaptive/pull/215) ([basnijholt](https://github.com/basnijholt))
 - WIP: raise an error when using a lambda and default executor [\#210](https://github.com/python-adaptive/adaptive/pull/210) ([basnijholt](https://github.com/basnijholt))
-- don't treat the no data case differently in the Learner1D [\#195](https://github.com/python-adaptive/adaptive/pull/195) ([basnijholt](https://github.com/basnijholt))
 
 **Closed issues:**
 
@@ -135,6 +134,7 @@
 - Authors [\#202](https://github.com/python-adaptive/adaptive/pull/202) ([basnijholt](https://github.com/basnijholt))
 - Update tutorial.parallelism.rst [\#201](https://github.com/python-adaptive/adaptive/pull/201) ([aeantipov](https://github.com/aeantipov))
 - ensure atomic writes when saving a file [\#200](https://github.com/python-adaptive/adaptive/pull/200) ([basnijholt](https://github.com/basnijholt))
+- don't treat the no data case differently in the Learner1D [\#195](https://github.com/python-adaptive/adaptive/pull/195) ([basnijholt](https://github.com/basnijholt))
 - pin everything in the docs/environment.yml file [\#194](https://github.com/python-adaptive/adaptive/pull/194) ([basnijholt](https://github.com/basnijholt))
 - Add a SequenceLearner [\#193](https://github.com/python-adaptive/adaptive/pull/193) ([basnijholt](https://github.com/basnijholt))
 - Use black for code formatting [\#191](https://github.com/python-adaptive/adaptive/pull/191) ([basnijholt](https://github.com/basnijholt))
@@ -174,9 +174,11 @@
 - renormalize the plots value axis on every update [\#186](https://github.com/python-adaptive/adaptive/pull/186) ([basnijholt](https://github.com/basnijholt))
 - use setup\(..., python\_requires='\>=3.6'\), closes \#179 [\#180](https://github.com/python-adaptive/adaptive/pull/180) ([basnijholt](https://github.com/basnijholt))
 - use the repo code in docs execute [\#177](https://github.com/python-adaptive/adaptive/pull/177) ([basnijholt](https://github.com/basnijholt))
+- do not inline the HoloViews JS [\#176](https://github.com/python-adaptive/adaptive/pull/176) ([basnijholt](https://github.com/basnijholt))
 - add a gallery page of Adaptive uses in scientific works [\#174](https://github.com/python-adaptive/adaptive/pull/174) ([basnijholt](https://github.com/basnijholt))
 - LearnerND: change the required loss to 1e-3 because the loss definition changed [\#172](https://github.com/python-adaptive/adaptive/pull/172) ([basnijholt](https://github.com/basnijholt))
 - Add logo to the documentation [\#170](https://github.com/python-adaptive/adaptive/pull/170) ([basnijholt](https://github.com/basnijholt))
+- test flat bands in the LearnerND [\#162](https://github.com/python-adaptive/adaptive/pull/162) ([basnijholt](https://github.com/basnijholt))
 - import Iterable and Sized from collections.abc [\#161](https://github.com/python-adaptive/adaptive/pull/161) ([basnijholt](https://github.com/basnijholt))
 - invoke conda directly in CI [\#153](https://github.com/python-adaptive/adaptive/pull/153) ([basnijholt](https://github.com/basnijholt))
 - change urls from GitLab to GitHub [\#146](https://github.com/python-adaptive/adaptive/pull/146) ([basnijholt](https://github.com/basnijholt))
