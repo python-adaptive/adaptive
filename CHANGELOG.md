@@ -2,7 +2,42 @@
 
 ## [Unreleased](https://github.com/python-adaptive/adaptive/tree/HEAD)
 
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.12.0-dev...HEAD)
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.2...HEAD)
+
+**Fixed bugs:**
+
+- can't pickle lru\_cache function with loky [\#292](https://github.com/python-adaptive/adaptive/issues/292)
+
+**Closed issues:**
+
+- ProcessPoolExecutor behaviour on MacOS in interactive environment changed between Python versions [\#301](https://github.com/python-adaptive/adaptive/issues/301)
+- Runner fails in the notebook [\#299](https://github.com/python-adaptive/adaptive/issues/299)
+
+**Merged pull requests:**
+
+- add pythonpublish.yml [\#304](https://github.com/python-adaptive/adaptive/pull/304) ([basnijholt](https://github.com/basnijholt))
+- fix docs build [\#303](https://github.com/python-adaptive/adaptive/pull/303) ([basnijholt](https://github.com/basnijholt))
+- test tox with py39 on Github Actions CI [\#302](https://github.com/python-adaptive/adaptive/pull/302) ([basnijholt](https://github.com/basnijholt))
+- make loky a default on Windows and MacOS but not on Linux [\#300](https://github.com/python-adaptive/adaptive/pull/300) ([basnijholt](https://github.com/basnijholt))
+- add learner1D.abs\_min\_log\_loss [\#294](https://github.com/python-adaptive/adaptive/pull/294) ([basnijholt](https://github.com/basnijholt))
+- bump pre-commit filter dependencies [\#293](https://github.com/python-adaptive/adaptive/pull/293) ([basnijholt](https://github.com/basnijholt))
+- fix docs [\#291](https://github.com/python-adaptive/adaptive/pull/291) ([basnijholt](https://github.com/basnijholt))
+- update to miniver 0.7.0 [\#290](https://github.com/python-adaptive/adaptive/pull/290) ([basnijholt](https://github.com/basnijholt))
+- add `runner.live\_plot\(\)` in README example [\#288](https://github.com/python-adaptive/adaptive/pull/288) ([basnijholt](https://github.com/basnijholt))
+- Update pre commit [\#287](https://github.com/python-adaptive/adaptive/pull/287) ([basnijholt](https://github.com/basnijholt))
+- Use m2r2 [\#286](https://github.com/python-adaptive/adaptive/pull/286) ([basnijholt](https://github.com/basnijholt))
+- temporarily pin scikit-learn\<=0.23.1 [\#285](https://github.com/python-adaptive/adaptive/pull/285) ([basnijholt](https://github.com/basnijholt))
+- add .zenodo.json [\#284](https://github.com/python-adaptive/adaptive/pull/284) ([basnijholt](https://github.com/basnijholt))
+- always serialize the function using cloudpickle [\#281](https://github.com/python-adaptive/adaptive/pull/281) ([basnijholt](https://github.com/basnijholt))
+- add a changelog [\#232](https://github.com/python-adaptive/adaptive/pull/232) ([jbweston](https://github.com/jbweston))
+
+## [v0.11.2](https://github.com/python-adaptive/adaptive/tree/v0.11.2) (2020-08-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.1...v0.11.2)
+
+## [v0.11.1](https://github.com/python-adaptive/adaptive/tree/v0.11.1) (2020-08-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.12.0-dev...v0.11.1)
 
 **Closed issues:**
 
@@ -81,6 +116,7 @@
 - 2D: add interpolated\_on\_grid method [\#216](https://github.com/python-adaptive/adaptive/pull/216) ([basnijholt](https://github.com/basnijholt))
 - add scatter\_or\_line argument to Learner1D.plot [\#215](https://github.com/python-adaptive/adaptive/pull/215) ([basnijholt](https://github.com/basnijholt))
 - WIP: raise an error when using a lambda and default executor [\#210](https://github.com/python-adaptive/adaptive/pull/210) ([basnijholt](https://github.com/basnijholt))
+- don't treat the no data case differently in the Learner1D [\#195](https://github.com/python-adaptive/adaptive/pull/195) ([basnijholt](https://github.com/basnijholt))
 
 ## [v0.10.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.10.0-dev) (2019-10-07)
 
@@ -111,7 +147,6 @@
 - Authors [\#202](https://github.com/python-adaptive/adaptive/pull/202) ([basnijholt](https://github.com/basnijholt))
 - Update tutorial.parallelism.rst [\#201](https://github.com/python-adaptive/adaptive/pull/201) ([aeantipov](https://github.com/aeantipov))
 - ensure atomic writes when saving a file [\#200](https://github.com/python-adaptive/adaptive/pull/200) ([basnijholt](https://github.com/basnijholt))
-- don't treat the no data case differently in the Learner1D [\#195](https://github.com/python-adaptive/adaptive/pull/195) ([basnijholt](https://github.com/basnijholt))
 - pin everything in the docs/environment.yml file [\#194](https://github.com/python-adaptive/adaptive/pull/194) ([basnijholt](https://github.com/basnijholt))
 - Add a SequenceLearner [\#193](https://github.com/python-adaptive/adaptive/pull/193) ([basnijholt](https://github.com/basnijholt))
 - Use black for code formatting [\#191](https://github.com/python-adaptive/adaptive/pull/191) ([basnijholt](https://github.com/basnijholt))
@@ -155,7 +190,6 @@
 - renormalize the plots value axis on every update [\#186](https://github.com/python-adaptive/adaptive/pull/186) ([basnijholt](https://github.com/basnijholt))
 - use setup\(..., python\_requires='\>=3.6'\), closes \#179 [\#180](https://github.com/python-adaptive/adaptive/pull/180) ([basnijholt](https://github.com/basnijholt))
 - use the repo code in docs execute [\#177](https://github.com/python-adaptive/adaptive/pull/177) ([basnijholt](https://github.com/basnijholt))
-- do not inline the HoloViews JS [\#176](https://github.com/python-adaptive/adaptive/pull/176) ([basnijholt](https://github.com/basnijholt))
 - add a gallery page of Adaptive uses in scientific works [\#174](https://github.com/python-adaptive/adaptive/pull/174) ([basnijholt](https://github.com/basnijholt))
 - LearnerND: change the required loss to 1e-3 because the loss definition changed [\#172](https://github.com/python-adaptive/adaptive/pull/172) ([basnijholt](https://github.com/basnijholt))
 - Add logo to the documentation [\#170](https://github.com/python-adaptive/adaptive/pull/170) ([basnijholt](https://github.com/basnijholt))
