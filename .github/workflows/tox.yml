@@ -20,13 +20,17 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Set Python version for tox
+      run: echo "PY_VERSION=$(echo py${version//./})" >> $GITHUB_ENV
+      env:
+        version: ${{ matrix.python-version }}
     - name: Register Python problem matcher
       run: echo "::add-matcher::.github/workflows/matchers/pytest.json"
     - name: Install dependencies
       run: pip install tox pytest-github-actions-annotate-failures
     - name: Test with tox using minimal dependencies
-      run: tox -e py${{ matrix.python-version }}-mindeps
+      run: tox -e ${{ env.PY_VERSION }}-mindeps
     - name: Clean
       run: tox -e clean
     - name: Test with tox with all dependencies
-      run: tox -e py${{ matrix.python-version }}-alldeps
+      run: tox -e ${{ env.PY_VERSION }}-alldeps
