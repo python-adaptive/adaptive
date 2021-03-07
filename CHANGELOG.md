@@ -43,10 +43,6 @@
 
 - Release v0.11 [\#277](https://github.com/python-adaptive/adaptive/issues/277)
 
-## [v0.12.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.12.0-dev) (2020-05-20)
-
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.0...v0.12.0-dev)
-
 ## [v0.11.0](https://github.com/python-adaptive/adaptive/tree/v0.11.0) (2020-05-20)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.0-dev...v0.11.0)
@@ -75,10 +71,6 @@
 
 - minimally require ipyparallel 6.2.5 [\#270](https://github.com/python-adaptive/adaptive/pull/270) ([basnijholt](https://github.com/basnijholt))
 - fix docs build and pin pyviz\_comms=0.7.2 [\#261](https://github.com/python-adaptive/adaptive/pull/261) ([basnijholt](https://github.com/basnijholt))
-
-## [v0.11.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.11.0-dev) (2020-01-16)
-
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.10.0...v0.11.0-dev)
 
 ## [v0.10.0](https://github.com/python-adaptive/adaptive/tree/v0.10.0) (2020-01-15)
 
@@ -118,10 +110,6 @@
 - WIP: raise an error when using a lambda and default executor [\#210](https://github.com/python-adaptive/adaptive/pull/210) ([basnijholt](https://github.com/basnijholt))
 - don't treat the no data case differently in the Learner1D [\#195](https://github.com/python-adaptive/adaptive/pull/195) ([basnijholt](https://github.com/basnijholt))
 
-## [v0.10.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.10.0-dev) (2019-10-07)
-
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.9.0...v0.10.0-dev)
-
 **Closed issues:**
 
 - Command-line tool [\#217](https://github.com/python-adaptive/adaptive/issues/217)
@@ -159,10 +147,6 @@
 **Closed issues:**
 
 - release v0.8.0 [\#165](https://github.com/python-adaptive/adaptive/issues/165)
-
-## [v0.9.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.9.0-dev) (2019-05-07)
-
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.8.0...v0.9.0-dev)
 
 ## [v0.8.0](https://github.com/python-adaptive/adaptive/tree/v0.8.0) (2019-05-07)
 
@@ -359,10 +343,6 @@
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.8.0-dev...v0.7.1)
 
-## [v0.8.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.8.0-dev) (2018-12-07)
-
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.0...v0.8.0-dev)
-
 ## [v0.7.0](https://github.com/python-adaptive/adaptive/tree/v0.7.0) (2018-12-07)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.0-dev...v0.7.0)
@@ -370,10 +350,6 @@
 **Closed issues:**
 
 - gif in the README [\#1](https://github.com/python-adaptive/adaptive/issues/1)
-
-## [v0.7.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.7.0-dev) (2018-10-09)
-
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.6.0...v0.7.0-dev)
 
 ## [v0.6.0](https://github.com/python-adaptive/adaptive/tree/v0.6.0) (2018-10-01)
 
@@ -391,17 +367,9 @@
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.5.0-dev...v0.4.1)
 
-## [v0.5.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.5.0-dev) (2018-05-24)
-
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.4.0...v0.5.0-dev)
-
 ## [v0.4.0](https://github.com/python-adaptive/adaptive/tree/v0.4.0) (2018-05-24)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.4.0-dev...v0.4.0)
-
-## [v0.4.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.4.0-dev) (2018-04-12)
-
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.3.0...v0.4.0-dev)
 
 ## [v0.3.0](https://github.com/python-adaptive/adaptive/tree/v0.3.0) (2018-03-28)
 
@@ -411,17 +379,9 @@
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.3.0-dev...v0.2.1)
 
-## [v0.3.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.3.0-dev) (2018-02-23)
-
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.2.0...v0.3.0-dev)
-
 ## [v0.2.0](https://github.com/python-adaptive/adaptive/tree/v0.2.0) (2018-02-23)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.2.0-dev...v0.2.0)
-
-## [v0.2.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.2.0-dev) (2018-02-21)
-
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.1.0...v0.2.0-dev)
 
 ## [v0.1.0](https://github.com/python-adaptive/adaptive/tree/v0.1.0) (2018-02-21)
 
