@@ -5,17 +5,17 @@ channels:
 
 dependencies:
   - python
-  - sortedcollections
-  - scikit-optimize
-  - scikit-learn
-  - scipy
-  - holoviews
-  - bokeh
-  - plotly
-  - ipywidgets
-  - jupyter_sphinx
-  - atomicwrites
-  - sphinx_fontawesome
-  - sphinx
-  - m2r2
-  - sphinx_rtd_theme
+  - sortedcollections=2.1.0
+  - scikit-optimize=0.8.1
+  - scikit-learn=0.24.1
+  - scipy=1.6.1
+  - holoviews=1.14.2
+  - bokeh=2.3.0
+  - plotly=4.14.3
+  - ipywidgets=7.6.3
+  - jupyter_sphinx=0.3.1
+  - atomicwrites=1.4.0
+  - sphinx_fontawesome=0.0.6
+  - sphinx=3.5.2
+  - m2r2=0.2.7
+  - sphinx_rtd_theme=0.5.1
