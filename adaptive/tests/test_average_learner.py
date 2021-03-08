@@ -45,8 +45,8 @@ def test_avg_std_and_npoints():
             values = np.array(list(learner.data.values()))
             std = np.sqrt(sum((values - values.mean()) ** 2) / (len(values) - 1))
             assert learner.npoints == len(learner.data)
-            assert abs(learner.sum_f - values.sum()) < 1e-13
-            assert abs(learner.std - std) < 1e-13
+            assert abs(learner.sum_f - values.sum()) < 1e-12
+            assert abs(learner.std - std) < 1e-12
 
 
 def test_min_npoints():
