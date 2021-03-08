@@ -7,26 +7,6 @@ evaluation.
 
 This is an introductory notebook that shows some basic use cases.
 
-``adaptive`` needs at least Python 3.6, and the following packages:
-
-- ``scipy``
-- ``sortedcollections >= 1.1``
-- ``sortedcontainers >= 2.0``
-- ``atomicwrites``
-
-Additionally ``adaptive`` has lots of extra functionality that makes it
-simple to use from Jupyter notebooks. This extra functionality depends
-on the following packages
-
-- ``ipython``
-- ``ipykernel>=4.8.0``
-- ``jupyter_client>=5.2.2``
-- ``holoviews>=1.9.1``
-- ``ipywidgets``
-- ``bokeh``
-- ``matplotlib``
-- ``plotly``
-
 We recommend to start with the :ref:`Tutorial `~adaptive.Learner1D``.
 
 .. note::
