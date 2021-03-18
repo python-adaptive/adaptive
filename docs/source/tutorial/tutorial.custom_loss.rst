@@ -47,6 +47,7 @@ tl;dr, one can use the following *loss functions* that
 + `adaptive.learner.learner1D.default_loss`
 + `adaptive.learner.learner1D.uniform_loss`
 + `adaptive.learner.learner1D.curvature_loss_function`
++ `adaptive.learner.learner1D.resolution_loss_function`
 + `adaptive.learner.learner1D.abs_min_log_loss`
 + `adaptive.learner.learner2D.default_loss`
 + `adaptive.learner.learner2D.uniform_loss`
