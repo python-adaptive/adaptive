@@ -77,6 +77,43 @@ def triangle_loss(xs, ys):
     return sum(vol(pts[i : i + 3]) for i in range(N)) / N
 
 
+def resolution_loss_function(min_length=0, max_length=1):
+    """Loss function that is similar to the `default_loss` function, but you
+    can set the maximum and minimum size of an interval.
+
+    Works with `~adaptive.Learner1D` only.
+
+    The arguments `min_length` and `max_length` should be in between 0 and 1
+    because the total size is normalized to 1.
+
+    Returns
+    -------
+    loss_function : callable
+
+    Examples
+    --------
+    >>> def f(x):
+    ...     return x**2
+    >>>
+    >>> loss = resolution_loss_function(min_length=0.01, max_length=1)
+    >>> learner = adaptive.Learner1D(f, bounds=[(-1, -1), (1, 1)], loss_per_triangle=loss)
+    """
+
+    @uses_nth_neighbors(0)
+    def resolution_loss(xs, ys):
+        loss = uniform_loss(xs, ys)
+        if loss < min_length:
+            # Return zero such that this interval won't be chosen again
+            return 0
+        if loss > max_length:
+            # Return infinite such that this interval will be picked
+            return np.inf
+        loss = default_loss(xs, ys)
+        return loss
+
+    return resolution_loss
+
+
 def curvature_loss_function(area_factor=1, euclid_factor=0.02, horizontal_factor=0.02):
     # XXX: add a doc-string
     @uses_nth_neighbors(1)
