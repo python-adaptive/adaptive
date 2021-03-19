@@ -16,19 +16,21 @@ from adaptive.utils import cache_latest, restore
 
 from .integrator_coeffs import Coefficients
 
-c = Coefficients()
+coeff = Coefficients()
 
 
 def _downdate(c, nans, depth):
     # This is algorithm 5 from the thesis of Pedro Gonnet.
-    b = c.b_def[depth].copy()
-    m = c.ns[depth] - 1
+    b = coeff.b_def[depth].copy()
+    m = coeff.ns[depth] - 1
     for i in nans:
-        b[m + 1] /= c.alpha[m]
-        xii = c.xi[depth][i]
-        b[m] = (b[m] + xii * b[m + 1]) / c.alpha[m - 1]
+        b[m + 1] /= coeff.alpha[m]
+        xii = coeff.xi[depth][i]
+        b[m] = (b[m] + xii * b[m + 1]) / coeff.alpha[m - 1]
         for j in range(m - 1, 0, -1):
-            b[j] = (b[j] + xii * b[j + 1] - c.gamma[j + 1] * b[j + 2]) / c.alpha[j - 1]
+            b[j] = (
+                b[j] + xii * b[j + 1] - coeff.gamma[j + 1] * b[j + 2]
+            ) / coeff.alpha[j - 1]
         b = b[1:]
 
         c[:m] -= c[m] / b[m] * b[:m]
@@ -50,7 +52,7 @@ def _zero_nans(fx):
 def _calc_coeffs(fx, depth):
     """Caution: this function modifies fx."""
     nans = _zero_nans(fx)
-    c_new = c.V_inv[depth] @ fx
+    c_new = coeff.V_inv[depth] @ fx
     if nans:
         fx[nans] = np.nan
         c_new = _downdate(c_new, nans, depth)
@@ -156,11 +158,11 @@ class _Interval:
         left = self.a == self.parent.a
         right = self.b == self.parent.b
         assert left != right
-        return c.T_left if left else c.T_right
+        return coeff.T_left if left else coeff.T_right
 
     def refinement_complete(self, depth):
         """The interval has all the y-values to calculate the intergral."""
-        if len(self.data) < c.ns[depth]:
+        if len(self.data) < coeff.ns[depth]:
             return False
         return all(p in self.data for p in self.points(depth))
 
@@ -169,7 +171,7 @@ class _Interval:
             depth = self.depth
         a = self.a
         b = self.b
-        return (a + b) / 2 + (b - a) * c.xi[depth] / 2
+        return (a + b) / 2 + (b - a) * coeff.xi[depth] / 2
 
     def refine(self):
         self.depth += 1
@@ -222,7 +224,7 @@ class _Interval:
         div = self.parent.c00 and self.c00 / self.parent.c00 > 2
         self.ndiv += div
 
-        if self.ndiv > c.ndiv_max and 2 * self.ndiv > self.rdepth:
+        if self.ndiv > coeff.ndiv_max and 2 * self.ndiv > self.rdepth:
             raise DivergentIntegralError
 
         if div:
@@ -231,7 +233,7 @@ class _Interval:
 
     def update_ndiv_recursively(self):
         self.ndiv += 1
-        if self.ndiv > c.ndiv_max and 2 * self.ndiv > self.rdepth:
+        if self.ndiv > coeff.ndiv_max and 2 * self.ndiv > self.rdepth:
             raise DivergentIntegralError
 
         for child in self.children:
@@ -264,13 +266,15 @@ class _Interval:
         if depth:
             # Refine
             c_diff = self.calc_err(c_old)
-            force_split = c_diff > c.hint * norm(self.c)
+            force_split = c_diff > coeff.hint * norm(self.c)
         else:
             # Split
             self.c00 = self.c[0]
 
             if self.parent.depth_complete is not None:
-                c_old = self.T[:, : c.ns[self.parent.depth_complete]] @ self.parent.c
+                c_old = (
+                    self.T[:, : coeff.ns[self.parent.depth_complete]] @ self.parent.c
+                )
                 self.calc_err(c_old)
                 self.calc_ndiv()
 
@@ -278,7 +282,7 @@ class _Interval:
                 if child.depth_complete is not None:
                     child.calc_ndiv()
                 if child.depth_complete == 0:
-                    c_old = child.T[:, : c.ns[self.depth_complete]] @ self.c
+                    c_old = child.T[:, : coeff.ns[self.depth_complete]] @ self.c
                     child.calc_err(c_old)
 
         if self.done_leaves is not None and not len(self.done_leaves):
@@ -308,7 +312,7 @@ class _Interval:
                 ival.done_leaves -= old_leaves
                 ival = ival.parent
 
-        remove = self.err < (abs(self.igral) * c.eps * c.Vcond[depth])
+        remove = self.err < (abs(self.igral) * coeff.eps * coeff.Vcond[depth])
 
         return force_split, remove
 
@@ -484,8 +488,8 @@ class IntegratorLearner(BaseLearner):
         points = ival.points()
 
         if (
-            points[1] - points[0] < points[0] * c.min_sep
-            or points[-1] - points[-2] < points[-2] * c.min_sep
+            points[1] - points[0] < points[0] * coeff.min_sep
+            or points[-1] - points[-2] < points[-2] * coeff.min_sep
         ):
             self.ivals.remove(ival)
         elif ival.depth == 3 or force_split:
