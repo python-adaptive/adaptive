@@ -83,3 +83,7 @@ class _RequireAttrsABCMeta(abc.ABCMeta):
                     msg = f"The attribute '{name}' should be of type {type_}, not {type(x)}."
                     raise TypeError(msg)
         return obj
+
+
+def cached_property(f):
+    return property(functools.lru_cache(None)(f))

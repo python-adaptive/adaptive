@@ -1,11 +1,15 @@
 # Based on an adaptive quadrature algorithm by Pedro Gonnet
 
-import functools
 from collections import defaultdict
 from fractions import Fraction
 
 import numpy as np
 import scipy.linalg
+
+try:
+    from functools import cached_property
+except ImportError:
+    from adaptive.utils import cached_property
 
 
 def legendre(n):
@@ -140,10 +144,6 @@ def calc_V(x, n):
     for i in range(n):
         V[i] *= np.sqrt(i + 0.5)
     return np.array(V).T
-
-
-def cached_property(f):
-    return property(functools.lru_cache(None)(f))
 
 
 class Coefficients:
