@@ -148,10 +148,8 @@ def calc_V(x, n):
 
 class Coefficients:
     def __init__(self) -> None:
-        self.is_set = False
         # The nodes
         self.ns = (5, 9, 17, 33)
-        self.eps = np.spacing(1)
 
         # If the relative difference between two consecutive approximations is
         # lower than this value, the error estimate is considered reliable.
@@ -162,6 +160,7 @@ class Coefficients:
         # such that no artifacts are apparent in plots of (i, log(a_i)), where a_i is
         # the sequence of estimates of the integral value of an interval and all its
         # ancestors..
+        self.eps = np.spacing(1)
         self.min_sep = 16 * self.eps
 
         # Maximum amount of subdivisions
