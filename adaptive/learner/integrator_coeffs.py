@@ -141,39 +141,105 @@ def calc_V(x, n):
     return np.array(V).T
 
 
-eps = np.spacing(1)
+class Coefficients:
+    def __init__(self) -> None:
+        self.is_set = False
+        # The nodes
+        self.ns = (5, 9, 17, 33)
+        self.eps = np.spacing(1)
 
-# the nodes and Newton polynomials
-ns = (5, 9, 17, 33)
-xi = [-np.cos(np.linspace(0, np.pi, n)) for n in ns]
+        # If the relative difference between two consecutive approximations is
+        # lower than this value, the error estimate is considered reliable.
+        # See section 6.2 of Pedro Gonnet's thesis.
+        self.hint = 0.1
 
-# Make `xi` perfectly anti-symmetric, important for splitting the intervals
-xi = [(row - row[::-1]) / 2 for row in xi]
+        # Smallest acceptable relative difference of points in a rule.  This was chosen
+        # such that no artifacts are apparent in plots of (i, log(a_i)), where a_i is
+        # the sequence of estimates of the integral value of an interval and all its
+        # ancestors..
+        self.min_sep = 16 * self.eps
 
-# Compute the Vandermonde-like matrix and its inverse.
-V = [calc_V(x, n) for x, n in zip(xi, ns)]
-V_inv = list(map(scipy.linalg.inv, V))
-Vcond = [scipy.linalg.norm(a, 2) * scipy.linalg.norm(b, 2) for a, b in zip(V, V_inv)]
+        # Maximum amount of subdivisions
+        self.ndiv_max = 20
 
-# Compute the shift matrices.
-T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
+    def set(self):
+        self.is_set = True
+        # The Newton polynomials
+        xi = [-np.cos(np.linspace(0, np.pi, n)) for n in self.ns]
+        # Make `xi` perfectly anti-symmetric, important for splitting the intervals
+        self._xi = [(row - row[::-1]) / 2 for row in xi]
 
-# If the relative difference between two consecutive approximations is
-# lower than this value, the error estimate is considered reliable.
-# See section 6.2 of Pedro Gonnet's thesis.
-hint = 0.1
+        # Compute the Vandermonde-like matrix and its inverse.
+        self._V = [calc_V(x, n) for x, n in zip(xi, self.ns)]
+        self._V_inv = list(map(scipy.linalg.inv, self._V))
+        self._Vcond = [
+            scipy.linalg.norm(a, 2) * scipy.linalg.norm(b, 2)
+            for a, b in zip(self._V, self._V_inv)
+        ]
 
-# Smallest acceptable relative difference of points in a rule.  This was chosen
-# such that no artifacts are apparent in plots of (i, log(a_i)), where a_i is
-# the sequence of estimates of the integral value of an interval and all its
-# ancestors..
-min_sep = 16 * eps
+        # Compute the shift matrices.
+        self._T_left, self._T_right = [
+            self._V_inv[3] @ calc_V((xi[3] + a) / 2, self.ns[3]) for a in [-1, 1]
+        ]
 
-ndiv_max = 20
+        # set-up the downdate matrix
+        k = np.arange(self.ns[3])
+        self._alpha = np.sqrt((k + 1) ** 2 / (2 * k + 1) / (2 * k + 3))
+        self._gamma = np.concatenate(
+            [[0, 0], np.sqrt(k[2:] ** 2 / (4 * k[2:] ** 2 - 1))]
+        )
+        self._b_def = calc_bdef(self.ns)
 
-# set-up the downdate matrix
-k = np.arange(ns[3])
-alpha = np.sqrt((k + 1) ** 2 / (2 * k + 1) / (2 * k + 3))
-gamma = np.concatenate([[0, 0], np.sqrt(k[2:] ** 2 / (4 * k[2:] ** 2 - 1))])
+    @property
+    def xi(self):
+        if not self.is_set:
+            self.set()
+        return self._xi
 
-b_def = calc_bdef(ns)
+    @property
+    def V(self):
+        if not self.is_set:
+            self.set()
+        return self._V
+
+    @property
+    def V_inv(self):
+        if not self.is_set:
+            self.set()
+        return self._V_inv
+
+    @property
+    def Vcond(self):
+        if not self.is_set:
+            self.set()
+        return self._Vcond
+
+    @property
+    def T_right(self):
+        if not self.is_set:
+            self.set()
+        return self._T_right
+
+    @property
+    def T_left(self):
+        if not self.is_set:
+            self.set()
+        return self._T_left
+
+    @property
+    def alpha(self):
+        if not self.is_set:
+            self.set()
+        return self._alpha
+
+    @property
+    def gamma(self):
+        if not self.is_set:
+            self.set()
+        return self._gamma
+
+    @property
+    def b_def(self):
+        if not self.is_set:
+            self.set()
+        return self._b_def

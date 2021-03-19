@@ -5,13 +5,15 @@ import numpy as np
 import pytest
 
 from adaptive.learner import IntegratorLearner
-from adaptive.learner.integrator_coeffs import ns
+from adaptive.learner.integrator_coeffs import Coefficients
 from adaptive.learner.integrator_learner import DivergentIntegralError
 
 from .algorithm_4 import DivergentIntegralError as A4DivergentIntegralError
 from .algorithm_4 import algorithm_4, f0, f7, f21, f24, f63, fdiv
 
 eps = np.spacing(1)
+
+ns = Coefficients().ns
 
 
 def run_integrator_learner(f, a, b, tol, n):
