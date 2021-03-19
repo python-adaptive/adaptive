@@ -1,5 +1,6 @@
 # Based on an adaptive quadrature algorithm by Pedro Gonnet
 
+import functools
 from collections import defaultdict
 from fractions import Fraction
 
@@ -141,6 +142,10 @@ def calc_V(x, n):
     return np.array(V).T
 
 
+def cached_property(f):
+    return property(functools.lru_cache(None)(f))
+
+
 class Coefficients:
     def __init__(self) -> None:
         self.is_set = False
@@ -162,84 +167,52 @@ class Coefficients:
         # Maximum amount of subdivisions
         self.ndiv_max = 20
 
-    def set(self):
-        self.is_set = True
+    @cached_property
+    def xi(self):
         # The Newton polynomials
         xi = [-np.cos(np.linspace(0, np.pi, n)) for n in self.ns]
         # Make `xi` perfectly anti-symmetric, important for splitting the intervals
-        self._xi = [(row - row[::-1]) / 2 for row in xi]
+        return [(row - row[::-1]) / 2 for row in xi]
 
-        # Compute the Vandermonde-like matrix and its inverse.
-        self._V = [calc_V(x, n) for x, n in zip(xi, self.ns)]
-        self._V_inv = list(map(scipy.linalg.inv, self._V))
-        self._Vcond = [
-            scipy.linalg.norm(a, 2) * scipy.linalg.norm(b, 2)
-            for a, b in zip(self._V, self._V_inv)
-        ]
-
-        # Compute the shift matrices.
-        self._T_left, self._T_right = [
-            self._V_inv[3] @ calc_V((xi[3] + a) / 2, self.ns[3]) for a in [-1, 1]
-        ]
-
-        # set-up the downdate matrix
-        k = np.arange(self.ns[3])
-        self._alpha = np.sqrt((k + 1) ** 2 / (2 * k + 1) / (2 * k + 3))
-        self._gamma = np.concatenate(
-            [[0, 0], np.sqrt(k[2:] ** 2 / (4 * k[2:] ** 2 - 1))]
-        )
-        self._b_def = calc_bdef(self.ns)
-
-    @property
-    def xi(self):
-        if not self.is_set:
-            self.set()
-        return self._xi
-
-    @property
+    @cached_property
     def V(self):
-        if not self.is_set:
-            self.set()
-        return self._V
+        # Compute the Vandermonde-like matrix and its inverse.
+        return [calc_V(x, n) for x, n in zip(self.xi, self.ns)]
 
-    @property
+    @cached_property
     def V_inv(self):
-        if not self.is_set:
-            self.set()
-        return self._V_inv
+        # Compute the inverse Vandermonde-like matrix
+        return list(map(scipy.linalg.inv, self.V))
 
-    @property
+    @cached_property
     def Vcond(self):
-        if not self.is_set:
-            self.set()
-        return self._Vcond
+        return [
+            scipy.linalg.norm(a, 2) * scipy.linalg.norm(b, 2)
+            for a, b in zip(self.V, self.V_inv)
+        ]
 
-    @property
+    @cached_property
+    def k(self):
+        return np.arange(self.ns[3])
+
+    @cached_property
     def T_right(self):
-        if not self.is_set:
-            self.set()
-        return self._T_right
+        return self.V_inv[3] @ calc_V((self.xi[3] + 1) / 2, self.ns[3])
 
-    @property
+    @cached_property
     def T_left(self):
-        if not self.is_set:
-            self.set()
-        return self._T_left
+        return self.V_inv[3] @ calc_V((self.xi[3] - 1) / 2, self.ns[3])
 
-    @property
+    @cached_property
     def alpha(self):
-        if not self.is_set:
-            self.set()
-        return self._alpha
+        return np.sqrt((self.k + 1) ** 2 / (2 * self.k + 1) / (2 * self.k + 3))
 
-    @property
+    @cached_property
     def gamma(self):
-        if not self.is_set:
-            self.set()
-        return self._gamma
+        return np.concatenate(
+            [[0, 0], np.sqrt(self.k[2:] ** 2 / (4 * self.k[2:] ** 2 - 1))]
+        )
 
-    @property
+    @cached_property
     def b_def(self):
-        if not self.is_set:
-            self.set()
-        return self._b_def
+        return calc_bdef(self.ns)
