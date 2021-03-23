@@ -14,14 +14,15 @@ def almost_equal_dicts(a, b):
     assert_series_equal(pd.Series(sorted(a.items())), pd.Series(sorted(b.items())))
 
 
-def test_copy_from():
+def test_tell_many_at_point():
     f = generate_random_parametrization(noisy_peak)
     learner = AverageLearner1D(f, bounds=[-2, 2])
     control = AverageLearner1D(f, bounds=[-2, 2])
     learner._recompute_losses_factor = 1
     control._recompute_losses_factor = 1
     simple_run(learner, 100)
-    control.copy_from(learner)
+    for x, samples in learner._data_samples.items():
+        control.tell_many_at_point(x, samples)
 
     almost_equal_dicts(learner.data, control.data)
     almost_equal_dicts(learner.error, control.error)
