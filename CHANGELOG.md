@@ -1,16 +1,30 @@
 # Changelog
 
+## [v0.12.0](https://github.com/python-adaptive/adaptive/tree/v0.12.0) (2021-03-23)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.3...HEAD)
+
+**Merged pull requests:**
+
+- bump to Python≥3.7 [\#312](https://github.com/python-adaptive/adaptive/pull/312) ([basnijholt](https://github.com/basnijholt))
+- lazily evaluate the integrator coefficients [\#311](https://github.com/python-adaptive/adaptive/pull/311) ([basnijholt](https://github.com/basnijholt))
+- add resolution\_loss\_function for Learner1D [\#310](https://github.com/python-adaptive/adaptive/pull/310) ([basnijholt](https://github.com/basnijholt))
+- add "\(Code\) style fix or documentation update" to .github/pull\_request\_template.md [\#309](https://github.com/python-adaptive/adaptive/pull/309) ([basnijholt](https://github.com/basnijholt))
+- remove the requirements from the tutorial landing page [\#308](https://github.com/python-adaptive/adaptive/pull/308) ([basnijholt](https://github.com/basnijholt))
+- add change log to the docs [\#307](https://github.com/python-adaptive/adaptive/pull/307) ([basnijholt](https://github.com/basnijholt))
+- remove automerge action [\#305](https://github.com/python-adaptive/adaptive/pull/305) ([basnijholt](https://github.com/basnijholt))
+
 ## [v0.11.3](https://github.com/python-adaptive/adaptive/tree/v0.11.3) (2021-03-07)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.2...v0.11.3)
 
 **Fixed bugs:**
 
+- ProcessPoolExecutor behaviour on MacOS in interactive environment changed between Python versions [\#301](https://github.com/python-adaptive/adaptive/issues/301)
 - can't pickle lru\_cache function with loky [\#292](https://github.com/python-adaptive/adaptive/issues/292)
 
 **Closed issues:**
 
-- ProcessPoolExecutor behaviour on MacOS in interactive environment changed between Python versions [\#301](https://github.com/python-adaptive/adaptive/issues/301)
 - Runner fails in the notebook [\#299](https://github.com/python-adaptive/adaptive/issues/299)
 
 **Merged pull requests:**
