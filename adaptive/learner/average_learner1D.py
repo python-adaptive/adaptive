@@ -1,3 +1,4 @@
+from collections import defaultdict
 from copy import deepcopy
 from math import hypot
 
@@ -336,26 +337,20 @@ class AverageLearner1D(Learner1D):
                 "x value out of bounds, "
                 "remove x or enlarge the bounds of the learner"
             )
-        x_old = np.inf
-        ys_old = []
+
+        # Create a mapping of points to a list of samples
+        mapping = defaultdict(list)
         for x, y in zip(xs, ys):
-            if x == x_old:
-                # Store the y-values until a new x is found in xs
-                ys_old.append(y)
-            else:
-                if len(ys_old) == 1:
-                    self.tell(x_old, ys_old[0])
-                elif len(ys_old) > 1:
-                    # If we stored more than 1 y-value for the previous x,
-                    # use a more efficient routine to tell many samples
-                    # simultaneously, before we move on to a new x
-                    self.tell_many_at_point(x_old, ys_old)
-                x_old = x
-                ys_old = [y]
-        if len(ys_old) == 1:
-            self.tell(x_old, ys_old[0])
-        elif len(ys_old) > 1:
-            self.tell_many_at_point(x_old, ys_old)
+            mapping[x].append(y)
+
+        for x, ys in mapping.items():
+            if len(ys) == 1:
+                self.tell(x, ys[0])
+            elif len(ys) > 1:
+                # If we stored more than 1 y-value for the previous x,
+                # use a more efficient routine to tell many samples
+                # simultaneously, before we move on to a new x
+                self.tell_many_at_point(x, ys)
 
     def tell_many_at_point(self, x, ys):
         """Tell the learner about many samples at a certain location x.
