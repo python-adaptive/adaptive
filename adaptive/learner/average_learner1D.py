@@ -359,7 +359,7 @@ class AverageLearner1D(Learner1D):
         ----------
         x : float
             Value from the function domain.
-        ys : Sequence[float]
+        ys : List[float]
             List of data samples at ``x``.
         """
         # Check x is within the bounds
@@ -369,16 +369,18 @@ class AverageLearner1D(Learner1D):
                 "remove x or enlarge the bounds of the learner"
             )
 
+        ys = list(ys)  # cast to list *and* make a copy
         y_avg = np.mean(ys)
         # If x is a new point:
         if x not in self.data:
             y = ys.pop(0)
             self._update_data(x, y, "new")
             self._update_data_structures(x, y, "new")
+
         # If x is not a new point or if there were more than 1 sample in ys:
-        if len(ys):
+        if len(ys) > 0:
             self.data[x] = y_avg
-            self._data_samples.update({x: ys + self._data_samples[x]})
+            self._data_samples[x].extend(ys)
             n = len(self._data_samples[x])
             self._number_samples[x] = n
             # `self._update_data(x, y, "new")` included the point
