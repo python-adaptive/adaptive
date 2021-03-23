@@ -386,7 +386,7 @@ class AverageLearner1D(Learner1D):
             self._data_samples.update({x: ys + self._data_samples[x]})
             n = len(self._data_samples[x])
             self._number_samples[x] = n
-            # self._update_data(x,y,"new") included the point
+            # `self._update_data(x, y, "new")` included the point
             # in _undersampled_points. We remove it if there are
             # more than min_samples samples, disregarding neighbor_sampling.
             if n > self.min_samples:
@@ -402,6 +402,14 @@ class AverageLearner1D(Learner1D):
                 for interval in reversed(self.losses):
                     self._update_interpolated_loss_in_interval(*interval)
                 self._oldscale = deepcopy(self._scale)
+
+    def _get_data(self):
+        return self._data_samples
+
+    def _set_data(self, data):
+        if data:
+            for x, samples in data.items():
+                self.tell_many_at_point(x, samples)
 
     def plot(self):
         """Returns a plot of the evaluated data with error bars (not implemented
