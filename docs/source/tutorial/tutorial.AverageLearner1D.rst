@@ -65,10 +65,9 @@ second condition ensures that we have at least 20 samples at each point):
 
 .. jupyter-execute::
 
-    def goal(total_samples):
+    def goal(nsamples):
         def _goal(learner):
-            min_samples = min(learner._number_samples.values())
-            return learner.total_samples >= total_samples and min_samples >= 20
+            return learner.nsamples >= nsamples and learner.min_samples_per_point >= 20
         return _goal
 
     runner = adaptive.Runner(learner, goal=goal(10_000))

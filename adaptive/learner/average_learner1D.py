@@ -94,12 +94,14 @@ class AverageLearner1D(Learner1D):
         self.rescaled_error = decreasing_dict()
 
     @property
-    def total_samples(self):
+    def nsamples(self):
         """Returns the total number of samples"""
         return sum(self._number_samples.values())
 
     @property
     def min_samples_per_point(self):
+        if not self._number_samples:
+            return 0
         return min(self._number_samples.values())
 
     def ask(self, n, tell_pending=True):
