@@ -78,6 +78,7 @@ second condition ensures that we have at least 20 samples at each point):
     await runner.task  # This is not needed in a notebook environment!
 
 .. jupyter-execute::
+
     runner.live_info()
     runner.live_plot(update_interval=0.1)
 
@@ -131,5 +132,6 @@ On the contrary, if we want to push forward the "exploration", we can set a larg
     await runner.task  # This is not needed in a notebook environment!
 
 .. jupyter-execute::
+
     runner.live_info()
     runner.live_plot(update_interval=0.1)
