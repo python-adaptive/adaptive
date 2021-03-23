@@ -87,6 +87,23 @@ def uniform(a, b):
     return lambda: random.uniform(a, b)
 
 
+def simple_run(learner, n):
+    def get_goal(learner):
+        if hasattr(learner, "nsamples"):
+            return lambda l: l.nsamples > n
+        else:
+            return lambda l: l.npoints > n
+
+    def goal():
+        if isinstance(learner, BalancingLearner):
+            return get_goal(learner.learners[0])
+        elif isinstance(learner, DataSaver):
+            return get_goal(learner.learner)
+        return get_goal(learner)
+
+    simple(learner, goal())
+
+
 # Library of functions and associated learners.
 
 learner_function_combos = collections.defaultdict(list)
@@ -262,7 +279,7 @@ def test_learner_accepts_lists(learner_type, bounds):
         return [0, 1]
 
     learner = learner_type(f, bounds=bounds)
-    simple(learner, goal=lambda l: l.npoints > 10)
+    simple_run(learner, 10)
 
 
 @run_with(Learner1D, Learner2D, LearnerND, SequenceLearner, AverageLearner1D)
@@ -275,7 +292,7 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
-    if learner_type is Learner1D:
+    if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
 
@@ -377,7 +394,7 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
 
-    if learner_type is Learner1D:
+    if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
 
@@ -425,7 +442,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(
         assert sum(loss_improvements) < sum(
             learner.loss_per_triangle(learner.interpolator(scaled=True))
         )
-    elif learner_type is Learner1D:
+    elif learner_type in (Learner1D, AverageLearner1D):
         assert sum(loss_improvements) < sum(learner.losses.values())
     elif learner_type is AverageLearner:
         assert sum(loss_improvements) < learner.loss()
@@ -544,10 +561,10 @@ def test_saving(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
-    if learner_type is Learner1D:
+    if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
-    simple(learner, lambda l: l.npoints > 100)
+    simple_run(learner, 100)
     fd, path = tempfile.mkstemp()
     os.close(fd)
     try:
@@ -557,7 +574,7 @@ def test_saving(learner_type, f, learner_kwargs):
         np.testing.assert_almost_equal(learner.loss(), control.loss())
 
         # Try if the control is runnable
-        simple(control, lambda l: l.npoints > 200)
+        simple_run(learner, 200)
     finally:
         os.remove(path)
 
@@ -578,12 +595,12 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     learner = BalancingLearner([learner_type(f, **learner_kwargs)])
     control = BalancingLearner([learner_type(f, **learner_kwargs)])
 
-    if learner_type is Learner1D:
+    if learner_type in (Learner1D, AverageLearner1D):
         for l, c in zip(learner.learners, control.learners):
             l._recompute_losses_factor = 1
             c._recompute_losses_factor = 1
 
-    simple(learner, lambda l: l.learners[0].npoints > 100)
+    simple_run(learner, 100)
     folder = tempfile.mkdtemp()
 
     def fname(learner):
@@ -596,7 +613,7 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
         np.testing.assert_almost_equal(learner.loss(), control.loss())
 
         # Try if the control is runnable
-        simple(control, lambda l: l.learners[0].npoints > 200)
+        simple_run(control, 200)
     finally:
         shutil.rmtree(folder)
 
@@ -622,13 +639,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
         learner.learner._recompute_losses_factor = 1
         control.learner._recompute_losses_factor = 1
 
-    def goal(n):
-        if learner_type is AverageLearner1D:
-            return lambda l: l.nsamples > n
-        else:
-            return lambda l: l.npoints > n
-
-    simple(learner, goal(100))
+    simple_run(learner, 100)
     fd, path = tempfile.mkstemp()
     os.close(fd)
     try:
@@ -640,7 +651,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
         assert learner.extra_data == control.extra_data
 
         # Try if the control is runnable
-        simple(control, goal(200))
+        simple_run(learner, 200)
     finally:
         os.remove(path)
 
