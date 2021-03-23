@@ -2,14 +2,10 @@
 
 from collections import defaultdict
 from fractions import Fraction
+from functools import lru_cache
 
 import numpy as np
 import scipy.linalg
-
-try:
-    from functools import cached_property
-except ImportError:
-    from adaptive.utils import cached_property
 
 
 def legendre(n):
@@ -146,72 +142,48 @@ def calc_V(x, n):
     return np.array(V).T
 
 
-class Coefficients:
-    def __init__(self) -> None:
-        # The nodes
-        self.ns = (5, 9, 17, 33)
+@lru_cache(maxsize=None)
+def _coefficients():
+    eps = np.spacing(1)
 
-        # If the relative difference between two consecutive approximations is
-        # lower than this value, the error estimate is considered reliable.
-        # See section 6.2 of Pedro Gonnet's thesis.
-        self.hint = 0.1
+    # the nodes and Newton polynomials
+    ns = (5, 9, 17, 33)
+    xi = [-np.cos(np.linspace(0, np.pi, n)) for n in ns]
 
-        # Smallest acceptable relative difference of points in a rule.  This was chosen
-        # such that no artifacts are apparent in plots of (i, log(a_i)), where a_i is
-        # the sequence of estimates of the integral value of an interval and all its
-        # ancestors..
-        self.eps = np.spacing(1)
-        self.min_sep = 16 * self.eps
+    # Make `xi` perfectly anti-symmetric, important for splitting the intervals
+    xi = [(row - row[::-1]) / 2 for row in xi]
 
-        # Maximum amount of subdivisions
-        self.ndiv_max = 20
+    # Compute the Vandermonde-like matrix and its inverse.
+    V = [calc_V(x, n) for x, n in zip(xi, ns)]
+    V_inv = list(map(scipy.linalg.inv, V))
+    Vcond = [
+        scipy.linalg.norm(a, 2) * scipy.linalg.norm(b, 2) for a, b in zip(V, V_inv)
+    ]
 
-    @cached_property
-    def xi(self):
-        # The Newton polynomials
-        xi = [-np.cos(np.linspace(0, np.pi, n)) for n in self.ns]
-        # Make `xi` perfectly anti-symmetric, important for splitting the intervals
-        return [(row - row[::-1]) / 2 for row in xi]
+    # Compute the shift matrices.
+    T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
 
-    @cached_property
-    def V(self):
-        # Compute the Vandermonde-like matrix and its inverse.
-        return [calc_V(x, n) for x, n in zip(self.xi, self.ns)]
+    # If the relative difference between two consecutive approximations is
+    # lower than this value, the error estimate is considered reliable.
+    # See section 6.2 of Pedro Gonnet's thesis.
+    hint = 0.1
 
-    @cached_property
-    def V_inv(self):
-        # Compute the inverse Vandermonde-like matrix
-        return list(map(scipy.linalg.inv, self.V))
+    # Smallest acceptable relative difference of points in a rule.  This was chosen
+    # such that no artifacts are apparent in plots of (i, log(a_i)), where a_i is
+    # the sequence of estimates of the integral value of an interval and all its
+    # ancestors..
+    min_sep = 16 * eps
 
-    @cached_property
-    def Vcond(self):
-        return [
-            scipy.linalg.norm(a, 2) * scipy.linalg.norm(b, 2)
-            for a, b in zip(self.V, self.V_inv)
-        ]
+    ndiv_max = 20
 
-    @cached_property
-    def k(self):
-        return np.arange(self.ns[3])
+    # set-up the downdate matrix
+    k = np.arange(ns[3])
+    alpha = np.sqrt((k + 1) ** 2 / (2 * k + 1) / (2 * k + 3))
+    gamma = np.concatenate([[0, 0], np.sqrt(k[2:] ** 2 / (4 * k[2:] ** 2 - 1))])
 
-    @cached_property
-    def T_right(self):
-        return self.V_inv[3] @ calc_V((self.xi[3] + 1) / 2, self.ns[3])
+    b_def = calc_bdef(ns)
+    return locals()
 
-    @cached_property
-    def T_left(self):
-        return self.V_inv[3] @ calc_V((self.xi[3] - 1) / 2, self.ns[3])
 
-    @cached_property
-    def alpha(self):
-        return np.sqrt((self.k + 1) ** 2 / (2 * self.k + 1) / (2 * self.k + 3))
-
-    @cached_property
-    def gamma(self):
-        return np.concatenate(
-            [[0, 0], np.sqrt(self.k[2:] ** 2 / (4 * self.k[2:] ** 2 - 1))]
-        )
-
-    @cached_property
-    def b_def(self):
-        return calc_bdef(self.ns)
+def __getattr__(attr):
+    return _coefficients()[attr]
