@@ -362,8 +362,10 @@ class AverageLearner1D(Learner1D):
 
         Parameters
         ----------
-        x  : Value from the function domain
-        ys : List of data samples at x
+        x : float
+            Value from the function domain.
+        ys : Sequence[float]
+            List of data samples at ``x``.
         """
         # Check x is within the bounds
         if not np.prod(x >= self.bounds[0] and x <= self.bounds[1]):
