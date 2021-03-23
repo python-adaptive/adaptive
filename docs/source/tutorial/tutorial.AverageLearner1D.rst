@@ -28,7 +28,7 @@ First, we define the (noisy) function to be sampled. Note that the parameter
 
 .. jupyter-execute::
 
-    def f(x, sigma=0, peak_width=0.05, offset=-0.5):
+    def noisy_peak(x, sigma=0, peak_width=0.05, offset=-0.5):
         y = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
         noise = np.random.normal(0, sigma)
         return y + noise
@@ -38,14 +38,14 @@ This is how the function looks in the absence of noise:
 .. jupyter-execute::
 
     xs = np.linspace(-2, 2, 500)
-    ys = f(xs, sigma=0)
+    ys = noisy_peak(xs, sigma=0)
     hv.Path((xs, ys))
 
 And an example of a single realization of the noisy function:
 
 .. jupyter-execute::
 
-    ys = [f(x, sigma=1) for x in xs]
+    ys = [noisy_peak(x, sigma=1) for x in xs]
     hv.Path((xs, ys))
 
 To obtain an estimate of the mean value of the function at each point ``x``, we
@@ -57,7 +57,7 @@ We start by initializing a 1D average learner:
 
 .. jupyter-execute::
 
-    learner = adaptive.AverageLearner1D(partial(f, sigma=1), bounds=(-2, 2))
+    learner = adaptive.AverageLearner1D(partial(noisy_peak, sigma=1), bounds=(-2, 2))
 
 As with other types of learners, we need to initialize a runner with a certain
 goal to run our learner. In this case, we set 10000 samples as the goal (the

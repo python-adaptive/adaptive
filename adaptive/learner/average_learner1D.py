@@ -98,6 +98,10 @@ class AverageLearner1D(Learner1D):
         """Returns the total number of samples"""
         return sum(self._number_samples.values())
 
+    @property
+    def min_samples_per_point(self):
+        return min(self._number_samples.values())
+
     def ask(self, n, tell_pending=True):
         """Return 'n' points that are expected to maximally reduce the loss."""
         # If some point is undersampled, resample it
