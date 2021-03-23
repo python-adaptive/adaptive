@@ -17,6 +17,7 @@ import scipy.spatial
 import adaptive
 from adaptive.learner import (
     AverageLearner,
+    AverageLearner1D,
     BalancingLearner,
     DataSaver,
     IntegratorLearner,
@@ -146,6 +147,18 @@ def gaussian(n):
     return random.gauss(1, 1)
 
 
+@learn_with(AverageLearner1D, bounds=[-2, 2])
+def noisy_peak(
+    x,
+    sigma: uniform(1.5, 2.5),
+    peak_width: uniform(0.04, 0.06),
+    offset: uniform(-0.6, -0.3),
+):
+    y = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
+    noise = np.random.normal(0, sigma)
+    return y + noise
+
+
 # Decorators for tests.
 
 
@@ -252,7 +265,7 @@ def test_learner_accepts_lists(learner_type, bounds):
     simple(learner, goal=lambda l: l.npoints > 10)
 
 
-@run_with(Learner1D, Learner2D, LearnerND, SequenceLearner)
+@run_with(Learner1D, Learner2D, LearnerND, SequenceLearner, AverageLearner1D)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
 
@@ -299,7 +312,14 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
-@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner, SequenceLearner)
+@run_with(
+    Learner1D,
+    xfail(Learner2D),
+    LearnerND,
+    AverageLearner,
+    AverageLearner1D,
+    SequenceLearner,
+)
 def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     """Adding data for a point that was not returned by 'ask'."""
     # XXX: learner, control and bounds are not defined
@@ -341,7 +361,9 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
         assert set(pls) == set(cpls)
 
 
-@run_with(Learner1D, xfail(Learner2D), xfail(LearnerND), AverageLearner)
+@run_with(
+    Learner1D, xfail(Learner2D), xfail(LearnerND), AverageLearner, AverageLearner1D
+)
 def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     """The order of calls to 'tell' between calls to 'ask'
     is arbitrary.
@@ -383,7 +405,7 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
 
 # XXX: the Learner2D fails with ~50% chance
 # see https://github.com/python-adaptive/adaptive/issues/55
-@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner)
+@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner, AverageLearner1D)
 def test_expected_loss_improvement_is_less_than_total_loss(
     learner_type, f, learner_kwargs
 ):
@@ -411,7 +433,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
-@run_with(Learner1D, xfail(Learner2D), LearnerND)
+@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner1D)
 def test_learner_performance_is_invariant_under_scaling(
     learner_type, f, learner_kwargs
 ):
@@ -464,6 +486,7 @@ def test_learner_performance_is_invariant_under_scaling(
     Learner2D,
     LearnerND,
     AverageLearner,
+    AverageLearner1D,
     SequenceLearner,
     with_all_loss_functions=False,
 )
@@ -498,9 +521,12 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
             x = stash.pop()
             learner.tell(x, learner.function(x))
 
-    assert all(l.npoints > 5 for l in learner.learners), [
-        l.npoints for l in learner.learners
-    ]
+    if learner_type is AverageLearner1D:
+        nsamples = [l.nsamples for l in learner.learners]
+        assert all(l.nsamples > 5 for l in learner.learners), nsamples
+    else:
+        npoints = [l.npoints for l in learner.learners]
+        assert all(l.npoints > 5 for l in learner.learners), npoints
 
 
 @run_with(
@@ -508,6 +534,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     Learner2D,
     LearnerND,
     AverageLearner,
+    AverageLearner1D,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
     SequenceLearner,
@@ -540,6 +567,7 @@ def test_saving(learner_type, f, learner_kwargs):
     Learner2D,
     LearnerND,
     AverageLearner,
+    AverageLearner1D,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
     SequenceLearner,
@@ -578,6 +606,7 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     Learner2D,
     LearnerND,
     AverageLearner,
+    AverageLearner1D,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
     with_all_loss_functions=False,
@@ -589,11 +618,17 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
     learner = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
     control = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
 
-    if learner_type is Learner1D:
+    if learner_type in (Learner1D, AverageLearner1D):
         learner.learner._recompute_losses_factor = 1
         control.learner._recompute_losses_factor = 1
 
-    simple(learner, lambda l: l.npoints > 100)
+    def goal(n):
+        if learner_type is AverageLearner1D:
+            return lambda l: l.nsamples > n
+        else:
+            return lambda l: l.npoints > n
+
+    simple(learner, goal(100))
     fd, path = tempfile.mkstemp()
     os.close(fd)
     try:
@@ -605,7 +640,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
         assert learner.extra_data == control.extra_data
 
         # Try if the control is runnable
-        simple(control, lambda l: l.npoints > 200)
+        simple(control, goal(200))
     finally:
         os.remove(path)
 
