@@ -170,7 +170,7 @@ class AverageLearner1D(Learner1D):
         self.pending_points.discard(x)
 
     def _update_rescaled_error_in_mean(self, x, point_type: str) -> None:
-        """Updates self.rescaled_error.
+        """Updates ``self.rescaled_error``.
 
         Parameters
         ----------
@@ -343,15 +343,15 @@ class AverageLearner1D(Learner1D):
                     # If we stored more than 1 y-value for the previous x,
                     # use a more efficient routine to tell many samples
                     # simultaneously, before we move on to a new x
-                    self.tell_many_samples(x_old, ys_old)
+                    self.tell_many_at_point(x_old, ys_old)
                 x_old = x
                 ys_old = [y]
         if len(ys_old) == 1:
             self.tell(x_old, ys_old[0])
         elif len(ys_old) > 1:
-            self.tell_many_samples(x_old, ys_old)
+            self.tell_many_at_point(x_old, ys_old)
 
-    def tell_many_samples(self, x, ys):
+    def tell_many_at_point(self, x, ys):
         """Tell the learner about many samples at a certain location x.
 
         Parameters
