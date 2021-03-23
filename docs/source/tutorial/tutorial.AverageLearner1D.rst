@@ -1,5 +1,5 @@
 Tutorial `~adaptive.AverageLearner1D`
-------------------------------
+-------------------------------------
 
 .. note::
    Because this documentation consists of static html, the ``live_plot``
@@ -15,11 +15,10 @@ Tutorial `~adaptive.AverageLearner1D`
 
     import adaptive
     adaptive.notebook_extension()
-    %config InlineBackend.figure_formats=set(['svg'])
 
+    import holoviews as hv
     import numpy as np
     from functools import partial
-    import random
 
 General use
 ..........................
@@ -29,29 +28,25 @@ First, we define the (noisy) function to be sampled. Note that the parameter
 
 .. jupyter-execute::
 
-    def f(x, sigma=0, peak_width=0.05, offset=-0.5, wait=False):
-        from time import sleep
-        from random import random
-
-        if wait:
-            sleep(random())
-
-        function = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
-        return function + np.random.normal(0, sigma)
+    def f(x, sigma=0, peak_width=0.05, offset=-0.5):
+        y = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
+        noise = np.random.normal(0, sigma)
+        return y + noise
 
 This is how the function looks in the absence of noise:
 
 .. jupyter-execute::
 
-    import matplotlib.pyplot as plt
-    x = np.linspace(-2,2,500)
-    plt.plot(x, f(x, sigma=0));
+    xs = np.linspace(-2, 2, 500)
+    ys = f(xs, sigma=0)
+    hv.Path((xs, ys))
 
-This is how a single realization of the noisy function looks:
+And an example of a single realization of the noisy function:
 
 .. jupyter-execute::
 
-    plt.plot(x, [f(xi, sigma=1) for xi in x]);
+    ys = [f(x, sigma=1) for x in xs]
+    hv.Path((xs, ys))
 
 To obtain an estimate of the mean value of the function at each point ``x``, we
 take many samples at ``x`` and calculate the sample mean. The learner will
@@ -62,9 +57,7 @@ We start by initializing a 1D average learner:
 
 .. jupyter-execute::
 
-    learner = adaptive.AverageLearner1D(
-        function=partial(f, sigma=1),
-        bounds=(-2,2))
+    learner = adaptive.AverageLearner1D(partial(f, sigma=1), bounds=(-2, 2))
 
 As with other types of learners, we need to initialize a runner with a certain
 goal to run our learner. In this case, we set 10000 samples as the goal (the
@@ -72,12 +65,25 @@ second condition ensures that we have at least 20 samples at each point):
 
 .. jupyter-execute::
 
-    runner = adaptive.Runner(learner, goal=lambda l: l.total_samples >= 10000 and min(l._number_samples.values()) >= 20)
+    def goal(total_samples):
+        def _goal(learner):
+            min_samples = min(learner._number_samples.values())
+            return learner.total_samples >= total_samples and min_samples >= 20
+        return _goal
+
+    runner = adaptive.Runner(learner, goal=goal(10_000))
+
+.. jupyter-execute::
+    :hide-code:
+
+    await runner.task  # This is not needed in a notebook environment!
+
+.. jupyter-execute::
     runner.live_info()
     runner.live_plot(update_interval=0.1)
 
 Fine tuning
-..........................
+...........
 
 In some cases, the default configuration of the 1D average learner can be
 sub-optimal. One can then tune the internal parameters of the learner. The most
@@ -98,8 +104,15 @@ not require accuracy beyond this value:
 
     learner.delta = 0.1
     learner.min_error = 0.05
+    runner = adaptive.Runner(learner, goal=goal(20_000))
 
-    runner = adaptive.Runner(learner, goal=lambda l: l.total_samples >= 20000 and min(l._number_samples.values()) >= 20)
+.. jupyter-execute::
+    :hide-code:
+
+    await runner.task  # This is not needed in a notebook environment!
+
+.. jupyter-execute::
+
     runner.live_info()
     runner.live_plot(update_interval=0.1)
 
@@ -111,6 +124,13 @@ On the contrary, if we want to push forward the "exploration", we can set a larg
     learner.delta = 0.3
     learner.max_samples = 1000
 
-    runner = adaptive.Runner(learner, goal=lambda l: l.total_samples >= 25000 and min(l._number_samples.values()) >= 20)
+    runner = adaptive.Runner(learner, goal=goal(25_000))
+
+.. jupyter-execute::
+    :hide-code:
+
+    await runner.task  # This is not needed in a notebook environment!
+
+.. jupyter-execute::
     runner.live_info()
     runner.live_plot(update_interval=0.1)
