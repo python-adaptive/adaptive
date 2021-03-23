@@ -7,7 +7,7 @@
     "environment_type": "conda",
     "install_timeout": 600,
     "show_commit_url": "https://github.com/python-adaptive/adaptive/commits/",
-    "pythons": ["3.6"],
+    "pythons": ["3.7"],
     "conda_channels": ["conda-forge"],
     "matrix": {
         "numpy": ["1.13"],

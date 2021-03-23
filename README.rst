@@ -88,7 +88,7 @@ Adaptively learning a 1D function (the `gif` below) and live-plotting the proces
 Installation
 ------------
 
-``adaptive`` works with Python 3.6 and higher on Linux, Windows, or Mac,
+``adaptive`` works with Python 3.7 and higher on Linux, Windows, or Mac,
 and provides optional extensions for working with the Jupyter/IPython
 Notebook.
 

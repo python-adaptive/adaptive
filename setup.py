@@ -5,8 +5,8 @@ import sys
 
 from setuptools import find_packages, setup
 
-if sys.version_info < (3, 6):
-    print("adaptive requires Python 3.6 or above.")
+if sys.version_info < (3, 7):
+    print("adaptive requires Python 3.7 or above.")
     sys.exit(1)
 
 
@@ -65,7 +65,7 @@ setup(
     name="adaptive",
     description="Parallel active learning of mathematical functions",
     version=version,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     url="https://adaptive.readthedocs.io/",
     author="Adaptive authors",
     license="BSD",
@@ -73,9 +73,9 @@ setup(
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: BSD License",
         "Intended Audience :: Science/Research",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
     packages=find_packages("."),
     install_requires=install_requires,
