@@ -55,12 +55,12 @@ class AverageLearner1D(Learner1D):
         max_samples=np.inf,
         min_error=0,
     ):
-        # Checks
-        for k, v in zip(
-            ["delta", "alpha", "neighbor_sampling"], [delta, alpha, neighbor_sampling]
-        ):
-            if not (0 < v <= 1):
-                raise ValueError(f"{k} should be positive (0 < {k} <= 1).")
+        if not (0 < delta <= 1):
+            raise ValueError("Learner requires 0 < delta <= 1.")
+        if not (0 < alpha <= 1):
+            raise ValueError("Learner requires 0 < alpha <= 1.")
+        if not (0 < neighbor_sampling <= 1):
+            raise ValueError("Learner requires 0 < neighbor_sampling <= 1.")
         if min_samples < 0:
             raise ValueError("min_samples should be positive.")
         if min_samples > max_samples:
@@ -411,13 +411,12 @@ class AverageLearner1D(Learner1D):
             p = hv.Scatter([]) * hv.ErrorBars([]) * hv.Path([])
         elif not self.vdim > 1:
             xs, ys = zip(*sorted(self.data.items()))
-            p = (
-                hv.Scatter(self.data)
-                * hv.ErrorBars(
-                    [(x, self.data[x], self._error_in_mean[x]) for x in self.data]
-                )
-                * hv.Path((xs, ys))
+            scatter = hv.Scatter(self.data)
+            error = hv.ErrorBars(
+                [(x, self.data[x], self._error_in_mean[x]) for x in self.data]
             )
+            line = hv.Path((xs, ys))
+            p = scatter * error * line
         else:
             raise Exception("plot() not implemented for vector functions.")
 
