@@ -574,7 +574,7 @@ def test_saving(learner_type, f, learner_kwargs):
         np.testing.assert_almost_equal(learner.loss(), control.loss())
 
         # Try if the control is runnable
-        simple_run(learner, 200)
+        simple_run(control, 200)
     finally:
         os.remove(path)
 
