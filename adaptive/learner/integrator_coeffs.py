@@ -144,6 +144,7 @@ def calc_V(x, n):
 
 @lru_cache(maxsize=None)
 def _coefficients():
+    """Compute the coefficients on demand, in order to avoid doing linear algebra on import."""
     eps = np.spacing(1)
 
     # the nodes and Newton polynomials
