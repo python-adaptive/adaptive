@@ -4,8 +4,8 @@ from operator import attrgetter
 import numpy as np
 import pytest
 
+import adaptive.learner.integrator_coeffs as coeff
 from adaptive.learner import IntegratorLearner
-from adaptive.learner.integrator_coeffs import ns
 from adaptive.learner.integrator_learner import DivergentIntegralError
 
 from .algorithm_4 import DivergentIntegralError as A4DivergentIntegralError
@@ -245,7 +245,7 @@ def test_removed_choose_mutiple_points_at_once():
     we should use the high-precision interval.
     """
     learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
-    n = ns[-1] + 2 * (ns[0] - 2)  # first + two children (33+6=39)
+    n = coeff.ns[-1] + 2 * (coeff.ns[0] - 2)  # first + two children (33+6=39)
     xs, _ = learner.ask(n)
     for x in xs:
         learner.tell(x, learner.function(x))
@@ -257,7 +257,7 @@ def test_removed_ask_one_by_one():
         # This test should raise because integrating np.exp should be done
         # after the 33th point
         learner = IntegratorLearner(np.exp, bounds=(0, 1), tol=1e-15)
-        n = ns[-1] + 2 * (ns[0] - 2)  # first + two children (33+6=39)
+        n = coeff.ns[-1] + 2 * (coeff.ns[0] - 2)  # first + two children (33+6=39)
         for _ in range(n):
             xs, _ = learner.ask(1)
             for x in xs:
