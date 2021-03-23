@@ -1,8 +1,16 @@
 # Changelog
 
+## [v0.12.1](https://github.com/python-adaptive/adaptive/tree/v0.12.1) (2021-03-23)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.12.0...v0.12.1)
+
+**Merged pull requests:**
+
+- write import differently for pypy [\#313](https://github.com/python-adaptive/adaptive/pull/313) ([basnijholt](https://github.com/basnijholt))
+
 ## [v0.12.0](https://github.com/python-adaptive/adaptive/tree/v0.12.0) (2021-03-23)
 
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.3...HEAD)
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.3...v0.12.0)
 
 **Merged pull requests:**
 
