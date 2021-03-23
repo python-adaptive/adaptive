@@ -33,11 +33,14 @@ def test_tell_many_at_point():
     assert learner.nsamples == control.nsamples
     assert len(learner._data_samples) == len(control._data_samples)
     assert learner._data_samples.keys() == control._data_samples.keys()
+
     for k, v1 in learner._data_samples.items():
         v2 = control._data_samples[k]
         assert len(v1) == len(v2)
         np.testing.assert_almost_equal(np.sort(v1), np.sort(v2))
 
+    assert learner._bbox[0] == control._bbox[0]
+    assert learner._bbox[1] == control._bbox[1]
     almost_equal_dicts(learner.losses, control.losses)
     np.testing.assert_almost_equal(learner.loss(), control.loss())
 
