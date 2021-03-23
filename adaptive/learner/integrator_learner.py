@@ -10,7 +10,7 @@ import numpy as np
 from scipy.linalg import norm
 from sortedcontainers import SortedSet
 
-import adaptive.learner.integrator_coeffs as coeff
+from adaptive.learner import integrator_coeffs as coeff
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest, restore
