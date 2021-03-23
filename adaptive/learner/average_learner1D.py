@@ -22,8 +22,8 @@ class AverageLearner1D(Learner1D):
         We strongly recommend 0 < delta <= 1.
     alpha : float (0 < alpha < 1)
         The true value of the function at x is within the confidence interval
-        [self.data[x] - self._error_in_mean[x], self.data[x] +
-        self._error_in_mean[x]] with probability 1-2*alpha.
+        [self.data[x] - self.error[x], self.data[x] +
+        self.error[x]] with probability 1-2*alpha.
         We recommend to keep alpha=0.005.
     neighbor_sampling : float (0 < neighbor_sampling <= 1)
         Each new point is initially sampled at least a (neighbor_sampling*100)%
@@ -36,9 +36,9 @@ class AverageLearner1D(Learner1D):
     min_error : float (min_error >= 0)
         Minimum size of the confidence intervals. The true value of the
         function at x is within the confidence interval [self.data[x] -
-        self._error_in_mean[x], self.data[x] + self._error_in_mean[x]] with
+        self.error[x], self.data[x] + self.error[x]] with
         probability 1-2*alpha.
-        If self._error_in_mean[x] < min_error, then x will not be resampled
+        If self.error[x] < min_error, then x will not be resampled
         anymore, i.e., the smallest confidence interval at x is
         [self.data[x] - min_error, self.data[x] + min_error].
     """
@@ -86,12 +86,12 @@ class AverageLearner1D(Learner1D):
         self._undersampled_points = set()
         # Contains the error in the estimate of the
         # mean at each point x in the form {x0: error(x0), ...}
-        self._error_in_mean = decreasing_dict()
+        self.error = decreasing_dict()
         #  Distance between two neighboring points in the
         # form {xi: ((xii-xi)^2 + (yii-yi)^2)^0.5, ...}
         self._distances = decreasing_dict()
-        # {xii: _error_in_mean[xii]/min(_distances[xi], _distances[xii], ...}
-        self._rescaled_error_in_mean = decreasing_dict()
+        # {xii: error[xii]/min(_distances[xi], _distances[xii], ...}
+        self.rescaled_error = decreasing_dict()
 
     @property
     def total_samples(self):
@@ -109,9 +109,9 @@ class AverageLearner1D(Learner1D):
             points, loss_improvements = self._ask_for_new_point(n)
         #  Else, check the resampling condition
         else:
-            if len(self._rescaled_error_in_mean):
-                # This is in case _rescaled_error_in_mean is empty (e.g. when sigma=0)
-                x, resc_error = self._rescaled_error_in_mean.peekitem(0)
+            if len(self.rescaled_error):
+                # This is in case rescaled_error is empty (e.g. when sigma=0)
+                x, resc_error = self.rescaled_error.peekitem(0)
                 # Resampling condition
                 if resc_error > self.delta:
                     points, loss_improvements = self._ask_for_more_samples(x, n)
@@ -169,9 +169,14 @@ class AverageLearner1D(Learner1D):
             self._update_data_structures(x, y, "resampled")
         self.pending_points.discard(x)
 
-    def _update_rescaled_error_in_mean(self, x, point_type):
-        """Updates self._rescaled_error_in_mean; point_type must be "new" or
-        "resampled"."""
+    def _update_rescaled_error_in_mean(self, x, point_type: str) -> None:
+        """Updates self.rescaled_error.
+
+        Parameters
+        ----------
+        point_type : str
+            Must be either "new" or "resampled".
+        """
         #  Update neighbors
         x_left, x_right = self.neighbors[x]
         dists = self._distances
@@ -182,30 +187,26 @@ class AverageLearner1D(Learner1D):
             d_left = dists[x]
         else:
             d_left = dists[x_left]
-            if x_left in self._rescaled_error_in_mean:
+            if x_left in self.rescaled_error:
                 xll = self.neighbors[x_left][0]
                 norm = dists[x_left] if xll is None else min(dists[xll], dists[x_left])
-                self._rescaled_error_in_mean[x_left] = (
-                    self._error_in_mean[x_left] / norm
-                )
+                self.rescaled_error[x_left] = self.error[x_left] / norm
 
         if x_right is None:
             d_right = dists[x_left]
         else:
             d_right = dists[x]
-            if x_right in self._rescaled_error_in_mean:
+            if x_right in self.rescaled_error:
                 xrr = self.neighbors[x_right][1]
                 norm = dists[x] if xrr is None else min(dists[x], dists[x_right])
-                self._rescaled_error_in_mean[x_right] = (
-                    self._error_in_mean[x_right] / norm
-                )
+                self.rescaled_error[x_right] = self.error[x_right] / norm
 
         # Update x
         if point_type == "resampled":
             norm = min(d_left, d_right)
-            self._rescaled_error_in_mean[x] = self._error_in_mean[x] / norm
+            self.rescaled_error[x] = self.error[x] / norm
 
-    def _update_data(self, x, y, point_type):
+    def _update_data(self, x, y, point_type: str):
         if point_type == "new":
             self.data[x] = y
         elif point_type == "resampled":
@@ -213,7 +214,7 @@ class AverageLearner1D(Learner1D):
             new_average = self.data[x] * n / (n + 1) + y / (n + 1)
             self.data[x] = new_average
 
-    def _update_data_structures(self, x, y, point_type):
+    def _update_data_structures(self, x, y, point_type: str):
         if point_type == "new":
             self._data_samples[x] = [y]
 
@@ -233,8 +234,8 @@ class AverageLearner1D(Learner1D):
 
             self._number_samples[x] = 1
             self._undersampled_points.add(x)
-            self._error_in_mean[x] = np.inf
-            self._rescaled_error_in_mean[x] = np.inf
+            self.error[x] = np.inf
+            self.rescaled_error[x] = np.inf
             self._update_distances(x)
             self._update_rescaled_error_in_mean(x, "new")
 
@@ -261,12 +262,12 @@ class AverageLearner1D(Learner1D):
             # the mean value lies within the correct interval of confidence
             y_avg = self.data[x]
             ys = self._data_samples[x]
-            self._error_in_mean[x] = self._calc_error_in_mean(ys, y_avg, n)
+            self.error[x] = self._calc_error_in_mean(ys, y_avg, n)
             self._update_distances(x)
             self._update_rescaled_error_in_mean(x, "resampled")
 
-            if self._error_in_mean[x] <= self.min_error or n >= self.max_samples:
-                self._rescaled_error_in_mean.pop(x, None)
+            if self.error[x] <= self.min_error or n >= self.max_samples:
+                self.rescaled_error.pop(x, None)
 
             # We also need to update scale and losses
             super()._update_scale(x, y)
@@ -382,13 +383,11 @@ class AverageLearner1D(Learner1D):
             # more than min_samples samples, disregarding neighbor_sampling.
             if n > self.min_samples:
                 self._undersampled_points.discard(x)
-            self._error_in_mean[x] = self._calc_error_in_mean(
-                self._data_samples[x], y_avg, n
-            )
+            self.error[x] = self._calc_error_in_mean(self._data_samples[x], y_avg, n)
             self._update_distances(x)
             self._update_rescaled_error_in_mean(x, "resampled")
-            if self._error_in_mean[x] <= self.min_error or n >= self.max_samples:
-                self._rescaled_error_in_mean.pop(x, None)
+            if self.error[x] <= self.min_error or n >= self.max_samples:
+                self.rescaled_error.pop(x, None)
             super()._update_scale(x, y_avg)
             self._update_losses_resampling(x, real=True)
             if self._scale[1] > self._recompute_losses_factor * self._oldscale[1]:
@@ -402,7 +401,7 @@ class AverageLearner1D(Learner1D):
 
         Returns
         -------
-        plot : `holoviews.element.Scatter * holoviews.element.ErroBars *
+        plot : `holoviews.element.Scatter * holoviews.element.ErrorBars *
                 holoviews.element.Path`
             Plot of the evaluated data.
         """
@@ -412,9 +411,7 @@ class AverageLearner1D(Learner1D):
         elif not self.vdim > 1:
             xs, ys = zip(*sorted(self.data.items()))
             scatter = hv.Scatter(self.data)
-            error = hv.ErrorBars(
-                [(x, self.data[x], self._error_in_mean[x]) for x in self.data]
-            )
+            error = hv.ErrorBars([(x, self.data[x], self.error[x]) for x in self.data])
             line = hv.Path((xs, ys))
             p = scatter * error * line
         else:
