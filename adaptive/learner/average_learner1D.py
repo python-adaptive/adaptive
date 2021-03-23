@@ -128,16 +128,16 @@ class AverageLearner1D(Learner1D):
 
     def _ask_for_more_samples(self, x, n):
         """When asking for n points, the learner returns n times an existing point
-           to be resampled, since in general n << min_samples and this point will
-           need to be resampled many more times"""
+        to be resampled, since in general n << min_samples and this point will
+        need to be resampled many more times"""
         points = [x] * n
         loss_improvements = [0] * n  # We set the loss_improvements of resamples to 0
         return points, loss_improvements
 
     def _ask_for_new_point(self, n):
         """When asking for n new points, the learner returns n times a single
-           new point, since in general n << min_samples and this point will need
-           to be resampled many more times"""
+        new point, since in general n << min_samples and this point will need
+        to be resampled many more times"""
         points, loss_improvements = self._ask_points_without_adding(1)
         points = points * n
         loss_improvements = loss_improvements + [0] * (n - 1)
@@ -171,7 +171,7 @@ class AverageLearner1D(Learner1D):
 
     def _update_rescaled_error_in_mean(self, x, point_type):
         """Updates self._rescaled_error_in_mean; point_type must be "new" or
-           "resampled". """
+        "resampled"."""
         #  Update neighbors
         x_left, x_right = self.neighbors[x]
         dists = self._distances
@@ -324,31 +324,31 @@ class AverageLearner1D(Learner1D):
 
     def tell_many(self, xs, ys):
         # Check that all x are within the bounds
-        if not np.prod([x>=self.bounds[0] and x<=self.bounds[1] for x in xs]):
+        if not np.prod([x >= self.bounds[0] and x <= self.bounds[1] for x in xs]):
             raise ValueError(
                 "x value out of bounds, "
                 "remove x or enlarge the bounds of the learner"
             )
         x_old = np.inf
         ys_old = []
-        for x, y in zip(xs,ys):
+        for x, y in zip(xs, ys):
             if x == x_old:
                 # Store the y-values until a new x is found in xs
                 ys_old.append(y)
             else:
-                if len(ys_old)==1:
-                    self.tell(x_old,ys_old[0])
-                elif len(ys_old)>1:
+                if len(ys_old) == 1:
+                    self.tell(x_old, ys_old[0])
+                elif len(ys_old) > 1:
                     # If we stored more than 1 y-value for the previous x,
                     # use a more efficient routine to tell many samples
                     # simultaneously, before we move on to a new x
-                    self.tell_many_samples(x_old,ys_old)
+                    self.tell_many_samples(x_old, ys_old)
                 x_old = x
                 ys_old = [y]
-        if len(ys_old)==1:
-            self.tell(x_old,ys_old[0])
-        elif len(ys_old)>1:
-            self.tell_many_samples(x_old,ys_old)
+        if len(ys_old) == 1:
+            self.tell(x_old, ys_old[0])
+        elif len(ys_old) > 1:
+            self.tell_many_samples(x_old, ys_old)
 
     def tell_many_samples(self, x, ys):
         """Tell the learner about many samples at a certain location x.
@@ -359,7 +359,7 @@ class AverageLearner1D(Learner1D):
         ys : List of data samples at x
         """
         # Check x is within the bounds
-        if not np.prod(x>=self.bounds[0] and x<=self.bounds[1]):
+        if not np.prod(x >= self.bounds[0] and x <= self.bounds[1]):
             raise ValueError(
                 "x value out of bounds, "
                 "remove x or enlarge the bounds of the learner"
@@ -374,7 +374,7 @@ class AverageLearner1D(Learner1D):
         # If x is not a new point or if there were more than 1 sample in ys:
         if len(ys):
             self.data[x] = y_avg
-            self._data_samples.update({x: ys+self._data_samples[x]})
+            self._data_samples.update({x: ys + self._data_samples[x]})
             n = len(self._data_samples[x])
             self._number_samples[x] = n
             # self._update_data(x,y,"new") included the point
@@ -382,7 +382,9 @@ class AverageLearner1D(Learner1D):
             # more than min_samples samples, disregarding neighbor_sampling.
             if n > self.min_samples:
                 self._undersampled_points.discard(x)
-            self._error_in_mean[x] = self._calc_error_in_mean(self._data_samples[x], y_avg, n)
+            self._error_in_mean[x] = self._calc_error_in_mean(
+                self._data_samples[x], y_avg, n
+            )
             self._update_distances(x)
             self._update_rescaled_error_in_mean(x, "resampled")
             if self._error_in_mean[x] <= self.min_error or n >= self.max_samples:
