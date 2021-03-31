@@ -370,7 +370,6 @@ class AverageLearner1D(Learner1D):
             )
 
         ys = list(ys)  # cast to list *and* make a copy
-        y_avg = np.mean(ys)
         # If x is a new point:
         if x not in self.data:
             y = ys.pop(0)
@@ -379,21 +378,23 @@ class AverageLearner1D(Learner1D):
 
         # If x is not a new point or if there were more than 1 sample in ys:
         if len(ys) > 0:
-            self.data[x] = y_avg
             self._data_samples[x].extend(ys)
-            n = len(self._data_samples[x])
+            n = len(ys)+self._number_samples[x]
+                # Same as n=len(self._data_samples[x]) but faster
+            self.data[x] = (np.mean(ys)*len(ys) + self.data[x]*self._number_samples[x])/n
+                # Same as self.data[x]=np.mean(self._data_samples[x]) but faster
             self._number_samples[x] = n
             # `self._update_data(x, y, "new")` included the point
             # in _undersampled_points. We remove it if there are
             # more than min_samples samples, disregarding neighbor_sampling.
             if n > self.min_samples:
                 self._undersampled_points.discard(x)
-            self.error[x] = self._calc_error_in_mean(self._data_samples[x], y_avg, n)
+            self.error[x] = self._calc_error_in_mean(self._data_samples[x], self.data[x], n)
             self._update_distances(x)
             self._update_rescaled_error_in_mean(x, "resampled")
             if self.error[x] <= self.min_error or n >= self.max_samples:
                 self.rescaled_error.pop(x, None)
-            super()._update_scale(x, y_avg)
+            super()._update_scale(x, self.data[x])
             self._update_losses_resampling(x, real=True)
             if self._scale[1] > self._recompute_losses_factor * self._oldscale[1]:
                 for interval in reversed(self.losses):
