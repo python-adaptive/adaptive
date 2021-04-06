@@ -546,6 +546,10 @@ class IntegratorLearner(BaseLearner):
         xs, ys = zip(*[(x, y) for ival in ivals for x, y in sorted(ival.data.items())])
         return hv.Path((xs, ys))
 
+    def to_numpy(self):
+        """Data as NumPy array of size (npoints, 2)."""
+        return np.array(sorted(self.data.items()))
+
     def _get_data(self):
         # Change the defaultdict of SortedSets to a normal dict of sets.
         x_mapping = {k: set(v) for k, v in self.x_mapping.items()}

@@ -56,6 +56,10 @@ class AverageLearner(BaseLearner):
     def n_requested(self):
         return self.npoints + len(self.pending_points)
 
+    def to_numpy(self):
+        """Data as NumPy array of size (npoints, 2) with seeds and values."""
+        return np.array(sorted(self.data.items()))
+
     def ask(self, n, tell_pending=True):
         points = list(range(self.n_requested, self.n_requested + n))
 

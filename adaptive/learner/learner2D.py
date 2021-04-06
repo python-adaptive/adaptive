@@ -377,6 +377,13 @@ class Learner2D(BaseLearner):
         else:
             return np.array([xy_scale[0], xy_scale[1] / self.aspect_ratio])
 
+    def to_numpy(self):
+        """Data as NumPy array of size ``(npoints, 3)`` if ``learner.function`` returns a scalar
+        and ``(npoints, 2+vdim)`` if ``learner.function`` returns a vector of length ``vdim``."""
+        return np.array(
+            [(x, y, *np.atleast_1d(z)) for (x, y), z in sorted(self.data.items())]
+        )
+
     def _scale(self, points):
         points = np.asarray(points, dtype=float)
         return (points - self.xy_mean) / self.xy_scale

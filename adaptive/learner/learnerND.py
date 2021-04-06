@@ -379,6 +379,12 @@ class LearnerND(BaseLearner):
                 self._vdim = 1
         return self._vdim if self._vdim is not None else 1
 
+    def to_numpy(self):
+        """Data as NumPy array of size ``(npoints, dim+vdim)``, where ``dim`` is the
+        size of the input dimension and ``vdim`` is the length of the return value
+        of ``learner.function``."""
+        return np.array([(*p, *np.atleast_1d(v)) for p, v in sorted(self.data.items())])
+
     @property
     def bounds_are_done(self):
         return all(p in self.data for p in self._bounds_points)
