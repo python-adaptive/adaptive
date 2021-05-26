@@ -412,6 +412,7 @@ class BlockingRunner(BaseRunner):
             remaining = self._remove_unfinished()
             if remaining:
                 concurrent.wait(remaining)
+                self._process_futures(remaining)
             self._cleanup()
 
     def elapsed_time(self):
