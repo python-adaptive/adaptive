@@ -48,7 +48,7 @@ It easily runs on tens of thousands of cores.
 What is the difference with FEM?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The main difference with FEM is that one needs to globally update the mesh at every time step.
+The main difference with FEM (Finite Element Method) is that one needs to globally update the mesh at every time step.
 
 For Adaptive, we want to be able to parallelize the function evaluation and that requires an algorithm that can quickly return a new suggested point.
 This means that, to minimize the time that Adaptive spends on adding newly calculated points to the data strucute, we only want to update the data of the points that are close to the new point.
