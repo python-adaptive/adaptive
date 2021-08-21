@@ -32,12 +32,6 @@ When using the `~adaptive.Runner` the learner's function is evaluated in differe
 Therefore, the ``function`` needs to be serialized (pickled) and send to the executor, ``lambda``\s cannot be pickled.
 Instead you can probably use ``functools.partial`` to accomplish what you want to do.
 
-
-I get "``concurrent.futures.process.BrokenProcessPool``: A process in the process pool was terminated abruptly while the future was running or pending." what does it mean?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-XXX: add answer!
-
 Where can I learn more about the algorithm used?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -79,29 +73,33 @@ Adaptive is much more simple-minded and it relies only on the local properties o
 
 We'd say that Bayesian modeling is good for really computationally expensive data, regular grids for really cheap data, and local adaptive algorithms are somewhere in the middle.
 
+..  I get "``concurrent.futures.process.BrokenProcessPool``: A process in the process pool was terminated abruptly while the future was running or pending." what does it mean?
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-What is the difference with Kriging?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    XXX: add answer!
 
-XXX: add answer!
+    What is the difference with Kriging?
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-What is the difference with adaptive meshing in CFD or computer graphics?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-XXX: add answer!
+    XXX: add answer!
 
 
-Can I use this to tune my hyper parameters for machine learning models?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    What is the difference with adaptive meshing in CFD or computer graphics?
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-XXX: add answer!
+    XXX: add answer!
 
 
-How to use Adaptive with MATLAB?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Can I use this to tune my hyper parameters for machine learning models?
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-XXX: add answer!
+    XXX: add answer!
+
+
+    How to use Adaptive with MATLAB?
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    XXX: add answer!
 
 
 Missing a question that you think belongs here? Let us `know <https://github.com/python-adaptive/adaptive/issues/new>`_.
