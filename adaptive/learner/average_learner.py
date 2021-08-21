@@ -118,9 +118,11 @@ class AverageLearner(BaseLearner):
         if n < self.min_npoints:
             return np.inf
         standard_error = self.std / sqrt(n)
-        return max(
-            standard_error / self.atol, standard_error / abs(self.mean) / self.rtol
-        )
+        aloss = standard_error / self.atol
+        rloss = standard_error / self.rtol
+        if self.mean != 0:
+            rloss /= abs(self.mean)
+        return max(aloss, rloss)
 
     def _loss_improvement(self, n):
         loss = self.loss()
