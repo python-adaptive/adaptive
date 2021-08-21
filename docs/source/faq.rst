@@ -29,7 +29,7 @@ Why can I not use a ``lambda`` with a learner?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When using the `~adaptive.Runner` the learner's function is evaluated in different Python processes.
-Therefore, the ``function`` needs to be serialized (pickled) and send to the executor, ``lambda``\s cannot be pickled.
+Therefore, the ``function`` needs to be serialized (pickled) and send to the other Python processes; ``lambda``\s cannot be pickled.
 Instead you can probably use ``functools.partial`` to accomplish what you want to do.
 
 Where can I learn more about the algorithm used?
