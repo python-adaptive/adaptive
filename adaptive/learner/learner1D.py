@@ -96,7 +96,7 @@ def resolution_loss_function(min_length=0, max_length=1):
     ...     return x**2
     >>>
     >>> loss = resolution_loss_function(min_length=0.01, max_length=1)
-    >>> learner = adaptive.Learner1D(f, bounds=[(-1, -1), (1, 1)], loss_per_triangle=loss)
+    >>> learner = adaptive.Learner1D(f, bounds=(-1, -1), loss_per_interval=loss)
     """
 
     @uses_nth_neighbors(0)
