@@ -18,3 +18,7 @@ Custom loss functions
 .. autofunction:: adaptive.learner.learner1D.triangle_loss
 
 .. autofunction:: adaptive.learner.learner1D.curvature_loss_function
+
+.. autofunction:: adaptive.learner.learner1D.abs_min_log_loss
+
+.. autofunction:: adaptive.learner.learner1D.resolution_loss_function

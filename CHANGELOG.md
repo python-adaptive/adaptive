@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased](https://github.com/python-adaptive/adaptive/tree/HEAD)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.12.2...HEAD)
+
+**Closed issues:**
+
+- Cryptic error when importing lmfit [\#314](https://github.com/python-adaptive/adaptive/issues/314)
+
+## [v0.12.2](https://github.com/python-adaptive/adaptive/tree/v0.12.2) (2021-03-23)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.12.1...v0.12.2)
+
+**Merged pull requests:**
+
+- raise an AttributeError when attribute doesn't exists, closes \#314 [\#315](https://github.com/python-adaptive/adaptive/pull/315) ([basnijholt](https://github.com/basnijholt))
+
 ## [v0.12.1](https://github.com/python-adaptive/adaptive/tree/v0.12.1) (2021-03-23)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.12.0...v0.12.1)

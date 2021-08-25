@@ -412,6 +412,10 @@ class BlockingRunner(BaseRunner):
             remaining = self._remove_unfinished()
             if remaining:
                 concurrent.wait(remaining)
+                # Some futures get their result set, despite being cancelled.
+                # see https://github.com/python-adaptive/adaptive/issues/319
+                with_result = [f for f in remaining if not f.cancelled() and f.done()]
+                self._process_futures(with_result)
             self._cleanup()
 
     def elapsed_time(self):

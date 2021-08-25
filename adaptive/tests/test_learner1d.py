@@ -1,5 +1,6 @@
 import random
 
+import flaky
 import numpy as np
 
 from adaptive.learner import Learner1D
@@ -246,6 +247,7 @@ def test_ask_does_not_return_known_points_when_returning_bounds():
     assert 0 not in points
 
 
+@flaky.flaky(max_runs=3)
 def test_tell_many():
     def f(x, offset=0.123214):
         a = 0.01

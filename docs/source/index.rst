@@ -21,3 +21,4 @@
    usage_examples
    reference/adaptive
    CHANGELOG
+   faq

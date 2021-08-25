@@ -56,6 +56,10 @@ class AverageLearner(BaseLearner):
     def n_requested(self):
         return self.npoints + len(self.pending_points)
 
+    def to_numpy(self):
+        """Data as NumPy array of size (npoints, 2) with seeds and values."""
+        return np.array(sorted(self.data.items()))
+
     def ask(self, n, tell_pending=True):
         points = list(range(self.n_requested, self.n_requested + n))
 
@@ -114,9 +118,11 @@ class AverageLearner(BaseLearner):
         if n < self.min_npoints:
             return np.inf
         standard_error = self.std / sqrt(n)
-        return max(
-            standard_error / self.atol, standard_error / abs(self.mean) / self.rtol
-        )
+        aloss = standard_error / self.atol
+        rloss = standard_error / self.rtol
+        if self.mean != 0:
+            rloss /= abs(self.mean)
+        return max(aloss, rloss)
 
     def _loss_improvement(self, n):
         loss = self.loss()

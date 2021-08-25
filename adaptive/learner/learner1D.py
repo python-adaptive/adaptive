@@ -96,7 +96,7 @@ def resolution_loss_function(min_length=0, max_length=1):
     ...     return x**2
     >>>
     >>> loss = resolution_loss_function(min_length=0.01, max_length=1)
-    >>> learner = adaptive.Learner1D(f, bounds=[(-1, -1), (1, 1)], loss_per_triangle=loss)
+    >>> learner = adaptive.Learner1D(f, bounds=(-1, -1), loss_per_interval=loss)
     """
 
     @uses_nth_neighbors(0)
@@ -268,6 +268,11 @@ class Learner1D(BaseLearner):
             else:
                 return 1
         return self._vdim
+
+    def to_numpy(self):
+        """Data as NumPy array of size ``(npoints, 2)`` if ``learner.function`` returns a scalar
+        and ``(npoints, 1+vdim)`` if ``learner.function`` returns a vector of length ``vdim``."""
+        return np.array([(x, *np.atleast_1d(y)) for x, y in sorted(self.data.items())])
 
     @property
     def npoints(self):
