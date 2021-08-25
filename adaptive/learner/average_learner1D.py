@@ -277,7 +277,7 @@ class AverageLearner1D(Learner1D):
                 self.rescaled_error.pop(x, None)
 
             # We also need to update scale and losses
-            super()._update_scale(x, y)
+            self._update_scale(x, y)
             self._update_losses_resampling(x, real=True)
 
             # If the scale has increased enough, recompute all losses.
@@ -396,7 +396,8 @@ class AverageLearner1D(Learner1D):
             self._update_rescaled_error_in_mean(x, "resampled")
             if self.error[x] <= self.min_error or n >= self.max_samples:
                 self.rescaled_error.pop(x, None)
-            super()._update_scale(x, self.data[x])
+            self._update_scale(x, min(self._data_samples[x]))
+            self._update_scale(x, max(self._data_samples[x]))
             self._update_losses_resampling(x, real=True)
             if self._scale[1] > self._recompute_losses_factor * self._oldscale[1]:
                 for interval in reversed(self.losses):
