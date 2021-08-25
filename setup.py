@@ -51,6 +51,7 @@ extras_require = {
         "pytest-randomly",
         "pytest-timeout",
         "pre_commit",
+        "pandas",
     ],
     "other": [
         "dill",
