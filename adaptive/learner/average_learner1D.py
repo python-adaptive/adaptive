@@ -379,17 +379,19 @@ class AverageLearner1D(Learner1D):
         # If x is not a new point or if there were more than 1 sample in ys:
         if len(ys) > 0:
             self._data_samples[x].extend(ys)
-            n = len(ys)+self._number_samples[x]
-                # Same as n=len(self._data_samples[x]) but faster
-            self.data[x] = (np.mean(ys)*len(ys) + self.data[x]*self._number_samples[x])/n
-                # Same as self.data[x]=np.mean(self._data_samples[x]) but faster
+            n = len(ys) + self._number_samples[x]
+            self.data[x] = (
+                np.mean(ys) * len(ys) + self.data[x] * self._number_samples[x]
+            ) / n
             self._number_samples[x] = n
             # `self._update_data(x, y, "new")` included the point
             # in _undersampled_points. We remove it if there are
             # more than min_samples samples, disregarding neighbor_sampling.
             if n > self.min_samples:
                 self._undersampled_points.discard(x)
-            self.error[x] = self._calc_error_in_mean(self._data_samples[x], self.data[x], n)
+            self.error[x] = self._calc_error_in_mean(
+                self._data_samples[x], self.data[x], n
+            )
             self._update_distances(x)
             self._update_rescaled_error_in_mean(x, "resampled")
             if self.error[x] <= self.min_error or n >= self.max_samples:
