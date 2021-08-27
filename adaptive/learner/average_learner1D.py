@@ -1,4 +1,5 @@
 import math
+import sys
 from collections import defaultdict
 from copy import deepcopy
 from math import hypot
@@ -23,12 +24,10 @@ from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
 
 number = Union[int, float, np.int_, np.float_]
-
 Point = Tuple[int, number]
 Points = List[Point]
-Value = Union[number, Sequence[number], np.ndarray]
 
-__all__ = ["AverageLearner1D"]
+__all__: List[str] = ["AverageLearner1D"]
 
 
 class AverageLearner1D(Learner1D):
@@ -76,7 +75,7 @@ class AverageLearner1D(Learner1D):
 
     def __init__(
         self,
-        function: Callable[[Tuple[int, number]], Value],
+        function: Callable[[Tuple[int, number]], number],
         bounds: Tuple[number, number],
         loss_per_interval: Optional[
             Callable[[Sequence[number], Sequence[number]], float]
@@ -85,7 +84,7 @@ class AverageLearner1D(Learner1D):
         alpha: float = 0.005,
         neighbor_sampling: float = 0.3,
         min_samples: int = 50,
-        max_samples: int = np.inf,
+        max_samples: int = sys.maxsize,
         min_error: float = 0,
     ):
         if not (0 < delta <= 1):
@@ -201,16 +200,13 @@ class AverageLearner1D(Learner1D):
             self._update_neighbors(x, self.neighbors_combined)
             self._update_losses(x, real=False)
 
-    def tell(self, seed_x: Point, y: Value) -> None:
+    def tell(self, seed_x: Point, y: number) -> None:
         seed, x = seed_x
         if y is None:
             raise TypeError(
                 "Y-value may not be None, use learner.tell_pending(x)"
                 "to indicate that this value is currently being calculated"
             )
-        # either it is a float/int, if not, try casting to a np.array
-        if not isinstance(y, (float, int)):
-            y = np.asarray(y, dtype=float)
 
         if x not in self.data:
             self._update_data(x, y, "new")
@@ -257,7 +253,7 @@ class AverageLearner1D(Learner1D):
             norm = min(d_left, d_right)
             self.rescaled_error[x] = self.error[x] / norm
 
-    def _update_data(self, x: number, y: Value, point_type: str) -> None:
+    def _update_data(self, x: number, y: number, point_type: str) -> None:
         if point_type == "new":
             self.data[x] = y
         elif point_type == "resampled":
@@ -265,7 +261,9 @@ class AverageLearner1D(Learner1D):
             new_average = self.data[x] * n / (n + 1) + y / (n + 1)
             self.data[x] = new_average
 
-    def _update_data_structures(self, seed_x: Point, y: Value, point_type: str) -> None:
+    def _update_data_structures(
+        self, seed_x: Point, y: number, point_type: str
+    ) -> None:
         seed, x = seed_x
         if point_type == "new":
             self._data_samples[x] = {seed: y}
@@ -370,12 +368,12 @@ class AverageLearner1D(Learner1D):
         if (b is not None) and right_loss_is_unknown:
             self.losses_combined[x, b] = float("inf")
 
-    def _calc_error_in_mean(self, ys: Sequence[Value], y_avg: Value, n: int) -> float:
+    def _calc_error_in_mean(self, ys: Sequence[number], y_avg: number, n: int) -> float:
         variance_in_mean = sum((y - y_avg) ** 2 for y in ys) / (n - 1)
         t_student = scipy.stats.t.ppf(1 - self.alpha, df=n - 1)
         return t_student * (variance_in_mean / n) ** 0.5
 
-    def tell_many(self, xs: Points, ys: Sequence[Value]) -> None:
+    def tell_many(self, xs: Points, ys: Sequence[number]) -> None:
         # Check that all x are within the bounds
         # TODO: remove this requirement, all other learners add the data
         # but ignore it going forward.
@@ -386,7 +384,7 @@ class AverageLearner1D(Learner1D):
             )
 
         # Create a mapping of points to a list of samples
-        mapping: DefaultDict[number, DefaultDict[int, Value]] = defaultdict(
+        mapping: DefaultDict[number, DefaultDict[int, number]] = defaultdict(
             lambda: defaultdict(dict)
         )
         for (seed, x), y in zip(xs, ys):
@@ -402,14 +400,14 @@ class AverageLearner1D(Learner1D):
                 # simultaneously, before we move on to a new x
                 self.tell_many_at_point(x, seed_y_mapping)
 
-    def tell_many_at_point(self, x: float, seed_y_mapping: Dict[int, Value]) -> None:
+    def tell_many_at_point(self, x: number, seed_y_mapping: Dict[int, number]) -> None:
         """Tell the learner about many samples at a certain location x.
 
         Parameters
         ----------
         x : float
             Value from the function domain.
-        seed_y_mapping : Dict[int, Value]
+        seed_y_mapping : Dict[int, number]
             Dictionary of ``seed`` -> ``y`` at ``x``.
         """
         # Check x is within the bounds
@@ -458,10 +456,10 @@ class AverageLearner1D(Learner1D):
                     self._update_interpolated_loss_in_interval(*interval)
                 self._oldscale = deepcopy(self._scale)
 
-    def _get_data(self) -> SortedDict[number, Value]:
+    def _get_data(self) -> SortedDict[number, number]:
         return self._data_samples
 
-    def _set_data(self, data: SortedDict[number, Value]) -> None:
+    def _set_data(self, data: SortedDict[number, number]) -> None:
         if data:
             for x, samples in data.items():
                 self.tell_many_at_point(x, samples)
