@@ -514,7 +514,7 @@ def test_learner_performance_is_invariant_under_scaling(
     assert math.isclose(learner.loss(), control.loss(), rel_tol=1e-10)
 
 
-@flaky.flaky(max_runs=5)
+@flaky.flaky(max_runs=10)
 @run_with(
     Learner1D,
     Learner2D,
