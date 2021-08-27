@@ -107,6 +107,15 @@ class BalancingLearner(BaseLearner):
         return sum(l.npoints for l in self.learners)
 
     @property
+    def nsamples(self):
+        if hasattr(self.learners[0], "nsamples"):
+            return sum(l.nsamples for l in self.learners)
+        else:
+            raise AttributeError(
+                f"{type(self.learners[0])} as no attribute called `nsamples`."
+            )
+
+    @property
     def strategy(self):
         """Can be either 'loss_improvements' (default), 'loss', 'npoints', or
         'cycle'. The points that the `BalancingLearner` choses can be either
