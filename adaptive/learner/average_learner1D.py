@@ -31,7 +31,8 @@ class AverageLearner1D(Learner1D):
     loss_per_interval: callable, optional
         A function that returns the loss for a single interval of the domain.
         If not provided, then a default is used, which uses the scaled distance
-        in the x-y plane as the loss. See the notes for more details.
+        in the x-y plane as the loss. See the notes for more details
+        of `adaptive.Learner1D` for more details.
     delta : float
         This parameter controls the resampling condition. A point is resampled
         if its uncertainty is larger than delta times the smallest neighboring
