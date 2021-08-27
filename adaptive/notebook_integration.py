@@ -263,6 +263,9 @@ def _info_html(runner):
         info.append(("# of points", runner.learner.npoints))
 
     with suppress(Exception):
+        info.append(("# of samples", runner.learner.nsamples))
+
+    with suppress(Exception):
         info.append(("latest loss", f'{runner.learner._cache["loss"]:.3f}'))
 
     table = "\n".join(_table_row(i, k, v) for i, (k, v) in enumerate(info))

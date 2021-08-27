@@ -25,6 +25,7 @@ We recommend to start with the :ref:`Tutorial `~adaptive.Learner1D``.
     tutorial.DataSaver
     tutorial.IntegratorLearner
     tutorial.LearnerND
+    tutorial.AverageLearner1D
     tutorial.SequenceLearner
     tutorial.SKOptLearner
     tutorial.parallelism

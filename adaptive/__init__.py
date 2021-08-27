@@ -4,6 +4,7 @@ from adaptive import learner, runner, utils
 from adaptive._version import __version__
 from adaptive.learner import (
     AverageLearner,
+    AverageLearner1D,
     BalancingLearner,
     BaseLearner,
     DataSaver,
@@ -34,6 +35,7 @@ __all__ = [
     "Learner1D",
     "Learner2D",
     "LearnerND",
+    "AverageLearner1D",
     "make_datasaver",
     "SequenceLearner",
     "active_plotting_tasks",

@@ -47,8 +47,10 @@ The following learners are implemented:
 - ``Learner1D``, for 1D functions ``f: ℝ → ℝ^N``,
 - ``Learner2D``, for 2D functions ``f: ℝ^2 → ℝ^N``,
 - ``LearnerND``, for ND functions ``f: ℝ^N → ℝ^M``,
-- ``AverageLearner``, For stochastic functions where you want to
+- ``AverageLearner``, for random variables where you want to
   average the result over many evaluations,
+- ``AverageLearner1D``, for stochastic 1D functions where you want to
+  estimate the mean value of the function at each point,
 - ``IntegratorLearner``, for
   when you want to intergrate a 1D function ``f: ℝ → ℝ``,
 - ``BalancingLearner``, for when you want to run several learners at once,

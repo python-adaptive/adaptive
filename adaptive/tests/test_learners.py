@@ -17,6 +17,7 @@ import scipy.spatial
 import adaptive
 from adaptive.learner import (
     AverageLearner,
+    AverageLearner1D,
     BalancingLearner,
     DataSaver,
     IntegratorLearner,
@@ -86,6 +87,23 @@ def uniform(a, b):
     return lambda: random.uniform(a, b)
 
 
+def simple_run(learner, n):
+    def get_goal(learner):
+        if hasattr(learner, "nsamples"):
+            return lambda l: l.nsamples > n
+        else:
+            return lambda l: l.npoints > n
+
+    def goal():
+        if isinstance(learner, BalancingLearner):
+            return get_goal(learner.learners[0])
+        elif isinstance(learner, DataSaver):
+            return get_goal(learner.learner)
+        return get_goal(learner)
+
+    simple(learner, goal())
+
+
 # Library of functions and associated learners.
 
 learner_function_combos = collections.defaultdict(list)
@@ -144,6 +162,19 @@ def sphere_of_fire(xyz, d: uniform(0.2, 0.5)):
 @learn_with(AverageLearner, rtol=1)
 def gaussian(n):
     return random.gauss(1, 1)
+
+
+@learn_with(AverageLearner1D, bounds=[-2, 2])
+def noisy_peak(
+    seed_x,
+    sigma: uniform(1.5, 2.5),
+    peak_width: uniform(0.04, 0.06),
+    offset: uniform(-0.6, -0.3),
+):
+    seed, x = seed_x
+    y = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
+    noise = np.random.normal(0, sigma)
+    return y + noise
 
 
 # Decorators for tests.
@@ -249,10 +280,10 @@ def test_learner_accepts_lists(learner_type, bounds):
         return [0, 1]
 
     learner = learner_type(f, bounds=bounds)
-    simple(learner, goal=lambda l: l.npoints > 10)
+    simple_run(learner, 10)
 
 
-@run_with(Learner1D, Learner2D, LearnerND, SequenceLearner)
+@run_with(Learner1D, Learner2D, LearnerND, SequenceLearner, AverageLearner1D)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
 
@@ -262,7 +293,7 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
-    if learner_type is Learner1D:
+    if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
 
@@ -299,7 +330,14 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
-@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner, SequenceLearner)
+@run_with(
+    Learner1D,
+    xfail(Learner2D),
+    LearnerND,
+    AverageLearner,
+    AverageLearner1D,
+    SequenceLearner,
+)
 def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     """Adding data for a point that was not returned by 'ask'."""
     # XXX: learner, control and bounds are not defined
@@ -341,7 +379,9 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
         assert set(pls) == set(cpls)
 
 
-@run_with(Learner1D, xfail(Learner2D), xfail(LearnerND), AverageLearner)
+@run_with(
+    Learner1D, xfail(Learner2D), xfail(LearnerND), AverageLearner, AverageLearner1D
+)
 def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     """The order of calls to 'tell' between calls to 'ask'
     is arbitrary.
@@ -355,7 +395,7 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
 
-    if learner_type is Learner1D:
+    if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
 
@@ -372,29 +412,35 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
         learner.tell(*p)
 
     M = random.randint(10, 30)
-    pls = zip(*learner.ask(M))
-    cpls = zip(*control.ask(M))
+    pls = sorted(zip(*learner.ask(M)))
+    cpls = sorted(zip(*control.ask(M)))
     # Point ordering within a single call to 'ask'
     # is not guaranteed to be the same by the API.
     # We compare the sorted points instead of set, because the points
     # should only be identical up to machine precision.
-    np.testing.assert_almost_equal(sorted(pls), sorted(cpls))
+    if isinstance(pls[0][0], tuple):
+        # This is the case for AverageLearner1D
+        pls = [(*x, y) for x, y in pls]
+        cpls = [(*x, y) for x, y in cpls]
+    np.testing.assert_almost_equal(pls, cpls)
 
 
 # XXX: the Learner2D fails with ~50% chance
 # see https://github.com/python-adaptive/adaptive/issues/55
-@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner)
+@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner, AverageLearner1D)
 def test_expected_loss_improvement_is_less_than_total_loss(
     learner_type, f, learner_kwargs
 ):
     """The estimated loss improvement can never be greater than the total loss."""
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
-    N = random.randint(50, 100)
-    xs, loss_improvements = learner.ask(N)
-
-    for x in xs:
-        learner.tell(x, learner.function(x))
+    for _ in range(2):
+        # We do this twice to make sure that the AverageLearner1D
+        # has two different points in `x`.
+        N = random.randint(50, 100)
+        xs, loss_improvements = learner.ask(N)
+        for x in xs:
+            learner.tell(x, learner.function(x))
 
     M = random.randint(50, 100)
     _, loss_improvements = learner.ask(M)
@@ -403,7 +449,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(
         assert sum(loss_improvements) < sum(
             learner.loss_per_triangle(learner.interpolator(scaled=True))
         )
-    elif learner_type is Learner1D:
+    elif learner_type in (Learner1D, AverageLearner1D):
         assert sum(loss_improvements) < sum(learner.losses.values())
     elif learner_type is AverageLearner:
         assert sum(loss_improvements) < learner.loss()
@@ -411,7 +457,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
-@run_with(Learner1D, xfail(Learner2D), LearnerND)
+@run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner1D)
 def test_learner_performance_is_invariant_under_scaling(
     learner_type, f, learner_kwargs
 ):
@@ -423,6 +469,9 @@ def test_learner_performance_is_invariant_under_scaling(
     """
     # for now we just scale X and Y by random factors
     f = generate_random_parametrization(f)
+    if learner_type is AverageLearner1D:
+        # no noise for AverageLearner1D to make it deterministic
+        f = ft.partial(f, sigma=0)
 
     control_kwargs = dict(learner_kwargs)
     control = learner_type(f, **control_kwargs)
@@ -432,9 +481,16 @@ def test_learner_performance_is_invariant_under_scaling(
 
     l_kwargs = dict(learner_kwargs)
     l_kwargs["bounds"] = xscale * np.array(l_kwargs["bounds"])
-    learner = learner_type(lambda x: yscale * f(np.array(x) / xscale), **l_kwargs)
 
-    if learner_type in [Learner1D, LearnerND]:
+    def scale_x(x):
+        if isinstance(learner, AverageLearner1D):
+            seed, x = x
+            return (seed, x / xscale)
+        return np.array(x) / xscale
+
+    learner = learner_type(lambda x: yscale * f(scale_x(x)), **l_kwargs)
+
+    if learner_type in [Learner1D, LearnerND, AverageLearner1D]:
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
 
@@ -451,7 +507,7 @@ def test_learner_performance_is_invariant_under_scaling(
         learner.tell_many(xs, [learner.function(x) for x in xs])
 
         # Check whether the points returned are the same
-        xs_unscaled = np.array(xs) / xscale
+        xs_unscaled = [scale_x(x) for x in xs]
         assert np.allclose(xs_unscaled, cxs)
 
     # Check if the losses are close
@@ -464,6 +520,7 @@ def test_learner_performance_is_invariant_under_scaling(
     Learner2D,
     LearnerND,
     AverageLearner,
+    AverageLearner1D,
     SequenceLearner,
     with_all_loss_functions=False,
 )
@@ -498,9 +555,12 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
             x = stash.pop()
             learner.tell(x, learner.function(x))
 
-    assert all(l.npoints > 5 for l in learner.learners), [
-        l.npoints for l in learner.learners
-    ]
+    if learner_type is AverageLearner1D:
+        nsamples = [l.nsamples for l in learner.learners]
+        assert all(l.nsamples > 5 for l in learner.learners), nsamples
+    else:
+        npoints = [l.npoints for l in learner.learners]
+        assert all(l.npoints > 5 for l in learner.learners), npoints
 
 
 @run_with(
@@ -508,6 +568,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     Learner2D,
     LearnerND,
     AverageLearner,
+    AverageLearner1D,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
     SequenceLearner,
@@ -517,10 +578,10 @@ def test_saving(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner_type(f, **learner_kwargs)
-    if learner_type is Learner1D:
+    if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
-    simple(learner, lambda l: l.npoints > 100)
+    simple_run(learner, 100)
     fd, path = tempfile.mkstemp()
     os.close(fd)
     try:
@@ -530,7 +591,7 @@ def test_saving(learner_type, f, learner_kwargs):
         np.testing.assert_almost_equal(learner.loss(), control.loss())
 
         # Try if the control is runnable
-        simple(control, lambda l: l.npoints > 200)
+        simple_run(control, 200)
     finally:
         os.remove(path)
 
@@ -540,6 +601,7 @@ def test_saving(learner_type, f, learner_kwargs):
     Learner2D,
     LearnerND,
     AverageLearner,
+    AverageLearner1D,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
     SequenceLearner,
@@ -550,12 +612,12 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     learner = BalancingLearner([learner_type(f, **learner_kwargs)])
     control = BalancingLearner([learner_type(f, **learner_kwargs)])
 
-    if learner_type is Learner1D:
+    if learner_type in (Learner1D, AverageLearner1D):
         for l, c in zip(learner.learners, control.learners):
             l._recompute_losses_factor = 1
             c._recompute_losses_factor = 1
 
-    simple(learner, lambda l: l.learners[0].npoints > 100)
+    simple_run(learner, 100)
     folder = tempfile.mkdtemp()
 
     def fname(learner):
@@ -568,7 +630,7 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
         np.testing.assert_almost_equal(learner.loss(), control.loss())
 
         # Try if the control is runnable
-        simple(control, lambda l: l.learners[0].npoints > 200)
+        simple_run(control, 200)
     finally:
         shutil.rmtree(folder)
 
@@ -578,6 +640,7 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     Learner2D,
     LearnerND,
     AverageLearner,
+    AverageLearner1D,
     maybe_skip(SKOptLearner),
     IntegratorLearner,
     with_all_loss_functions=False,
@@ -589,11 +652,11 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
     learner = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
     control = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
 
-    if learner_type is Learner1D:
+    if learner_type in (Learner1D, AverageLearner1D):
         learner.learner._recompute_losses_factor = 1
         control.learner._recompute_losses_factor = 1
 
-    simple(learner, lambda l: l.npoints > 100)
+    simple_run(learner, 100)
     fd, path = tempfile.mkstemp()
     os.close(fd)
     try:
@@ -605,7 +668,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
         assert learner.extra_data == control.extra_data
 
         # Try if the control is runnable
-        simple(control, lambda l: l.npoints > 200)
+        simple_run(learner, 200)
     finally:
         os.remove(path)
 
