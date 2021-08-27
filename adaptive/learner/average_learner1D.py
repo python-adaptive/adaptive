@@ -1,3 +1,4 @@
+import math
 from collections import defaultdict
 from copy import deepcopy
 from math import hypot
@@ -147,8 +148,15 @@ class AverageLearner1D(Learner1D):
         n_existing = self._number_samples.get(x, 0)
         points = [(seed + n_existing, x) for seed in range(n)]
         xl, xr = self.neighbors_combined[x]
-        loss = (self.losses_combined[xl, x] + self.losses_combined[x, xr]) / 2
-        loss_improvement = loss - loss * np.sqrt(n_existing) / np.sqrt(n_existing + n)
+        loss_left = self.losses_combined.get((xl, x), float("inf"))
+        loss_right = self.losses_combined.get((x, xr), float("inf"))
+        loss = (loss_left + loss_right) / 2
+        if math.isinf(loss):
+            loss_improvement = float("inf")
+        else:
+            loss_improvement = loss - loss * np.sqrt(n_existing) / np.sqrt(
+                n_existing + n
+            )
         loss_improvements = [loss_improvement / n] * n
         return points, loss_improvements
 
