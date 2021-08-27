@@ -21,13 +21,13 @@ __all__: List[str] = ["AverageLearner1D"]
 
 
 class AverageLearner1D(Learner1D):
-    """Learns and predicts a noisy function 'f:ℝ → ℝ^N'.
+    """Learns and predicts a noisy function 'f:ℝ → ℝ'.
 
     Parameters
     ----------
     function : callable
         The function to learn. Must take a tuple of ``(seed, x)`` and
-        return a real number or vector.
+        return a real number.
     bounds : pair of reals
         The bounds of the interval on which to learn 'function'.
     loss_per_interval: callable, optional
