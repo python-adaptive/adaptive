@@ -108,12 +108,12 @@ class AverageLearner1D(Learner1D):
         self._undersampled_points: Set[Real] = set()
         # Contains the error in the estimate of the
         # mean at each point x in the form {x0: error(x0), ...}
-        self.error: ItemSortedDict[Real, float] = decreasing_dict()
+        self.error: Dict[Real, float] = decreasing_dict()
         #  Distance between two neighboring points in the
         # form {xi: ((xii-xi)^2 + (yii-yi)^2)^0.5, ...}
-        self._distances: ItemSortedDict[Real, float] = decreasing_dict()
+        self._distances: Dict[Real, float] = decreasing_dict()
         # {xii: error[xii]/min(_distances[xi], _distances[xii], ...}
-        self.rescaled_error: ItemSortedDict[Real, float] = decreasing_dict()
+        self.rescaled_error: Dict[Real, float] = decreasing_dict()
 
     @property
     def nsamples(self) -> int:
@@ -444,10 +444,10 @@ class AverageLearner1D(Learner1D):
                     self._update_interpolated_loss_in_interval(*interval)
                 self._oldscale = deepcopy(self._scale)
 
-    def _get_data(self) -> SortedDict[Real, Real]:
+    def _get_data(self) -> Dict[Real, Real]:
         return self._data_samples
 
-    def _set_data(self, data: SortedDict[Real, Real]) -> None:
+    def _set_data(self, data: Dict[Real, Real]) -> None:
         if data:
             for x, samples in data.items():
                 self.tell_many_at_point(x, samples)
@@ -481,7 +481,7 @@ class AverageLearner1D(Learner1D):
         return p.redim(x=dict(range=plot_bounds))
 
 
-def decreasing_dict() -> ItemSortedDict:
+def decreasing_dict() -> Dict:
     """This initialization orders the dictionary from large to small values"""
 
     def sorting_rule(key, value):
