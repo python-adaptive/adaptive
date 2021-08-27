@@ -40,7 +40,7 @@ This is how the function looks in the absence of noise:
 .. jupyter-execute::
 
     xs = np.linspace(-2, 2, 500)
-    ys = [noisy_peak((seed, xs), sigma=0) for seed, x in enumerate(xs)]
+    ys = [noisy_peak((seed, x), sigma=0) for seed, x in enumerate(xs)]
     hv.Path((xs, ys))
 
 And an example of a single realization of the noisy function:
