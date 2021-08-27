@@ -352,6 +352,8 @@ class AverageLearner1D(Learner1D):
 
     def tell_many(self, xs: Points, ys: Sequence[Value]) -> None:
         # Check that all x are within the bounds
+        # TODO: remove this requirement, all other learners add the data
+        # but ignore it going forward.
         if not np.prod([x >= self.bounds[0] and x <= self.bounds[1] for _, x in xs]):
             raise ValueError(
                 "x value out of bounds, "
