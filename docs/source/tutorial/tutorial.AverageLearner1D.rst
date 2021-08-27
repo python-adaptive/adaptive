@@ -28,9 +28,11 @@ First, we define the (noisy) function to be sampled. Note that the parameter
 
 .. jupyter-execute::
 
-    def noisy_peak(x, sigma=0, peak_width=0.05, offset=-0.5):
+    def noisy_peak(seed_x, sigma=0, peak_width=0.05, offset=-0.5):
+        seed, x = seed_x  # tuple with seed and `x` value
         y = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
-        noise = np.random.normal(0, sigma)
+        rng = np.random.RandomState(seed)
+        noise = rng.normal(scale=sigma)
         return y + noise
 
 This is how the function looks in the absence of noise:
@@ -38,14 +40,14 @@ This is how the function looks in the absence of noise:
 .. jupyter-execute::
 
     xs = np.linspace(-2, 2, 500)
-    ys = noisy_peak(xs, sigma=0)
+    ys = [noisy_peak((seed, xs), sigma=0) for seed, x in enumerate(xs)]
     hv.Path((xs, ys))
 
 And an example of a single realization of the noisy function:
 
 .. jupyter-execute::
 
-    ys = [noisy_peak(x, sigma=1) for x in xs]
+    ys = [noisy_peak((seed, x), sigma=1) for seed, x in enumerate(xs)]
     hv.Path((xs, ys))
 
 To obtain an estimate of the mean value of the function at each point ``x``, we
