@@ -469,6 +469,9 @@ def test_learner_performance_is_invariant_under_scaling(
     """
     # for now we just scale X and Y by random factors
     f = generate_random_parametrization(f)
+    if learner_type is AverageLearner1D:
+        # no noise for AverageLearner1D to make it deterministic
+        f = ft.partial(f, sigma=0)
 
     control_kwargs = dict(learner_kwargs)
     control = learner_type(f, **control_kwargs)
@@ -478,7 +481,14 @@ def test_learner_performance_is_invariant_under_scaling(
 
     l_kwargs = dict(learner_kwargs)
     l_kwargs["bounds"] = xscale * np.array(l_kwargs["bounds"])
-    learner = learner_type(lambda x: yscale * f(np.array(x) / xscale), **l_kwargs)
+
+    def scale_x(x):
+        if isinstance(learner, AverageLearner1D):
+            seed, x = x
+            return (seed, x / xscale)
+        return np.array(x) / xscale
+
+    learner = learner_type(lambda x: yscale * f(scale_x(x)), **l_kwargs)
 
     if learner_type in [Learner1D, LearnerND, AverageLearner1D]:
         learner._recompute_losses_factor = 1
@@ -497,7 +507,7 @@ def test_learner_performance_is_invariant_under_scaling(
         learner.tell_many(xs, [learner.function(x) for x in xs])
 
         # Check whether the points returned are the same
-        xs_unscaled = np.array(xs) / xscale
+        xs_unscaled = [scale_x(x) for x in xs]
         assert np.allclose(xs_unscaled, cxs)
 
     # Check if the losses are close
