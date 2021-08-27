@@ -1,5 +1,5 @@
-adaptive.AverageLearner
-=======================
+adaptive.AverageLearner1D
+=========================
 
 .. autoclass:: adaptive.AverageLearner1D
     :members:
