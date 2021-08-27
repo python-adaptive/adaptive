@@ -119,6 +119,7 @@ class AverageLearner1D(Learner1D):
             points, loss_improvements = self._ask_for_more_samples(x, n)
         # If less than 2 points were sampled, sample a new one
         elif len(self.data) <= 1:
+            # TODO: if `n` is very large, we should suggest a few different points.
             points, loss_improvements = self._ask_for_new_point(n)
         #  Else, check the resampling condition
         else:
