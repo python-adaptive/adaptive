@@ -171,7 +171,7 @@ class Learner1D(BaseLearner):
     ----------
     function : callable
         The function to learn. Must take a single real parameter and
-        return a real number.
+        return a real number or 1D array.
     bounds : pair of reals
         The bounds of the interval on which to learn 'function'.
     loss_per_interval: callable, optional

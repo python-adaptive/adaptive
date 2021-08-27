@@ -21,8 +21,17 @@ Value = Union[Number, Sequence[Number]]
 class AverageLearner1D(Learner1D):
     """Learns and predicts a noisy function 'f:ℝ → ℝ^N'.
 
-    New parameters (wrt Learner1D)
-    ------------------------------
+    Parameters
+    ----------
+    function : callable
+        The function to learn. Must take a tuple of ``(seed, x)`` and
+        return a real number or vector.
+    bounds : pair of reals
+        The bounds of the interval on which to learn 'function'.
+    loss_per_interval: callable, optional
+        A function that returns the loss for a single interval of the domain.
+        If not provided, then a default is used, which uses the scaled distance
+        in the x-y plane as the loss. See the notes for more details.
     delta : float
         This parameter controls the resampling condition. A point is resampled
         if its uncertainty is larger than delta times the smallest neighboring
