@@ -3,17 +3,7 @@ import sys
 from collections import defaultdict
 from copy import deepcopy
 from math import hypot
-from typing import (
-    Callable,
-    DefaultDict,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Callable, DefaultDict, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import scipy.stats
@@ -22,9 +12,9 @@ from sortedcontainers import SortedDict
 
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
+from adaptive.types import Real
 
-number = Union[int, float, np.int_, np.float_]
-Point = Tuple[int, number]
+Point = Tuple[int, Real]
 Points = List[Point]
 
 __all__: List[str] = ["AverageLearner1D"]
@@ -45,7 +35,7 @@ class AverageLearner1D(Learner1D):
         If not provided, then a default is used, which uses the scaled distance
         in the x-y plane as the loss. See the notes for more details
         of `adaptive.Learner1D` for more details.
-    delta : float
+    delta : float, optional, default 0.2
         This parameter controls the resampling condition. A point is resampled
         if its uncertainty is larger than delta times the smallest neighboring
         interval.
@@ -75,10 +65,10 @@ class AverageLearner1D(Learner1D):
 
     def __init__(
         self,
-        function: Callable[[Tuple[int, number]], number],
-        bounds: Tuple[number, number],
+        function: Callable[[Tuple[int, Real]], Real],
+        bounds: Tuple[Real, Real],
         loss_per_interval: Optional[
-            Callable[[Sequence[number], Sequence[number]], float]
+            Callable[[Sequence[Real], Sequence[Real]], float]
         ] = None,
         delta: float = 0.2,
         alpha: float = 0.005,
@@ -115,15 +105,15 @@ class AverageLearner1D(Learner1D):
         self._number_samples = SortedDict()
         # This set contains the points x that have less than min_samples
         # samples or less than a (neighbor_sampling*100)% of their neighbors
-        self._undersampled_points: Set[number] = set()
+        self._undersampled_points: Set[Real] = set()
         # Contains the error in the estimate of the
         # mean at each point x in the form {x0: error(x0), ...}
-        self.error: ItemSortedDict[number, float] = decreasing_dict()
+        self.error: ItemSortedDict[Real, float] = decreasing_dict()
         #  Distance between two neighboring points in the
         # form {xi: ((xii-xi)^2 + (yii-yi)^2)^0.5, ...}
-        self._distances: ItemSortedDict[number, float] = decreasing_dict()
+        self._distances: ItemSortedDict[Real, float] = decreasing_dict()
         # {xii: error[xii]/min(_distances[xi], _distances[xii], ...}
-        self.rescaled_error: ItemSortedDict[number, float] = decreasing_dict()
+        self.rescaled_error: ItemSortedDict[Real, float] = decreasing_dict()
 
     @property
     def nsamples(self) -> int:
@@ -165,7 +155,7 @@ class AverageLearner1D(Learner1D):
 
         return points, loss_improvements
 
-    def _ask_for_more_samples(self, x: number, n: int) -> Tuple[Points, List[float]]:
+    def _ask_for_more_samples(self, x: Real, n: int) -> Tuple[Points, List[float]]:
         """When asking for n points, the learner returns n times an existing point
         to be resampled, since in general n << min_samples and this point will
         need to be resampled many more times"""
@@ -200,7 +190,7 @@ class AverageLearner1D(Learner1D):
             self._update_neighbors(x, self.neighbors_combined)
             self._update_losses(x, real=False)
 
-    def tell(self, seed_x: Point, y: number) -> None:
+    def tell(self, seed_x: Point, y: Real) -> None:
         seed, x = seed_x
         if y is None:
             raise TypeError(
@@ -216,7 +206,7 @@ class AverageLearner1D(Learner1D):
             self._update_data_structures(seed_x, y, "resampled")
         self.pending_points.discard(seed_x)
 
-    def _update_rescaled_error_in_mean(self, x: number, point_type: str) -> None:
+    def _update_rescaled_error_in_mean(self, x: Real, point_type: str) -> None:
         """Updates ``self.rescaled_error``.
 
         Parameters
@@ -253,7 +243,7 @@ class AverageLearner1D(Learner1D):
             norm = min(d_left, d_right)
             self.rescaled_error[x] = self.error[x] / norm
 
-    def _update_data(self, x: number, y: number, point_type: str) -> None:
+    def _update_data(self, x: Real, y: Real, point_type: str) -> None:
         if point_type == "new":
             self.data[x] = y
         elif point_type == "resampled":
@@ -261,9 +251,7 @@ class AverageLearner1D(Learner1D):
             new_average = self.data[x] * n / (n + 1) + y / (n + 1)
             self.data[x] = new_average
 
-    def _update_data_structures(
-        self, seed_x: Point, y: number, point_type: str
-    ) -> None:
+    def _update_data_structures(self, seed_x: Point, y: Real, point_type: str) -> None:
         seed, x = seed_x
         if point_type == "new":
             self._data_samples[x] = {seed: y}
@@ -331,7 +319,7 @@ class AverageLearner1D(Learner1D):
                     self._update_interpolated_loss_in_interval(*interval)
                 self._oldscale = deepcopy(self._scale)
 
-    def _update_distances(self, x: number) -> None:
+    def _update_distances(self, x: Real) -> None:
         x_left, x_right = self.neighbors[x]
         y = self.data[x]
         if x_left is not None:
@@ -339,7 +327,7 @@ class AverageLearner1D(Learner1D):
         if x_right is not None:
             self._distances[x] = hypot((x_right - x), (self.data[x_right] - y))
 
-    def _update_losses_resampling(self, x: number, real=True) -> None:
+    def _update_losses_resampling(self, x: Real, real=True) -> None:
         """Update all losses that depend on x, whenever the new point is a re-sampled point."""
         # (x_left, x_right) are the "real" neighbors of 'x'.
         x_left, x_right = self._find_neighbors(x, self.neighbors)
@@ -368,12 +356,12 @@ class AverageLearner1D(Learner1D):
         if (b is not None) and right_loss_is_unknown:
             self.losses_combined[x, b] = float("inf")
 
-    def _calc_error_in_mean(self, ys: Sequence[number], y_avg: number, n: int) -> float:
+    def _calc_error_in_mean(self, ys: Sequence[Real], y_avg: Real, n: int) -> float:
         variance_in_mean = sum((y - y_avg) ** 2 for y in ys) / (n - 1)
         t_student = scipy.stats.t.ppf(1 - self.alpha, df=n - 1)
         return t_student * (variance_in_mean / n) ** 0.5
 
-    def tell_many(self, xs: Points, ys: Sequence[number]) -> None:
+    def tell_many(self, xs: Points, ys: Sequence[Real]) -> None:
         # Check that all x are within the bounds
         # TODO: remove this requirement, all other learners add the data
         # but ignore it going forward.
@@ -384,7 +372,7 @@ class AverageLearner1D(Learner1D):
             )
 
         # Create a mapping of points to a list of samples
-        mapping: DefaultDict[number, DefaultDict[int, number]] = defaultdict(
+        mapping: DefaultDict[Real, DefaultDict[int, Real]] = defaultdict(
             lambda: defaultdict(dict)
         )
         for (seed, x), y in zip(xs, ys):
@@ -400,14 +388,14 @@ class AverageLearner1D(Learner1D):
                 # simultaneously, before we move on to a new x
                 self.tell_many_at_point(x, seed_y_mapping)
 
-    def tell_many_at_point(self, x: number, seed_y_mapping: Dict[int, number]) -> None:
+    def tell_many_at_point(self, x: Real, seed_y_mapping: Dict[int, Real]) -> None:
         """Tell the learner about many samples at a certain location x.
 
         Parameters
         ----------
         x : float
             Value from the function domain.
-        seed_y_mapping : Dict[int, number]
+        seed_y_mapping : Dict[int, Real]
             Dictionary of ``seed`` -> ``y`` at ``x``.
         """
         # Check x is within the bounds
@@ -456,10 +444,10 @@ class AverageLearner1D(Learner1D):
                     self._update_interpolated_loss_in_interval(*interval)
                 self._oldscale = deepcopy(self._scale)
 
-    def _get_data(self) -> SortedDict[number, number]:
+    def _get_data(self) -> SortedDict[Real, Real]:
         return self._data_samples
 
-    def _set_data(self, data: SortedDict[number, number]) -> None:
+    def _set_data(self, data: SortedDict[Real, Real]) -> None:
         if data:
             for x, samples in data.items():
                 self.tell_many_at_point(x, samples)
