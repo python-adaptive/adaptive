@@ -146,17 +146,19 @@ class AverageLearner1D(Learner1D):
         need to be resampled many more times"""
         n_existing = self._number_samples.get(x, 0)
         points = [(seed + n_existing, x) for seed in range(n)]
-
-        loss_improvements = [0] * n  # We set the loss_improvements of resamples to 0
+        xl, xr = self.neighbors_combined[x]
+        loss = (self.losses_combined[xl, x] + self.losses_combined[x, xr]) / 2
+        loss_improvement = loss - loss * np.sqrt(n_existing) / np.sqrt(n_existing + n)
+        loss_improvements = [loss_improvement / n] * n
         return points, loss_improvements
 
     def _ask_for_new_point(self, n: int) -> Tuple[Points, List[float]]:
         """When asking for n new points, the learner returns n times a single
         new point, since in general n << min_samples and this point will need
         to be resampled many more times"""
-        points, loss_improvements = self._ask_points_without_adding(1)
+        points, (loss_improvement,) = self._ask_points_without_adding(1)
         points = [(seed, x) for seed, x in zip(range(n), n * points)]
-        loss_improvements = loss_improvements + [0] * (n - 1)
+        loss_improvements = [loss_improvement / n] * n
         return points, loss_improvements
 
     def tell_pending(self, seed_x: Point) -> None:

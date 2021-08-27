@@ -434,11 +434,13 @@ def test_expected_loss_improvement_is_less_than_total_loss(
     """The estimated loss improvement can never be greater than the total loss."""
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
-    N = random.randint(50, 100)
-    xs, loss_improvements = learner.ask(N)
-
-    for x in xs:
-        learner.tell(x, learner.function(x))
+    for _ in range(2):
+        # We do this twice to make sure that the AverageLearner1D
+        # has two different points in `x`.
+        N = random.randint(50, 100)
+        xs, loss_improvements = learner.ask(N)
+        for x in xs:
+            learner.tell(x, learner.function(x))
 
     M = random.randint(50, 100)
     _, loss_improvements = learner.ask(M)
