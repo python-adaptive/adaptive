@@ -166,11 +166,12 @@ def gaussian(n):
 
 @learn_with(AverageLearner1D, bounds=[-2, 2])
 def noisy_peak(
-    x,
+    seed_x,
     sigma: uniform(1.5, 2.5),
     peak_width: uniform(0.04, 0.06),
     offset: uniform(-0.6, -0.3),
 ):
+    seed, x = seed_x
     y = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
     noise = np.random.normal(0, sigma)
     return y + noise
@@ -411,13 +412,17 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
         learner.tell(*p)
 
     M = random.randint(10, 30)
-    pls = zip(*learner.ask(M))
-    cpls = zip(*control.ask(M))
+    pls = sorted(zip(*learner.ask(M)))
+    cpls = sorted(zip(*control.ask(M)))
     # Point ordering within a single call to 'ask'
     # is not guaranteed to be the same by the API.
     # We compare the sorted points instead of set, because the points
     # should only be identical up to machine precision.
-    np.testing.assert_almost_equal(sorted(pls), sorted(cpls))
+    if isinstance(pls[0][0], tuple):
+        # This is the case for AverageLearner1D
+        pls = [(*x, y) for x, y in pls]
+        cpls = [(*x, y) for x, y in cpls]
+    np.testing.assert_almost_equal(pls, cpls)
 
 
 # XXX: the Learner2D fails with ~50% chance
@@ -473,7 +478,7 @@ def test_learner_performance_is_invariant_under_scaling(
     l_kwargs["bounds"] = xscale * np.array(l_kwargs["bounds"])
     learner = learner_type(lambda x: yscale * f(np.array(x) / xscale), **l_kwargs)
 
-    if learner_type in [Learner1D, LearnerND]:
+    if learner_type in [Learner1D, LearnerND, AverageLearner1D]:
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
 

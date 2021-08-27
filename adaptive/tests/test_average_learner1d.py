@@ -37,7 +37,7 @@ def test_tell_many_at_point():
     for k, v1 in learner._data_samples.items():
         v2 = control._data_samples[k]
         assert len(v1) == len(v2)
-        np.testing.assert_almost_equal(np.sort(v1), np.sort(v2))
+        np.testing.assert_almost_equal(sorted(v1.values()), sorted(v2.values()))
 
     assert learner._bbox[0] == control._bbox[0]
     assert learner._bbox[1] == control._bbox[1]
