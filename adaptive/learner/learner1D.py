@@ -1,22 +1,38 @@
+import collections.abc
 import itertools
 import math
-from collections.abc import Iterable
+import numbers
 from copy import deepcopy
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import cloudpickle
 import numpy as np
-import sortedcollections
-import sortedcontainers
+from sortedcollections.recipes import ItemSortedDict
+from sortedcontainers.sorteddict import SortedDict
 
 from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
 from adaptive.learner.learnerND import volume
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
+from adaptive.types import Float
 from adaptive.utils import cache_latest
+
+Point = Tuple[Float, Float]
 
 
 @uses_nth_neighbors(0)
-def uniform_loss(xs, ys):
+def uniform_loss(xs: Point, ys: Any) -> Float:
     """Loss function that samples the domain uniformly.
 
     Works with `~adaptive.Learner1D` only.
@@ -36,7 +52,10 @@ def uniform_loss(xs, ys):
 
 
 @uses_nth_neighbors(0)
-def default_loss(xs, ys):
+def default_loss(
+    xs: Point,
+    ys: Union[Tuple[Iterable[Float], Iterable[Float]], Point],
+) -> float:
     """Calculate loss on a single interval.
 
     Currently returns the rescaled length of the interval. If one of the
@@ -44,9 +63,9 @@ def default_loss(xs, ys):
     never touched. This behavior should be improved later.
     """
     dx = xs[1] - xs[0]
-    if isinstance(ys[0], Iterable):
-        dy = [abs(a - b) for a, b in zip(*ys)]
-        return np.hypot(dx, dy).max()
+    if isinstance(ys[0], collections.abc.Iterable):
+        dy_vec = [abs(a - b) for a, b in zip(*ys)]
+        return np.hypot(dx, dy_vec).max()
     else:
         dy = ys[1] - ys[0]
         return np.hypot(dx, dy)
@@ -60,7 +79,13 @@ def abs_min_log_loss(xs, ys):
 
 
 @uses_nth_neighbors(1)
-def triangle_loss(xs, ys):
+def triangle_loss(
+    xs: Sequence[Optional[Float]],
+    ys: Union[
+        Iterable[Optional[Float]],
+        Iterable[Union[Iterable[Float], None]],
+    ],
+) -> float:
     xs = [x for x in xs if x is not None]
     ys = [y for y in ys if y is not None]
 
@@ -68,7 +93,7 @@ def triangle_loss(xs, ys):
         return xs[1] - xs[0]
 
     N = len(xs) - 2  # number of constructed triangles
-    if isinstance(ys[0], Iterable):
+    if isinstance(ys[0], collections.abc.Iterable):
         pts = [(x, *y) for x, y in zip(xs, ys)]
         vol = simplex_volume_in_embedding
     else:
@@ -114,7 +139,9 @@ def resolution_loss_function(min_length=0, max_length=1):
     return resolution_loss
 
 
-def curvature_loss_function(area_factor=1, euclid_factor=0.02, horizontal_factor=0.02):
+def curvature_loss_function(
+    area_factor: float = 1, euclid_factor: float = 0.02, horizontal_factor: float = 0.02
+) -> Callable:
     # XXX: add a doc-string
     @uses_nth_neighbors(1)
     def curvature_loss(xs, ys):
@@ -133,7 +160,7 @@ def curvature_loss_function(area_factor=1, euclid_factor=0.02, horizontal_factor
     return curvature_loss
 
 
-def linspace(x_left, x_right, n):
+def linspace(x_left: float, x_right: float, n: int) -> List[float]:
     """This is equivalent to
     'np.linspace(x_left, x_right, n, endpoint=False)[1:]',
     but it is 15-30 times faster for small 'n'."""
@@ -145,17 +172,17 @@ def linspace(x_left, x_right, n):
         return [x_left + step * i for i in range(1, n)]
 
 
-def _get_neighbors_from_list(xs):
+def _get_neighbors_from_list(xs: np.ndarray) -> SortedDict:
     xs = np.sort(xs)
     xs_left = np.roll(xs, 1).tolist()
     xs_right = np.roll(xs, -1).tolist()
     xs_left[0] = None
     xs_right[-1] = None
     neighbors = {x: [x_L, x_R] for x, x_L, x_R in zip(xs, xs_left, xs_right)}
-    return sortedcontainers.SortedDict(neighbors)
+    return SortedDict(neighbors)
 
 
-def _get_intervals(x, neighbors, nth_neighbors):
+def _get_intervals(x: float, neighbors: SortedDict, nth_neighbors: int) -> Any:
     nn = nth_neighbors
     i = neighbors.index(x)
     start = max(0, i - nn - 1)
@@ -208,8 +235,13 @@ class Learner1D(BaseLearner):
     decorator for more information.
     """
 
-    def __init__(self, function, bounds, loss_per_interval=None):
-        self.function = function
+    def __init__(
+        self,
+        function: Callable,
+        bounds: Tuple[float, float],
+        loss_per_interval: Optional[Callable] = None,
+    ) -> None:
+        self.function = function  # type: ignore
 
         if hasattr(loss_per_interval, "nth_neighbors"):
             self.nth_neighbors = loss_per_interval.nth_neighbors
@@ -228,8 +260,8 @@ class Learner1D(BaseLearner):
 
         # A dict {x_n: [x_{n-1}, x_{n+1}]} for quick checking of local
         # properties.
-        self.neighbors = sortedcontainers.SortedDict()
-        self.neighbors_combined = sortedcontainers.SortedDict()
+        self.neighbors = SortedDict()
+        self.neighbors_combined = SortedDict()
 
         # Bounding box [[minx, maxx], [miny, maxy]].
         self._bbox = [list(bounds), [np.inf, -np.inf]]
@@ -247,10 +279,10 @@ class Learner1D(BaseLearner):
 
         self.bounds = list(bounds)
 
-        self._vdim = None
+        self._vdim: Optional[int] = None
 
     @property
-    def vdim(self):
+    def vdim(self) -> int:
         """Length of the output of ``learner.function``.
         If the output is unsized (when it's a scalar)
         then `vdim = 1`.
@@ -275,35 +307,37 @@ class Learner1D(BaseLearner):
         return np.array([(x, *np.atleast_1d(y)) for x, y in sorted(self.data.items())])
 
     @property
-    def npoints(self):
+    def npoints(self) -> int:
         """Number of evaluated points."""
         return len(self.data)
 
     @cache_latest
-    def loss(self, real=True):
+    def loss(self, real: bool = True) -> float:
         losses = self.losses if real else self.losses_combined
         if not losses:
             return np.inf
         max_interval, max_loss = losses.peekitem(0)
         return max_loss
 
-    def _scale_x(self, x):
+    def _scale_x(self, x: Optional[float]) -> Optional[float]:
         if x is None:
             return None
         return x / self._scale[0]
 
-    def _scale_y(self, y):
+    def _scale_y(
+        self, y: Optional[Union[Float, np.ndarray]]
+    ) -> Optional[Union[Float, np.ndarray]]:
         if y is None:
             return None
         y_scale = self._scale[1] or 1
         return y / y_scale
 
-    def _get_point_by_index(self, ind):
+    def _get_point_by_index(self, ind: int) -> Optional[float]:
         if ind < 0 or ind >= len(self.neighbors):
             return None
         return self.neighbors.keys()[ind]
 
-    def _get_loss_in_interval(self, x_left, x_right):
+    def _get_loss_in_interval(self, x_left: float, x_right: float) -> float:
         assert x_left is not None and x_right is not None
 
         if x_right - x_left < self._dx_eps:
@@ -323,7 +357,9 @@ class Learner1D(BaseLearner):
         # we need to compute the loss for this interval
         return self.loss_per_interval(xs_scaled, ys_scaled)
 
-    def _update_interpolated_loss_in_interval(self, x_left, x_right):
+    def _update_interpolated_loss_in_interval(
+        self, x_left: float, x_right: float
+    ) -> None:
         if x_left is None or x_right is None:
             return
 
@@ -339,7 +375,7 @@ class Learner1D(BaseLearner):
             self.losses_combined[a, b] = (b - a) * loss / dx
             a = b
 
-    def _update_losses(self, x, real=True):
+    def _update_losses(self, x: float, real: bool = True) -> None:
         """Update all losses that depend on x"""
         # When we add a new point x, we should update the losses
         # (x_left, x_right) are the "real" neighbors of 'x'.
@@ -382,7 +418,7 @@ class Learner1D(BaseLearner):
             self.losses_combined[x, b] = float("inf")
 
     @staticmethod
-    def _find_neighbors(x, neighbors):
+    def _find_neighbors(x: float, neighbors: SortedDict) -> Any:
         if x in neighbors:
             return neighbors[x]
         pos = neighbors.bisect_left(x)
@@ -391,14 +427,14 @@ class Learner1D(BaseLearner):
         x_right = keys[pos] if pos != len(neighbors) else None
         return x_left, x_right
 
-    def _update_neighbors(self, x, neighbors):
+    def _update_neighbors(self, x: float, neighbors: SortedDict) -> None:
         if x not in neighbors:  # The point is new
             x_left, x_right = self._find_neighbors(x, neighbors)
             neighbors[x] = [x_left, x_right]
             neighbors.get(x_left, [None, None])[1] = x
             neighbors.get(x_right, [None, None])[0] = x
 
-    def _update_scale(self, x, y):
+    def _update_scale(self, x: float, y: Union[Float, np.ndarray]) -> None:
         """Update the scale with which the x and y-values are scaled.
 
         For a learner where the function returns a single scalar the scale
@@ -425,7 +461,9 @@ class Learner1D(BaseLearner):
                 self._bbox[1][1] = max(self._bbox[1][1], y)
                 self._scale[1] = self._bbox[1][1] - self._bbox[1][0]
 
-    def tell(self, x, y):
+    def tell(
+        self, x: float, y: Union[Float, Sequence[numbers.Number], np.ndarray]
+    ) -> None:
         if x in self.data:
             # The point is already evaluated before
             return
@@ -460,7 +498,7 @@ class Learner1D(BaseLearner):
 
             self._oldscale = deepcopy(self._scale)
 
-    def tell_pending(self, x):
+    def tell_pending(self, x: float) -> None:
         if x in self.data:
             # The point is already evaluated before
             return
@@ -468,7 +506,7 @@ class Learner1D(BaseLearner):
         self._update_neighbors(x, self.neighbors_combined)
         self._update_losses(x, real=False)
 
-    def tell_many(self, xs, ys, *, force=False):
+    def tell_many(self, xs: Sequence[float], ys: Sequence[Any], *, force=False) -> None:
         if not force and not (len(xs) > 0.5 * len(self.data) and len(xs) > 2):
             # Only run this more efficient method if there are
             # at least 2 points and the amount of points added are
@@ -536,7 +574,7 @@ class Learner1D(BaseLearner):
                 # have an inf loss.
                 self._update_interpolated_loss_in_interval(*ival)
 
-    def ask(self, n, tell_pending=True):
+    def ask(self, n: int, tell_pending: bool = True) -> Any:
         """Return 'n' points that are expected to maximally reduce the loss."""
         points, loss_improvements = self._ask_points_without_adding(n)
 
@@ -546,7 +584,7 @@ class Learner1D(BaseLearner):
 
         return points, loss_improvements
 
-    def _ask_points_without_adding(self, n):
+    def _ask_points_without_adding(self, n: int) -> Any:
         """Return 'n' points that are expected to maximally reduce the loss.
         Without altering the state of the learner"""
         # Find out how to divide the n points over the intervals
@@ -573,7 +611,8 @@ class Learner1D(BaseLearner):
         # Add bound intervals to quals if bounds were missing.
         if len(self.data) + len(self.pending_points) == 0:
             # We don't have any points, so return a linspace with 'n' points.
-            return np.linspace(*self.bounds, n).tolist(), [np.inf] * n
+            a, b = self.bounds
+            return np.linspace(a, b, n).tolist(), [np.inf] * n
 
         quals = loss_manager(self._scale[0])
         if len(missing_bounds) > 0:
@@ -609,7 +648,7 @@ class Learner1D(BaseLearner):
                 quals[(*xs, n + 1)] = loss_qual * n / (n + 1)
 
         points = list(
-            itertools.chain.from_iterable(linspace(*ival, n) for (*ival, n) in quals)
+            itertools.chain.from_iterable(linspace(a, b, n) for ((a, b), n) in quals)
         )
 
         loss_improvements = list(
@@ -624,11 +663,11 @@ class Learner1D(BaseLearner):
 
         return points, loss_improvements
 
-    def _loss(self, mapping, ival):
+    def _loss(self, mapping: ItemSortedDict, ival: Any) -> Any:
         loss = mapping[ival]
         return finite_loss(ival, loss, self._scale[0])
 
-    def plot(self, *, scatter_or_line="scatter"):
+    def plot(self, *, scatter_or_line: Literal["scatter", "line"] = "scatter"):
         """Returns a plot of the evaluated data.
 
         Parameters
@@ -663,17 +702,18 @@ class Learner1D(BaseLearner):
 
         return p.redim(x=dict(range=plot_bounds))
 
-    def remove_unfinished(self):
+    def remove_unfinished(self) -> None:
         self.pending_points = set()
         self.losses_combined = deepcopy(self.losses)
         self.neighbors_combined = deepcopy(self.neighbors)
 
-    def _get_data(self):
+    def _get_data(self) -> Dict[float, float]:
         return self.data
 
-    def _set_data(self, data):
+    def _set_data(self, data: Dict[float, float]) -> None:
         if data:
-            self.tell_many(*zip(*data.items()))
+            xs, ys = zip(*data.items())
+            self.tell_many(xs, ys)
 
     def __getstate__(self):
         return (
@@ -694,16 +734,16 @@ class Learner1D(BaseLearner):
         self.losses_combined.update(losses_combined)
 
 
-def loss_manager(x_scale):
+def loss_manager(x_scale: float) -> ItemSortedDict:
     def sort_key(ival, loss):
         loss, ival = finite_loss(ival, loss, x_scale)
         return -loss, ival
 
-    sorted_dict = sortedcollections.ItemSortedDict(sort_key)
+    sorted_dict = ItemSortedDict(sort_key)
     return sorted_dict
 
 
-def finite_loss(ival, loss, x_scale):
+def finite_loss(ival: Any, loss: float, x_scale: float) -> Any:
     """Get the socalled finite_loss of an interval in order to be able to
     sort intervals that have infinite loss."""
     # If the loss is infinite we return the
