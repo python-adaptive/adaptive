@@ -16,8 +16,8 @@ def almost_equal_dicts(a, b):
 
 def test_tell_many_at_point():
     f = generate_random_parametrization(noisy_peak)
-    learner = AverageLearner1D(f, bounds=[-2, 2])
-    control = AverageLearner1D(f, bounds=[-2, 2])
+    learner = AverageLearner1D(f, bounds=(-2, 2))
+    control = AverageLearner1D(f, bounds=(-2, 2))
     learner._recompute_losses_factor = 1
     control._recompute_losses_factor = 1
     simple_run(learner, 100)

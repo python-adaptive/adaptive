@@ -7,8 +7,12 @@ from adaptive.learner import AverageLearner
 from adaptive.runner import simple
 
 
+def f_unused(seed):
+    raise NotImplementedError("This function shouldn't be used.")
+
+
 def test_only_returns_new_points():
-    learner = AverageLearner(lambda x: x, atol=None, rtol=0.01)
+    learner = AverageLearner(f_unused, atol=None, rtol=0.01)
 
     # Only tell it n = 5...10
     for i in range(5, 10):
@@ -25,7 +29,7 @@ def test_only_returns_new_points():
 
 @flaky.flaky(max_runs=5)
 def test_avg_std_and_npoints():
-    learner = AverageLearner(lambda x: x, atol=None, rtol=0.01)
+    learner = AverageLearner(f_unused, atol=None, rtol=0.01)
 
     for i in range(300):
         # This will add 5000 points at random values of n.
@@ -63,7 +67,7 @@ def test_min_npoints():
 
 def test_zero_mean():
     # see https://github.com/python-adaptive/adaptive/issues/275
-    learner = AverageLearner(None, rtol=0.01)
+    learner = AverageLearner(f_unused, rtol=0.01)
     learner.tell(0, -1)
     learner.tell(1, 1)
     learner.loss()

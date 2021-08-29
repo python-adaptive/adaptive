@@ -740,7 +740,7 @@ class Learner1D(BaseLearner):
     def __getstate__(self):
         return (
             cloudpickle.dumps(self.function),
-            self.bounds,
+            tuple(self.bounds),
             self.loss_per_interval,
             dict(self.losses),  # SortedDict cannot be pickled
             dict(self.losses_combined),  # ItemSortedDict cannot be pickled

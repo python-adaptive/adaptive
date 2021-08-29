@@ -5,14 +5,14 @@ from copy import deepcopy
 from adaptive.utils import _RequireAttrsABCMeta, load, save
 
 
-def uses_nth_neighbors(n):
+def uses_nth_neighbors(n: int):
     """Decorator to specify how many neighboring intervals the loss function uses.
 
     Wraps loss functions to indicate that they expect intervals together
     with ``n`` nearest neighbors
 
     The loss function will then receive the data of the N nearest neighbors
-    (``nth_neighbors``) aling with the data of the interval itself in a dict.
+    (``nth_neighbors``) along with the data of the interval itself in a dict.
     The `~adaptive.Learner1D` will also make sure that the loss is updated
     whenever one of the ``nth_neighbors`` changes.
 
