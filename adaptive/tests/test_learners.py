@@ -164,7 +164,7 @@ def gaussian(n):
     return random.gauss(1, 1)
 
 
-@learn_with(AverageLearner1D, bounds=[-2, 2])
+@learn_with(AverageLearner1D, bounds=(-2, 2))
 def noisy_peak(
     seed_x,
     sigma: uniform(1.5, 2.5),
@@ -271,8 +271,8 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
     "learner_type, bounds",
     [
         (Learner1D, (-1, 1)),
-        (Learner2D, [(-1, 1), (-1, 1)]),
-        (LearnerND, [(-1, 1), (-1, 1), (-1, 1)]),
+        (Learner2D, ((-1, 1), (-1, 1))),
+        (LearnerND, ((-1, 1), (-1, 1), (-1, 1))),
     ],
 )
 def test_learner_accepts_lists(learner_type, bounds):
@@ -480,7 +480,9 @@ def test_learner_performance_is_invariant_under_scaling(
     yscale = 1000 * random.random()
 
     l_kwargs = dict(learner_kwargs)
-    l_kwargs["bounds"] = xscale * np.array(l_kwargs["bounds"])
+    bounds = xscale * np.array(l_kwargs["bounds"])
+    bounds = tuple((bounds).tolist())  # to satisfy typeguard tests
+    l_kwargs["bounds"] = bounds
 
     def scale_x(x):
         if isinstance(learner, AverageLearner1D):

@@ -3,7 +3,17 @@ import sys
 from collections import defaultdict
 from copy import deepcopy
 from math import hypot
-from typing import Callable, DefaultDict, Dict, List, Optional, Sequence, Set, Tuple
+from typing import (
+    Callable,
+    DefaultDict,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+)
 
 import numpy as np
 import scipy.stats
@@ -356,7 +366,7 @@ class AverageLearner1D(Learner1D):
         if (b is not None) and right_loss_is_unknown:
             self.losses_combined[x, b] = float("inf")
 
-    def _calc_error_in_mean(self, ys: Sequence[Real], y_avg: Real, n: int) -> float:
+    def _calc_error_in_mean(self, ys: Iterable[Real], y_avg: Real, n: int) -> float:
         variance_in_mean = sum((y - y_avg) ** 2 for y in ys) / (n - 1)
         t_student = scipy.stats.t.ppf(1 - self.alpha, df=n - 1)
         return t_student * (variance_in_mean / n) ** 0.5
