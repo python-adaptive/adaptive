@@ -12,7 +12,7 @@ def uses_nth_neighbors(n):
     with ``n`` nearest neighbors
 
     The loss function will then receive the data of the N nearest neighbors
-    (``nth_neighbors``) aling with the data of the interval itself in a dict.
+    (``nth_neighbors``) along with the data of the interval itself in a dict.
     The `~adaptive.Learner1D` will also make sure that the loss is updated
     whenever one of the ``nth_neighbors`` changes.
 
