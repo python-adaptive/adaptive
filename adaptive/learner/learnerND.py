@@ -1186,6 +1186,7 @@ class LearnerND(BaseLearner):
             self._max_value,
             self._output_multiplier,
             self._simplex_queue,
+            self._old_scale,
         )
 
     def _set_data(self, state):
@@ -1198,6 +1199,7 @@ class LearnerND(BaseLearner):
             self._max_value,
             self._output_multiplier,
             self._simplex_queue,
+            self._old_scale,
         ) = state
 
     def __getstate__(self):
