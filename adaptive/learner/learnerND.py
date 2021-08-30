@@ -337,6 +337,7 @@ class LearnerND(BaseLearner):
         # for the output
         self._min_value = None
         self._max_value = None
+        self._old_scale = None
         self._output_multiplier = (
             1  # If we do not know anything, do not scale the values
         )
