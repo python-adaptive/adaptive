@@ -52,6 +52,7 @@ extras_require = {
         "pytest-timeout",
         "pre_commit",
         "pandas",
+        "typeguard",
     ],
     "other": [
         "dill",
