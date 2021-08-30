@@ -319,6 +319,7 @@ class LearnerND(BaseLearner):
         else:
             self._bounds_points = sorted(list(map(tuple, itertools.product(*bounds))))
             self._bbox = tuple(tuple(map(float, b)) for b in bounds)
+            self._interior = None
 
         self.ndim = len(self._bbox)
 
@@ -454,7 +455,7 @@ class LearnerND(BaseLearner):
 
     def inside_bounds(self, point):
         """Check whether a point is inside the bounds."""
-        if hasattr(self, "_interior"):
+        if self._interior is not None:
             return self._interior.find_simplex(point, tol=1e-8) >= 0
         else:
             eps = 1e-8
@@ -1188,6 +1189,7 @@ class LearnerND(BaseLearner):
             self._output_multiplier,
             self._simplex_queue,
             self._old_scale,
+            self.pending_points,
         )
 
     def _set_data(self, state):
@@ -1201,6 +1203,7 @@ class LearnerND(BaseLearner):
             self._output_multiplier,
             self._simplex_queue,
             self._old_scale,
+            self.pending_points,
         ) = state
 
     def __getstate__(self):
