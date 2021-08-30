@@ -4,6 +4,7 @@ import random
 from collections import OrderedDict
 from collections.abc import Iterable
 
+import cloudpickle
 import numpy as np
 import scipy.spatial
 from scipy import interpolate
@@ -1179,42 +1180,9 @@ class LearnerND(BaseLearner):
         )
 
     def _get_data(self):
-        return (
-            self._vdim,
-            self.data,
-            self._tri,
-            self._losses,
-            self._min_value,
-            self._max_value,
-            self._output_multiplier,
-            self._simplex_queue,
-            self._old_scale,
-            self.pending_points,
-        )
+        return cloudpickle.dumps(self.__dict__)
 
     def _set_data(self, state):
-        (
-            self._vdim,
-            self.data,
-            self._tri,
-            self._losses,
-            self._min_value,
-            self._max_value,
-            self._output_multiplier,
-            self._simplex_queue,
-            self._old_scale,
-            self.pending_points,
-        ) = state
-
-    def __getstate__(self):
-        return (
-            self.function,
-            self.bounds,
-            self.loss_per_simplex,
-            self._get_data(),
-        )
-
-    def __setstate__(self, state):
-        function, bounds, loss_per_simplex, data = state
-        self.__init__(function, bounds, loss_per_simplex)
-        self._set_data(data)
+        state = cloudpickle.loads(state)
+        for k, v in state.items():
+            setattr(self, k, v)

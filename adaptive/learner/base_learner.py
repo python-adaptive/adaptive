@@ -1,6 +1,7 @@
 import abc
 from contextlib import suppress
-from copy import deepcopy
+
+import cloudpickle
 
 from adaptive.utils import _RequireAttrsABCMeta, load, save
 
@@ -191,7 +192,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
             self._set_data(data)
 
     def __getstate__(self):
-        return deepcopy(self.__dict__)
+        return cloudpickle.dumps(self.__dict__)
 
     def __setstate__(self, state):
-        self.__dict__ = state
+        self.__dict__ = cloudpickle.loads(state)
