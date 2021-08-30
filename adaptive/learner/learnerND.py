@@ -3,8 +3,8 @@ import itertools
 import random
 from collections import OrderedDict
 from collections.abc import Iterable
+from copy import deepcopy
 
-import cloudpickle
 import numpy as np
 import scipy.spatial
 from scipy import interpolate
@@ -1180,9 +1180,8 @@ class LearnerND(BaseLearner):
         )
 
     def _get_data(self):
-        return cloudpickle.dumps(self.__dict__)
+        return deepcopy(self.__dict__)
 
     def _set_data(self, state):
-        state = cloudpickle.loads(state)
         for k, v in state.items():
             setattr(self, k, v)
