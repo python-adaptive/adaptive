@@ -14,6 +14,6 @@ Other contributors to Adaptive include:
 + Philippe Solodov (@philippeitis)
 + Victor Negîrneac (@caenrigen)
 + Thomas A Caswell (@tacaswell)
-+ Álvaro Gómez Iñesta (@alvarogi)
++ Álvaro Gómez Iñesta (@AlvaroGI)
 + Sultan Orazbayev (@SultanOrazbayev)
 + Thomas Aarholt (@thomasaarholt)
