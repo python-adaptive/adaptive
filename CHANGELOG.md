@@ -1,12 +1,35 @@
 # Changelog
 
-## [Unreleased](https://github.com/python-adaptive/adaptive/tree/HEAD)
+## [v0.13.0](https://github.com/python-adaptive/adaptive/tree/v0.13.0) (2021-09-10)
 
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.12.2...HEAD)
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.12.2...v0.13.0)
+
+**Fixed bugs:**
+
+- AverageLearner doesn't work with 0 mean [\#275](https://github.com/python-adaptive/adaptive/issues/275)
+- call self.\_process\_futures on canceled futures when BlockingRunner is done [\#320](https://github.com/python-adaptive/adaptive/pull/320) ([basnijholt](https://github.com/basnijholt))
+- AverageLearner: fix zero mean [\#276](https://github.com/python-adaptive/adaptive/pull/276) ([basnijholt](https://github.com/basnijholt))
 
 **Closed issues:**
 
+- Runners should tell learner about remaining points at end of run [\#319](https://github.com/python-adaptive/adaptive/issues/319)
 - Cryptic error when importing lmfit [\#314](https://github.com/python-adaptive/adaptive/issues/314)
+- change CHANGELOG to KeepAChangelog format [\#306](https://github.com/python-adaptive/adaptive/issues/306)
+- jupyter notebook kernels dead after running "import adaptive" [\#298](https://github.com/python-adaptive/adaptive/issues/298)
+- Emphasis on when to use adaptive in docs [\#297](https://github.com/python-adaptive/adaptive/issues/297)
+- GPU acceleration [\#296](https://github.com/python-adaptive/adaptive/issues/296)
+
+**Merged pull requests:**
+
+- Learner1D type hints and add typeguard to pytest tests [\#325](https://github.com/python-adaptive/adaptive/pull/325) ([basnijholt](https://github.com/basnijholt))
+- AverageLearner type hints [\#324](https://github.com/python-adaptive/adaptive/pull/324) ([basnijholt](https://github.com/basnijholt))
+- Update doc string for resolution\_loss\_function [\#323](https://github.com/python-adaptive/adaptive/pull/323) ([SultanOrazbayev](https://github.com/SultanOrazbayev))
+- Update Readme to emphasise when adaptive should be used [\#318](https://github.com/python-adaptive/adaptive/pull/318) ([thomasaarholt](https://github.com/thomasaarholt))
+- add to\_numpy methods [\#317](https://github.com/python-adaptive/adaptive/pull/317) ([basnijholt](https://github.com/basnijholt))
+- lazily evaluate the integrator coefficients [\#311](https://github.com/python-adaptive/adaptive/pull/311) ([basnijholt](https://github.com/basnijholt))
+- AverageLearner1D added [\#283](https://github.com/python-adaptive/adaptive/pull/283) ([AlvaroGI](https://github.com/AlvaroGI))
+- Make LearnerND pickleable [\#272](https://github.com/python-adaptive/adaptive/pull/272) ([basnijholt](https://github.com/basnijholt))
+- add a FAQ [\#242](https://github.com/python-adaptive/adaptive/pull/242) ([basnijholt](https://github.com/basnijholt))
 
 ## [v0.12.2](https://github.com/python-adaptive/adaptive/tree/v0.12.2) (2021-03-23)
 
