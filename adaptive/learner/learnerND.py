@@ -3,6 +3,7 @@ import itertools
 import random
 from collections import OrderedDict
 from collections.abc import Iterable
+from copy import deepcopy
 
 import numpy as np
 import scipy.spatial
@@ -319,6 +320,7 @@ class LearnerND(BaseLearner):
         else:
             self._bounds_points = sorted(list(map(tuple, itertools.product(*bounds))))
             self._bbox = tuple(tuple(map(float, b)) for b in bounds)
+            self._interior = None
 
         self.ndim = len(self._bbox)
 
@@ -337,6 +339,7 @@ class LearnerND(BaseLearner):
         # for the output
         self._min_value = None
         self._max_value = None
+        self._old_scale = None
         self._output_multiplier = (
             1  # If we do not know anything, do not scale the values
         )
@@ -453,7 +456,7 @@ class LearnerND(BaseLearner):
 
     def inside_bounds(self, point):
         """Check whether a point is inside the bounds."""
-        if hasattr(self, "_interior"):
+        if self._interior is not None:
             return self._interior.find_simplex(point, tol=1e-8) >= 0
         else:
             eps = 1e-8
@@ -988,13 +991,6 @@ class LearnerND(BaseLearner):
 
         return plotly.offline.iplot(fig)
 
-    def _get_data(self):
-        return self.data
-
-    def _set_data(self, data):
-        if data:
-            self.tell_many(*zip(*data.items()))
-
     def _get_iso(self, level=0.0, which="surface"):
         if which == "surface":
             if self.ndim != 3 or self.vdim != 1:
@@ -1182,3 +1178,10 @@ class LearnerND(BaseLearner):
             opacity=opacity,
             lighting=lighting,
         )
+
+    def _get_data(self):
+        return deepcopy(self.__dict__)
+
+    def _set_data(self, state):
+        for k, v in state.items():
+            setattr(self, k, v)

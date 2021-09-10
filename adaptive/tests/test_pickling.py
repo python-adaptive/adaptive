@@ -9,6 +9,7 @@ from adaptive.learner import (
     IntegratorLearner,
     Learner1D,
     Learner2D,
+    LearnerND,
     SequenceLearner,
 )
 from adaptive.runner import simple
@@ -70,6 +71,7 @@ learners_pairs = [
         balancing_learner,
         dict(learner_type=Learner1D, learner_kwargs=dict(bounds=(-1, 1))),
     ),
+    (LearnerND, dict(bounds=((-1, 1), (-1, 1), (-1, 1)))),
 ]
 
 serializers = [(pickle, pickleable_f)]
