@@ -20,3 +20,4 @@ dependencies:
   - sphinx=4.2.0
   - m2r2=0.3.1
   - sphinx_rtd_theme=1.0.0
+  - ffmpeg=4.3.2
