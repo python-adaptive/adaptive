@@ -909,7 +909,7 @@ class LearnerND(BaseLearner):
         else:
             raise ValueError("Only 1 or 2-dimensional plots can be generated.")
 
-    def plot_3D(self, with_triangulation=False):
+    def plot_3D(self, with_triangulation=False, return_fig=False):
         """Plot the learner's data in 3D using plotly.
 
         Does *not* work with the
@@ -919,6 +919,9 @@ class LearnerND(BaseLearner):
         ----------
         with_triangulation : bool, default: False
             Add the verticices to the plot.
+        return_fig : bool, default: False
+            Return the `plotly.graph_objs.Figure` object instead of showing
+            the rendered plot (default).
 
         Returns
         -------
@@ -989,7 +992,7 @@ class LearnerND(BaseLearner):
 
         fig = plotly.graph_objs.Figure(data=plots, layout=layout)
 
-        return plotly.offline.iplot(fig)
+        return fig if return_fig else plotly.offline.iplot(fig)
 
     def _get_iso(self, level=0.0, which="surface"):
         if which == "surface":
