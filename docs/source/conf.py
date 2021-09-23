@@ -143,9 +143,14 @@ intersphinx_mapping = {
 }
 
 html_js_files = [
-    "https://cdn.bokeh.org/bokeh/release/bokeh-2.2.1.min.js",
-    "https://cdn.bokeh.org/bokeh/release/bokeh-widgets-2.2.1.min.js",
+    "https://cdn.bokeh.org/bokeh/release/bokeh-2.4.0.min.js",
+    "https://cdn.bokeh.org/bokeh/release/bokeh-widgets-2.4.0.min.js",
+    "https://cdn.bokeh.org/bokeh/release/bokeh-tables-2.4.0.min.js",
+    "https://cdn.bokeh.org/bokeh/release/bokeh-gl-2.4.0.min.js",
+    "https://cdn.bokeh.org/bokeh/release/bokeh-mathjax-2.4.0.min.js",
 ]
+
+
 html_logo = "logo_docs.png"
 
 
