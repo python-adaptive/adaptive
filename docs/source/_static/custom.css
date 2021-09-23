@@ -2,7 +2,7 @@
 
 /* https://gitter.im/pyviz/pyviz?at=5e8efb2b16f84f0461683446 */
 .widget-box.bk form {
-    display: flex !important;
+    display: none !important;
     margin-left: auto !important;
     margin-right: auto !important;
     width: 25%;
