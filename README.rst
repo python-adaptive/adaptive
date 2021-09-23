@@ -8,10 +8,12 @@
 
   *Adaptive*: parallel active learning of mathematical functions.
 
+.. animated-logo::
+
 ``adaptive`` is an open-source Python library designed to
 make adaptive parallel function evaluation simple. With ``adaptive`` you
 just supply a function with its bounds, and it will be evaluated at the
-“best” points in parameter space, rather than unecessarily computing *all* points on a dense grid.
+“best” points in parameter space, rather than unnecessarily computing *all* points on a dense grid.
 With just a few lines of code you can evaluate functions on a computing cluster,
 live-plot the data as it returns, and fine-tune the adaptive sampling algorithm.
 

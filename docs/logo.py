@@ -52,10 +52,13 @@ def add_rounded_corners(fname, rad):
     return im
 
 
-if __name__ == "__main__":
+def main(fname="source/_static/logo_docs.png"):
     learner = create_and_run_learner()
-    fname = "source/_static/logo_docs.png"
     plot_learner_and_save(learner, fname)
     im = add_rounded_corners(fname, rad=200)
     im.thumbnail((200, 200), Image.ANTIALIAS)  # resize
     im.save(fname)
+
+
+if __name__ == "__main__":
+    main()
