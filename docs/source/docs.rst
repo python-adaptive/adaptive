@@ -147,9 +147,22 @@ on the *Play* :fa:`play` button or move the sliders.
         return np.exp(-(x**2 + y**2 + z**2 - 0.75**2)**2/a**4)
 
     learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
-    adaptive.runner.simple(learner, lambda l: l.npoints == 3000)
+    adaptive.runner.simple(learner, lambda l: l.npoints == 5000)
 
-    learner.plot_3D()
+    fig = learner.plot_3D(return_fig=True)
+
+    # Remove a slice from the plot to show the inside of the sphere
+    scatter = fig.data[0]
+    coords_col = [
+        (x, y, z, color)
+        for x, y, z, color in zip(
+            scatter["x"], scatter["y"], scatter["z"], scatter.marker["color"]
+        )
+        if not (x > 0 and y > 0)
+    ]
+    scatter["x"], scatter["y"], scatter["z"], scatter.marker["color"] = zip(*coords_col)
+
+    fig
 
 see more in the :ref:`Tutorial Adaptive`.
 
