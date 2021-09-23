@@ -22,6 +22,8 @@ The following learners are implemented:
   estimate the mean value of the function at each point,
 - `~adaptive.IntegratorLearner`, for
   when you want to intergrate a 1D function ``f: ℝ → ℝ``.
+- ``~adaptive.BalancingLearner``, for when you want to run several learners at once,
+  selecting the “best” one each time you get more points.
 
 Meta-learners (to be used with other learners):
 
@@ -33,6 +35,8 @@ In addition to the learners, ``adaptive`` also provides primitives for
 running the sampling across several cores and even several machines,
 with built-in support for
 `concurrent.futures <https://docs.python.org/3/library/concurrent.futures.html>`_,
+`mpi4py <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html>`_,
+`loky <https://loky.readthedocs.io/en/stable/>`_,
 `ipyparallel <https://ipyparallel.readthedocs.io/en/latest/>`_ and
 `distributed <https://distributed.readthedocs.io/en/latest/>`_.
 
@@ -168,13 +172,3 @@ on the *Play* :fa:`play` button or move the sliders.
     fig
 
 see more in the :ref:`Tutorial Adaptive`.
-
-.. include:: ../../README.rst
-    :start-after: not-in-documentation-end
-    :end-before: credits-end
-
-.. mdinclude:: ../../AUTHORS.md
-
-.. include:: ../../README.rst
-    :start-after: credits-end
-    :end-before: references-start

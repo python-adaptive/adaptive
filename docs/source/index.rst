@@ -16,7 +16,8 @@
    :maxdepth: 2
    :hidden:
 
-   docs
+   algorithms_and_examples
+   misc
    tutorial/tutorial
    usage_examples
    reference/adaptive
