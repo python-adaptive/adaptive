@@ -1,17 +1,6 @@
-Implemented algorithms
-----------------------
-
-The core concept in ``adaptive`` is that of a *learner*. A *learner*
-samples a function at the best places in its parameter space to get
-maximum “information” about the function. As it evaluates the function
-at more and more points in the parameter space, it gets a better idea of
-where the best places are to sample next.
-
-Of course, what qualifies as the “best places” will depend on your
-application domain! ``adaptive`` makes some reasonable default choices,
-but the details of the adaptive sampling are completely customizable.
-
-The following learners are implemented:
+.. include:: ../../README.rst
+    :start-after: summary-end
+    :end-before: not-in-documentation-start
 
 - `~adaptive.Learner1D`, for 1D functions ``f: ℝ → ℝ^N``,
 - `~adaptive.Learner2D`, for 2D functions ``f: ℝ^2 → ℝ^N``,
@@ -22,7 +11,7 @@ The following learners are implemented:
   estimate the mean value of the function at each point,
 - `~adaptive.IntegratorLearner`, for
   when you want to intergrate a 1D function ``f: ℝ → ℝ``.
-- ``~adaptive.BalancingLearner``, for when you want to run several learners at once,
+- `~adaptive.BalancingLearner`, for when you want to run several learners at once,
   selecting the “best” one each time you get more points.
 
 Meta-learners (to be used with other learners):
