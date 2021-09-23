@@ -1,0 +1,1 @@
+.. animated-logo::

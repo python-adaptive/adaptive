@@ -8,7 +8,7 @@
 
   *Adaptive*: parallel active learning of mathematical functions.
 
-.. animated-logo::
+.. include:: logo.rst
 
 ``adaptive`` is an open-source Python library designed to
 make adaptive parallel function evaluation simple. With ``adaptive`` you
@@ -27,6 +27,10 @@ to see examples of how to use ``adaptive`` or visit the
 
 .. summary-end
 
+**WARNING: adaptive is still in a beta development stage**
+
+.. not-in-documentation-start
+
 Implemented algorithms
 ----------------------
 
@@ -42,8 +46,6 @@ but the details of the adaptive sampling are completely customizable.
 
 The following learners are implemented:
 
-.. not-in-documentation-start
-
 - ``Learner1D``, for 1D functions ``f: ℝ → ℝ^N``,
 - ``Learner2D``, for 2D functions ``f: ℝ^2 → ℝ^N``,
 - ``LearnerND``, for ND functions ``f: ℝ^N → ℝ^M``,
@@ -52,15 +54,9 @@ The following learners are implemented:
 - ``AverageLearner1D``, for stochastic 1D functions where you want to
   estimate the mean value of the function at each point,
 - ``IntegratorLearner``, for
-  when you want to intergrate a 1D function ``f: ℝ → ℝ``.
+  when you want to intergrate a 1D function ``f: ℝ → ℝ``,
 - ``BalancingLearner``, for when you want to run several learners at once,
   selecting the “best” one each time you get more points.
-
-Meta-learners (to be used with other learners):
-
-- ``BalancingLearner``, for when you want to run several learners at once,
-  selecting the “best” one each time you get more points,
-- ``DataSaver``, for when your function doesn't just return a scalar or a vector.
 
 In addition to the learners, ``adaptive`` also provides primitives for
 running the sampling across several cores and even several machines,
@@ -70,6 +66,7 @@ with built-in support for
 `loky <https://loky.readthedocs.io/en/stable/>`_,
 `ipyparallel <https://ipyparallel.readthedocs.io/en/latest/>`_ and
 `distributed <https://distributed.readthedocs.io/en/latest/>`_.
+
 
 Examples
 --------
