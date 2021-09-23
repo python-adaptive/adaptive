@@ -157,7 +157,7 @@ html_js_files = [
 ]
 
 
-html_logo = "logo_docs.png"
+html_logo = "_static/logo_docs.png"
 
 
 class RunLogoAnimated(Directive):
