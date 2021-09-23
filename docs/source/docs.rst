@@ -147,7 +147,7 @@ on the *Play* :fa:`play` button or move the sliders.
         return np.exp(-(x**2 + y**2 + z**2 - 0.75**2)**2/a**4)
 
     learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
-    adaptive.runner.simple(learner, lambda l: l.npoints == 3000)
+    adaptive.runner.simple(learner, lambda l: l.npoints == 5000)
 
     fig = learner.plot_3D()
 
