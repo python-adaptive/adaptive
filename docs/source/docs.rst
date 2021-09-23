@@ -50,8 +50,9 @@ on the *Play* :fa:`play` button or move the sliders.
     from adaptive.learner.learner1D import uniform_loss, default_loss
     import holoviews as hv
     import numpy as np
+
     adaptive.notebook_extension()
-    %output holomap='scrubber'
+    hv.output(holomap="scrubber")
 
 `adaptive.Learner1D`
 ~~~~~~~~~~~~~~~~~~~~
@@ -59,7 +60,6 @@ on the *Play* :fa:`play` button or move the sliders.
 .. jupyter-execute::
     :hide-code:
 
-    %%opts Layout [toolbar=None]
     def f(x, offset=0.07357338543088588):
         a = 0.01
         return x + a**2 / (a**2 + (x - offset)**2)
@@ -71,20 +71,23 @@ on the *Play* :fa:`play` button or move the sliders.
             x, y = [x_0, x_1], [y_0, y_1]
         else:
             x, y = [], []
-        return hv.Scatter((x, y)).opts(style=dict(size=6, color='r'))
+        return hv.Scatter((x, y)).opts(style=dict(size=6, color="r"))
 
     def plot(learner, npoints):
         adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
         return (learner.plot() * plot_loss_interval(learner))[:, -1.1:1.1]
 
     def get_hm(loss_per_interval, N=101):
-        learner = adaptive.Learner1D(f, bounds=(-1, 1),
-                                     loss_per_interval=loss_per_interval)
+        learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=loss_per_interval)
         plots = {n: plot(learner, n) for n in range(N)}
-        return hv.HoloMap(plots, kdims=['npoints'])
+        return hv.HoloMap(plots, kdims=["npoints"])
 
-    (get_hm(uniform_loss).relabel('homogeneous samping')
-     + get_hm(default_loss).relabel('with adaptive'))
+    layout = (
+        get_hm(uniform_loss).relabel("homogeneous samping")
+        + get_hm(default_loss).relabel("with adaptive")
+    )
+
+    layout.opts(plot=dict(toolbar=None))
 
 `adaptive.Learner2D`
 ~~~~~~~~~~~~~~~~~~~~
