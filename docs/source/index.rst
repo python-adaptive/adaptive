@@ -17,7 +17,7 @@
    :hidden:
 
    algorithms_and_examples
-   misc
+   docs
    tutorial/tutorial
    usage_examples
    reference/adaptive
