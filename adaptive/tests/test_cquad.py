@@ -36,7 +36,7 @@ def equal_ival(ival, other, *, verbose=False):
         b = getattr(other, s)
         is_equal = np.allclose(a, b, rtol=0, atol=eps, equal_nan=True)
         if verbose and not is_equal:
-            print("ival.{} - other.{} = {}".format(s, s, a - b))
+            print(f"ival.{s} - other.{s} = {a - b}")
         same_slots.append(is_equal)
 
     return all(same_slots)
@@ -46,7 +46,7 @@ def equal_ivals(ivals, other, *, verbose=False):
     """Note: `other` is a list of ivals."""
     if len(ivals) != len(other):
         if verbose:
-            print("len(ivals)={} != len(other)={}".format(len(ivals), len(other)))
+            print(f"len(ivals)={len(ivals)} != len(other)={len(other)}")
         return False
 
     ivals = [sorted(i, key=attrgetter("a")) for i in [ivals, other]]

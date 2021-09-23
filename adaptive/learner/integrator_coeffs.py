@@ -162,7 +162,7 @@ def _coefficients():
     ]
 
     # Compute the shift matrices.
-    T_left, T_right = [V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1]]
+    T_left, T_right = (V_inv[3] @ calc_V((xi[3] + a) / 2, ns[3]) for a in [-1, 1])
 
     # If the relative difference between two consecutive approximations is
     # lower than this value, the error estimate is considered reliable.

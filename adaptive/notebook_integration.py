@@ -251,7 +251,7 @@ def _info_html(runner):
 
     overhead = runner.overhead()
     red_level = max(0, min(int(255 * overhead / 100), 255))
-    overhead_color = "#{:02x}{:02x}{:02x}".format(red_level, 255 - red_level, 0)
+    overhead_color = f"#{red_level:02x}{255 - red_level:02x}{0:02x}"
 
     info = [
         ("status", f'<font color="{color}">{status}</font>'),
