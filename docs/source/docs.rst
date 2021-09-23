@@ -149,7 +149,7 @@ on the *Play* :fa:`play` button or move the sliders.
     learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
     adaptive.runner.simple(learner, lambda l: l.npoints == 5000)
 
-    fig = learner.plot_3D()
+    fig = learner.plot_3D(return_fig=True)
 
     # Remove a slice from the plot to show the inside of the sphere
     scatter = fig.data[0]
