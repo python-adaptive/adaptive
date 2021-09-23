@@ -169,8 +169,8 @@ class RunLogoAnimated(Directive):
             print(f"{fname} does not exist.")
             logo_animated.main(fname)
         style = "width: 400px; max-width: 100%; margin: 0 auto; display:block;"
-        opts = f'autoplay loop muted style="{style}"'
-        html = f"""<video {opts}><source src="{fname}" type="video/mp4"></video><br>"""
+        opts = f'autoplay loop muted playsinline webkit-playsinline style="{style}"'
+        html = f'<video {opts}><source src="{fname}" type="video/mp4"></video><br>'
         return [nodes.raw(text=html, format="html")]
 
 
