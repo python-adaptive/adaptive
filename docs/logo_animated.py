@@ -11,7 +11,7 @@ import adaptive
 
 def add_rounded_corners(size, rad):
     # Make new images
-    circle = Image.new("L", (rad * 2, rad * 2), 1)
+    circle = Image.new("L", (rad * 2, rad * 2), color=1)
     draw = ImageDraw.Draw(circle)
     draw.ellipse((0, 0, rad * 2, rad * 2), fill=0)
     alpha = Image.new("L", size, 0)
@@ -24,8 +24,12 @@ def add_rounded_corners(size, rad):
     alpha.paste(circle.crop((rad, rad, rad * 2, rad * 2)), (w - rad, h - rad))
 
     # To array
-    cut = np.array(alpha).astype(float)
-    cut[cut == 0] = np.nan
+    cut = np.array(alpha)
+    cut = cut.reshape((*cut.shape, 1)).repeat(4, axis=2)
+
+    # Set the corners to (252, 252, 252, 255) to match the RTD background #FCFCFC
+    cut[:, :, -1] *= 255
+    cut[:, :, :-1] *= 252
     return cut
 
 
@@ -49,9 +53,7 @@ def get_new_artists(npoints, learner, data, rounded_corners, ax):
     line1, line2 = plot_tri(new_learner, ax)
     data = np.rot90(new_learner.interpolated_on_grid()[-1])
     im = ax.imshow(data, extent=(-0.5, 0.5, -0.5, 0.5), cmap="viridis")
-    im2 = ax.imshow(
-        rounded_corners, extent=(-0.5, 0.5, -0.5, 0.5), cmap="gray_r", zorder=10
-    )
+    im2 = ax.imshow(rounded_corners, extent=(-0.5, 0.5, -0.5, 0.5), zorder=10)
     return im, line1, line2, im2
 
 
