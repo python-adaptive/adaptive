@@ -90,4 +90,4 @@ if __name__ == "__main__":
     ]
 
     ani = animation.ArtistAnimation(fig, artists, blit=True)
-    ani.save("movie.mp4", writer=FFMpegWriter(fps=24))
+    ani.save("source/_static/logo_docs.mp4", writer=FFMpegWriter(fps=24))
