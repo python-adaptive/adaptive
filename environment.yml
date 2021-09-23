@@ -4,10 +4,11 @@ channels:
 - conda-forge
 
 dependencies:
-  - python=3.7
+  - python=3.9
   - sortedcontainers
   - sortedcollections
   - scipy
+  - cloudpickle
   - holoviews
   - ipyparallel>=6.2.5
   - distributed
@@ -15,7 +16,6 @@ dependencies:
   - loky
   - jupyter_client>=5.2.2
   - ipywidgets
-  - scikit-optimize
-  - scikit-learn <=0.23.1  # because of https://github.com/scikit-optimize/scikit-optimize/issues/931, remove dep when fixed
+  - scikit-optimize>=0.8.1
   - plotly
   - atomicwrites
