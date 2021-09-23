@@ -10,7 +10,7 @@
 
 .. raw:: html
 
-   <video controls autoplay loop><source src="_static/logo_docs.mp4" type="video/mp4"></video>
+   <video autoplay loop muted><source src="_static/logo_docs.mp4" type="video/mp4"></video>
 
 ``adaptive`` is an open-source Python library designed to
 make adaptive parallel function evaluation simple. With ``adaptive`` you
