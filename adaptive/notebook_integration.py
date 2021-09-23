@@ -159,7 +159,7 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=T
                 await asyncio.sleep(update_interval)
             event()  # fire off one last update before we die
         finally:
-            if active_plotting_tasks[name] is asyncio.Task.current_task():
+            if active_plotting_tasks[name] is asyncio.current_task():
                 active_plotting_tasks.pop(name, None)
             cancel_button.layout.display = "none"  # remove cancel button
 
