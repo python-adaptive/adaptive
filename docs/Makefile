@@ -17,17 +17,11 @@ help:
 source/_static/logo_docs.png: logo.py
 	python logo.py
 
-source/_static/logo_docs.mp4: logo_animated.py
-	python logo_animated.py
-
 # Fake target to avoid the catch-all target
 logo.py:
 	@echo "never executed"
 
-logo_animated.py:
-	@echo "never executed"
-
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%: Makefile source/_static/logo_docs.png source/_static/logo_docs.mp4
+%: Makefile source/_static/logo_docs.png
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

@@ -70,7 +70,7 @@ def create_and_run_learner():
     return learner
 
 
-if __name__ == "__main__":
+def main(fname="source/_static/logo_docs.mp4"):
     learner = create_and_run_learner()
 
     data = list(learner.data.items())
@@ -92,4 +92,8 @@ if __name__ == "__main__":
     ]
 
     ani = animation.ArtistAnimation(fig, artists, blit=True)
-    ani.save("source/_static/logo_docs.mp4", writer=FFMpegWriter(fps=24))
+    ani.save(fname, writer=FFMpegWriter(fps=24))
+
+
+if __name__ == "__main__":
+    main()

@@ -8,12 +8,7 @@
 
   *Adaptive*: parallel active learning of mathematical functions.
 
-.. raw:: html
-
-   <video autoplay loop muted style="width: 400px; max-width: 100%; margin: 0 auto; display:block;">
-      <source src="_static/logo_docs.mp4" type="video/mp4">
-   </video>
-   <br>
+.. animated-logo::
 
 ``adaptive`` is an open-source Python library designed to
 make adaptive parallel function evaluation simple. With ``adaptive`` you
