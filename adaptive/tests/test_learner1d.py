@@ -1,11 +1,21 @@
 import random
+import time
 
 import flaky
 import numpy as np
 
 from adaptive.learner import Learner1D
 from adaptive.learner.learner1D import curvature_loss_function
-from adaptive.runner import simple
+from adaptive.runner import BlockingRunner, simple
+
+
+def flat_middle(x):
+    x *= 1e7
+    xs = np.array([0.0, 0.1, 0.9, 1.0])
+    ys = [0, 1, 1, 0]
+    if x < xs[1] or x > xs[-2]:
+        time.sleep(1)
+    return np.interp(x, xs, ys)
 
 
 def test_pending_loss_intervals():
@@ -389,3 +399,15 @@ def test_NaN_loss():
 
     learner = Learner1D(f, bounds=(-1, 1))
     simple(learner, lambda l: l.npoints > 100)
+
+
+def test_inf_loss_with_missing_bounds():
+    learner = Learner1D(
+        flat_middle,
+        bounds=(0, 1e-7),
+        loss_per_interval=curvature_loss_function(),
+    )
+    # must be done in parallel because otherwise the bounds will be evaluated first
+    BlockingRunner(learner, goal=lambda learner: learner.loss() < 0.01)
+
+    learner.npoints > 20
