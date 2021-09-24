@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.tri as mtri
 import numpy as np
 from matplotlib import animation
@@ -96,4 +98,6 @@ def main(fname="source/_static/logo_docs.mp4"):
 
 
 if __name__ == "__main__":
-    main()
+    fname = "_static/logo_docs.mp4"
+    if not os.path.exists(fname):
+        main(fname)
