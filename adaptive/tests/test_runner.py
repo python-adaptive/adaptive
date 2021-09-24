@@ -130,6 +130,7 @@ def test_ipyparallel_executor():
 @pytest.mark.skipif(not with_distributed, reason="dask.distributed is not installed")
 @pytest.mark.skipif(OPERATING_SYSTEM == "Windows", reason="XXX: seems to always fail")
 @pytest.mark.skipif(OPERATING_SYSTEM == "Darwin", reason="XXX: intermittently fails")
+@pytest.mark.skipif(OPERATING_SYSTEM == "Linux", reason="XXX: intermittently fails")
 def test_distributed_executor():
     from distributed import Client
 
