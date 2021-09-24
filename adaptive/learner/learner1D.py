@@ -614,7 +614,7 @@ class Learner1D(BaseLearner):
                 self.__missing_bounds.remove(b)
             elif b not in self.pending_points:
                 missing_bounds.append(b)
-        return missing_bounds
+        return sorted(missing_bounds)
 
     def _ask_points_without_adding(self, n: int) -> Tuple[List[float], List[float]]:
         """Return 'n' points that are expected to maximally reduce the loss.
