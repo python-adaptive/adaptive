@@ -9,6 +9,15 @@ from adaptive.learner.learner1D import curvature_loss_function
 from adaptive.runner import BlockingRunner, simple
 
 
+def flat_middle(x):
+    x *= 1e7
+    xs = np.array([0.0, 0.1, 0.9, 1.0])
+    ys = [0, 1, 1, 0]
+    if x < xs[1] or x > xs[-2]:
+        time.sleep(1)
+    return np.interp(x, xs, ys)
+
+
 def test_pending_loss_intervals():
     # https://github.com/python-adaptive/adaptive/issues/40
     learner = Learner1D(lambda x: x, (0, 4))
@@ -393,14 +402,6 @@ def test_NaN_loss():
 
 
 def test_inf_loss_with_missing_bounds():
-    def flat_middle(x):
-        x *= 1e7
-        xs = np.array([0.0, 0.1, 0.9, 1.0])
-        ys = [0, 1, 1, 0]
-        if x < xs[1] or x > xs[-2]:
-            time.sleep(1)
-        return np.interp(x, xs, ys)
-
     learner = Learner1D(
         flat_middle,
         bounds=(0, 1e-7),
