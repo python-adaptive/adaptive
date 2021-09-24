@@ -14,9 +14,6 @@
 import os
 import sys
 
-from docutils import nodes
-from docutils.parsers.rst import Directive
-
 package_path = os.path.abspath("../..")
 # Insert into sys.path so that we can import adaptive here
 sys.path.insert(0, package_path)
@@ -160,20 +157,5 @@ html_js_files = [
 html_logo = "_static/logo_docs.png"
 
 
-class RunLogoAnimated(Directive):
-    def run(self):
-        fname = "_static/logo_docs.mp4"
-        if not os.path.exists(fname):
-            import logo_animated
-
-            print(f"{fname} does not exist.")
-            logo_animated.main(fname)
-        style = "width: 400px; max-width: 100%; margin: 0 auto; display:block;"
-        opts = f'autoplay loop muted playsinline webkit-playsinline style="{style}"'
-        html = f'<video {opts}><source src="{fname}" type="video/mp4"></video><br>'
-        return [nodes.raw(text=html, format="html")]
-
-
 def setup(app):
     app.add_css_file("custom.css")  # For the `live_info` widget
-    app.add_directive("animated-logo", RunLogoAnimated)
