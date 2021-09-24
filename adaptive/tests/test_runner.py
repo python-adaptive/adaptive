@@ -3,7 +3,6 @@ import platform
 import sys
 import time
 
-import flaky
 import pytest
 
 from adaptive.learner import Learner1D, Learner2D
@@ -127,7 +126,6 @@ def test_ipyparallel_executor():
         raise RuntimeError("Could not stop ipcluster")
 
 
-@flaky.flaky(max_runs=5)
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(not with_distributed, reason="dask.distributed is not installed")
 @pytest.mark.skipif(OPERATING_SYSTEM == "Windows", reason="XXX: seems to always fail")
