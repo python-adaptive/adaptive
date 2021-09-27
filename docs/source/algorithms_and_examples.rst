@@ -50,6 +50,26 @@ on the *Play* :fa:`play` button or move the sliders.
 `adaptive.Learner1D`
 ~~~~~~~~~~~~~~~~~~~~
 
+Adaptively learning a 1D function (the plot below) and live-plotting the process in a Jupyter notebook is as easy as
+
+.. code:: python
+
+    from adaptive import notebook_extension, Runner, Learner1D
+    notebook_extension()  # enables notebook integration
+
+    def peak(x, a=0.01):  # function to "learn"
+        return x + a**2 / (a**2 + x**2)
+
+    learner = Learner1D(peak, bounds=(-1, 1))
+
+    def goal(learner):
+        return learner.loss() < 0.01  # continue until loss is small enough
+
+    runner = Runner(learner, goal)  # start calculation on all CPU cores
+    runner.live_info()  # shows a widget with status information
+    runner.live_plot()
+
+
 .. jupyter-execute::
     :hide-code:
 
