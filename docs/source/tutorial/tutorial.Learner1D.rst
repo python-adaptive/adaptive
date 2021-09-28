@@ -56,9 +56,8 @@ evaluate ‘f’ on them.
 By default on Unix-like systems the runner will evaluate the points in
 parallel using local processes `concurrent.futures.ProcessPoolExecutor`.
 
-On Windows systems the runner will try to use a `loky.get_reusable_executor`
-if `distributed` is installed. A `~concurrent.futures.ProcessPoolExecutor`
-cannot be used on Windows for reasons.
+On Windows systems the runner will try to use a `loky.get_reusable_executor`.
+A `~concurrent.futures.ProcessPoolExecutor` cannot be used on Windows for reasons.
 
 .. jupyter-execute::
 
