@@ -464,8 +464,8 @@ class Learner1D(BaseLearner):
         if y is not None:
             if self.vdim > 1:
                 try:
-                    y_min = np.min([self._bbox[1][0], y], axis=0)
-                    y_max = np.max([self._bbox[1][1], y], axis=0)
+                    y_min = np.nanmin([self._bbox[1][0], y], axis=0)
+                    y_max = np.nanmax([self._bbox[1][1], y], axis=0)
                 except ValueError:
                     # Happens when `_bbox[1]` is a float and `y` a vector.
                     y_min = y_max = y
