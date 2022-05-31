@@ -17,12 +17,12 @@ source = [
 ]
 
 [tool.coverage.run]
-branch = True
-parallel = True
+branch = true
+parallel = true
 source = "adaptive"
 
 [tool.coverage.report]
-show_missing = True
+show_missing = true
 precision = 2
 
 [tool.coverage.xml]
@@ -32,4 +32,4 @@ output = ".coverage.xml"
 profile = "black"
 
 [tool.mypy]
-ignore_missing_imports = True
+ignore_missing_imports = true
