@@ -20,9 +20,9 @@ def pytest(session, all_deps):
 @nox.session(python="3.7")
 def coverage(session):
     session.install("coverage")
-    session.run("coverage", "report")
-    session.run("coverage", "xml")
-
     session.install(".[testing,other]")
     session.install(".")
     session.run("pytest")
+
+    session.run("coverage", "report")
+    session.run("coverage", "xml")
