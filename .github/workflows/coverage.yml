@@ -13,8 +13,8 @@ jobs:
       with:
         python-version: 3.7
     - name: Install dependencies
-      run: pip install tox codecov
-    - name: Test with tox
-      run: tox -e py37-alldeps,report
+      run: pip install nox codecov
+    - name: Test with nox
+      run: nox -e coverage
     - name: Upload test coverage
       run: codecov -t ${{ secrets.CODECOV_TOKEN }} -f .coverage.xml
