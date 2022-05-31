@@ -5,7 +5,7 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
-[tool.pytest]
+[tool.pytest.ini_options]
 testpaths = ["adaptive"]
 addopts = "--durations=5 --cov --cov-append --cov-fail-under=70 -vvv --cov-report="
 norecursedirs = ["docs"]
