@@ -131,14 +131,14 @@ def maybe_skip(learner):
 
 @learn_with(Learner1D, bounds=(-1, 1))
 def quadratic(x, m: uniform(1, 4), b: uniform(0, 1)):
-    return m * x ** 2 + b
+    return m * x**2 + b
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
 @learn_with(SequenceLearner, sequence=np.linspace(-1, 1, 201))
 def linear_with_peak(x, d: uniform(-1, 1)):
     a = 0.01
-    return x + a ** 2 / (a ** 2 + (x - d) ** 2)
+    return x + a**2 / (a**2 + (x - d) ** 2)
 
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
@@ -147,7 +147,7 @@ def linear_with_peak(x, d: uniform(-1, 1)):
 def ring_of_fire(xy, d: uniform(0.2, 1)):
     a = 0.2
     x, y = xy
-    return x + math.exp(-((x ** 2 + y ** 2 - d ** 2) ** 2) / a ** 4)
+    return x + math.exp(-((x**2 + y**2 - d**2) ** 2) / a**4)
 
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
@@ -155,7 +155,7 @@ def ring_of_fire(xy, d: uniform(0.2, 1)):
 def sphere_of_fire(xyz, d: uniform(0.2, 0.5)):
     a = 0.2
     x, y, z = xyz
-    return x + math.exp(-((x ** 2 + y ** 2 + z ** 2 - d ** 2) ** 2) / a ** 4) + z ** 2
+    return x + math.exp(-((x**2 + y**2 + z**2 - d**2) ** 2) / a**4) + z**2
 
 
 @learn_with(SequenceLearner, sequence=range(1000))
@@ -172,7 +172,7 @@ def noisy_peak(
     offset: uniform(-0.6, -0.3),
 ):
     seed, x = seed_x
-    y = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
+    y = x**3 - x + 3 * peak_width**2 / (peak_width**2 + (x - offset) ** 2)
     noise = np.random.normal(0, sigma)
     return y + noise
 
@@ -264,7 +264,7 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
     ys, dy = np.linspace(*ybounds, int(n * r), retstep=True)
 
     distances, neighbors = tree.query(list(it.product(xs, ys)), k=1)
-    assert max(distances) < math.sqrt(dx ** 2 + dy ** 2)
+    assert max(distances) < math.sqrt(dx**2 + dy**2)
 
 
 @pytest.mark.parametrize(

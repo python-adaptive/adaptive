@@ -93,7 +93,7 @@ class AverageLearner(BaseLearner):
         self.data[n] = value
         self.pending_points.discard(n)
         self.sum_f += value
-        self.sum_f_sq += value ** 2
+        self.sum_f_sq += value**2
         self.npoints += 1
 
     def tell_pending(self, n: int) -> None:
@@ -111,7 +111,7 @@ class AverageLearner(BaseLearner):
         n = self.npoints
         if n < self.min_npoints:
             return np.inf
-        numerator = self.sum_f_sq - n * self.mean ** 2
+        numerator = self.sum_f_sq - n * self.mean**2
         if numerator < 0:
             # in this case the numerator ~ -1e-15
             return 0

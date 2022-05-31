@@ -16,7 +16,7 @@ def test_skopt_learner_runs():
     """
 
     def g(x, noise_level=0.1):
-        return np.sin(5 * x) * (1 - np.tanh(x ** 2)) + np.random.randn() * noise_level
+        return np.sin(5 * x) * (1 - np.tanh(x**2)) + np.random.randn() * noise_level
 
     learner = SKOptLearner(g, dimensions=[(-2.0, 2.0)])
 

@@ -581,7 +581,7 @@ class Triangulation:
         vertices = array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
         average_edge_length = mean(np_abs(vectors))
-        return self.volume(simplex) / (average_edge_length ** self.dim)
+        return self.volume(simplex) / (average_edge_length**self.dim)
 
     def add_point(self, point, simplex=None, transform=None):
         """Add a new vertex and create simplices as appropriate.

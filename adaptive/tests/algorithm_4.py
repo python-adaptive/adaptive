@@ -411,7 +411,7 @@ def f0(x):
 
 
 def f7(x):
-    return x ** -0.5
+    return x**-0.5
 
 
 def f24(x):
@@ -421,7 +421,7 @@ def f24(x):
 def f21(x):
     y = 0
     for i in range(1, 4):
-        y += 1 / np.cosh(20 ** i * (x - 2 * i / 10))
+        y += 1 / np.cosh(20**i * (x - 2 * i / 10))
     return y
 
 

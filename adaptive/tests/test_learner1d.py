@@ -262,17 +262,17 @@ def test_tell_many():
     def f(x, offset=0.123214):
         a = 0.01
         return (
-            np.sin(x ** 2)
-            + np.sin(x ** 5)
-            + a ** 2 / (a ** 2 + (x - offset) ** 2)
-            + x ** 2
-            + 1e-5 * x ** 3
+            np.sin(x**2)
+            + np.sin(x**5)
+            + a**2 / (a**2 + (x - offset) ** 2)
+            + x**2
+            + 1e-5 * x**3
         )
 
     def f_vec(x, offset=0.123214):
         a = 0.01
-        y = x + a ** 2 / (a ** 2 + (x - offset) ** 2)
-        return [y, 0.5 * y, y ** 2]
+        y = x + a**2 / (a**2 + (x - offset) ** 2)
+        return [y, 0.5 * y, y**2]
 
     def assert_equal_dicts(d1, d2):
         xs1, ys1 = zip(*sorted(d1.items()))
@@ -395,7 +395,7 @@ def test_NaN_loss():
         a = 0.01
         if random.random() < 0.2:
             return np.NaN
-        return x + a ** 2 / (a ** 2 + x ** 2)
+        return x + a**2 / (a**2 + x**2)
 
     learner = Learner1D(f, bounds=(-1, 1))
     simple(learner, lambda l: l.npoints > 100)
