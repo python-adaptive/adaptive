@@ -11,7 +11,7 @@ dependencies:
   - scipy=1.7.1
   - holoviews=1.14.6
   - bokeh=2.4.0
-  - panel=0.12.3
+  - panel=0.12.7
   - plotly=5.3.1
   - ipywidgets=7.6.5
   - jupyter-sphinx=0.3.2
