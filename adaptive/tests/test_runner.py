@@ -106,6 +106,7 @@ def test_stop_after_goal():
     OPERATING_SYSTEM == "Windows" and sys.version_info >= (3, 7),
     reason="Gets stuck in CI",
 )
+@pytest.mark.skipif(OPERATING_SYSTEM == "Darwin", reason="Cannot stop ipcluster")
 def test_ipyparallel_executor():
     from ipyparallel import Client
 
