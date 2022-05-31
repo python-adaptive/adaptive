@@ -8,7 +8,7 @@ def pytest(session, all_deps):
         session.install(".[testing,other]")
     else:
         session.install(".[testing]")
-    session.install(".")
+
     session.run("coverage", "erase")
 
     if session.python == "3.10":
@@ -21,7 +21,6 @@ def pytest(session, all_deps):
 def coverage(session):
     session.install("coverage")
     session.install(".[testing,other]")
-    session.install(".")
     session.run("pytest")
 
     session.run("coverage", "report")
