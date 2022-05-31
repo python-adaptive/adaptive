@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import collections.abc
 import itertools
 import math
 from copy import copy, deepcopy
-from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 
 import cloudpickle
 import numpy as np
@@ -170,7 +172,7 @@ def curvature_loss_function(
     return curvature_loss
 
 
-def linspace(x_left: Real, x_right: Real, n: Int) -> List[Float]:
+def linspace(x_left: Real, x_right: Real, n: Int) -> list[Float]:
     """This is equivalent to
     'np.linspace(x_left, x_right, n, endpoint=False)[1:]',
     but it is 15-30 times faster for small 'n'."""
@@ -194,7 +196,7 @@ def _get_neighbors_from_array(xs: np.ndarray) -> NeighborsType:
 
 def _get_intervals(
     x: float, neighbors: NeighborsType, nth_neighbors: int
-) -> List[Tuple[float, float]]:
+) -> list[tuple[float, float]]:
     nn = nth_neighbors
     i = neighbors.index(x)
     start = max(0, i - nn - 1)
@@ -249,9 +251,9 @@ class Learner1D(BaseLearner):
 
     def __init__(
         self,
-        function: Callable[[Real], Union[Float, np.ndarray]],
-        bounds: Tuple[Real, Real],
-        loss_per_interval: Optional[Callable[[XsTypeN, YsTypeN], Float]] = None,
+        function: Callable[[Real], Float | np.ndarray],
+        bounds: tuple[Real, Real],
+        loss_per_interval: Callable[[XsTypeN, YsTypeN], Float] | None = None,
     ):
         self.function = function  # type: ignore
 
@@ -267,8 +269,8 @@ class Learner1D(BaseLearner):
         # the learners behavior in the tests.
         self._recompute_losses_factor = 2
 
-        self.data: Dict[Real, Real] = {}
-        self.pending_points: Set[Real] = set()
+        self.data: dict[Real, Real] = {}
+        self.pending_points: set[Real] = set()
 
         # A dict {x_n: [x_{n-1}, x_{n+1}]} for quick checking of local
         # properties.
@@ -292,7 +294,7 @@ class Learner1D(BaseLearner):
         self.bounds = list(bounds)
         self.__missing_bounds = set(self.bounds)  # cache of missing bounds
 
-        self._vdim: Optional[int] = None
+        self._vdim: int | None = None
 
     @property
     def vdim(self) -> int:
@@ -334,20 +336,18 @@ class Learner1D(BaseLearner):
         max_interval, max_loss = losses.peekitem(0)
         return max_loss
 
-    def _scale_x(self, x: Optional[Float]) -> Optional[Float]:
+    def _scale_x(self, x: Float | None) -> Float | None:
         if x is None:
             return None
         return x / self._scale[0]
 
-    def _scale_y(
-        self, y: Union[Float, np.ndarray, None]
-    ) -> Union[Float, np.ndarray, None]:
+    def _scale_y(self, y: Float | np.ndarray | None) -> Float | np.ndarray | None:
         if y is None:
             return None
         y_scale = self._scale[1] or 1
         return y / y_scale
 
-    def _get_point_by_index(self, ind: int) -> Optional[float]:
+    def _get_point_by_index(self, ind: int) -> float | None:
         if ind < 0 or ind >= len(self.neighbors):
             return None
         return self.neighbors.keys()[ind]
@@ -449,7 +449,7 @@ class Learner1D(BaseLearner):
             neighbors.get(x_left, [None, None])[1] = x
             neighbors.get(x_right, [None, None])[0] = x
 
-    def _update_scale(self, x: float, y: Union[Float, np.ndarray]) -> None:
+    def _update_scale(self, x: float, y: Float | np.ndarray) -> None:
         """Update the scale with which the x and y-values are scaled.
 
         For a learner where the function returns a single scalar the scale
@@ -476,7 +476,7 @@ class Learner1D(BaseLearner):
                 self._bbox[1][1] = max(self._bbox[1][1], y)
                 self._scale[1] = self._bbox[1][1] - self._bbox[1][0]
 
-    def tell(self, x: float, y: Union[Float, Sequence[Float], np.ndarray]) -> None:
+    def tell(self, x: float, y: Float | Sequence[Float] | np.ndarray) -> None:
         if x in self.data:
             # The point is already evaluated before
             return
@@ -522,13 +522,9 @@ class Learner1D(BaseLearner):
     def tell_many(
         self,
         xs: Sequence[Float],
-        ys: Union[
-            Sequence[Float],
-            Sequence[Sequence[Float]],
-            Sequence[np.ndarray],
-        ],
+        ys: (Sequence[Float] | Sequence[Sequence[Float]] | Sequence[np.ndarray]),
         *,
-        force: bool = False
+        force: bool = False,
     ) -> None:
         if not force and not (len(xs) > 0.5 * len(self.data) and len(xs) > 2):
             # Only run this more efficient method if there are
@@ -597,7 +593,7 @@ class Learner1D(BaseLearner):
                 # have an inf loss.
                 self._update_interpolated_loss_in_interval(*ival)
 
-    def ask(self, n: int, tell_pending: bool = True) -> Tuple[List[float], List[float]]:
+    def ask(self, n: int, tell_pending: bool = True) -> tuple[list[float], list[float]]:
         """Return 'n' points that are expected to maximally reduce the loss."""
         points, loss_improvements = self._ask_points_without_adding(n)
 
@@ -607,7 +603,7 @@ class Learner1D(BaseLearner):
 
         return points, loss_improvements
 
-    def _missing_bounds(self) -> List[Real]:
+    def _missing_bounds(self) -> list[Real]:
         missing_bounds = []
         for b in copy(self.__missing_bounds):
             if b in self.data:
@@ -616,7 +612,7 @@ class Learner1D(BaseLearner):
                 missing_bounds.append(b)
         return sorted(missing_bounds)
 
-    def _ask_points_without_adding(self, n: int) -> Tuple[List[float], List[float]]:
+    def _ask_points_without_adding(self, n: int) -> tuple[list[float], list[float]]:
         """Return 'n' points that are expected to maximally reduce the loss.
         Without altering the state of the learner"""
         # Find out how to divide the n points over the intervals
@@ -691,8 +687,8 @@ class Learner1D(BaseLearner):
         return points, loss_improvements
 
     def _loss(
-        self, mapping: Dict[Interval, float], ival: Interval
-    ) -> Tuple[float, Interval]:
+        self, mapping: dict[Interval, float], ival: Interval
+    ) -> tuple[float, Interval]:
         loss = mapping[ival]
         return finite_loss(ival, loss, self._scale[0])
 
@@ -736,10 +732,10 @@ class Learner1D(BaseLearner):
         self.losses_combined = deepcopy(self.losses)
         self.neighbors_combined = deepcopy(self.neighbors)
 
-    def _get_data(self) -> Dict[float, float]:
+    def _get_data(self) -> dict[float, float]:
         return self.data
 
-    def _set_data(self, data: Dict[float, float]) -> None:
+    def _set_data(self, data: dict[float, float]) -> None:
         if data:
             xs, ys = zip(*data.items())
             self.tell_many(xs, ys)
@@ -763,7 +759,7 @@ class Learner1D(BaseLearner):
         self.losses_combined.update(losses_combined)
 
 
-def loss_manager(x_scale: float) -> Dict[Interval, float]:
+def loss_manager(x_scale: float) -> dict[Interval, float]:
     def sort_key(ival, loss):
         loss, ival = finite_loss(ival, loss, x_scale)
         return -loss, ival
@@ -772,7 +768,7 @@ def loss_manager(x_scale: float) -> Dict[Interval, float]:
     return sorted_dict
 
 
-def finite_loss(ival: Interval, loss: float, x_scale: float) -> Tuple[float, Interval]:
+def finite_loss(ival: Interval, loss: float, x_scale: float) -> tuple[float, Interval]:
     """Get the so-called finite_loss of an interval in order to be able to
     sort intervals that have infinite loss."""
     # If the loss is infinite we return the

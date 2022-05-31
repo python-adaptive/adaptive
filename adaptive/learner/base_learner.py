@@ -110,12 +110,10 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
     def tell_pending(self, x):
         """Tell the learner that 'x' has been requested such
         that it's not suggested again."""
-        pass
 
     @abc.abstractmethod
     def remove_unfinished(self):
         """Remove uncomputed data from the learner."""
-        pass
 
     @abc.abstractmethod
     def loss(self, real=True):
@@ -142,7 +140,6 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
             `pending_points`. Set this to False if you do not
             want to modify the state of the learner.
         """
-        pass
 
     @abc.abstractmethod
     def _get_data(self):

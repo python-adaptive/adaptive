@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from math import sqrt
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable
 
 import cloudpickle
 import numpy as np
@@ -38,8 +40,8 @@ class AverageLearner(BaseLearner):
     def __init__(
         self,
         function: Callable[[int], Real],
-        atol: Optional[float] = None,
-        rtol: Optional[float] = None,
+        atol: float | None = None,
+        rtol: float | None = None,
         min_npoints: int = 2,
     ) -> None:
         if atol is None and rtol is None:
@@ -68,7 +70,7 @@ class AverageLearner(BaseLearner):
         """Data as NumPy array of size (npoints, 2) with seeds and values."""
         return np.array(sorted(self.data.items()))
 
-    def ask(self, n: int, tell_pending: bool = True) -> Tuple[List[int], List[Float]]:
+    def ask(self, n: int, tell_pending: bool = True) -> tuple[list[int], list[Float]]:
         points = list(range(self.n_requested, self.n_requested + n))
 
         if any(p in self.data or p in self.pending_points for p in points):
@@ -159,10 +161,10 @@ class AverageLearner(BaseLearner):
         vals = hv.Points(vals)
         return hv.operation.histogram(vals, num_bins=num_bins, dimension="y")
 
-    def _get_data(self) -> Tuple[Dict[int, Real], int, Real, Real]:
+    def _get_data(self) -> tuple[dict[int, Real], int, Real, Real]:
         return (self.data, self.npoints, self.sum_f, self.sum_f_sq)
 
-    def _set_data(self, data: Tuple[Dict[int, Real], int, Real, Real]) -> None:
+    def _set_data(self, data: tuple[dict[int, Real], int, Real, Real]) -> None:
         self.data, self.npoints, self.sum_f, self.sum_f_sq = data
 
     def __getstate__(self):
