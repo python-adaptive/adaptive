@@ -162,7 +162,7 @@ def curvature_loss_function(
         default_loss_ = default_loss(xs_middle, ys_middle)
         dx = xs_middle[1] - xs_middle[0]
         return (
-            area_factor * (triangle_loss_ ** 0.5)
+            area_factor * (triangle_loss_**0.5)
             + euclid_factor * default_loss_
             + horizontal_factor * dx
         )

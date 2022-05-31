@@ -186,7 +186,7 @@ def should_update(status):
         # i.e. we're offline for 12h, with an update_interval of 0.5s,
         # and without the reduced probability, we have buffer_size=86400.
         # With the correction this is np.log(86400) / np.log(1.1) = 119.2
-        return 1.1 ** buffer_size * random.random() < 1
+        return 1.1**buffer_size * random.random() < 1
     except Exception:
         # We catch any Exception because we are using a private API.
         return True

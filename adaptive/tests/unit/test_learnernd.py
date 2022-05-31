@@ -12,7 +12,7 @@ def ring_of_fire(xy):
     a = 0.2
     d = 0.7
     x, y = xy
-    return x + math.exp(-((x ** 2 + y ** 2 - d ** 2) ** 2) / a ** 4)
+    return x + math.exp(-((x**2 + y**2 - d**2) ** 2) / a**4)
 
 
 def test_learnerND_inits_loss_depends_on_neighbors_correctly():

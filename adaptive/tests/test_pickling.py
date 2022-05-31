@@ -38,10 +38,10 @@ def goal_2(learner):
 
 
 def pickleable_f(x):
-    return hash(str(x)) / 2 ** 63
+    return hash(str(x)) / 2**63
 
 
-nonpickleable_f = lambda x: hash(str(x)) / 2 ** 63  # noqa: E731
+nonpickleable_f = lambda x: hash(str(x)) / 2**63  # noqa: E731
 
 
 def identity_function(x):

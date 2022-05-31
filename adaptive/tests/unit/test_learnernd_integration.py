@@ -11,7 +11,7 @@ from adaptive.runner import simple as SimpleRunner
 def ring_of_fire(xy, d=0.75):
     a = 0.2
     x, y = xy
-    return x + math.exp(-((x ** 2 + y ** 2 - d ** 2) ** 2) / a ** 4)
+    return x + math.exp(-((x**2 + y**2 - d**2) ** 2) / a**4)
 
 
 def test_learnerND_runs_to_10_points():
