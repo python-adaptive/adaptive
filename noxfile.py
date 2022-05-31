@@ -10,6 +10,8 @@ def pytest(session, all_deps):
         session.install(".[testing]")
     session.install(".")
     session.run("coverage", "erase")
+    if session.python == "3.10":
+        session.run("pytest", "--typeguard-packages=adaptive")
     session.run("pytest")
 
 
