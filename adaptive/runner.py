@@ -6,6 +6,7 @@ import inspect
 import itertools
 import pickle
 import platform
+import sys
 import time
 import traceback
 import warnings
@@ -640,9 +641,8 @@ class AsyncRunner(BaseRunner):
         try:
             while not self.goal(self.learner):
                 futures = self._get_futures()
-                done, _ = await asyncio.wait(
-                    futures, return_when=first_completed, loop=self.ioloop
-                )
+                kw = {"loop": self.ioloop} if sys.version_info[:2] < (3, 10) else {}
+                done, _ = await asyncio.wait(futures, return_when=first_completed, **kw)
                 self._process_futures(done)
         finally:
             remaining = self._remove_unfinished()
