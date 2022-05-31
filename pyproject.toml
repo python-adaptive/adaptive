@@ -6,9 +6,9 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.pytest]
-testpaths = "adaptive"
+testpaths = ["adaptive"]
 addopts = "--durations=5 --cov --cov-append --cov-fail-under=70 -vvv --cov-report="
-norecursedirs = "docs"
+norecursedirs = ["docs"]
 
 [tool.coverage.paths]
 source = [
@@ -19,7 +19,7 @@ source = [
 [tool.coverage.run]
 branch = true
 parallel = true
-source = "adaptive"
+source = ["adaptive"]
 
 [tool.coverage.report]
 show_missing = true
