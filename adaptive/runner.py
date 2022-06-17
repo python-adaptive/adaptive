@@ -806,7 +806,9 @@ def _ensure_executor(executor):
         return executor
     elif with_ipyparallel and isinstance(executor, ipyparallel.Client):
         return executor.executor()
-    elif with_distributed and isinstance(executor, distributed.Client):
+    elif with_distributed and isinstance(
+        executor, (distributed.Client, distributed.client.Client)
+    ):
         return executor.get_executor()
     else:
         raise TypeError(
