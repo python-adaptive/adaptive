@@ -51,8 +51,9 @@ def save(fname, data, compress=True):
     if compress:
         blob = gzip.compress(blob)
 
-    with AtomicWriter(fname, "wb", overwrite=True).open() as f:
-        f.write(blob)
+    fd = os.open(path=fname, flags=os.O_WRONLY)
+    os.write(fd, blob)
+    os.close(fd)
 
 
 def load(fname, compress=True):
