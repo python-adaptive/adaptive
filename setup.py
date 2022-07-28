@@ -28,7 +28,6 @@ install_requires = [
     "scipy",
     "sortedcollections >= 1.1",
     "sortedcontainers >= 2.0",
-    "atomicwrites",
     "cloudpickle",
     "loky >= 2.9",
 ]

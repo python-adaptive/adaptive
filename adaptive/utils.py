@@ -7,7 +7,6 @@ from contextlib import contextmanager
 from itertools import product
 
 import cloudpickle
-from atomicwrites import AtomicWriter
 
 
 def named_product(**items):
@@ -51,8 +50,23 @@ def save(fname, data, compress=True):
     if compress:
         blob = gzip.compress(blob)
 
-    with AtomicWriter(fname, "wb", overwrite=True).open() as f:
-        f.write(blob)
+    temp_file = f"{fname}.{os.getpid()}"
+
+    try:
+        with open(temp_file, "wb") as f:
+            f.write(blob)
+    except OSError:
+        return False
+
+    try:
+        os.replace(temp_file, fname)
+    except OSError:
+        return False
+    finally:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+
+    return True
 
 
 def load(fname, compress=True):

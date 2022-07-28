@@ -19,4 +19,3 @@ dependencies:
   - scikit-optimize>=0.8.1
   - scikit-learn<=0.24.2  # https://github.com/scikit-optimize/scikit-optimize/issues/1059
   - plotly
-  - atomicwrites
