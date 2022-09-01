@@ -35,9 +35,10 @@ def deviations(ip):
         ip.tri, values, tol=1e-6
     )
 
-    p = ip.tri.points[ip.tri.vertices]
-    vs = values[ip.tri.vertices]
-    gs = gradients[ip.tri.vertices]
+    simplices = ip.tri.simplices
+    p = ip.tri.points[]
+    vs = values[simplices]
+    gs = gradients[simplices]
 
     def deviation(p, v, g):
         dev = 0
@@ -68,7 +69,7 @@ def areas(ip):
     areas : numpy.ndarray
         The area per triangle in ``ip.tri``.
     """
-    p = ip.tri.points[ip.tri.vertices]
+    p = ip.tri.points[ip.tri.simplices]
     q = p[:, :-1, :] - p[:, -1, None, :]
     areas = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0]) / 2
     return areas
@@ -172,8 +173,8 @@ def minimize_triangle_surface_loss(ip):
     >>>
     """
     tri = ip.tri
-    points = tri.points[tri.vertices]
-    values = ip.values[tri.vertices]
+    points = tri.points[tri.simplices]
+    values = ip.values[tri.simplices]
     values = values / (ip.values.ptp(axis=0).max() or 1)
 
     def _get_vectors(points):
@@ -567,7 +568,7 @@ class Learner2D(BaseLearner):
         losses_new = []
         for j, _ in enumerate(losses):
             jsimplex = np.argmax(losses)
-            triangle = ip.tri.points[ip.tri.vertices[jsimplex]]
+            triangle = ip.tri.points[ip.tri.simplices[jsimplex]]
             point_new = choose_point_in_triangle(triangle, max_badness=5)
             point_new = tuple(self._unscale(point_new))
 
@@ -685,7 +686,7 @@ class Learner2D(BaseLearner):
                 im = hv.Image(np.rot90(z), bounds=lbrt)
 
             if tri_alpha:
-                points = self._unscale(ip.tri.points[ip.tri.vertices])
+                points = self._unscale(ip.tri.points[ip.tri.simplices])
                 points = np.pad(
                     points[:, [0, 1, 2, 0], :],
                     pad_width=((0, 0), (0, 1), (0, 0)),
