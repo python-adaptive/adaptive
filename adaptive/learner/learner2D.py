@@ -36,7 +36,7 @@ def deviations(ip):
     )
 
     simplices = ip.tri.simplices
-    p = ip.tri.points[]
+    p = ip.tri.points[simplices]
     vs = values[simplices]
     gs = gradients[simplices]
 
