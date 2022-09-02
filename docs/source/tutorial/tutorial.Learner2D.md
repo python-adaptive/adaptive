@@ -1,4 +1,4 @@
-# Tutorial {class}`~adaptive.Learner2D`
+# Tutorial `~adaptive.Learner2D`
 
 :::{note}
 Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.

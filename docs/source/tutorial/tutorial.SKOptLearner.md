@@ -1,4 +1,4 @@
-# Tutorial {class}`~adaptive.SKOptLearner`
+# Tutorial `~adaptive.SKOptLearner`
 
 :::{note}
 Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
