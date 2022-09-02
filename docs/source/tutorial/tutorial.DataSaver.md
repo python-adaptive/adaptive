@@ -16,11 +16,9 @@ import adaptive
 adaptive.notebook_extension()
 ```
 
-If the function that you want to learn returns a value along with some
-metadata, you can wrap your learner in an {class}`adaptive.DataSaver`.
+If the function that you want to learn returns a value along with some metadata, you can wrap your learner in an {class}`adaptive.DataSaver`.
 
-In the following example the function to be learned returns its result
-and the execution time in a dictionary:
+In the following example the function to be learned returns its result and the execution time in a dictionary:
 
 ```{jupyter-execute}
 from operator import itemgetter
@@ -44,8 +42,7 @@ _learner = adaptive.Learner1D(f_dict, bounds=(-1, 1))
 learner = adaptive.DataSaver(_learner, arg_picker=itemgetter('y'))
 ```
 
-`learner.learner` is the original learner, so
-`learner.learner.loss()` will call the correct loss method.
+`learner.learner` is the original learner, so `learner.learner.loss()` will call the correct loss method.
 
 ```{jupyter-execute}
 runner = adaptive.Runner(learner, goal=lambda l: l.learner.loss() < 0.1)
@@ -65,9 +62,7 @@ runner.live_info()
 runner.live_plot(plotter=lambda l: l.learner.plot(), update_interval=0.1)
 ```
 
-Now the `DataSavingLearner` will have an dictionary attribute
-`extra_data` that has `x` as key and the data that was returned by
-`learner.function` as values.
+Now the `DataSavingLearner` will have an dictionary attribute `extra_data` that has `x` as key and the data that was returned by `learner.function` as values.
 
 ```{jupyter-execute}
 learner.extra_data

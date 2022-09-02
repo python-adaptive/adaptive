@@ -22,19 +22,17 @@ Meta-learners (to be used with other learners):
   selecting the “best” one each time you get more points,
 - {class}`~adaptive.DataSaver`, for when your function doesn't just return a scalar or a vector.
 
-In addition to the learners, `adaptive` also provides primitives for
-running the sampling across several cores and even several machines,
-with built-in support for
+In addition to the learners, `adaptive` also provides primitives for running the sampling across several cores and even several machines, with built-in support for
 [concurrent.futures](https://docs.python.org/3/library/concurrent.futures.html),
 [mpi4py](https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html),
 [loky](https://loky.readthedocs.io/en/stable/),
-[ipyparallel](https://ipyparallel.readthedocs.io/en/latest/) and
+[ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
 # Examples
 
-Here are some examples of how Adaptive samples vs. homogeneous sampling. Click
-on the *Play* {fa}`play` button or move the sliders.
+Here are some examples of how Adaptive samples vs. homogeneous sampling.
+Click on the *Play* {fa}`play` button or move the sliders.
 
 ```{jupyter-execute}
 :hide-code:

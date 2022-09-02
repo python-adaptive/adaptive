@@ -1,15 +1,11 @@
 # Parallelism - using multiple cores
 
-Often you will want to evaluate the function on some remote computing
-resources. `adaptive` works out of the box with any framework that
-implements a [PEP 3148](https://www.python.org/dev/peps/pep-3148/)
-compliant executor that returns `concurrent.futures.Future` objects.
+Often you will want to evaluate the function on some remote computing resources.
+`adaptive` works out of the box with any framework that implements a [PEP 3148](https://www.python.org/dev/peps/pep-3148/) compliant executor that returns `concurrent.futures.Future` objects.
 
 ## `concurrent.futures`
 
-On Unix-like systems by default {class}`adaptive.Runner` creates a
-`~concurrent.futures.ProcessPoolExecutor`, but you can also pass
-one explicitly e.g. to limit the number of workers:
+On Unix-like systems by default {class}`adaptive.Runner` creates a `~concurrent.futures.ProcessPoolExecutor`, but you can also pass one explicitly e.g. to limit the number of workers:
 
 ```python
 from concurrent.futures import ProcessPoolExecutor

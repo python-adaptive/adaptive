@@ -25,12 +25,9 @@ def dynamicmap_to_holomap(dm):
     return hv.HoloMap(dm.select(**vals))
 ```
 
-Besides 1 and 2 dimensional functions, we can also learn N-D functions:
-$\ f: ℝ^N → ℝ^M, N \ge 2, M \ge 1$.
+Besides 1 and 2 dimensional functions, we can also learn N-D functions: $\ f: ℝ^N → ℝ^M, N \ge 2, M \ge 1$.
 
-Do keep in mind the speed and
-[effectiveness](https://en.wikipedia.org/wiki/Curse_of_dimensionality)
-of the learner drops quickly with increasing number of dimensions.
+Do keep in mind the speed and [effectiveness](https://en.wikipedia.org/wiki/Curse_of_dimensionality) of the learner drops quickly with increasing number of dimensions.
 
 ```{jupyter-execute}
 def sphere(xyz):
@@ -85,17 +82,13 @@ dm = dm.redim.values(v1=np.linspace(-1, 1, 6),
 dynamicmap_to_holomap(dm)
 ```
 
-The plots show some wobbles while the original function was smooth, this
-is a result of the fact that the learner chooses points in 3 dimensions
-and the simplices are not in the same face as we try to interpolate our
-lines. However, as always, when you sample more points the graph will
-become gradually smoother.
+The plots show some wobbles while the original function was smooth, this is a result of the fact that the learner chooses points in 3 dimensions and the simplices are not in the same face as we try to interpolate our lines.
+However, as always, when you sample more points the graph will become gradually smoother.
 
 ## Using any convex shape as domain
 
-Suppose you do not simply want to sample your function on a square (in 2D) or in
-a cube (in 3D). The LearnerND supports using a `scipy.spatial.ConvexHull` as
-your domain. This is best illustrated in the following example.
+Suppose you do not simply want to sample your function on a square (in 2D) or in a cube (in 3D). The LearnerND supports using a `scipy.spatial.ConvexHull` as your domain.
+This is best illustrated in the following example.
 
 Suppose you would like to sample you function in a cube split in half diagonally.
 You could use the following code as an example:

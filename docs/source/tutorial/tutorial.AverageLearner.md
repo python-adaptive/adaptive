@@ -16,13 +16,10 @@ import adaptive
 adaptive.notebook_extension()
 ```
 
-The next type of learner averages a function until the uncertainty in
-the average meets some condition.
+The next type of learner averages a function until the uncertainty in the average meets some condition.
 
-This is useful for sampling a random variable. The function passed to
-the learner must formally take a single parameter, which should be used
-like a “seed” for the (pseudo-) random variable (although in the current
-implementation the seed parameter can be ignored by the function).
+This is useful for sampling a random variable.
+The function passed to the learner must formally take a single parameter, which should be used like a “seed” for the (pseudo-) random variable (although in the current implementation the seed parameter can be ignored by the function).
 
 ```{jupyter-execute}
 def g(n):

@@ -4,13 +4,7 @@ Adaptive has been used in the following scientific publications:
 
 **Reproducing topological properties with quasi-Majorana states**
 
-by A. Vuik, B. Nijholt, A. R. Akhmerov, M. Wimmer
-
-[arXiv:1806.02801](https://arxiv.org/abs/1806.02801)
-
- and the
-
-[source-code](https://zenodo.org/record/1285177)
+by A. Vuik, B. Nijholt, A. R. Akhmerov, M. Wimmer [arXiv:1806.02801](https://arxiv.org/abs/1806.02801) and the [source-code](https://zenodo.org/record/1285177)
 
 ```{image} _static/example_uses/quasi_majorana_paper.jpeg
 :alt: Reproducing topological properties with quasi-Majorana states
@@ -19,13 +13,7 @@ by A. Vuik, B. Nijholt, A. R. Akhmerov, M. Wimmer
 
 **Enhanced proximity effect in zigzag-shaped Majorana Josephson junctions**
 
-by Tom Laeven, Bas Nijholt, Anton R. Akhmerov, Michael Wimmer
-
-[arXiv:1903.06168](https://arxiv.org/abs/1903.06168)
-
- and the
-
-[source-code](https://zenodo.org/record/2578027)
+by Tom Laeven, Bas Nijholt, Anton R. Akhmerov, Michael Wimmer [arXiv:1903.06168](https://arxiv.org/abs/1903.06168) and the [source-code](https://zenodo.org/record/2578027)
 
 ```{image} _static/example_uses/zigzag_paper.jpeg
 :alt: Enhanced proximity effect in zigzag-shaped Majorana Josephson junctions
@@ -51,11 +39,7 @@ by
 
 [Bas Nijholt](https://github.com/basnijholt)
 
-Accidentally leaving the cluster running over the weekend without a
-
-`runner.goal`
-
- and with a bug in the simulation parameters led to this beautiful mess.
+Accidentally leaving the cluster running over the weekend without a `runner.goal` and with a bug in the simulation parameters led to this beautiful mess.
 
 ```{image} _static/example_uses/battle_for_majoranas.jpeg
 :alt: Battle for Majoranas

@@ -19,12 +19,10 @@ import holoviews as hv
 import numpy as np
 ```
 
-This learner learns a 1D function and calculates the integral and error
-of the integral with it. It is based on Pedro Gonnet’s
-[implementation](https://www.academia.edu/1976055/Adaptive_quadrature_re-revisited).
+This learner learns a 1D function and calculates the integral and error of the integral with it.
+It is based on Pedro Gonnet’s [implementation](https://www.academia.edu/1976055/Adaptive_quadrature_re-revisited).
 
-Let’s try the following function with cusps (that is difficult to
-integrate):
+Let’s try the following function with cusps (that is difficult to integrate):
 
 ```{jupyter-execute}
 def f24(x):
@@ -34,20 +32,15 @@ xs = np.linspace(0, 3, 200)
 hv.Scatter((xs, [f24(x) for x in xs]))
 ```
 
-Just to prove that this really is a difficult to integrate function,
-let’s try a familiar function integrator `scipy.integrate.quad`, which
-will give us warnings that it encounters difficulties (if we run it
-in a notebook.)
+Just to prove that this really is a difficult to integrate function, let’s try a familiar function integrator `scipy.integrate.quad`, which will give us warnings that it encounters difficulties (if we run it in a notebook.)
 
 ```{jupyter-execute}
 import scipy.integrate
 scipy.integrate.quad(f24, 0, 3)
 ```
 
-We initialize a learner again and pass the bounds and relative tolerance
-we want to reach. Then in the {class}`~adaptive.Runner` we pass
-`goal=lambda l: l.done()` where `learner.done()` is `True` when
-the relative tolerance has been reached.
+We initialize a learner again and pass the bounds and relative tolerance we want to reach.
+Then in the {class}`~adaptive.Runner` we pass `goal=lambda l: l.done()` where `learner.done()` is `True` when the relative tolerance has been reached.
 
 ```{jupyter-execute}
 from adaptive.runner import SequentialExecutor

@@ -19,12 +19,9 @@ import holoviews as hv
 import numpy as np
 ```
 
-This learner will learn a sequence. It simply returns
-the points in the provided sequence when asked.
+This learner will learn a sequence. It simply returns the points in the provided sequence when asked.
 
-This is useful when your problem cannot be formulated in terms of
-another adaptive learner, but you still want to use Adaptive's
-routines to run, (periodically) save, and plot.
+This is useful when your problem cannot be formulated in terms of another adaptive learner, but you still want to use Adaptive's routines to run, (periodically) save, and plot.
 
 ```{jupyter-execute}
 from adaptive import SequenceLearner

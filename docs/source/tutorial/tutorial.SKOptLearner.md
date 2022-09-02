@@ -19,18 +19,12 @@ import holoviews as hv
 import numpy as np
 ```
 
-We have wrapped the `Optimizer` class from
-[scikit-optimize](https://github.com/scikit-optimize/scikit-optimize),
-to show how existing libraries can be integrated with `adaptive`.
+We have wrapped the `Optimizer` class from [scikit-optimize](https://github.com/scikit-optimize/scikit-optimize), to show how existing libraries can be integrated with `adaptive`.
 
-The `SKOptLearner` attempts to “optimize” the given function `g`
-(i.e. find the global minimum of `g` in the window of interest).
+The `SKOptLearner` attempts to “optimize” the given function `g` (i.e. find the global minimum of `g` in the window of interest).
 
-Here we use the same example as in the `scikit-optimize`
-[tutorial](https://github.com/scikit-optimize/scikit-optimize/blob/master/examples/ask-and-tell.ipynb).
-Although `SKOptLearner` can optimize functions of arbitrary
-dimensionality, we can only plot the learner if a 1D function is being
-learned.
+Here we use the same example as in the `scikit-optimize` [tutorial](https://github.com/scikit-optimize/scikit-optimize/blob/master/examples/ask-and-tell.ipynb).
+Although `SKOptLearner` can optimize functions of arbitrary dimensionality, we can only plot the learner if a 1D function is being learned.
 
 ```{jupyter-execute}
 def F(x, noise_level=0.1):

@@ -28,16 +28,13 @@ def f(x, offset=offset):
 
 ## Saving and loading learners
 
-Every learner has a {class}`~adaptive.BaseLearner.save` and {class}`~adaptive.BaseLearner.load`
-method that can be used to save and load **only** the data of a learner.
+Every learner has a {class}`~adaptive.BaseLearner.save` and {class}`~adaptive.BaseLearner.load` method that can be used to save and load **only** the data of a learner.
 
 Use the `fname` argument in `learner.save(fname=...)`.
 
-Or, when using a {class}`~adaptive.BalancingLearner` one can use either a callable
-that takes the child learner and returns a filename **or** a list of filenames.
+Or, when using a {class}`~adaptive.BalancingLearner` one can use either a callable that takes the child learner and returns a filename **or** a list of filenames.
 
-By default the resulting pickle files are compressed, to turn this off
-use `learner.save(fname=..., compress=False)`
+By default the resulting pickle files are compressed, to turn this off use `learner.save(fname=..., compress=False)`
 
 ```{jupyter-execute}
 # Let's create two learners and run only one.
@@ -74,8 +71,7 @@ control = adaptive.Learner1D(f, bounds=(-1, 1))
 control.copy_from(learner)
 ```
 
-One can also periodically save the learner while running in a
-`~adaptive.Runner`. Use it like:
+One can also periodically save the learner while running in a `~adaptive.Runner`. Use it like:
 
 ```{jupyter-execute}
 def slow_f(x):
@@ -107,17 +103,12 @@ runner.live_info()  # we cancelled it after 6 seconds
 
 ## A watched pot never boils!
 
-`adaptive.Runner` does its work in an `asyncio` task that runs
-concurrently with the IPython kernel, when using `adaptive` from a
-Jupyter notebook. This is advantageous because it allows us to do things
-like live-updating plots, however it can trip you up if you’re not
-careful.
+The {class}`adaptive.Runner` does its work in an `asyncio` task that runs concurrently with the IPython kernel, when using `adaptive` from a Jupyter notebook.
+This is advantageous because it allows us to do things like live-updating plots, however it can trip you up if you’re not careful.
 
-Notably: **if you block the IPython kernel, the runner will not do any
-work**.
+Notably: **if you block the IPython kernel, the runner will not do any work**.
 
-For example if you wanted to wait for a runner to complete, **do not
-wait in a busy loop**:
+For example if you wanted to wait for a runner to complete, **do not wait in a busy loop**:
 
 ```python
 while not runner.task.done():
@@ -126,11 +117,9 @@ while not runner.task.done():
 
 If you do this then **the runner will never finish**.
 
-What to do if you don’t care about live plotting, and just want to run
-something until its done?
+What to do if you don’t care about live plotting, and just want to run something until its done?
 
-The simplest way to accomplish this is to use
-`adaptive.BlockingRunner`:
+The simplest way to accomplish this is to use {class}`adaptive.BlockingRunner`:
 
 ```{jupyter-execute}
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
@@ -141,22 +130,15 @@ learner.plot()
 
 ## Reproducibility
 
-By default `adaptive` runners evaluate the learned function in
-parallel across several cores. The runners are also opportunistic, in
-that as soon as a result is available they will feed it to the learner
-and request another point to replace the one that just finished.
+By default `adaptive` runners evaluate the learned function in parallel across several cores.
+The runners are also opportunistic, in that as soon as a result is available they will feed it to the learner and request another point to replace the one that just finished.
 
-Because the order in which computations complete is non-deterministic,
-this means that the runner behaves in a non-deterministic way. Adaptive
-makes this choice because in many cases the speedup from parallel
-execution is worth sacrificing the “purity” of exactly reproducible
-computations.
+Because the order in which computations complete is non-deterministic, this means that the runner behaves in a non-deterministic way.
+Adaptive makes this choice because in many cases the speedup from parallel execution is worth sacrificing the “purity” of exactly reproducible computations.
 
-Nevertheless it is still possible to run a learner in a deterministic
-way with adaptive.
+Nevertheless it is still possible to run a learner in a deterministic way with adaptive.
 
-The simplest way is to use {class}`adaptive.runner.simple` to run your
-learner:
+The simplest way is to use {class}`adaptive.runner.simple` to run your learner:
 
 ```{jupyter-execute}
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
@@ -167,12 +149,9 @@ adaptive.runner.simple(learner, goal=lambda l: l.loss() < 0.01)
 learner.plot()
 ```
 
-Note that unlike {class}`adaptive.Runner`, {class}`adaptive.runner.simple`
-*blocks* until it is finished.
+Note that unlike {class}`adaptive.Runner`, {class}`adaptive.runner.simple` *blocks* until it is finished.
 
-If you want to enable determinism, want to continue using the
-non-blocking {class}`adaptive.Runner`, you can use the
-`adaptive.runner.SequentialExecutor`:
+If you want to enable determinism, want to continue using the non-blocking {class}`adaptive.Runner`, you can use the {class}`adaptive.runner.SequentialExecutor`:
 
 ```{jupyter-execute}
 from adaptive.runner import SequentialExecutor
@@ -197,16 +176,12 @@ runner.live_plot(update_interval=0.1)
 
 ## Cancelling a runner
 
-Sometimes you want to interactively explore a parameter space, and want
-the function to be evaluated at finer and finer resolution and manually
-control when the calculation stops.
+Sometimes you want to interactively explore a parameter space, and want the function to be evaluated at finer and finer resolution and manually control when the calculation stops.
 
-If no `goal` is provided to a runner then the runner will run until
-cancelled.
+If no `goal` is provided to a runner then the runner will run until cancelled.
 
-`runner.live_info()` will provide a button that can be clicked to stop
-the runner. You can also stop the runner programatically using
-`runner.cancel()`.
+`runner.live_info()` will provide a button that can be clicked to stop the runner.
+You can also stop the runner programatically using `runner.cancel()`.
 
 ```{jupyter-execute}
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
@@ -237,14 +212,10 @@ print(runner.status())
 
 ## Debugging Problems
 
-Runners work in the background with respect to the IPython kernel, which
-makes it convenient, but also means that inspecting errors is more
-difficult because exceptions will not be raised directly in the
-notebook. Often the only indication you will have that something has
-gone wrong is that nothing will be happening.
+Runners work in the background with respect to the IPython kernel, which makes it convenient, but also means that inspecting errors is more difficult because exceptions will not be raised directly in the notebook.
+Often the only indication you will have that something has gone wrong is that nothing will be happening.
 
-Let’s look at the following example, where the function to be learned
-will raise an exception 10% of the time.
+Let’s look at the following example, where the function to be learned will raise an exception 10% of the time.
 
 ```{jupyter-execute}
 def will_raise(x):
@@ -275,8 +246,7 @@ runner.live_info()
 runner.live_plot()
 ```
 
-The above runner should continue forever, but we notice that it stops
-after a few points are evaluated.
+The above runner should continue forever, but we notice that it stops after a few points are evaluated.
 
 First we should check that the runner has really finished:
 
@@ -284,10 +254,9 @@ First we should check that the runner has really finished:
 runner.task.done()
 ```
 
-If it has indeed finished then we should check the `result` of the
-runner. This should be `None` if the runner stopped successfully. If
-the runner stopped due to an exception then asking for the result will
-raise the exception with the stack trace:
+If it has indeed finished then we should check the `result` of the runner.
+This should be `None` if the runner stopped successfully.
+If the runner stopped due to an exception then asking for the result will raise the exception with the stack trace:
 
 ```{jupyter-execute}
 :raises:
@@ -296,8 +265,7 @@ runner.task.result()
 
 ```
 
-You can also check `runner.tracebacks` which is a list of tuples with
-(point, traceback).
+You can also check `runner.tracebacks` which is a list of tuples with `(point, traceback)`.
 
 ```{jupyter-execute}
 for point, tb in runner.tracebacks:
@@ -306,14 +274,12 @@ for point, tb in runner.tracebacks:
 
 ### Logging runners
 
-Runners do their job in the background, which makes introspection quite
-cumbersome. One way to inspect runners is to instantiate one with
-`log=True`:
+Runners do their job in the background, which makes introspection quite cumbersome.
+One way to inspect runners is to instantiate one with `log=True`:
 
 ```{jupyter-execute}
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01,
-                            log=True)
+runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01, log=True)
 ```
 
 ```{jupyter-execute}
@@ -326,13 +292,10 @@ await runner.task  # This is not needed in a notebook environment!
 runner.live_info()
 ```
 
-This gives a the runner a `log` attribute, which is a list of the
-`learner` methods that were called, as well as their arguments. This
-is useful because executors typically execute their tasks in a
-non-deterministic order.
+This gives a the runner a `log` attribute, which is a list of the `learner` methods that were called, as well as their arguments.
+This is useful because executors typically execute their tasks in a non-deterministic order.
 
-This can be used with {class}`adaptive.runner.replay_log` to perfom the same
-set of operations on another runner:
+This can be used with {class}`adaptive.runner.replay_log` to perfom the same set of operations on another runner:
 
 ```{jupyter-execute}
     reconstructed_learner = adaptive.Learner1D(f, bounds=learner.bounds)
@@ -346,12 +309,9 @@ set of operations on another runner:
 ## Adding coroutines
 
 In the following example we'll add a `~asyncio.Task` that times the runner.
-This is *only* for demonstration purposes because one can simply
-check `runner.elapsed_time()` or use the `runner.live_info()`
-widget to see the time since the runner has started.
+This is *only* for demonstration purposes because one can simply check `runner.elapsed_time()` or use the `runner.live_info()` widget to see the time since the runner has started.
 
-So let's get on with the example. To time the runner
-you **cannot** simply use
+So let's get on with the example. To time the runner you **cannot** simply use
 
 ```python
 now = datetime.now()
@@ -359,12 +319,9 @@ runner = adaptive.Runner(...)
 print(datetime.now() - now)
 ```
 
-because this will be done immediately. Also blocking the kernel with
-`while not runner.task.done()` will not work because the runner will
-not do anything when the kernel is blocked.
+because this will be done immediately. Also blocking the kernel with `while not runner.task.done()` will not work because the runner will not do anything when the kernel is blocked.
 
-Therefore you need to create an `async` function and hook it into the
-`ioloop` like so:
+Therefore you need to create an `async` function and hook it into the `ioloop` like so:
 
 ```{jupyter-execute}
 import asyncio
@@ -396,11 +353,9 @@ timer.result()
 
 ## Using Runners from a script
 
-Runners can also be used from a Python script independently of the
-notebook.
+Runners can also be used from a Python script independently of the notebook.
 
-The simplest way to accomplish this is simply to use the
-`~adaptive.BlockingRunner`:
+The simplest way to accomplish this is simply to use the `~adaptive.BlockingRunner`:
 
 ```python
 import adaptive
@@ -413,10 +368,8 @@ learner = adaptive.Learner1D(f, (-1, 1))
 adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.1)
 ```
 
-If you use `asyncio` already in your script and want to integrate
-`adaptive` into it, then you can use the default {class}`~adaptive.Runner` as you
-would from a notebook. If you want to wait for the runner to finish,
-then you can simply
+If you use `asyncio` already in your script and want to integrate `adaptive` into it, then you can use the default {class}`~adaptive.Runner` as you would from a notebook.
+If you want to wait for the runner to finish, then you can simply
 
 ```python
 await runner.task

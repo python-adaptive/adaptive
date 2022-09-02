@@ -22,11 +22,9 @@ import random
 
 ## scalar output: `f:ℝ → ℝ`
 
-We start with the most common use-case: sampling a 1D function
-$\ f: ℝ → ℝ$.
+We start with the most common use-case: sampling a 1D function $\ f: ℝ → ℝ$.
 
-We will use the following function, which is a smooth (linear)
-background with a sharp peak at a random location:
+We will use the following function, which is a smooth (linear) background with a sharp peak at a random location:
 
 ```{jupyter-execute}
 offset = random.uniform(-0.5, 0.5)
@@ -41,19 +39,15 @@ def f(x, offset=offset, wait=True):
     return x + a**2 / (a**2 + (x - offset)**2)
 ```
 
-We start by initializing a 1D “learner”, which will suggest points to
-evaluate, and adapt its suggestions as more and more points are
-evaluated.
+We start by initializing a 1D “learner”, which will suggest points to evaluate, and adapt its suggestions as more and more points are evaluated.
 
 ```{jupyter-execute}
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 ```
 
-Next we create a “runner” that will request points from the learner and
-evaluate ‘f’ on them.
+Next we create a “runner” that will request points from the learner and evaluate ‘f’ on them.
 
-By default on Unix-like systems the runner will evaluate the points in
-parallel using local processes `concurrent.futures.ProcessPoolExecutor`.
+By default on Unix-like systems the runner will evaluate the points in parallel using local processes `concurrent.futures.ProcessPoolExecutor`.
 
 On Windows systems the runner will use a `loky.get_reusable_executor`.
 A `~concurrent.futures.ProcessPoolExecutor` cannot be used on Windows for reasons.
@@ -70,9 +64,8 @@ runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-When instantiated in a Jupyter notebook the runner does its job in the
-background and does not block the IPython kernel. We can use this to
-create a plot that updates as new data arrives:
+When instantiated in a Jupyter notebook the runner does its job in the background and does not block the IPython kernel.
+We can use this to create a plot that updates as new data arrives:
 
 ```{jupyter-execute}
 runner.live_info()
@@ -82,8 +75,7 @@ runner.live_info()
 runner.live_plot(update_interval=0.1)
 ```
 
-We can now compare the adaptive sampling to a homogeneous sampling with
-the same number of points:
+We can now compare the adaptive sampling to a homogeneous sampling with the same number of points:
 
 ```{jupyter-execute}
 if not runner.task.done():
@@ -114,8 +106,8 @@ def f_levels(x, offsets=offsets):
                         for offset in offsets])
 ```
 
-`adaptive` has you covered! The `Learner1D` can be used for such
-functions:
+`adaptive` has you covered!
+The `Learner1D` can be used for such functions:
 
 ```{jupyter-execute}
 learner = adaptive.Learner1D(f_levels, bounds=(-1, 1))
@@ -139,16 +131,14 @@ runner.live_plot(update_interval=0.1)
 
 ## Looking at curvature
 
-By default `adaptive` will sample more points where the (normalized)
-euclidean distance between the neighboring points is large.
-You may achieve better results sampling more points in regions with high
-curvature. To do this, you need to tell the learner to look at the curvature
-by specifying `loss_per_interval`.
+By default `adaptive` will sample more points where the (normalized) euclidean distance between the neighboring points is large.
+You may achieve better results sampling more points in regions with high curvature.
+To do this, you need to tell the learner to look at the curvature by specifying `loss_per_interval`.
 
 ```{jupyter-execute}
-from adaptive.learner.learner1D import (curvature_loss_function,
-                                        uniform_loss,
-                                        default_loss)
+from adaptive.learner.learner1D import (
+    curvature_loss_function, uniform_loss, default_loss
+)
 curvature_loss = curvature_loss_function()
 learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=curvature_loss)
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
@@ -168,8 +158,8 @@ runner.live_info()
 runner.live_plot(update_interval=0.1)
 ```
 
-We may see the difference of homogeneous sampling vs only one interval vs
-including nearest neighboring intervals in this plot: We will look at 100 points.
+We may see the difference of homogeneous sampling vs only one interval vs including the nearest neighboring intervals in this plot.
+We will look at 100 points.
 
 ```{jupyter-execute}
 def sin_exp(x):
@@ -191,5 +181,4 @@ adaptive.runner.simple(learner_2, goal=npoints_goal)
     + learner_2.plot().relabel('curvature loss')).cols(2)
 ```
 
-More info about using custom loss functions can be found
-in {ref}`Custom adaptive logic for 1D and 2D`.
+More info about using custom loss functions can be found in {ref}`Custom adaptive logic for 1D and 2D`.
