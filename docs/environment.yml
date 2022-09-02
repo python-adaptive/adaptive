@@ -14,7 +14,7 @@ dependencies:
   - panel=0.12.7
   - plotly=5.3.1
   - ipywidgets=7.6.5
-  - jupyter-sphinx=0.4.0
+  - myst-nb=0.16.0
   - sphinx_fontawesome=0.0.6
   - sphinx=4.2.0
   - sphinx_rtd_theme=1.0.0
