@@ -17,7 +17,7 @@ dependencies:
   - myst-nb=0.16.0
   - sphinx_fontawesome=0.0.6
   - sphinx=4.2.0
-  - sphinx_rtd_theme=1.0.0
+  - sphinx-book-theme
   - ffmpeg=4.3.2
   - cloudpickle
   - loky
