@@ -1,14 +1,16 @@
-```{eval-rst}
-.. include:: ../../README.rst
-    :start-after: not-in-documentation-end
-    :end-before: credits-end
+```{include} ../../README.md
+---
+start-after: not-in-documentation-end
+end-before: credits-end
+---
 ```
 
 ```{include} ../../AUTHORS.md
 ```
 
-```{eval-rst}
-.. include:: ../../README.rst
-    :start-after: credits-end
-    :end-before: references-start
+```{include} ../../README.md
+---
+start-after: credits-end
+end-before: references-start
+---
 ```
