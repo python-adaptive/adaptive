@@ -30,12 +30,12 @@ def f(x, offset=offset):
 
 ## Saving and loading learners
 
-Every learner has a `~adaptive.BaseLearner.save` and `~adaptive.BaseLearner.load`
+Every learner has a {class}`~adaptive.BaseLearner.save` and {class}`~adaptive.BaseLearner.load`
 method that can be used to save and load **only** the data of a learner.
 
 Use the `fname` argument in `learner.save(fname=...)`.
 
-Or, when using a `~adaptive.BalancingLearner` one can use either a callable
+Or, when using a {class}`~adaptive.BalancingLearner` one can use either a callable
 that takes the child learner and returns a filename **or** a list of filenames.
 
 By default the resulting pickle files are compressed, to turn this off
@@ -157,7 +157,7 @@ computations.
 Nevertheless it is still possible to run a learner in a deterministic
 way with adaptive.
 
-The simplest way is to use `adaptive.runner.simple` to run your
+The simplest way is to use {class}`adaptive.runner.simple` to run your
 learner:
 
 ```{jupyter-execute}
@@ -169,11 +169,11 @@ adaptive.runner.simple(learner, goal=lambda l: l.loss() < 0.01)
 learner.plot()
 ```
 
-Note that unlike `adaptive.Runner`, `adaptive.runner.simple`
+Note that unlike {class}`adaptive.Runner`, {class}`adaptive.runner.simple`
 *blocks* until it is finished.
 
 If you want to enable determinism, want to continue using the
-non-blocking `adaptive.Runner`, you can use the
+non-blocking {class}`adaptive.Runner`, you can use the
 `adaptive.runner.SequentialExecutor`:
 
 ```{jupyter-execute}
@@ -333,7 +333,7 @@ This gives a the runner a `log` attribute, which is a list of the
 is useful because executors typically execute their tasks in a
 non-deterministic order.
 
-This can be used with `adaptive.runner.replay_log` to perfom the same
+This can be used with {class}`adaptive.runner.replay_log` to perfom the same
 set of operations on another runner:
 
 ```{jupyter-execute}
@@ -416,7 +416,7 @@ adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.1)
 ```
 
 If you use `asyncio` already in your script and want to integrate
-`adaptive` into it, then you can use the default `~adaptive.Runner` as you
+`adaptive` into it, then you can use the default {class}`~adaptive.Runner` as you
 would from a notebook. If you want to wait for the runner to finish,
 then you can simply
 

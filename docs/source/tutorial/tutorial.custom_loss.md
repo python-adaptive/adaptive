@@ -23,7 +23,7 @@ from functools import partial
 
 ```
 
-`~adaptive.Learner1D` and `~adaptive.Learner2D` both work on the principle of
+`~adaptive.Learner1D` and {class}`~adaptive.Learner2D` both work on the principle of
 subdividing their domain into subdomains, and assigning a property to
 each subdomain, which we call the *loss*. The algorithm for choosing the
 best place to evaluate our function is then simply *take the subdomain
@@ -32,29 +32,29 @@ subdomains around this point*.
 
 The *loss function* that defines the loss per subdomain is the canonical
 place to define what regions of the domain are “interesting”. The
-default loss function for `~adaptive.Learner1D` and `~adaptive.Learner2D` is sufficient
+default loss function for {class}`~adaptive.Learner1D` and {class}`~adaptive.Learner2D` is sufficient
 for a wide range of common cases, but it is by no means a panacea. For
 example, the default loss function will tend to get stuck on
 divergences.
 
-Both the `~adaptive.Learner1D` and `~adaptive.Learner2D` allow you to specify a *custom
+Both the {class}`~adaptive.Learner1D` and {class}`~adaptive.Learner2D` allow you to specify a *custom
 loss function*. Below we illustrate how you would go about writing your
-own loss function. The documentation for `~adaptive.Learner1D` and `~adaptive.Learner2D`
+own loss function. The documentation for {class}`~adaptive.Learner1D` and {class}`~adaptive.Learner2D`
 specifies the signature that your loss function needs to have in order
 for it to work with `adaptive`.
 
 tl;dr, one can use the following *loss functions* that
 **we** already implemented:
 
-- `adaptive.learner.learner1D.default_loss`
-- `adaptive.learner.learner1D.uniform_loss`
-- `adaptive.learner.learner1D.curvature_loss_function`
-- `adaptive.learner.learner1D.resolution_loss_function`
-- `adaptive.learner.learner1D.abs_min_log_loss`
-- `adaptive.learner.learner2D.default_loss`
-- `adaptive.learner.learner2D.uniform_loss`
-- `adaptive.learner.learner2D.minimize_triangle_surface_loss`
-- `adaptive.learner.learner2D.resolution_loss_function`
+- {class}`adaptive.learner.learner1D.default_loss`
+- {class}`adaptive.learner.learner1D.uniform_loss`
+- {class}`adaptive.learner.learner1D.curvature_loss_function`
+- {class}`adaptive.learner.learner1D.resolution_loss_function`
+- {class}`adaptive.learner.learner1D.abs_min_log_loss`
+- {class}`adaptive.learner.learner2D.default_loss`
+- {class}`adaptive.learner.learner2D.uniform_loss`
+- {class}`adaptive.learner.learner2D.minimize_triangle_surface_loss`
+- {class}`adaptive.learner.learner2D.resolution_loss_function`
 
 Whenever a loss function has `_function` appended to its name, it is a factory function
 that returns the loss function with certain settings.
@@ -126,7 +126,7 @@ Of course, using `adaptive` for uniform sampling is a bit of a waste!
 
 Let’s see if we can do a bit better. Below we define a loss per
 subdomain that scales with the degree of nonlinearity of the function
-(this is very similar to the default loss function for `~adaptive.Learner2D`),
+(this is very similar to the default loss function for {class}`~adaptive.Learner2D`),
 but which is 0 for subdomains smaller than a certain area, and infinite
 for subdomains larger than a certain area.
 

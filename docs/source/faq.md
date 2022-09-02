@@ -10,19 +10,19 @@ Check `learner.data`.
 
 ## How do I learn more than one value per point?
 
-Use the `adaptive.DataSaver`.
+Use the {class}`adaptive.DataSaver`.
 
 ## My runner failed, how do I get the error message?
 
 Check `runner.task.print_stack()`.
 
-## How do I get a `~adaptive.Learner2D`'s data on a grid?
+## How do I get a {class}`~adaptive.Learner2D`'s data on a grid?
 
 Use `learner.interpolated_on_grid()` optionally with a argument `n` to specify the the amount of points in `x` and `y`.
 
 ## Why can I not use a `lambda` with a learner?
 
-When using the `~adaptive.Runner` the learner's function is evaluated in different Python processes.
+When using the {class}`~adaptive.Runner` the learner's function is evaluated in different Python processes.
 Therefore, the `function` needs to be serialized (pickled) and send to the other Python processes; `lambda`s cannot be pickled.
 Instead you can probably use `functools.partial` to accomplish what you want to do.
 

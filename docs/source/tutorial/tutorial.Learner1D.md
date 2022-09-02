@@ -1,4 +1,4 @@
-# Tutorial `~adaptive.Learner1D`
+# Tutorial {class}`~adaptive.Learner1D`
 
 :::{note}
 Because this documentation consists of static html, the `live_plot`

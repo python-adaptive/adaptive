@@ -1,4 +1,4 @@
-# Tutorial `~adaptive.BalancingLearner`
+# Tutorial {class}`~adaptive.BalancingLearner`
 
 :::{note}
 Because this documentation consists of static html, the `live_plot`
@@ -29,7 +29,7 @@ of its “children” to figure out which one will give the most
 improvement.
 
 The balancing learner can for example be used to implement a poor-man’s
-2D learner by using the `~adaptive.Learner1D`.
+2D learner by using the {class}`~adaptive.Learner1D`.
 
 ```{jupyter-execute}
 def h(x, offset=0):
@@ -60,7 +60,7 @@ runner.live_plot(plotter=plotter, update_interval=0.1)
 
 Often one wants to create a set of `learner`s for a cartesian
 product of parameters. For that particular case we’ve added a
-`classmethod` called `~adaptive.BalancingLearner.from_product`.
+`classmethod` called {class}`~adaptive.BalancingLearner.from_product`.
 See how it works below
 
 ```{jupyter-execute}

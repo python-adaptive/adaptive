@@ -1,4 +1,4 @@
-# Tutorial `~adaptive.IntegratorLearner`
+# Tutorial {class}`~adaptive.IntegratorLearner`
 
 :::{note}
 Because this documentation consists of static html, the `live_plot`
@@ -47,7 +47,7 @@ scipy.integrate.quad(f24, 0, 3)
 ```
 
 We initialize a learner again and pass the bounds and relative tolerance
-we want to reach. Then in the `~adaptive.Runner` we pass
+we want to reach. Then in the {class}`~adaptive.Runner` we pass
 `goal=lambda l: l.done()` where `learner.done()` is `True` when
 the relative tolerance has been reached.
 

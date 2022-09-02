@@ -1,4 +1,4 @@
-# Tutorial `~adaptive.DataSaver`
+# Tutorial {class}`~adaptive.DataSaver`
 
 :::{note}
 Because this documentation consists of static html, the `live_plot`
@@ -19,7 +19,7 @@ adaptive.notebook_extension()
 ```
 
 If the function that you want to learn returns a value along with some
-metadata, you can wrap your learner in an `adaptive.DataSaver`.
+metadata, you can wrap your learner in an {class}`adaptive.DataSaver`.
 
 In the following example the function to be learned returns its result
 and the execution time in a dictionary:

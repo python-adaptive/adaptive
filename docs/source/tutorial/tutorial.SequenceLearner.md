@@ -1,4 +1,4 @@
-# Tutorial `~adaptive.SequenceLearner`
+# Tutorial {class}`~adaptive.SequenceLearner`
 
 :::{note}
 Because this documentation consists of static html, the `live_plot`

@@ -4,23 +4,23 @@
     :end-before: not-in-documentation-start
 ```
 
-- `~adaptive.Learner1D`, for 1D functions `f: ℝ → ℝ^N`,
-- `~adaptive.Learner2D`, for 2D functions `f: ℝ^2 → ℝ^N`,
-- `~adaptive.LearnerND`, for ND functions `f: ℝ^N → ℝ^M`,
-- `~adaptive.AverageLearner`, for random variables where you want to
+- {class}`~adaptive.Learner1D`, for 1D functions `f: ℝ → ℝ^N`,
+- {class}`~adaptive.Learner2D`, for 2D functions `f: ℝ^2 → ℝ^N`,
+- {class}`~adaptive.LearnerND`, for ND functions `f: ℝ^N → ℝ^M`,
+- {class}`~adaptive.AverageLearner`, for random variables where you want to
   average the result over many evaluations,
-- `~adaptive.AverageLearner1D`, for stochastic 1D functions where you want to
+- {class}`~adaptive.AverageLearner1D`, for stochastic 1D functions where you want to
   estimate the mean value of the function at each point,
-- `~adaptive.IntegratorLearner`, for
+- {class}`~adaptive.IntegratorLearner`, for
   when you want to intergrate a 1D function `f: ℝ → ℝ`.
-- `~adaptive.BalancingLearner`, for when you want to run several learners at once,
+- {class}`~adaptive.BalancingLearner`, for when you want to run several learners at once,
   selecting the “best” one each time you get more points.
 
 Meta-learners (to be used with other learners):
 
-- `~adaptive.BalancingLearner`, for when you want to run several learners at once,
+- {class}`~adaptive.BalancingLearner`, for when you want to run several learners at once,
   selecting the “best” one each time you get more points,
-- `~adaptive.DataSaver`, for when your function doesn't just return a scalar or a vector.
+- {class}`~adaptive.DataSaver`, for when your function doesn't just return a scalar or a vector.
 
 In addition to the learners, `adaptive` also provides primitives for
 running the sampling across several cores and even several machines,
@@ -49,7 +49,7 @@ adaptive.notebook_extension()
 hv.output(holomap="scrubber")
 ```
 
-## `adaptive.Learner1D`
+## {class}`adaptive.Learner1D`
 
 Adaptively learning a 1D function (the plot below) and live-plotting the process in a Jupyter notebook is as easy as
 
@@ -103,7 +103,7 @@ layout = (
 layout.opts(plot=dict(toolbar=None))
 ```
 
-## `adaptive.Learner2D`
+## {class}`adaptive.Learner2D`
 
 ```{jupyter-execute}
 :hide-code:
@@ -130,7 +130,7 @@ plots = {n: plot(learner, n) for n in range(4, 1010, 20)}
 hv.HoloMap(plots, kdims=['npoints']).collate()
 ```
 
-## `adaptive.AverageLearner`
+## {class}`adaptive.AverageLearner`
 
 ```{jupyter-execute}
 :hide-code:
@@ -151,7 +151,7 @@ plots = {n: plot(learner, n) for n in range(10, 10000, 200)}
 hv.HoloMap(plots, kdims=['npoints'])
 ```
 
-## `adaptive.LearnerND`
+## {class}`adaptive.LearnerND`
 
 ```{jupyter-execute}
 :hide-code:

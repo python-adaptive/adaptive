@@ -7,7 +7,7 @@ compliant executor that returns `concurrent.futures.Future` objects.
 
 ## `concurrent.futures`
 
-On Unix-like systems by default `adaptive.Runner` creates a
+On Unix-like systems by default {class}`adaptive.Runner` creates a
 `~concurrent.futures.ProcessPoolExecutor`, but you can also pass
 one explicitly e.g. to limit the number of workers:
 
@@ -37,7 +37,7 @@ runner.live_plot()
 
 ## `distributed.Client`
 
-On Windows by default `adaptive.Runner` uses a `distributed.Client`.
+On Windows by default {class}`adaptive.Runner` uses a `distributed.Client`.
 
 ```python
 import distributed
