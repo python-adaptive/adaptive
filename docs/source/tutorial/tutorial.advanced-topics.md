@@ -286,8 +286,9 @@ This should be `None` if the runner stopped successfully.
 If the runner stopped due to an exception then asking for the result will raise the exception with the stack trace:
 
 ```{code-cell}
-:raises:
-
+---
+tags: [raises-exception]
+---
 runner.task.result()
 ```
 

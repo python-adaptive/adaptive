@@ -12,7 +12,7 @@ jupytext:
 
 % summary-start
 
-# ![logo](logo) adaptive
+# ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) adaptive
 
 [![PyPI][PyPI-badge]][PyPI-url]
 [![Conda][Conda-badge]][Conda-url]
@@ -184,7 +184,6 @@ For general discussion, we have a [Gitter chat channel](https://gitter.im/python
 
 % references-end
 
-[logo]: https://adaptive.readthedocs.io/en/latest/_static/logo.png
 [Binder-badge]: https://mybinder.org/badge.svg
 [Binder-url]: https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb
 [Conda-badge]: https://img.shields.io/badge/install%20with-conda-green.svg

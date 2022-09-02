@@ -44,7 +44,7 @@ master_doc = "index"
 language = None
 exclude_patterns = []
 pygments_style = "sphinx"
-html_theme = "sphinx_book_theme"
+html_theme = "furo"
 html_static_path = ["_static"]
 htmlhelp_basename = "adaptivedoc"
 
