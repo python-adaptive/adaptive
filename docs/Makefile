@@ -21,6 +21,8 @@ source/_static/logo_docs.png: logo.py
 logo.py:
 	@echo "never executed"
 
+ALLSPHINXOPTS = $(ALLSPHINXOPTS) -j auto
+
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile source/_static/logo_docs.png
