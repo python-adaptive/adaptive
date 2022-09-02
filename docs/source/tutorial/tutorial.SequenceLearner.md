@@ -16,10 +16,8 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 import adaptive
 
@@ -33,7 +31,7 @@ This learner will learn a sequence. It simply returns the points in the provided
 
 This is useful when your problem cannot be formulated in terms of another adaptive learner, but you still want to use Adaptive's routines to run, (periodically) save, and plot.
 
-```{code-cell}
+```{code-cell} ipython3
 from adaptive import SequenceLearner
 
 
@@ -48,19 +46,17 @@ runner = adaptive.Runner(learner, SequenceLearner.done)
 # that goal is same as `lambda learner: learner.done()`
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 runner.live_info()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def plotter(learner):
     data = learner.data if learner.data else []
     return hv.Scatter(data)
@@ -73,7 +69,7 @@ runner.live_plot(plotter=plotter)
 
 To get the values in the same order as the input sequence (`learner.sequence`) use
 
-```{code-cell}
+```{code-cell} ipython3
 result = learner.result()
 print(result[:10])  # print the 10 first values
 ```

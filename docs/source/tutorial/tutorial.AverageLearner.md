@@ -16,10 +16,8 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 import adaptive
 
@@ -31,7 +29,7 @@ The next type of learner averages a function until the uncertainty in the averag
 This is useful for sampling a random variable.
 The function passed to the learner must formally take a single parameter, which should be used like a “seed” for the (pseudo-) random variable (although in the current implementation the seed parameter can be ignored by the function).
 
-```{code-cell}
+```{code-cell} ipython3
 def g(n):
     import random
     from time import sleep
@@ -45,25 +43,23 @@ def g(n):
     return val
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
 # `loss < 1` means that we reached the `rtol` or `atol`
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1)
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 runner.live_info()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 runner.live_plot(update_interval=0.1)
 ```
 

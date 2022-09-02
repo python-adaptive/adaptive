@@ -16,10 +16,8 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 import adaptive
 
@@ -34,7 +32,7 @@ It is based on Pedro Gonnet’s [implementation](https://www.academia.edu/197605
 
 Let’s try the following function with cusps (that is difficult to integrate):
 
-```{code-cell}
+```{code-cell} ipython3
 def f24(x):
     return np.floor(np.exp(x))
 
@@ -45,7 +43,7 @@ hv.Scatter((xs, [f24(x) for x in xs]))
 
 Just to prove that this really is a difficult to integrate function, let’s try a familiar function integrator `scipy.integrate.quad`, which will give us warnings that it encounters difficulties (if we run it in a notebook.)
 
-```{code-cell}
+```{code-cell} ipython3
 import scipy.integrate
 
 scipy.integrate.quad(f24, 0, 3)
@@ -54,7 +52,7 @@ scipy.integrate.quad(f24, 0, 3)
 We initialize a learner again and pass the bounds and relative tolerance we want to reach.
 Then in the {class}`~adaptive.Runner` we pass `goal=lambda l: l.done()` where `learner.done()` is `True` when the relative tolerance has been reached.
 
-```{code-cell}
+```{code-cell} ipython3
 from adaptive.runner import SequentialExecutor
 
 learner = adaptive.IntegratorLearner(f24, bounds=(0, 3), tol=1e-8)
@@ -67,29 +65,27 @@ runner = adaptive.Runner(
 )
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 runner.live_info()
 ```
 
 Now we could do the live plotting again, but lets just wait untill the
 runner is done.
 
-```{code-cell}
+```{code-cell} ipython3
 if not runner.task.done():
     raise RuntimeError(
         "Wait for the runner to finish before executing the cells below!"
     )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 print(
     "The integral value is {} with the corresponding error of {}".format(
         learner.igral, learner.err

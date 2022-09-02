@@ -18,10 +18,8 @@ Download the notebook in order to see the real behaviour. [^download]
 
 [^download]: This notebook can be downloaded as **{nb-download}`tutorial.LearnerND.ipynb`** and {download}`tutorial.LearnerND.md`.
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 import adaptive
 
@@ -42,7 +40,7 @@ Besides 1 and 2 dimensional functions, we can also learn N-D functions: $f: ℝ^
 
 Do keep in mind the speed and [effectiveness](https://en.wikipedia.org/wiki/Curse_of_dimensionality) of the learner drops quickly with increasing number of dimensions.
 
-```{code-cell}
+```{code-cell} ipython3
 def sphere(xyz):
     x, y, z = xyz
     a = 0.4
@@ -53,21 +51,19 @@ learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1e-3)
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 runner.live_info()
 ```
 
 Let’s plot 2D slices of the 3D function
 
-```{code-cell}
+```{code-cell} ipython3
 def plot_cut(x, direction, learner=learner):
     cut_mapping = {"XYZ".index(direction): x}
     return learner.plot_slice(cut_mapping, n=100)
@@ -83,7 +79,7 @@ dynamicmap_to_holomap(dm)
 
 Or we can plot 1D slices
 
-```{code-cell}
+```{code-cell} ipython3
 def plot_cut(x1, x2, directions, learner=learner):
     cut_mapping = {"xyz".index(d): x for d, x in zip(directions, [x1, x2])}
     return learner.plot_slice(cut_mapping)
@@ -110,7 +106,7 @@ This is best illustrated in the following example.
 Suppose you would like to sample you function in a cube split in half diagonally.
 You could use the following code as an example:
 
-```{code-cell}
+```{code-cell} ipython3
 import scipy
 
 def f(xyz):

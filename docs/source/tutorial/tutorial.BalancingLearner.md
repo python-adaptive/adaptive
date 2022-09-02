@@ -16,10 +16,8 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 import adaptive
 
@@ -36,7 +34,7 @@ When you request a point from the balancing learner, it will query all of its �
 
 The balancing learner can for example be used to implement a poor-man’s 2D learner by using the {class}`~adaptive.Learner1D`.
 
-```{code-cell}
+```{code-cell} ipython3
 def h(x, offset=0):
     a = 0.01
     return x + a**2 / (a**2 + (x - offset) ** 2)
@@ -51,19 +49,17 @@ bal_learner = adaptive.BalancingLearner(learners)
 runner = adaptive.Runner(bal_learner, goal=lambda l: l.loss() < 0.01)
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 runner.live_info()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 plotter = lambda learner: hv.Overlay([L.plot() for L in learner.learners])
 runner.live_plot(plotter=plotter, update_interval=0.1)
 ```
@@ -72,7 +68,7 @@ Often one wants to create a set of `learner`s for a cartesian product of paramet
 For that particular case we’ve added a `classmethod` called {class}`~adaptive.BalancingLearner.from_product`.
 See how it works below
 
-```{code-cell}
+```{code-cell} ipython3
 from scipy.special import eval_jacobi
 
 

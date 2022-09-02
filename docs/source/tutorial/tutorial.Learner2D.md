@@ -16,10 +16,8 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 import adaptive
 import holoviews as hv
@@ -31,7 +29,7 @@ adaptive.notebook_extension()
 
 Besides 1D functions, we can also learn 2D functions: $f: ℝ^2 → ℝ$.
 
-```{code-cell}
+```{code-cell} ipython3
 def ring(xy, wait=True):
     import numpy as np
     from time import sleep
@@ -47,23 +45,21 @@ def ring(xy, wait=True):
 learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 runner.live_info()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def plot(learner):
     plot = learner.plot(tri_alpha=0.2)
     return (plot.Image + plot.EdgePaths.I + plot).cols(2)
@@ -72,7 +68,7 @@ def plot(learner):
 runner.live_plot(plotter=plot, update_interval=0.1)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 import itertools
 
 # Create a learner and add data on homogeneous grid, so that we can plot it

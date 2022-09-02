@@ -10,7 +10,7 @@ jupytext:
     jupytext_version: 1.13.8
 ---
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 tags: [remove-input]
 ---

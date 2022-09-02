@@ -16,10 +16,8 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 import adaptive
 
@@ -30,7 +28,7 @@ If the function that you want to learn returns a value along with some metadata,
 
 In the following example the function to be learned returns its result and the execution time in a dictionary:
 
-```{code-cell}
+```{code-cell} ipython3
 from operator import itemgetter
 
 
@@ -56,29 +54,27 @@ learner = adaptive.DataSaver(_learner, arg_picker=itemgetter("y"))
 
 `learner.learner` is the original learner, so `learner.learner.loss()` will call the correct loss method.
 
-```{code-cell}
+```{code-cell} ipython3
 runner = adaptive.Runner(learner, goal=lambda l: l.learner.loss() < 0.1)
 ```
 
-```{code-cell}
----
-tags: [hide-cell]
----
+```{code-cell} ipython3
+:tags: [hide-cell]
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 runner.live_info()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 runner.live_plot(plotter=lambda l: l.learner.plot(), update_interval=0.1)
 ```
 
 Now the `DataSavingLearner` will have an dictionary attribute `extra_data` that has `x` as key and the data that was returned by `learner.function` as values.
 
-```{code-cell}
+```{code-cell} ipython3
 learner.extra_data
 ```
 
