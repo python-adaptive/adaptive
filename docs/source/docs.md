@@ -4,8 +4,7 @@
     :end-before: credits-end
 ```
 
-```{eval-rst}
-.. mdinclude:: ../../AUTHORS.md
+```{include} ../../AUTHORS.md
 ```
 
 ```{eval-rst}
