@@ -34,8 +34,10 @@ In addition to the learners, `adaptive` also provides primitives for running the
 Here are some examples of how Adaptive samples vs. homogeneous sampling.
 Click on the *Play* {fa}`play` button or move the sliders.
 
-```{jupyter-execute}
-:hide-code:
+```{code-cell}
+---
+tags: [hide-cell]
+---
 
 import itertools
 import adaptive
@@ -73,8 +75,10 @@ runner.live_info()  # shows a widget with status information
 runner.live_plot()
 ```
 
-```{jupyter-execute}
-:hide-code:
+```{code-cell}
+---
+tags: [hide-cell]
+---
 
 
 def f(x, offset=0.07357338543088588):
@@ -112,8 +116,10 @@ layout.opts(plot=dict(toolbar=None))
 
 ## {class}`adaptive.Learner2D`
 
-```{jupyter-execute}
-:hide-code:
+```{code-cell}
+---
+tags: [hide-cell]
+---
 
 
 def ring(xy):
@@ -145,8 +151,10 @@ hv.HoloMap(plots, kdims=["npoints"]).collate()
 
 ## {class}`adaptive.AverageLearner`
 
-```{jupyter-execute}
-:hide-code:
+```{code-cell}
+---
+tags: [hide-cell]
+---
 
 
 def g(n):
@@ -171,8 +179,10 @@ hv.HoloMap(plots, kdims=["npoints"])
 
 ## {class}`adaptive.LearnerND`
 
-```{jupyter-execute}
-:hide-code:
+```{code-cell}
+---
+tags: [hide-cell]
+---
 
 
 def sphere(xyz):
