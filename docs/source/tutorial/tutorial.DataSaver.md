@@ -16,9 +16,7 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour.
 ```
 
-```{seealso}
-The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.DataSaver`
-```
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.DataSaver.ipynb`** and {download}`tutorial.DataSaver.md`.
 
 ```{code-cell}
 :hide-code:

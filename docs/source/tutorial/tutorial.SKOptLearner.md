@@ -16,9 +16,7 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour.
 ```
 
-```{seealso}
-The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.SKOptLearner`
-```
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.SKOptLearner.ipynb`** and {download}`tutorial.SKOptLearner.md`.
 
 ```{code-cell}
 :hide-code:
