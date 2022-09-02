@@ -71,7 +71,6 @@ dynamicmap_to_holomap(dm)
 Or we can plot 1D slices
 
 ```{jupyter-execute}
-%%opts Path {+framewise}
 def plot_cut(x1, x2, directions, learner=learner):
     cut_mapping = {"xyz".index(d): x for d, x in zip(directions, [x1, x2])}
     return learner.plot_slice(cut_mapping)
@@ -84,7 +83,7 @@ dm = dm.redim.values(
 
 # In a notebook one would run `dm` however we want a statically generated
 # html, so we use a HoloMap to display it here
-dynamicmap_to_holomap(dm)
+dynamicmap_to_holomap(dm).options(hv.opts.Path(framewise=True))
 ```
 
 The plots show some wobbles while the original function was smooth, this is a result of the fact that the learner chooses points in 3 dimensions and the simplices are not in the same face as we try to interpolate our lines.

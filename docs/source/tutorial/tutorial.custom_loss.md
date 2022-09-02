@@ -72,8 +72,6 @@ learner.plot().select(y=(0, 10000))
 ```
 
 ```{jupyter-execute}
-%%opts EdgePaths (color='w') Image [logz=True colorbar=True]
-
 from adaptive.runner import SequentialExecutor
 
 
@@ -125,9 +123,6 @@ A loss defined in this way means that the adaptive algorithm will first prioriti
 After all subdomains are appropriately small it will prioritise places where the function is very nonlinear, but will ignore subdomains that are too small (0 loss).
 
 ```{jupyter-execute}
-%%opts EdgePaths (color='w') Image [logz=True colorbar=True]
-
-
 def resolution_loss_function(min_distance=0, max_distance=1):
     """min_distance and max_distance should be in between 0 and 1
     because the total area is normalized to 1."""
@@ -153,7 +148,7 @@ loss = resolution_loss_function(min_distance=0.01)
 
 learner = adaptive.Learner2D(f_divergent_2d, [(-1, 1), (-1, 1)], loss_per_triangle=loss)
 runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.02)
-learner.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale")
+learner.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale").opts(hv.opts.EdgePaths(color='w'), hv.opts.Image(logz=True, colorbar=True))
 ```
 
 Awesome! We zoom in on the singularity, but not at the expense of sampling the rest of the domain a reasonable amount.

@@ -54,9 +54,9 @@ runner.live_info()
 ```
 
 ```{jupyter-execute}
-%%opts Overlay [legend_position='top']
 xs = np.linspace(*learner.space.bounds[0])
 to_learn = hv.Curve((xs, [F(x, 0) for x in xs]), label="to learn")
 
-runner.live_plot().relabel("prediction", depth=2) * to_learn
+plot = runner.live_plot().relabel("prediction", depth=2) * to_learn
+plot.opts(legend_position="top")
 ```

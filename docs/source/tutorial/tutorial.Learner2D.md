@@ -13,11 +13,11 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
-
-adaptive.notebook_extension()
-
+import holoviews as hv
 import numpy as np
+
 from functools import partial
+adaptive.notebook_extension()
 ```
 
 Besides 1D functions, we can also learn 2D functions:
@@ -63,8 +63,6 @@ runner.live_plot(plotter=plot, update_interval=0.1)
 ```
 
 ```{jupyter-execute}
-%%opts EdgePaths (color='w')
-
 import itertools
 
 # Create a learner and add data on homogeneous grid, so that we can plot it
@@ -79,5 +77,5 @@ learner2.tell_many(xys, map(partial(ring, wait=False), xys))
     + learner.plot().relabel("With adaptive")
     + learner2.plot(n, tri_alpha=0.4)
     + learner.plot(tri_alpha=0.4)
-).cols(2)
+).cols(2).opts(hv.opts.EdgePaths(color="w"))
 ```
