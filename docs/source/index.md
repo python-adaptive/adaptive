@@ -1,14 +1,15 @@
-```{eval-rst}
-.. include:: ../../README.rst
-    :start-after: summary-start
-    :end-before: summary-end
+```{include} ../../README.md
+---
+start-after: summary-start
+end-before: summary-end
+---
 ```
 
-```{eval-rst}
-.. include:: ../../README.rst
-    :start-after: references-start
-    :end-before: references-end
-
+```{include} ../../README.md
+---
+start-after: references-start
+end-before: references-end
+---
 ```
 
 ```{toctree}
