@@ -22,3 +22,4 @@ dependencies:
   - ffmpeg=4.3.2
   - cloudpickle
   - loky
+  - myst-parser

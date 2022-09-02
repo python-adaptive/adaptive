@@ -56,7 +56,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "jupyter_sphinx",
     "sphinx_fontawesome",
-    "m2r2",
+    "myst_parser",
 ]
 
 source_parsers = {}
