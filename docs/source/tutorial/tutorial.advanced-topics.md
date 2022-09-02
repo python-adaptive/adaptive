@@ -19,7 +19,9 @@ Download the notebook in order to see the real behaviour.
 [^download]: This notebook can be downloaded as **{nb-download}`tutorial.advanced-topics.ipynb`** and {download}`tutorial.advanced-topics.md`.
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 import adaptive
 
@@ -57,7 +59,9 @@ runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```
@@ -99,7 +103,9 @@ runner.start_periodic_saving(
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await asyncio.sleep(6)  # This is not needed in a notebook environment!
 runner.cancel()
@@ -176,7 +182,9 @@ runner = adaptive.Runner(
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```
@@ -204,7 +212,9 @@ runner = adaptive.Runner(learner)
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await asyncio.sleep(0.1)  # This is not needed in the notebook!
 ```
@@ -250,7 +260,9 @@ runner = adaptive.Runner(
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await asyncio.sleep(4)  # in 4 seconds it will surely have failed
 ```
@@ -299,7 +311,9 @@ runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01, log=True)
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```
@@ -360,7 +374,9 @@ timer = ioloop.create_task(time(runner))
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```

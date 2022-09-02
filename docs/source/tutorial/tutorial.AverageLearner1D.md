@@ -19,7 +19,9 @@ Download the notebook in order to see the real behaviour.
 [^download]: This notebook can be downloaded as **{nb-download}`tutorial.AverageLearner1D.ipynb`** and {download}`tutorial.AverageLearner1D.md`.
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 import adaptive
 
@@ -82,7 +84,9 @@ runner = adaptive.Runner(learner, goal=goal(10_000))
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```
@@ -115,7 +119,9 @@ runner = adaptive.Runner(learner, goal=goal(20_000))
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```
@@ -135,7 +141,9 @@ runner = adaptive.Runner(learner, goal=goal(25_000))
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```

@@ -19,7 +19,9 @@ Download the notebook in order to see the real behaviour.
 [^download]: This notebook can be downloaded as **{nb-download}`tutorial.SequenceLearner.ipynb`** and {download}`tutorial.SequenceLearner.md`.
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 import adaptive
 
@@ -49,7 +51,9 @@ runner = adaptive.Runner(learner, SequenceLearner.done)
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```

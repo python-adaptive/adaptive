@@ -19,7 +19,9 @@ Download the notebook in order to see the real behaviour.
 [^download]: This notebook can be downloaded as **{nb-download}`tutorial.AverageLearner.ipynb`** and {download}`tutorial.AverageLearner.md`.
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 import adaptive
 
@@ -52,7 +54,9 @@ runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1)
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```

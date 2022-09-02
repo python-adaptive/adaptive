@@ -19,7 +19,9 @@ Download the notebook in order to see the real behaviour.
 [^download]: This notebook can be downloaded as **{nb-download}`tutorial.custom-loss.ipynb`** and {download}`tutorial.custom-loss.md`.
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 import adaptive
 
@@ -106,7 +108,9 @@ runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.02)
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```

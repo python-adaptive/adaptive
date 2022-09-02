@@ -19,7 +19,9 @@ Download the notebook in order to see the real behaviour.
 [^download]: This notebook can be downloaded as **{nb-download}`tutorial.Learner2D.ipynb`** and {download}`tutorial.Learner2D.md`.
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 import adaptive
 import holoviews as hv
@@ -52,7 +54,9 @@ runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 ```
 
 ```{code-cell}
-:hide-code:
+---
+tags: [hide-cell]
+---
 
 await runner.task  # This is not needed in a notebook environment!
 ```
