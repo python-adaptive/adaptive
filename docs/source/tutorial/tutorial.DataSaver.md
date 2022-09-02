@@ -1,3 +1,14 @@
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
 # Tutorial {class}`~adaptive.DataSaver`
 
 ```{note}
@@ -9,7 +20,7 @@ Download the notebook in order to see the real behaviour.
 The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.DataSaver`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 import adaptive
@@ -21,7 +32,7 @@ If the function that you want to learn returns a value along with some metadata,
 
 In the following example the function to be learned returns its result and the execution time in a dictionary:
 
-```{jupyter-execute}
+```{code-cell}
 from operator import itemgetter
 
 
@@ -47,26 +58,26 @@ learner = adaptive.DataSaver(_learner, arg_picker=itemgetter("y"))
 
 `learner.learner` is the original learner, so `learner.learner.loss()` will call the correct loss method.
 
-```{jupyter-execute}
+```{code-cell}
 runner = adaptive.Runner(learner, goal=lambda l: l.learner.loss() < 0.1)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_plot(plotter=lambda l: l.learner.plot(), update_interval=0.1)
 ```
 
 Now the `DataSavingLearner` will have an dictionary attribute `extra_data` that has `x` as key and the data that was returned by `learner.function` as values.
 
-```{jupyter-execute}
+```{code-cell}
 learner.extra_data
 ```

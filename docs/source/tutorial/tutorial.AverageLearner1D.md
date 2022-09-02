@@ -1,3 +1,14 @@
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
 # Tutorial {class}`~adaptive.AverageLearner1D`
 
 ```{note}
@@ -9,7 +20,7 @@ Download the notebook in order to see the real behaviour.
 The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.AverageLearner1D`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 import adaptive
@@ -25,7 +36,7 @@ from functools import partial
 
 First, we define the (noisy) function to be sampled. Note that the parameter `sigma` corresponds to the standard deviation of the Gaussian noise.
 
-```{jupyter-execute}
+```{code-cell}
 def noisy_peak(seed_x, sigma=0, peak_width=0.05, offset=-0.5):
     seed, x = seed_x  # tuple with seed and `x` value
     y = x**3 - x + 3 * peak_width**2 / (peak_width**2 + (x - offset) ** 2)
@@ -36,7 +47,7 @@ def noisy_peak(seed_x, sigma=0, peak_width=0.05, offset=-0.5):
 
 This is how the function looks in the absence of noise:
 
-```{jupyter-execute}
+```{code-cell}
 xs = np.linspace(-2, 2, 500)
 ys = [noisy_peak((seed, x), sigma=0) for seed, x in enumerate(xs)]
 hv.Path((xs, ys))
@@ -44,7 +55,7 @@ hv.Path((xs, ys))
 
 And an example of a single realization of the noisy function:
 
-```{jupyter-execute}
+```{code-cell}
 ys = [noisy_peak((seed, x), sigma=1) for seed, x in enumerate(xs)]
 hv.Path((xs, ys))
 ```
@@ -54,14 +65,14 @@ The learner will autonomously determine whether the next samples should be taken
 
 We start by initializing a 1D average learner:
 
-```{jupyter-execute}
+```{code-cell}
 learner = adaptive.AverageLearner1D(partial(noisy_peak, sigma=1), bounds=(-2, 2))
 ```
 
 As with other types of learners, we need to initialize a runner with a certain goal to run our learner.
 In this case, we set 10000 samples as the goal (the second condition ensures that we have at least 20 samples at each point):
 
-```{jupyter-execute}
+```{code-cell}
 def goal(nsamples):
     def _goal(learner):
         return learner.nsamples >= nsamples and learner.min_samples_per_point >= 20
@@ -72,13 +83,13 @@ def goal(nsamples):
 runner = adaptive.Runner(learner, goal=goal(10_000))
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 runner.live_plot(update_interval=0.1)
 ```
@@ -99,39 +110,39 @@ The most relevant are:
 As an example, assume that we wanted to resample the points from the previous learner.
 We can decrease `delta` to 0.1 and set `min_error` to 0.05 if we do not require accuracy beyond this value:
 
-```{jupyter-execute}
+```{code-cell}
 learner.delta = 0.1
 learner.min_error = 0.05
 runner = adaptive.Runner(learner, goal=goal(20_000))
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 runner.live_plot(update_interval=0.1)
 ```
 
 On the contrary, if we want to push forward the "exploration", we can set a larger `delta` and limit the maximum number of samples taken at each point:
 
-```{jupyter-execute}
+```{code-cell}
 learner.delta = 0.3
 learner.max_samples = 1000
 
 runner = adaptive.Runner(learner, goal=goal(25_000))
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 runner.live_plot(update_interval=0.1)
 ```

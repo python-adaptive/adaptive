@@ -1,3 +1,14 @@
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
 # Advanced Topics
 
 ```{note}
@@ -9,7 +20,7 @@ Download the notebook in order to see the real behaviour.
 The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.advanced-topics`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 import adaptive
@@ -38,7 +49,7 @@ Or, when using a {class}`~adaptive.BalancingLearner` one can use either a callab
 
 By default the resulting pickle files are compressed, to turn this off use `learner.save(fname=..., compress=False)`
 
-```{jupyter-execute}
+```{code-cell}
 # Let's create two learners and run only one.
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 control = adaptive.Learner1D(f, bounds=(-1, 1))
@@ -47,17 +58,17 @@ control = adaptive.Learner1D(f, bounds=(-1, 1))
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 fname = "data/example_file.p"
 learner.save(fname)
 control.load(fname)
@@ -67,14 +78,14 @@ control.load(fname)
 
 Or just (without saving):
 
-```{jupyter-execute}
+```{code-cell}
 control = adaptive.Learner1D(f, bounds=(-1, 1))
 control.copy_from(learner)
 ```
 
 One can also periodically save the learner while running in a {class}`~adaptive.Runner`. Use it like:
 
-```{jupyter-execute}
+```{code-cell}
 def slow_f(x):
     from time import sleep
 
@@ -89,18 +100,18 @@ runner.start_periodic_saving(
 )
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await asyncio.sleep(6)  # This is not needed in a notebook environment!
 runner.cancel()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()  # we cancelled it after 6 seconds
 ```
 
-```{jupyter-execute}
+```{code-cell}
 # See the data 6 later seconds with
 #!ls -lah data  # only works on macOS and Linux systems
 ```
@@ -125,7 +136,7 @@ What to do if you don’t care about live plotting, and just want to run somethi
 
 The simplest way to accomplish this is to use {class}`adaptive.BlockingRunner`:
 
-```{jupyter-execute}
+```{code-cell}
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
 # This will only get run after the runner has finished
@@ -144,7 +155,7 @@ Nevertheless it is still possible to run a learner in a deterministic way with a
 
 The simplest way is to use {class}`adaptive.runner.simple` to run your learner:
 
-```{jupyter-execute}
+```{code-cell}
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
 # blocks until completion
@@ -157,7 +168,7 @@ Note that unlike {class}`adaptive.Runner`, {class}`adaptive.runner.simple` *bloc
 
 If you want to enable determinism, want to continue using the non-blocking {class}`adaptive.Runner`, you can use the {class}`adaptive.runner.SequentialExecutor`:
 
-```{jupyter-execute}
+```{code-cell}
 from adaptive.runner import SequentialExecutor
 
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
@@ -166,17 +177,17 @@ runner = adaptive.Runner(
 )
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_plot(update_interval=0.1)
 ```
 
@@ -189,30 +200,30 @@ If no `goal` is provided to a runner then the runner will run until cancelled.
 `runner.live_info()` will provide a button that can be clicked to stop the runner.
 You can also stop the runner programatically using `runner.cancel()`.
 
-```{jupyter-execute}
+```{code-cell}
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 runner = adaptive.Runner(learner)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await asyncio.sleep(0.1)  # This is not needed in the notebook!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.cancel()  # Let's execute this after 0.1 seconds
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_plot(update_interval=0.1)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 print(runner.status())
 ```
 
@@ -223,7 +234,7 @@ Often the only indication you will have that something has gone wrong is that no
 
 Let’s look at the following example, where the function to be learned will raise an exception 10% of the time.
 
-```{jupyter-execute}
+```{code-cell}
 def will_raise(x):
     from random import random
     from time import sleep
@@ -240,17 +251,17 @@ runner = adaptive.Runner(
 )  # without 'goal' the runner will run forever unless cancelled
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await asyncio.sleep(4)  # in 4 seconds it will surely have failed
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_plot()
 ```
 
@@ -258,7 +269,7 @@ The above runner should continue forever, but we notice that it stops after a fe
 
 First we should check that the runner has really finished:
 
-```{jupyter-execute}
+```{code-cell}
 runner.task.done()
 ```
 
@@ -266,7 +277,7 @@ If it has indeed finished then we should check the `result` of the runner.
 This should be `None` if the runner stopped successfully.
 If the runner stopped due to an exception then asking for the result will raise the exception with the stack trace:
 
-```{jupyter-execute}
+```{code-cell}
 :raises:
 
 runner.task.result()
@@ -274,7 +285,7 @@ runner.task.result()
 
 You can also check `runner.tracebacks` which is a list of tuples with `(point, traceback)`.
 
-```{jupyter-execute}
+```{code-cell}
 for point, tb in runner.tracebacks:
     print(f"point: {point}:\n {tb}")
 ```
@@ -284,18 +295,18 @@ for point, tb in runner.tracebacks:
 Runners do their job in the background, which makes introspection quite cumbersome.
 One way to inspect runners is to instantiate one with `log=True`:
 
-```{jupyter-execute}
+```{code-cell}
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01, log=True)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
@@ -304,12 +315,12 @@ This is useful because executors typically execute their tasks in a non-determin
 
 This can be used with {class}`adaptive.runner.replay_log` to perfom the same set of operations on another runner:
 
-```{jupyter-execute}
+```{code-cell}
 reconstructed_learner = adaptive.Learner1D(f, bounds=learner.bounds)
 adaptive.runner.replay_log(reconstructed_learner, runner.log)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 learner.plot().Scatter.I.opts(style=dict(size=6)) * reconstructed_learner.plot()
 ```
 
@@ -330,7 +341,7 @@ because this will be done immediately. Also blocking the kernel with `while not 
 
 Therefore you need to create an `async` function and hook it into the `ioloop` like so:
 
-```{jupyter-execute}
+```{code-cell}
 import asyncio
 
 
@@ -350,13 +361,13 @@ runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 timer = ioloop.create_task(time(runner))
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 # The result will only be set when the runner is done.
 timer.result()
 ```

@@ -1,3 +1,14 @@
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
 # Tutorial {class}`~adaptive.SequenceLearner`
 
 ```{note}
@@ -9,7 +20,7 @@ Download the notebook in order to see the real behaviour.
 The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.SequenceLearner`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 import adaptive
@@ -24,7 +35,7 @@ This learner will learn a sequence. It simply returns the points in the provided
 
 This is useful when your problem cannot be formulated in terms of another adaptive learner, but you still want to use Adaptive's routines to run, (periodically) save, and plot.
 
-```{jupyter-execute}
+```{code-cell}
 from adaptive import SequenceLearner
 
 
@@ -39,17 +50,17 @@ runner = adaptive.Runner(learner, SequenceLearner.done)
 # that goal is same as `lambda learner: learner.done()`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 def plotter(learner):
     data = learner.data if learner.data else []
     return hv.Scatter(data)
@@ -62,7 +73,7 @@ runner.live_plot(plotter=plotter)
 
 To get the values in the same order as the input sequence (`learner.sequence`) use
 
-```{jupyter-execute}
+```{code-cell}
 result = learner.result()
 print(result[:10])  # print the 10 first values
 ```

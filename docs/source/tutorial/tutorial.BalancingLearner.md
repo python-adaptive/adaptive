@@ -1,3 +1,14 @@
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
 # Tutorial {class}`~adaptive.BalancingLearner`
 
 ```{note}
@@ -9,7 +20,7 @@ Download the notebook in order to see the real behaviour.
 The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.BalancingLearner`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 import adaptive
@@ -27,7 +38,7 @@ When you request a point from the balancing learner, it will query all of its �
 
 The balancing learner can for example be used to implement a poor-man’s 2D learner by using the {class}`~adaptive.Learner1D`.
 
-```{jupyter-execute}
+```{code-cell}
 def h(x, offset=0):
     a = 0.01
     return x + a**2 / (a**2 + (x - offset) ** 2)
@@ -42,17 +53,17 @@ bal_learner = adaptive.BalancingLearner(learners)
 runner = adaptive.Runner(bal_learner, goal=lambda l: l.loss() < 0.01)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 plotter = lambda learner: hv.Overlay([L.plot() for L in learner.learners])
 runner.live_plot(plotter=plotter, update_interval=0.1)
 ```
@@ -61,7 +72,7 @@ Often one wants to create a set of `learner`s for a cartesian product of paramet
 For that particular case we’ve added a `classmethod` called {class}`~adaptive.BalancingLearner.from_product`.
 See how it works below
 
-```{jupyter-execute}
+```{code-cell}
 from scipy.special import eval_jacobi
 
 

@@ -1,3 +1,14 @@
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
 # Tutorial {class}`~adaptive.Learner1D`
 
 ```{note}
@@ -9,7 +20,7 @@ Download the notebook in order to see the real behaviour.
 The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.Learner1D`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 import adaptive
@@ -27,7 +38,7 @@ We start with the most common use-case: sampling a 1D function `f: ℝ → ℝ`.
 
 We will use the following function, which is a smooth (linear) background with a sharp peak at a random location:
 
-```{jupyter-execute}
+```{code-cell}
 offset = random.uniform(-0.5, 0.5)
 
 
@@ -43,7 +54,7 @@ def f(x, offset=offset, wait=True):
 
 We start by initializing a 1D “learner”, which will suggest points to evaluate, and adapt its suggestions as more and more points are evaluated.
 
-```{jupyter-execute}
+```{code-cell}
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 ```
 
@@ -54,13 +65,13 @@ By default on Unix-like systems the runner will evaluate the points in parallel 
 On Windows systems the runner will use a {class}`loky.get_reusable_executor`.
 A {class}`~concurrent.futures.ProcessPoolExecutor` cannot be used on Windows for reasons.
 
-```{jupyter-execute}
+```{code-cell}
 # The end condition is when the "loss" is less than 0.1. In the context of the
 # 1D learner this means that we will resolve features in 'func' with width 0.1 or wider.
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
@@ -69,24 +80,24 @@ await runner.task  # This is not needed in a notebook environment!
 When instantiated in a Jupyter notebook the runner does its job in the background and does not block the IPython kernel.
 We can use this to create a plot that updates as new data arrives:
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_plot(update_interval=0.1)
 ```
 
 We can now compare the adaptive sampling to a homogeneous sampling with the same number of points:
 
-```{jupyter-execute}
+```{code-cell}
 if not runner.task.done():
     raise RuntimeError(
         "Wait for the runner to finish before executing the cells below!"
     )
 ```
 
-```{jupyter-execute}
+```{code-cell}
 learner2 = adaptive.Learner1D(f, bounds=learner.bounds)
 
 xs = np.linspace(*learner.bounds, len(learner.data))
@@ -99,7 +110,7 @@ learner.plot() + learner2.plot()
 
 Sometimes you may want to learn a function with vector output:
 
-```{jupyter-execute}
+```{code-cell}
 random.seed(0)
 offsets = [random.uniform(-0.8, 0.8) for _ in range(3)]
 
@@ -114,22 +125,22 @@ def f_levels(x, offsets=offsets):
 `adaptive` has you covered!
 The `Learner1D` can be used for such functions:
 
-```{jupyter-execute}
+```{code-cell}
 learner = adaptive.Learner1D(f_levels, bounds=(-1, 1))
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_plot(update_interval=0.1)
 ```
 
@@ -139,7 +150,7 @@ By default `adaptive` will sample more points where the (normalized) euclidean d
 You may achieve better results sampling more points in regions with high curvature.
 To do this, you need to tell the learner to look at the curvature by specifying `loss_per_interval`.
 
-```{jupyter-execute}
+```{code-cell}
 from adaptive.learner.learner1D import (
     curvature_loss_function,
     uniform_loss,
@@ -151,24 +162,24 @@ learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=curvature_loss
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_plot(update_interval=0.1)
 ```
 
 We may see the difference of homogeneous sampling vs only one interval vs including the nearest neighboring intervals in this plot.
 We will look at 100 points.
 
-```{jupyter-execute}
+```{code-cell}
 def sin_exp(x):
     from math import exp, sin
 

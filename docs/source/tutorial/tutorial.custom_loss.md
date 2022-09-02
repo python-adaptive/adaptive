@@ -1,3 +1,14 @@
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
 # Custom adaptive logic for 1D and 2D
 
 ```{note}
@@ -9,7 +20,7 @@ Download the notebook in order to see the real behaviour.
 The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.custom-loss`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 import adaptive
@@ -53,7 +64,7 @@ Whenever a loss function has `_function` appended to its name, it is a factory f
 Say we want to properly sample a function that contains divergences.
 A simple (but naive) strategy is to *uniformly* sample the domain:
 
-```{jupyter-execute}
+```{code-cell}
 def uniform_sampling_1d(xs, ys):
     dx = xs[1] - xs[0]
     return dx
@@ -72,7 +83,7 @@ runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
 learner.plot().select(y=(0, 10000))
 ```
 
-```{jupyter-execute}
+```{code-cell}
 from adaptive.runner import SequentialExecutor
 
 
@@ -96,17 +107,17 @@ learner = adaptive.Learner2D(
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.02)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 plotter = lambda l: l.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale")
 runner.live_plot(update_interval=0.2, plotter=plotter)
 ```
@@ -123,7 +134,7 @@ Below we define a loss per subdomain that scales with the degree of nonlinearity
 A loss defined in this way means that the adaptive algorithm will first prioritise subdomains that are too large (infinite loss).
 After all subdomains are appropriately small it will prioritise places where the function is very nonlinear, but will ignore subdomains that are too small (0 loss).
 
-```{jupyter-execute}
+```{code-cell}
 def resolution_loss_function(min_distance=0, max_distance=1):
     """min_distance and max_distance should be in between 0 and 1
     because the total area is normalized to 1."""

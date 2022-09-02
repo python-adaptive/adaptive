@@ -1,3 +1,14 @@
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
 # Tutorial {class}`~adaptive.LearnerND`
 
 ```{note}
@@ -9,7 +20,7 @@ Download the notebook in order to see the real behaviour.
 The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.LearnerND`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 import adaptive
@@ -31,7 +42,7 @@ Besides 1 and 2 dimensional functions, we can also learn N-D functions: $f: ℝ^
 
 Do keep in mind the speed and [effectiveness](https://en.wikipedia.org/wiki/Curse_of_dimensionality) of the learner drops quickly with increasing number of dimensions.
 
-```{jupyter-execute}
+```{code-cell}
 def sphere(xyz):
     x, y, z = xyz
     a = 0.4
@@ -42,19 +53,19 @@ learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1e-3)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
 Let’s plot 2D slices of the 3D function
 
-```{jupyter-execute}
+```{code-cell}
 def plot_cut(x, direction, learner=learner):
     cut_mapping = {"XYZ".index(direction): x}
     return learner.plot_slice(cut_mapping, n=100)
@@ -70,7 +81,7 @@ dynamicmap_to_holomap(dm)
 
 Or we can plot 1D slices
 
-```{jupyter-execute}
+```{code-cell}
 def plot_cut(x1, x2, directions, learner=learner):
     cut_mapping = {"xyz".index(d): x for d, x in zip(directions, [x1, x2])}
     return learner.plot_slice(cut_mapping)
@@ -97,7 +108,7 @@ This is best illustrated in the following example.
 Suppose you would like to sample you function in a cube split in half diagonally.
 You could use the following code as an example:
 
-```{jupyter-execute}
+```{code-cell}
 import scipy
 
 def f(xyz):

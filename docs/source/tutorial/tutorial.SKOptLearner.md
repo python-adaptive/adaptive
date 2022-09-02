@@ -1,3 +1,14 @@
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
 # Tutorial {class}`~adaptive.SKOptLearner`
 
 ```{note}
@@ -9,7 +20,7 @@ Download the notebook in order to see the real behaviour.
 The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.SKOptLearner`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 import adaptive
@@ -27,12 +38,12 @@ The `SKOptLearner` attempts to “optimize” the given function `g` (i.e. find
 Here we use the same example as in the `scikit-optimize` [tutorial](https://github.com/scikit-optimize/scikit-optimize/blob/master/examples/ask-and-tell.ipynb).
 Although `SKOptLearner` can optimize functions of arbitrary dimensionality, we can only plot the learner if a 1D function is being learned.
 
-```{jupyter-execute}
+```{code-cell}
 def F(x, noise_level=0.1):
     return np.sin(5 * x) * (1 - np.tanh(x**2)) + np.random.randn() * noise_level
 ```
 
-```{jupyter-execute}
+```{code-cell}
 learner = adaptive.SKOptLearner(
     F,
     dimensions=[(-2.0, 2.0)],
@@ -43,17 +54,17 @@ learner = adaptive.SKOptLearner(
 runner = adaptive.Runner(learner, ntasks=1, goal=lambda l: l.npoints > 40)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 xs = np.linspace(*learner.space.bounds[0])
 to_learn = hv.Curve((xs, [F(x, 0) for x in xs]), label="to learn")
 

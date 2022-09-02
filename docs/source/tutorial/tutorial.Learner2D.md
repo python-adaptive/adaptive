@@ -1,3 +1,14 @@
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
 # Tutorial {class}`~adaptive.Learner2D`
 
 ```{note}
@@ -9,7 +20,7 @@ Download the notebook in order to see the real behaviour.
 The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.Learner2D`
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 import adaptive
@@ -22,7 +33,7 @@ adaptive.notebook_extension()
 
 Besides 1D functions, we can also learn 2D functions: $f: ℝ^2 → ℝ$.
 
-```{jupyter-execute}
+```{code-cell}
 def ring(xy, wait=True):
     import numpy as np
     from time import sleep
@@ -38,21 +49,21 @@ def ring(xy, wait=True):
 learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 :hide-code:
 
 await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{jupyter-execute}
+```{code-cell}
 runner.live_info()
 ```
 
-```{jupyter-execute}
+```{code-cell}
 def plot(learner):
     plot = learner.plot(tri_alpha=0.2)
     return (plot.Image + plot.EdgePaths.I + plot).cols(2)
@@ -61,7 +72,7 @@ def plot(learner):
 runner.live_plot(plotter=plot, update_interval=0.1)
 ```
 
-```{jupyter-execute}
+```{code-cell}
 import itertools
 
 # Create a learner and add data on homogeneous grid, so that we can plot it
