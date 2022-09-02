@@ -454,8 +454,9 @@ class AverageLearner1D(Learner1D):
                 self.tell_many_at_point(x, samples)
 
     def plot(self):
-        """Returns a plot of the evaluated data with error bars (not implemented
-           for vector functions, i.e., it requires vdim=1).
+        """Returns a plot of the evaluated data with error bars.
+
+        This is only implemented for scalar functions, i.e., it requires ``vdim=1``.
 
         Returns
         -------
