@@ -4,14 +4,12 @@ import os
 import sys
 
 package_path = os.path.abspath("../..")
-sys.path.insert(
-    0, package_path
-)  # Insert into sys.path so that we can import adaptive here
+# Insert into sys.path so that we can import adaptive here
+sys.path.insert(0, package_path)
 # Insert into PYTHONPATH so that jupyter-sphinx will pick it up
 os.environ["PYTHONPATH"] = ":".join((package_path, os.environ.get("PYTHONPATH", "")))
-docs_path = os.path.abspath(
-    ".."
-)  # Insert `docs/` such that we can run the logo scripts
+# Insert `docs/` such that we can run the logo scripts
+docs_path = os.path.abspath("..")
 sys.path.insert(1, docs_path)
 
 import adaptive  # noqa: E402, isort:skip
@@ -23,9 +21,10 @@ copyright = "2018-2021, Adaptive Authors"
 author = "Adaptive Authors"
 
 # The short X.Y version
-version = adaptive.__version__
+version = ".".join(adaptive.__version__.split(".")[:3])
+version = version
 # The full version, including alpha/beta/rc tags
-release = adaptive.__version__
+release = version
 
 extensions = [
     "sphinx.ext.autodoc",
