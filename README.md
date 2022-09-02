@@ -1,61 +1,33 @@
 ---
-substitutions:
-  Binder: |-
-    ```{image} https://mybinder.org/badge.svg
-    :target: https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb
-    ```
-  Conda: |-
-    ```{image} https://img.shields.io/badge/install%20with-conda-green.svg
-    :target: https://anaconda.org/conda-forge/adaptive
-    ```
-  Coverage: |-
-    ```{image} https://img.shields.io/codecov/c/github/python-adaptive/adaptive
-    :target: https://codecov.io/gh/python-adaptive/adaptive
-    ```
-  DOI: |-
-    ```{image} https://img.shields.io/badge/doi-10.5281%2Fzenodo.1182437-blue.svg
-    :target: https://doi.org/10.5281/zenodo.1182437
-    ```
-  Documentation: |-
-    ```{image} https://readthedocs.org/projects/adaptive/badge/?version=latest
-    :target: https://adaptive.readthedocs.io/en/latest/?badge=latest
-    ```
-  Downloads: |-
-    ```{image} https://img.shields.io/conda/dn/conda-forge/adaptive.svg
-    :target: https://anaconda.org/conda-forge/adaptive
-    ```
-  GitHub: |-
-    ```{image} https://img.shields.io/github/stars/python-adaptive/adaptive.svg?style=social
-    :target: https://github.com/python-adaptive/adaptive/stargazers
-    ```
-  Gitter: |-
-    ```{image} https://img.shields.io/gitter/room/nwjs/nw.js.svg
-    :target: https://gitter.im/python-adaptive/adaptive
-    ```
-  Pipeline status: |-
-    ```{image} https://dev.azure.com/python-adaptive/adaptive/_apis/build/status/python-adaptive.adaptive?branchName=master
-    :target: https://dev.azure.com/python-adaptive/adaptive/_build/latest?definitionId=6?branchName=master
-    ```
-  PyPI: |-
-    ```{image} https://img.shields.io/pypi/v/adaptive.svg
-    :target: https://pypi.python.org/pypi/adaptive
-    ```
-  logo: |-
-    ```{image} https://adaptive.readthedocs.io/en/latest/_static/logo.png
-    ```
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
 ---
 
 % summary-start
 
-# {{ logo }} adaptive
+# ![logo](logo) adaptive
 
-{{ PyPI }} {{ Conda }} {{ Downloads }} {{ Pipeline status }} {{ DOI }} {{ Binder }} {{ Gitter }}
-{{ Documentation }} {{ Coverage }} {{ GitHub }}
+[![PyPI][PyPI-badge]][PyPI-url]
+[![Conda][Conda-badge]][Conda-url]
+[![Downloads][Downloads-badge]][Downloads-url]
+[![Pipeline-status][Pipeline-status-badge]][Pipeline-status-url]
+[![DOI][DOI-badge]][DOI-url]
+[![Binder][Binder-badge]][Binder-url]
+[![Gitter][Gitter-badge]][Gitter-url]
+[![Documentation][Documentation-badge]][Documentation-url]
+[![Coverage][Coverage-badge]][Coverage-url]
+[![GitHub][GitHub-badge]][GitHub-url]
 
 > *Adaptive*: parallel active learning of mathematical functions.
 
-```{eval-rst}
-.. include:: logo.rst
+```{include} logo.md
 ```
 
 `adaptive` is an open-source Python library designed to make adaptive parallel function evaluation simple. With `adaptive` you just supply a function with its bounds, and it will be evaluated at the “best” points in parameter space, rather than unnecessarily computing *all* points on a dense grid.
@@ -96,7 +68,7 @@ In addition to the learners, `adaptive` also provides primitives for running the
 [concurrent.futures](https://docs.python.org/3/library/concurrent.futures.html),
 [mpi4py](https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html),
 [loky](https://loky.readthedocs.io/en/stable/),
-[ipyparallel](https://ipyparallel.readthedocs.io/en/latest/) and
+[ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
 ## Examples
@@ -211,3 +183,25 @@ For general discussion, we have a [Gitter chat channel](https://gitter.im/python
 % references-start
 
 % references-end
+
+[logo]: https://adaptive.readthedocs.io/en/latest/_static/logo.png
+[Binder-badge]: https://mybinder.org/badge.svg
+[Binder-url]: https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb
+[Conda-badge]: https://img.shields.io/badge/install%20with-conda-green.svg
+[Conda-url]: https://anaconda.org/conda-forge/adaptive
+[Coverage-badge]: https://img.shields.io/codecov/c/github/python-adaptive/adaptive
+[Coverage-url]: https://codecov.io/gh/python-adaptive/adaptive
+[DOI-badge]: https://img.shields.io/badge/doi-10.5281%2Fzenodo.1182437-blue.svg
+[DOI-url]: https://doi.org/10.5281/zenodo.1182437
+[Documentation-badge]: https://readthedocs.org/projects/adaptive/badge/?version=latest
+[Documentation-url]: https://adaptive.readthedocs.io/en/latest/?badge=latest
+[Downloads-badge]: https://img.shields.io/conda/dn/conda-forge/adaptive.svg
+[Downloads-url]: https://anaconda.org/conda-forge/adaptive
+[GitHub-badge]: https://img.shields.io/github/stars/python-adaptive/adaptive.svg?style=social
+[GitHub-url]: https://github.com/python-adaptive/adaptive/stargazers
+[Gitter-badge]: https://img.shields.io/gitter/room/nwjs/nw.js.svg
+[Gitter-url]: https://gitter.im/python-adaptive/adaptive
+[Pipeline-status-badge]: https://dev.azure.com/python-adaptive/adaptive/_apis/build/status/python-adaptive.adaptive?branchName=master
+[Pipeline-status-url]: https://dev.azure.com/python-adaptive/adaptive/_build/latest?definitionId=6?branchName=master
+[PyPI-badge]: https://img.shields.io/pypi/v/adaptive.svg
+[PyPI-url]: https://pypi.python.org/pypi/adaptive
