@@ -6,7 +6,7 @@ Download the notebook in order to see the real behaviour.
 :::
 
 :::{seealso}
-The complete source code of this tutorial can be found in {jupyter-download:notebook}`tutorial.SequenceLearner`
+The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.SequenceLearner`
 :::
 
 ```{jupyter-execute}

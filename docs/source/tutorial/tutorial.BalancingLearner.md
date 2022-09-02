@@ -6,7 +6,7 @@ Download the notebook in order to see the real behaviour.
 :::
 
 :::{seealso}
-The complete source code of this tutorial can be found in {jupyter-download:notebook}`tutorial.BalancingLearner`
+The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.BalancingLearner`
 :::
 
 ```{jupyter-execute}

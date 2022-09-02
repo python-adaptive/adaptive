@@ -6,7 +6,7 @@ Download the notebook in order to see the real behaviour.
 :::
 
 :::{seealso}
-The complete source code of this tutorial can be found in {jupyter-download:notebook}`tutorial.custom-loss`
+The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.custom-loss`
 :::
 
 ```{jupyter-execute}
@@ -19,6 +19,7 @@ adaptive.notebook_extension()
 # Import modules that are used in multiple cells
 import numpy as np
 from functools import partial
+import holoviews as hv
 ```
 
 `~adaptive.Learner1D` and {class}`~adaptive.Learner2D` both work on the principle of subdividing their domain into subdomains, and assigning a property to each subdomain, which we call the *loss*.

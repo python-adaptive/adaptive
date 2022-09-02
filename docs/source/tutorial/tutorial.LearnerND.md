@@ -6,7 +6,7 @@ Download the notebook in order to see the real behaviour.
 :::
 
 :::{seealso}
-The complete source code of this tutorial can be found in {jupyter-download:notebook}`tutorial.LearnerND`
+The complete source code of this tutorial can be found in {jupyter-download-notebook}`tutorial.LearnerND`
 :::
 
 ```{jupyter-execute}
@@ -99,7 +99,6 @@ You could use the following code as an example:
 
 ```{jupyter-execute}
 import scipy
-
 
 def f(xyz):
     x, y, z = xyz
