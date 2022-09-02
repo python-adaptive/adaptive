@@ -1,14 +1,12 @@
 # Custom adaptive logic for 1D and 2D
 
 :::{note}
-Because this documentation consists of static html, the `live_plot`
-and `live_info` widget is not live. Download the notebook
-in order to see the real behaviour.
+Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
+Download the notebook in order to see the real behaviour.
 :::
 
 :::{seealso}
-The complete source code of this tutorial can be found in
-{jupyter-download:notebook}`tutorial.custom-loss`
+The complete source code of this tutorial can be found in {jupyter-download:notebook}`tutorial.custom-loss`
 :::
 
 ```{jupyter-execute}
