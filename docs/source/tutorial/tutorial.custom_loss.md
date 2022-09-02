@@ -99,7 +99,7 @@ learner = adaptive.Learner2D(
 )
 
 # this takes a while, so use the async Runner so we know *something* is happening
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.02)
+runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.03 or l.npoints > 1000)
 ```
 
 ```{code-cell} ipython3
@@ -155,7 +155,9 @@ loss = resolution_loss_function(min_distance=0.01)
 
 learner = adaptive.Learner2D(f_divergent_2d, [(-1, 1), (-1, 1)], loss_per_triangle=loss)
 runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.02)
-learner.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale").opts(hv.opts.EdgePaths(color='w'), hv.opts.Image(logz=True, colorbar=True))
+learner.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale").opts(
+    hv.opts.EdgePaths(color="w"), hv.opts.Image(logz=True, colorbar=True)
+)
 ```
 
 Awesome! We zoom in on the singularity, but not at the expense of sampling the rest of the domain a reasonable amount.
