@@ -73,6 +73,7 @@ html_logo = "_static/logo_docs.png"
 
 # myst-nb configuration
 nb_execution_mode = "cache"
+nb_execution_timeout = 180
 
 
 def setup(app):
