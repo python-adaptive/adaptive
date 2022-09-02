@@ -16,8 +16,6 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.SequenceLearner.ipynb`** and {download}`tutorial.SequenceLearner.md`.
-
 ```{code-cell}
 ---
 tags: [hide-cell]
@@ -79,3 +77,5 @@ To get the values in the same order as the input sequence (`learner.sequence`) u
 result = learner.result()
 print(result[:10])  # print the 10 first values
 ```
+
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.SequenceLearner.ipynb`** and {download}`tutorial.SequenceLearner.md`.

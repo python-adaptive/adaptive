@@ -16,8 +16,6 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.custom-loss.ipynb`** and {download}`tutorial.custom-loss.md`.
-
 ```{code-cell}
 ---
 tags: [hide-cell]
@@ -44,8 +42,7 @@ Both the {class}`~adaptive.Learner1D` and {class}`~adaptive.Learner2D` allow you
 Below we illustrate how you would go about writing your own loss function.
 The documentation for {class}`~adaptive.Learner1D` and {class}`~adaptive.Learner2D` specifies the signature that your loss function needs to have in order for it to work with `adaptive`.
 
-tl;dr, one can use the following *loss functions* that
-**we** already implemented:
+tl;dr, one can use the following *loss functions* that **we** already implemented:
 
 - {class}`adaptive.learner.learner1D.default_loss`
 - {class}`adaptive.learner.learner1D.uniform_loss`
@@ -168,3 +165,5 @@ learner.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale").opts(hv.opts
 Awesome! We zoom in on the singularity, but not at the expense of sampling the rest of the domain a reasonable amount.
 
 The above strategy is available as {class}`adaptive.learner.learner2D.resolution_loss_function`.
+
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.custom-loss.ipynb`** and {download}`tutorial.custom-loss.md`.

@@ -16,8 +16,6 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.BalancingLearner.ipynb`** and {download}`tutorial.BalancingLearner.md`.
-
 ```{code-cell}
 ---
 tags: [hide-cell]
@@ -98,3 +96,5 @@ runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
 # `plot()` will return a HoloMap with correctly labeled sliders.
 learner.plot().overlay("beta").grid().select(y=(-1, 3))
 ```
+
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.BalancingLearner.ipynb`** and {download}`tutorial.BalancingLearner.md`.

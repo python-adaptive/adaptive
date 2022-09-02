@@ -16,8 +16,6 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.Learner1D.ipynb`** and {download}`tutorial.Learner1D.md`.
-
 ```{code-cell}
 ---
 tags: [hide-cell]
@@ -210,3 +208,5 @@ adaptive.runner.simple(learner_2, goal=npoints_goal)
 ```
 
 More info about using custom loss functions can be found in {ref}`Custom adaptive logic for 1D and 2D`.
+
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.Learner1D.ipynb`** and {download}`tutorial.Learner1D.md`.

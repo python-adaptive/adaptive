@@ -16,8 +16,6 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.AverageLearner.ipynb`** and {download}`tutorial.AverageLearner.md`.
-
 ```{code-cell}
 ---
 tags: [hide-cell]
@@ -68,3 +66,5 @@ runner.live_info()
 ```{code-cell}
 runner.live_plot(update_interval=0.1)
 ```
+
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.AverageLearner.ipynb`** and {download}`tutorial.AverageLearner.md`.

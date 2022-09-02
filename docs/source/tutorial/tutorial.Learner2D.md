@@ -16,8 +16,6 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.Learner2D.ipynb`** and {download}`tutorial.Learner2D.md`.
-
 ```{code-cell}
 ---
 tags: [hide-cell]
@@ -91,3 +89,5 @@ learner2.tell_many(xys, map(partial(ring, wait=False), xys))
     + learner.plot(tri_alpha=0.4)
 ).cols(2).opts(hv.opts.EdgePaths(color="w"))
 ```
+
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.Learner2D.ipynb`** and {download}`tutorial.Learner2D.md`.

@@ -16,8 +16,6 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.DataSaver.ipynb`** and {download}`tutorial.DataSaver.md`.
-
 ```{code-cell}
 ---
 tags: [hide-cell]
@@ -83,3 +81,5 @@ Now the `DataSavingLearner` will have an dictionary attribute `extra_data` that 
 ```{code-cell}
 learner.extra_data
 ```
+
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.DataSaver.ipynb`** and {download}`tutorial.DataSaver.md`.

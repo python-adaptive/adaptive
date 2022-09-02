@@ -16,8 +16,6 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.IntegratorLearner.ipynb`** and {download}`tutorial.IntegratorLearner.md`.
-
 ```{code-cell}
 ---
 tags: [hide-cell]
@@ -99,3 +97,5 @@ print(
 )
 learner.plot()
 ```
+
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.IntegratorLearner.ipynb`** and {download}`tutorial.IntegratorLearner.md`.

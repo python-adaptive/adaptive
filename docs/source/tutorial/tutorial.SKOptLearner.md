@@ -16,8 +16,6 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.SKOptLearner.ipynb`** and {download}`tutorial.SKOptLearner.md`.
-
 ```{code-cell}
 ---
 tags: [hide-cell]
@@ -73,3 +71,5 @@ to_learn = hv.Curve((xs, [F(x, 0) for x in xs]), label="to learn")
 plot = runner.live_plot().relabel("prediction", depth=2) * to_learn
 plot.opts(legend_position="top")
 ```
+
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.SKOptLearner.ipynb`** and {download}`tutorial.SKOptLearner.md`.

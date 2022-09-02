@@ -16,8 +16,6 @@ Because this documentation consists of static html, the `live_plot` and `live_in
 Download the notebook in order to see the real behaviour. [^download]
 ```
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.advanced-topics.ipynb`** and {download}`tutorial.advanced-topics.md`.
-
 ```{code-cell}
 ---
 tags: [hide-cell]
@@ -413,3 +411,5 @@ await runner.task
 ```
 
 from within a coroutine.
+
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.advanced-topics.ipynb`** and {download}`tutorial.advanced-topics.md`.
