@@ -8,10 +8,10 @@ This is an introductory notebook that shows some basic use cases.
 
 We recommend to start with the {ref}`Tutorial `~adaptive.Learner1D``.
 
-:::{note}
+```{note}
 Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
 Download the notebooks in order to see the real behaviour.
-:::
+```
 
 ```{toctree}
 :hidden: true
