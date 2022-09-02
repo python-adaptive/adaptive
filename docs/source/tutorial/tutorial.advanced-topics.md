@@ -13,7 +13,7 @@ jupytext:
 
 ```{note}
 Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
-Download the notebook in order to see the real behaviour.
+Download the notebook in order to see the real behaviour. [^download]
 ```
 
 [^download]: This notebook can be downloaded as **{nb-download}`tutorial.advanced-topics.ipynb`** and {download}`tutorial.advanced-topics.md`.
