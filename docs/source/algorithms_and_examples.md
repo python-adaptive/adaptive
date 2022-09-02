@@ -1,7 +1,20 @@
-```{eval-rst}
-.. include:: ../../README.rst
-    :start-after: summary-end
-    :end-before: not-in-documentation-start
+---
+kernelspec:
+  name: python3
+  display_name: python3
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: '0.13'
+    jupytext_version: 1.13.8
+---
+
+```{include} ../../README.md
+---
+start-after: summary-end
+end-before: not-in-documentation-start
+---
 ```
 
 - {class}`~adaptive.Learner1D`, for 1D functions `f: ℝ → ℝ^N`,
