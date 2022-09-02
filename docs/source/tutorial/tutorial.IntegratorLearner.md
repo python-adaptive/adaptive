@@ -13,6 +13,7 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
+
 adaptive.notebook_extension()
 
 import holoviews as hv
@@ -28,6 +29,7 @@ Let’s try the following function with cusps (that is difficult to integrate):
 def f24(x):
     return np.floor(np.exp(x))
 
+
 xs = np.linspace(0, 3, 200)
 hv.Scatter((xs, [f24(x) for x in xs]))
 ```
@@ -36,6 +38,7 @@ Just to prove that this really is a difficult to integrate function, let’s try
 
 ```{jupyter-execute}
 import scipy.integrate
+
 scipy.integrate.quad(f24, 0, 3)
 ```
 
@@ -50,7 +53,9 @@ learner = adaptive.IntegratorLearner(f24, bounds=(0, 3), tol=1e-8)
 # We use a SequentialExecutor, which runs the function to be learned in
 # *this* process only. This means we don't pay
 # the overhead of evaluating the function in another process.
-runner = adaptive.Runner(learner, executor=SequentialExecutor(), goal=lambda l: l.done())
+runner = adaptive.Runner(
+    learner, executor=SequentialExecutor(), goal=lambda l: l.done()
+)
 ```
 
 ```{jupyter-execute}
@@ -68,10 +73,16 @@ runner is done.
 
 ```{jupyter-execute}
 if not runner.task.done():
-    raise RuntimeError('Wait for the runner to finish before executing the cells below!')
+    raise RuntimeError(
+        "Wait for the runner to finish before executing the cells below!"
+    )
 ```
 
 ```{jupyter-execute}
-print('The integral value is {} with the corresponding error of {}'.format(learner.igral, learner.err))
+print(
+    "The integral value is {} with the corresponding error of {}".format(
+        learner.igral, learner.err
+    )
+)
 learner.plot()
 ```

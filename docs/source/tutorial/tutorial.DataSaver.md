@@ -13,6 +13,7 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
+
 adaptive.notebook_extension()
 ```
 
@@ -23,6 +24,7 @@ In the following example the function to be learned returns its result and the e
 ```{jupyter-execute}
 from operator import itemgetter
 
+
 def f_dict(x):
     """The function evaluation takes roughly the time we `sleep`."""
     import random
@@ -32,14 +34,15 @@ def f_dict(x):
     sleep(waiting_time)
     a = 0.01
     y = x + a**2 / (a**2 + x**2)
-    return {'y': y, 'waiting_time': waiting_time}
+    return {"y": y, "waiting_time": waiting_time}
+
 
 # Create the learner with the function that returns a 'dict'
 # This learner cannot be run directly, as Learner1D does not know what to do with the 'dict'
 _learner = adaptive.Learner1D(f_dict, bounds=(-1, 1))
 
 # Wrapping the learner with 'adaptive.DataSaver' and tell it which key it needs to learn
-learner = adaptive.DataSaver(_learner, arg_picker=itemgetter('y'))
+learner = adaptive.DataSaver(_learner, arg_picker=itemgetter("y"))
 ```
 
 `learner.learner` is the original learner, so `learner.learner.loss()` will call the correct loss method.

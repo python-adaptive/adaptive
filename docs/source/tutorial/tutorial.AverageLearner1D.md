@@ -13,6 +13,7 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
+
 adaptive.notebook_extension()
 
 import holoviews as hv
@@ -27,7 +28,7 @@ First, we define the (noisy) function to be sampled. Note that the parameter `si
 ```{jupyter-execute}
 def noisy_peak(seed_x, sigma=0, peak_width=0.05, offset=-0.5):
     seed, x = seed_x  # tuple with seed and `x` value
-    y = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
+    y = x**3 - x + 3 * peak_width**2 / (peak_width**2 + (x - offset) ** 2)
     rng = np.random.RandomState(seed)
     noise = rng.normal(scale=sigma)
     return y + noise
@@ -64,7 +65,9 @@ In this case, we set 10000 samples as the goal (the second condition ensures tha
 def goal(nsamples):
     def _goal(learner):
         return learner.nsamples >= nsamples and learner.min_samples_per_point >= 20
+
     return _goal
+
 
 runner = adaptive.Runner(learner, goal=goal(10_000))
 ```

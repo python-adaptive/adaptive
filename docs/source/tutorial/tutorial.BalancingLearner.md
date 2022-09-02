@@ -13,6 +13,7 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
+
 adaptive.notebook_extension()
 
 import holoviews as hv
@@ -29,10 +30,13 @@ The balancing learner can for example be used to implement a poor-man’s 2D lea
 ```{jupyter-execute}
 def h(x, offset=0):
     a = 0.01
-    return x + a**2 / (a**2 + (x - offset)**2)
+    return x + a**2 / (a**2 + (x - offset) ** 2)
 
-learners = [adaptive.Learner1D(partial(h, offset=random.uniform(-1, 1)),
-            bounds=(-1, 1)) for i in range(10)]
+
+learners = [
+    adaptive.Learner1D(partial(h, offset=random.uniform(-1, 1)), bounds=(-1, 1))
+    for i in range(10)
+]
 
 bal_learner = adaptive.BalancingLearner(learners)
 runner = adaptive.Runner(bal_learner, goal=lambda l: l.loss() < 0.01)
@@ -60,20 +64,24 @@ See how it works below
 ```{jupyter-execute}
 from scipy.special import eval_jacobi
 
-def jacobi(x, n, alpha, beta): return eval_jacobi(n, alpha, beta, x)
+
+def jacobi(x, n, alpha, beta):
+    return eval_jacobi(n, alpha, beta, x)
+
 
 combos = {
-    'n': [1, 2, 4, 8],
-    'alpha': np.linspace(0, 2, 3),
-    'beta': np.linspace(0, 1, 5),
+    "n": [1, 2, 4, 8],
+    "alpha": np.linspace(0, 2, 3),
+    "beta": np.linspace(0, 1, 5),
 }
 
 learner = adaptive.BalancingLearner.from_product(
-    jacobi, adaptive.Learner1D, dict(bounds=(0, 1)), combos)
+    jacobi, adaptive.Learner1D, dict(bounds=(0, 1)), combos
+)
 
 runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
 
 # The `cdims` will automatically be set when using `from_product`, so
 # `plot()` will return a HoloMap with correctly labeled sliders.
-learner.plot().overlay('beta').grid().select(y=(-1, 3))
+learner.plot().overlay("beta").grid().select(y=(-1, 3))
 ```

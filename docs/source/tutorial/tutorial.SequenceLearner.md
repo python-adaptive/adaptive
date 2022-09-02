@@ -13,6 +13,7 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
+
 adaptive.notebook_extension()
 
 import holoviews as hv
@@ -26,8 +27,10 @@ This is useful when your problem cannot be formulated in terms of another adapti
 ```{jupyter-execute}
 from adaptive import SequenceLearner
 
+
 def f(x):
     return int(x) ** 2
+
 
 seq = np.linspace(-15, 15, 1000)
 learner = SequenceLearner(f, seq)
@@ -50,6 +53,7 @@ runner.live_info()
 def plotter(learner):
     data = learner.data if learner.data else []
     return hv.Scatter(data)
+
 
 runner.live_plot(plotter=plotter)
 ```

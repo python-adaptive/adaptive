@@ -13,6 +13,7 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
+
 adaptive.notebook_extension()
 
 import numpy as np
@@ -29,6 +30,7 @@ We will use the following function, which is a smooth (linear) background with a
 ```{jupyter-execute}
 offset = random.uniform(-0.5, 0.5)
 
+
 def f(x, offset=offset, wait=True):
     from time import sleep
     from random import random
@@ -36,7 +38,7 @@ def f(x, offset=offset, wait=True):
     a = 0.01
     if wait:
         sleep(random() / 10)
-    return x + a**2 / (a**2 + (x - offset)**2)
+    return x + a**2 / (a**2 + (x - offset) ** 2)
 ```
 
 We start by initializing a 1D “learner”, which will suggest points to evaluate, and adapt its suggestions as more and more points are evaluated.
@@ -79,7 +81,9 @@ We can now compare the adaptive sampling to a homogeneous sampling with the same
 
 ```{jupyter-execute}
 if not runner.task.done():
-    raise RuntimeError('Wait for the runner to finish before executing the cells below!')
+    raise RuntimeError(
+        "Wait for the runner to finish before executing the cells below!"
+    )
 ```
 
 ```{jupyter-execute}
@@ -102,8 +106,9 @@ offsets = [random.uniform(-0.8, 0.8) for _ in range(3)]
 # sharp peaks at random locations in the domain
 def f_levels(x, offsets=offsets):
     a = 0.01
-    return np.array([offset + x + a**2 / (a**2 + (x - offset)**2)
-                        for offset in offsets])
+    return np.array(
+        [offset + x + a**2 / (a**2 + (x - offset) ** 2) for offset in offsets]
+    )
 ```
 
 `adaptive` has you covered!
@@ -126,7 +131,6 @@ runner.live_info()
 
 ```{jupyter-execute}
 runner.live_plot(update_interval=0.1)
-
 ```
 
 ## Looking at curvature
@@ -137,8 +141,11 @@ To do this, you need to tell the learner to look at the curvature by specifying 
 
 ```{jupyter-execute}
 from adaptive.learner.learner1D import (
-    curvature_loss_function, uniform_loss, default_loss
+    curvature_loss_function,
+    uniform_loss,
+    default_loss,
 )
+
 curvature_loss = curvature_loss_function()
 learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=curvature_loss)
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
@@ -164,7 +171,9 @@ We will look at 100 points.
 ```{jupyter-execute}
 def sin_exp(x):
     from math import exp, sin
-    return sin(15 * x) * exp(-x**2*2)
+
+    return sin(15 * x) * exp(-(x**2) * 2)
+
 
 learner_h = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=uniform_loss)
 learner_1 = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=default_loss)
@@ -176,9 +185,11 @@ adaptive.runner.simple(learner_h, goal=npoints_goal)
 adaptive.runner.simple(learner_1, goal=npoints_goal)
 adaptive.runner.simple(learner_2, goal=npoints_goal)
 
-(learner_h.plot().relabel('homogeneous')
-    + learner_1.plot().relabel('euclidean loss')
-    + learner_2.plot().relabel('curvature loss')).cols(2)
+(
+    learner_h.plot().relabel("homogeneous")
+    + learner_1.plot().relabel("euclidean loss")
+    + learner_2.plot().relabel("curvature loss")
+).cols(2)
 ```
 
 More info about using custom loss functions can be found in {ref}`Custom adaptive logic for 1D and 2D`.

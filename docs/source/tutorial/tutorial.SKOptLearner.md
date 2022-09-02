@@ -13,6 +13,7 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
+
 adaptive.notebook_extension()
 
 import holoviews as hv
@@ -28,16 +29,17 @@ Although `SKOptLearner` can optimize functions of arbitrary dimensionality, we c
 
 ```{jupyter-execute}
 def F(x, noise_level=0.1):
-    return (np.sin(5 * x) * (1 - np.tanh(x ** 2))
-            + np.random.randn() * noise_level)
+    return np.sin(5 * x) * (1 - np.tanh(x**2)) + np.random.randn() * noise_level
 ```
 
 ```{jupyter-execute}
-learner = adaptive.SKOptLearner(F, dimensions=[(-2., 2.)],
-                                base_estimator="GP",
-                                acq_func="gp_hedge",
-                                acq_optimizer="lbfgs",
-                                )
+learner = adaptive.SKOptLearner(
+    F,
+    dimensions=[(-2.0, 2.0)],
+    base_estimator="GP",
+    acq_func="gp_hedge",
+    acq_optimizer="lbfgs",
+)
 runner = adaptive.Runner(learner, ntasks=1, goal=lambda l: l.npoints > 40)
 ```
 
@@ -54,7 +56,7 @@ runner.live_info()
 ```{jupyter-execute}
 %%opts Overlay [legend_position='top']
 xs = np.linspace(*learner.space.bounds[0])
-to_learn = hv.Curve((xs, [F(x, 0) for x in xs]), label='to learn')
+to_learn = hv.Curve((xs, [F(x, 0) for x in xs]), label="to learn")
 
-runner.live_plot().relabel('prediction', depth=2) * to_learn
+runner.live_plot().relabel("prediction", depth=2) * to_learn
 ```

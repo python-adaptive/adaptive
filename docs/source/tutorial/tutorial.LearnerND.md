@@ -13,10 +13,12 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
+
 adaptive.notebook_extension()
 
 import holoviews as hv
 import numpy as np
+
 
 def dynamicmap_to_holomap(dm):
     # XXX: change when https://github.com/ioam/holoviews/issues/3085
@@ -33,7 +35,8 @@ Do keep in mind the speed and [effectiveness](https://en.wikipedia.org/wiki/Curs
 def sphere(xyz):
     x, y, z = xyz
     a = 0.4
-    return x + z**2 + np.exp(-(x**2 + y**2 + z**2 - 0.75**2)**2/a**4)
+    return x + z**2 + np.exp(-((x**2 + y**2 + z**2 - 0.75**2) ** 2) / a**4)
+
 
 learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
 runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1e-3)
@@ -53,11 +56,12 @@ Let’s plot 2D slices of the 3D function
 
 ```{jupyter-execute}
 def plot_cut(x, direction, learner=learner):
-    cut_mapping = {'XYZ'.index(direction): x}
+    cut_mapping = {"XYZ".index(direction): x}
     return learner.plot_slice(cut_mapping, n=100)
 
-dm = hv.DynamicMap(plot_cut, kdims=['val', 'direction'])
-dm = dm.redim.values(val=np.linspace(-1, 1, 11), direction=list('XYZ'))
+
+dm = hv.DynamicMap(plot_cut, kdims=["val", "direction"])
+dm = dm.redim.values(val=np.linspace(-1, 1, 11), direction=list("XYZ"))
 
 # In a notebook one would run `dm` however we want a statically generated
 # html, so we use a HoloMap to display it here
@@ -69,13 +73,14 @@ Or we can plot 1D slices
 ```{jupyter-execute}
 %%opts Path {+framewise}
 def plot_cut(x1, x2, directions, learner=learner):
-    cut_mapping = {'xyz'.index(d): x for d, x in zip(directions, [x1, x2])}
+    cut_mapping = {"xyz".index(d): x for d, x in zip(directions, [x1, x2])}
     return learner.plot_slice(cut_mapping)
 
-dm = hv.DynamicMap(plot_cut, kdims=['v1', 'v2', 'directions'])
-dm = dm.redim.values(v1=np.linspace(-1, 1, 6),
-                v2=np.linspace(-1, 1, 6),
-                directions=['xy', 'xz', 'yz'])
+
+dm = hv.DynamicMap(plot_cut, kdims=["v1", "v2", "directions"])
+dm = dm.redim.values(
+    v1=np.linspace(-1, 1, 6), v2=np.linspace(-1, 1, 6), directions=["xy", "xz", "yz"]
+)
 
 # In a notebook one would run `dm` however we want a statically generated
 # html, so we use a HoloMap to display it here
@@ -96,17 +101,14 @@ You could use the following code as an example:
 ```{jupyter-execute}
 import scipy
 
+
 def f(xyz):
     x, y, z = xyz
-    return x**4 + y**4 + z**4 - (x**2+y**2+z**2)**2
+    return x**4 + y**4 + z**4 - (x**2 + y**2 + z**2) ** 2
+
 
 # set the bound points, you can change this to be any shape
-b = [(-1, -1, -1),
-        (-1,  1, -1),
-        (-1, -1,  1),
-        (-1,  1,  1),
-        ( 1,  1, -1),
-        ( 1, -1, -1)]
+b = [(-1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, 1, 1), (1, 1, -1), (1, -1, -1)]
 
 # you have to convert the points into a scipy.spatial.ConvexHull
 hull = scipy.spatial.ConvexHull(b)

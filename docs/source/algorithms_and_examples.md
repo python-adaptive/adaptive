@@ -53,15 +53,20 @@ Adaptively learning a 1D function (the plot below) and live-plotting the process
 
 ```python
 from adaptive import notebook_extension, Runner, Learner1D
+
 notebook_extension()  # enables notebook integration
+
 
 def peak(x, a=0.01):  # function to "learn"
     return x + a**2 / (a**2 + x**2)
 
+
 learner = Learner1D(peak, bounds=(-1, 1))
+
 
 def goal(learner):
     return learner.loss() < 0.01  # continue until loss is small enough
+
 
 runner = Runner(learner, goal)  # start calculation on all CPU cores
 runner.live_info()  # shows a widget with status information
@@ -71,9 +76,11 @@ runner.live_plot()
 ```{jupyter-execute}
 :hide-code:
 
+
 def f(x, offset=0.07357338543088588):
     a = 0.01
-    return x + a**2 / (a**2 + (x - offset)**2)
+    return x + a**2 / (a**2 + (x - offset) ** 2)
+
 
 def plot_loss_interval(learner):
     if learner.npoints >= 2:
@@ -84,19 +91,21 @@ def plot_loss_interval(learner):
         x, y = [], []
     return hv.Scatter((x, y)).opts(style=dict(size=6, color="r"))
 
+
 def plot(learner, npoints):
     adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
     return (learner.plot() * plot_loss_interval(learner))[:, -1.1:1.1]
+
 
 def get_hm(loss_per_interval, N=101):
     learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=loss_per_interval)
     plots = {n: plot(learner, n) for n in range(N)}
     return hv.HoloMap(plots, kdims=["npoints"])
 
-layout = (
-    get_hm(uniform_loss).relabel("homogeneous samping")
-    + get_hm(default_loss).relabel("with adaptive")
-)
+
+layout = get_hm(uniform_loss).relabel("homogeneous samping") + get_hm(
+    default_loss
+).relabel("with adaptive")
 
 layout.opts(plot=dict(toolbar=None))
 ```
@@ -106,11 +115,14 @@ layout.opts(plot=dict(toolbar=None))
 ```{jupyter-execute}
 :hide-code:
 
+
 def ring(xy):
     import numpy as np
+
     x, y = xy
     a = 0.2
-    return x + np.exp(-(x**2 + y**2 - 0.75**2)**2/a**4)
+    return x + np.exp(-((x**2 + y**2 - 0.75**2) ** 2) / a**4)
+
 
 def plot(learner, npoints):
     adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
@@ -118,14 +130,17 @@ def plot(learner, npoints):
     xs = ys = np.linspace(*learner.bounds[0], int(learner.npoints**0.5))
     xys = list(itertools.product(xs, ys))
     learner2.tell_many(xys, map(ring, xys))
-    return (learner2.plot().relabel('homogeneous grid')
-            + learner.plot().relabel('with adaptive')
-            + learner2.plot(tri_alpha=0.5).relabel('homogeneous sampling')
-            + learner.plot(tri_alpha=0.5).relabel('with adaptive')).cols(2)
+    return (
+        learner2.plot().relabel("homogeneous grid")
+        + learner.plot().relabel("with adaptive")
+        + learner2.plot(tri_alpha=0.5).relabel("homogeneous sampling")
+        + learner.plot(tri_alpha=0.5).relabel("with adaptive")
+    ).cols(2)
+
 
 learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
 plots = {n: plot(learner, n) for n in range(4, 1010, 20)}
-hv.HoloMap(plots, kdims=['npoints']).collate()
+hv.HoloMap(plots, kdims=["npoints"]).collate()
 ```
 
 ## {class}`adaptive.AverageLearner`
@@ -133,20 +148,25 @@ hv.HoloMap(plots, kdims=['npoints']).collate()
 ```{jupyter-execute}
 :hide-code:
 
+
 def g(n):
     import random
+
     random.seed(n)
     val = random.gauss(0.5, 0.5)
     return val
 
+
 learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
+
 
 def plot(learner, npoints):
     adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
-    return learner.plot().relabel(f'loss={learner.loss():.2f}')
+    return learner.plot().relabel(f"loss={learner.loss():.2f}")
+
 
 plots = {n: plot(learner, n) for n in range(10, 10000, 200)}
-hv.HoloMap(plots, kdims=['npoints'])
+hv.HoloMap(plots, kdims=["npoints"])
 ```
 
 ## {class}`adaptive.LearnerND`
@@ -154,11 +174,14 @@ hv.HoloMap(plots, kdims=['npoints'])
 ```{jupyter-execute}
 :hide-code:
 
+
 def sphere(xyz):
     import numpy as np
+
     x, y, z = xyz
     a = 0.4
-    return np.exp(-(x**2 + y**2 + z**2 - 0.75**2)**2/a**4)
+    return np.exp(-((x**2 + y**2 + z**2 - 0.75**2) ** 2) / a**4)
+
 
 learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
 adaptive.runner.simple(learner, lambda l: l.npoints == 5000)

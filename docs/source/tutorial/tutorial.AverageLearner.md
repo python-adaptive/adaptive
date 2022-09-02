@@ -13,6 +13,7 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
+
 adaptive.notebook_extension()
 ```
 
@@ -25,6 +26,7 @@ The function passed to the learner must formally take a single parameter, which 
 def g(n):
     import random
     from time import sleep
+
     sleep(random.random() / 1000)
     # Properly save and restore the RNG state
     state = random.getstate()

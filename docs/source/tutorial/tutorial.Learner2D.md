@@ -13,6 +13,7 @@ The complete source code of this tutorial can be found in {jupyter-download:note
 :hide-code:
 
 import adaptive
+
 adaptive.notebook_extension()
 
 import numpy as np
@@ -27,11 +28,13 @@ def ring(xy, wait=True):
     import numpy as np
     from time import sleep
     from random import random
+
     if wait:
-        sleep(random()/10)
+        sleep(random() / 10)
     x, y = xy
     a = 0.2
-    return x + np.exp(-(x**2 + y**2 - 0.75**2)**2/a**4)
+    return x + np.exp(-((x**2 + y**2 - 0.75**2) ** 2) / a**4)
+
 
 learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
 ```
@@ -55,6 +58,7 @@ def plot(learner):
     plot = learner.plot(tri_alpha=0.2)
     return (plot.Image + plot.EdgePaths.I + plot).cols(2)
 
+
 runner.live_plot(plotter=plot, update_interval=0.1)
 ```
 
@@ -70,6 +74,10 @@ xs, ys = [np.linspace(*bounds, n) for bounds in learner.bounds]
 xys = list(itertools.product(xs, ys))
 learner2.tell_many(xys, map(partial(ring, wait=False), xys))
 
-(learner2.plot(n).relabel('Homogeneous grid') + learner.plot().relabel('With adaptive') +
-    learner2.plot(n, tri_alpha=0.4) + learner.plot(tri_alpha=0.4)).cols(2)
+(
+    learner2.plot(n).relabel("Homogeneous grid")
+    + learner.plot().relabel("With adaptive")
+    + learner2.plot(n, tri_alpha=0.4)
+    + learner.plot(tri_alpha=0.4)
+).cols(2)
 ```

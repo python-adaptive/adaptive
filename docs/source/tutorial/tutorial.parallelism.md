@@ -115,6 +115,7 @@ This means you can even learn closures, lambdas, or other functions that are not
 
 ```python
 from loky import get_reusable_executor
+
 ex = get_reusable_executor()
 
 f = lambda x: x

@@ -79,10 +79,13 @@ Adaptively learning a 1D function (the `gif` below) and live-plotting the proces
 .. code:: python
 
     from adaptive import notebook_extension, Runner, Learner1D
+
     notebook_extension()
+
 
     def peak(x, a=0.01):
         return x + a**2 / (a**2 + x**2)
+
 
     learner = Learner1D(peak, bounds=(-1, 1))
     runner = Runner(learner, goal=lambda l: l.loss() < 0.01)
