@@ -36,18 +36,17 @@ with built-in support for
 Here are some examples of how Adaptive samples vs. homogeneous sampling. Click
 on the *Play* {fa}`play` button or move the sliders.
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    import itertools
-    import adaptive
-    from adaptive.learner.learner1D import uniform_loss, default_loss
-    import holoviews as hv
-    import numpy as np
+import itertools
+import adaptive
+from adaptive.learner.learner1D import uniform_loss, default_loss
+import holoviews as hv
+import numpy as np
 
-    adaptive.notebook_extension()
-    hv.output(holomap="scrubber")
+adaptive.notebook_extension()
+hv.output(holomap="scrubber")
 ```
 
 ## `adaptive.Learner1D`
@@ -71,119 +70,115 @@ runner.live_info()  # shows a widget with status information
 runner.live_plot()
 ```
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    def f(x, offset=0.07357338543088588):
-        a = 0.01
-        return x + a**2 / (a**2 + (x - offset)**2)
+def f(x, offset=0.07357338543088588):
+    a = 0.01
+    return x + a**2 / (a**2 + (x - offset)**2)
 
-    def plot_loss_interval(learner):
-        if learner.npoints >= 2:
-            x_0, x_1 = max(learner.losses, key=learner.losses.get)
-            y_0, y_1 = learner.data[x_0], learner.data[x_1]
-            x, y = [x_0, x_1], [y_0, y_1]
-        else:
-            x, y = [], []
-        return hv.Scatter((x, y)).opts(style=dict(size=6, color="r"))
+def plot_loss_interval(learner):
+    if learner.npoints >= 2:
+        x_0, x_1 = max(learner.losses, key=learner.losses.get)
+        y_0, y_1 = learner.data[x_0], learner.data[x_1]
+        x, y = [x_0, x_1], [y_0, y_1]
+    else:
+        x, y = [], []
+    return hv.Scatter((x, y)).opts(style=dict(size=6, color="r"))
 
-    def plot(learner, npoints):
-        adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
-        return (learner.plot() * plot_loss_interval(learner))[:, -1.1:1.1]
+def plot(learner, npoints):
+    adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
+    return (learner.plot() * plot_loss_interval(learner))[:, -1.1:1.1]
 
-    def get_hm(loss_per_interval, N=101):
-        learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=loss_per_interval)
-        plots = {n: plot(learner, n) for n in range(N)}
-        return hv.HoloMap(plots, kdims=["npoints"])
+def get_hm(loss_per_interval, N=101):
+    learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=loss_per_interval)
+    plots = {n: plot(learner, n) for n in range(N)}
+    return hv.HoloMap(plots, kdims=["npoints"])
 
-    layout = (
-        get_hm(uniform_loss).relabel("homogeneous samping")
-        + get_hm(default_loss).relabel("with adaptive")
-    )
+layout = (
+    get_hm(uniform_loss).relabel("homogeneous samping")
+    + get_hm(default_loss).relabel("with adaptive")
+)
 
-    layout.opts(plot=dict(toolbar=None))
+layout.opts(plot=dict(toolbar=None))
 ```
 
 ## `adaptive.Learner2D`
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    def ring(xy):
-        import numpy as np
-        x, y = xy
-        a = 0.2
-        return x + np.exp(-(x**2 + y**2 - 0.75**2)**2/a**4)
+def ring(xy):
+    import numpy as np
+    x, y = xy
+    a = 0.2
+    return x + np.exp(-(x**2 + y**2 - 0.75**2)**2/a**4)
 
-    def plot(learner, npoints):
-        adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
-        learner2 = adaptive.Learner2D(ring, bounds=learner.bounds)
-        xs = ys = np.linspace(*learner.bounds[0], int(learner.npoints**0.5))
-        xys = list(itertools.product(xs, ys))
-        learner2.tell_many(xys, map(ring, xys))
-        return (learner2.plot().relabel('homogeneous grid')
-                + learner.plot().relabel('with adaptive')
-                + learner2.plot(tri_alpha=0.5).relabel('homogeneous sampling')
-                + learner.plot(tri_alpha=0.5).relabel('with adaptive')).cols(2)
+def plot(learner, npoints):
+    adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
+    learner2 = adaptive.Learner2D(ring, bounds=learner.bounds)
+    xs = ys = np.linspace(*learner.bounds[0], int(learner.npoints**0.5))
+    xys = list(itertools.product(xs, ys))
+    learner2.tell_many(xys, map(ring, xys))
+    return (learner2.plot().relabel('homogeneous grid')
+            + learner.plot().relabel('with adaptive')
+            + learner2.plot(tri_alpha=0.5).relabel('homogeneous sampling')
+            + learner.plot(tri_alpha=0.5).relabel('with adaptive')).cols(2)
 
-    learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
-    plots = {n: plot(learner, n) for n in range(4, 1010, 20)}
-    hv.HoloMap(plots, kdims=['npoints']).collate()
+learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
+plots = {n: plot(learner, n) for n in range(4, 1010, 20)}
+hv.HoloMap(plots, kdims=['npoints']).collate()
 ```
 
 ## `adaptive.AverageLearner`
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    def g(n):
-        import random
-        random.seed(n)
-        val = random.gauss(0.5, 0.5)
-        return val
+def g(n):
+    import random
+    random.seed(n)
+    val = random.gauss(0.5, 0.5)
+    return val
 
-    learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
+learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
 
-    def plot(learner, npoints):
-        adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
-        return learner.plot().relabel(f'loss={learner.loss():.2f}')
+def plot(learner, npoints):
+    adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
+    return learner.plot().relabel(f'loss={learner.loss():.2f}')
 
-    plots = {n: plot(learner, n) for n in range(10, 10000, 200)}
-    hv.HoloMap(plots, kdims=['npoints'])
+plots = {n: plot(learner, n) for n in range(10, 10000, 200)}
+hv.HoloMap(plots, kdims=['npoints'])
 ```
 
 ## `adaptive.LearnerND`
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    def sphere(xyz):
-        import numpy as np
-        x, y, z = xyz
-        a = 0.4
-        return np.exp(-(x**2 + y**2 + z**2 - 0.75**2)**2/a**4)
+def sphere(xyz):
+    import numpy as np
+    x, y, z = xyz
+    a = 0.4
+    return np.exp(-(x**2 + y**2 + z**2 - 0.75**2)**2/a**4)
 
-    learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
-    adaptive.runner.simple(learner, lambda l: l.npoints == 5000)
+learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
+adaptive.runner.simple(learner, lambda l: l.npoints == 5000)
 
-    fig = learner.plot_3D(return_fig=True)
+fig = learner.plot_3D(return_fig=True)
 
-    # Remove a slice from the plot to show the inside of the sphere
-    scatter = fig.data[0]
-    coords_col = [
-        (x, y, z, color)
-        for x, y, z, color in zip(
-            scatter["x"], scatter["y"], scatter["z"], scatter.marker["color"]
-        )
-        if not (x > 0 and y > 0)
-    ]
-    scatter["x"], scatter["y"], scatter["z"], scatter.marker["color"] = zip(*coords_col)
+# Remove a slice from the plot to show the inside of the sphere
+scatter = fig.data[0]
+coords_col = [
+    (x, y, z, color)
+    for x, y, z, color in zip(
+        scatter["x"], scatter["y"], scatter["z"], scatter.marker["color"]
+    )
+    if not (x > 0 and y > 0)
+]
+scatter["x"], scatter["y"], scatter["z"], scatter.marker["color"] = zip(*coords_col)
 
-    fig
+fig
 ```
 
 see more in the {ref}`Tutorial Adaptive`.

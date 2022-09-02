@@ -1,7 +1,6 @@
-```{eval-rst}
-.. jupyter-execute:: ../logo_animated.py
-    :hide-code:
-    :hide-output:
+```{jupyter-execute} ../logo_animated.py
+:hide-code:
+:hide-output:
 ```
 
 ```{raw} html

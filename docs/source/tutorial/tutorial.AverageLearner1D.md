@@ -11,16 +11,15 @@ The complete source code of this tutorial can be found in
 {jupyter-download:notebook}`tutorial.AverageLearner1D`
 :::
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    import adaptive
-    adaptive.notebook_extension()
+import adaptive
+adaptive.notebook_extension()
 
-    import holoviews as hv
-    import numpy as np
-    from functools import partial
+import holoviews as hv
+import numpy as np
+from functools import partial
 ```
 
 ## General use
@@ -28,34 +27,28 @@ The complete source code of this tutorial can be found in
 First, we define the (noisy) function to be sampled. Note that the parameter
 `sigma` corresponds to the standard deviation of the Gaussian noise.
 
-```{eval-rst}
-.. jupyter-execute::
-
-    def noisy_peak(seed_x, sigma=0, peak_width=0.05, offset=-0.5):
-        seed, x = seed_x  # tuple with seed and `x` value
-        y = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
-        rng = np.random.RandomState(seed)
-        noise = rng.normal(scale=sigma)
-        return y + noise
+```{jupyter-execute}
+def noisy_peak(seed_x, sigma=0, peak_width=0.05, offset=-0.5):
+    seed, x = seed_x  # tuple with seed and `x` value
+    y = x ** 3 - x + 3 * peak_width ** 2 / (peak_width ** 2 + (x - offset) ** 2)
+    rng = np.random.RandomState(seed)
+    noise = rng.normal(scale=sigma)
+    return y + noise
 ```
 
 This is how the function looks in the absence of noise:
 
-```{eval-rst}
-.. jupyter-execute::
-
-    xs = np.linspace(-2, 2, 500)
-    ys = [noisy_peak((seed, x), sigma=0) for seed, x in enumerate(xs)]
-    hv.Path((xs, ys))
+```{jupyter-execute}
+xs = np.linspace(-2, 2, 500)
+ys = [noisy_peak((seed, x), sigma=0) for seed, x in enumerate(xs)]
+hv.Path((xs, ys))
 ```
 
 And an example of a single realization of the noisy function:
 
-```{eval-rst}
-.. jupyter-execute::
-
-    ys = [noisy_peak((seed, x), sigma=1) for seed, x in enumerate(xs)]
-    hv.Path((xs, ys))
+```{jupyter-execute}
+ys = [noisy_peak((seed, x), sigma=1) for seed, x in enumerate(xs)]
+hv.Path((xs, ys))
 ```
 
 To obtain an estimate of the mean value of the function at each point `x`, we
@@ -65,39 +58,32 @@ point (to improve the estimate of the mean at that point) or at a new one.
 
 We start by initializing a 1D average learner:
 
-```{eval-rst}
-.. jupyter-execute::
-
-    learner = adaptive.AverageLearner1D(partial(noisy_peak, sigma=1), bounds=(-2, 2))
+```{jupyter-execute}
+learner = adaptive.AverageLearner1D(partial(noisy_peak, sigma=1), bounds=(-2, 2))
 ```
 
 As with other types of learners, we need to initialize a runner with a certain
 goal to run our learner. In this case, we set 10000 samples as the goal (the
 second condition ensures that we have at least 20 samples at each point):
 
-```{eval-rst}
-.. jupyter-execute::
+```{jupyter-execute}
+def goal(nsamples):
+    def _goal(learner):
+        return learner.nsamples >= nsamples and learner.min_samples_per_point >= 20
+    return _goal
 
-    def goal(nsamples):
-        def _goal(learner):
-            return learner.nsamples >= nsamples and learner.min_samples_per_point >= 20
-        return _goal
-
-    runner = adaptive.Runner(learner, goal=goal(10_000))
+runner = adaptive.Runner(learner, goal=goal(10_000))
 ```
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    await runner.task  # This is not needed in a notebook environment!
+await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{eval-rst}
-.. jupyter-execute::
-
-    runner.live_info()
-    runner.live_plot(update_interval=0.1)
+```{jupyter-execute}
+runner.live_info()
+runner.live_plot(update_interval=0.1)
 ```
 
 ## Fine tuning
@@ -117,50 +103,40 @@ As an example, assume that we wanted to resample the points from the previous
 learner. We can decrease `delta` to 0.1 and set `min_error` to 0.05 if we do
 not require accuracy beyond this value:
 
-```{eval-rst}
-.. jupyter-execute::
-
-    learner.delta = 0.1
-    learner.min_error = 0.05
-    runner = adaptive.Runner(learner, goal=goal(20_000))
+```{jupyter-execute}
+learner.delta = 0.1
+learner.min_error = 0.05
+runner = adaptive.Runner(learner, goal=goal(20_000))
 ```
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    await runner.task  # This is not needed in a notebook environment!
+await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{eval-rst}
-.. jupyter-execute::
-
-    runner.live_info()
-    runner.live_plot(update_interval=0.1)
+```{jupyter-execute}
+runner.live_info()
+runner.live_plot(update_interval=0.1)
 ```
 
 On the contrary, if we want to push forward the "exploration", we can set a larger
 `delta` and limit the maximum number of samples taken at each point:
 
-```{eval-rst}
-.. jupyter-execute::
+```{jupyter-execute}
+learner.delta = 0.3
+learner.max_samples = 1000
 
-    learner.delta = 0.3
-    learner.max_samples = 1000
-
-    runner = adaptive.Runner(learner, goal=goal(25_000))
+runner = adaptive.Runner(learner, goal=goal(25_000))
 ```
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    await runner.task  # This is not needed in a notebook environment!
+await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{eval-rst}
-.. jupyter-execute::
-
-    runner.live_info()
-    runner.live_plot(update_interval=0.1)
+```{jupyter-execute}
+runner.live_info()
+runner.live_plot(update_interval=0.1)
 ```

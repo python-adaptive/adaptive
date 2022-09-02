@@ -11,16 +11,15 @@ The complete source code of this tutorial can be found in
 {jupyter-download:notebook}`tutorial.custom-loss`
 :::
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    import adaptive
-    adaptive.notebook_extension()
+import adaptive
+adaptive.notebook_extension()
 
-    # Import modules that are used in multiple cells
-    import numpy as np
-    from functools import partial
+# Import modules that are used in multiple cells
+import numpy as np
+from functools import partial
 
 ```
 
@@ -65,64 +64,55 @@ that returns the loss function with certain settings.
 Say we want to properly sample a function that contains divergences. A
 simple (but naive) strategy is to *uniformly* sample the domain:
 
-```{eval-rst}
-.. jupyter-execute::
+```{jupyter-execute}
+def uniform_sampling_1d(xs, ys):
+    dx = xs[1] - xs[0]
+    return dx
 
-    def uniform_sampling_1d(xs, ys):
-        dx = xs[1] - xs[0]
-        return dx
+def f_divergent_1d(x):
+    if x == 0:
+        return np.inf
+    return 1 / x**2
 
-    def f_divergent_1d(x):
-        if x == 0:
-            return np.inf
-        return 1 / x**2
-
-    learner = adaptive.Learner1D(f_divergent_1d, (-1, 1), loss_per_interval=uniform_sampling_1d)
-    runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
-    learner.plot().select(y=(0, 10000))
+learner = adaptive.Learner1D(f_divergent_1d, (-1, 1), loss_per_interval=uniform_sampling_1d)
+runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
+learner.plot().select(y=(0, 10000))
 ```
 
-```{eval-rst}
-.. jupyter-execute::
+```{jupyter-execute}
+%%opts EdgePaths (color='w') Image [logz=True colorbar=True]
 
-    %%opts EdgePaths (color='w') Image [logz=True colorbar=True]
+from adaptive.runner import SequentialExecutor
 
-    from adaptive.runner import SequentialExecutor
+def uniform_sampling_2d(ip):
+    from adaptive.learner.learner2D import areas
+    A = areas(ip)
+    return np.sqrt(A)
 
-    def uniform_sampling_2d(ip):
-        from adaptive.learner.learner2D import areas
-        A = areas(ip)
-        return np.sqrt(A)
+def f_divergent_2d(xy):
+    x, y = xy
+    return 1 / (x**2 + y**2)
 
-    def f_divergent_2d(xy):
-        x, y = xy
-        return 1 / (x**2 + y**2)
+learner = adaptive.Learner2D(f_divergent_2d, [(-1, 1), (-1, 1)], loss_per_triangle=uniform_sampling_2d)
 
-    learner = adaptive.Learner2D(f_divergent_2d, [(-1, 1), (-1, 1)], loss_per_triangle=uniform_sampling_2d)
-
-    # this takes a while, so use the async Runner so we know *something* is happening
-    runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.02)
+# this takes a while, so use the async Runner so we know *something* is happening
+runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.02)
 ```
 
-```{eval-rst}
-.. jupyter-execute::
-    :hide-code:
+```{jupyter-execute}
+:hide-code:
 
-    await runner.task  # This is not needed in a notebook environment!
+await runner.task  # This is not needed in a notebook environment!
 ```
 
-```{eval-rst}
-.. jupyter-execute::
-
-    runner.live_info()
+```{jupyter-execute}
+runner.live_info()
 ```
 
-```{eval-rst}
-.. jupyter-execute::
-
-    plotter = lambda l: l.plot(tri_alpha=0.3).relabel(
-            '1 / (x^2 + y^2) in log scale')
-    runner.live_plot(update_interval=0.2, plotter=plotter)
+```{jupyter-execute}
+plotter = lambda l: l.plot(tri_alpha=0.3).relabel(
+        '1 / (x^2 + y^2) in log scale')
+runner.live_plot(update_interval=0.2, plotter=plotter)
 ```
 
 The uniform sampling strategy is a common case to benchmark against, so
@@ -146,32 +136,30 @@ subdomains are appropriately small it will prioritise places where the
 function is very nonlinear, but will ignore subdomains that are too
 small (0 loss).
 
-```{eval-rst}
-.. jupyter-execute::
+```{jupyter-execute}
+%%opts EdgePaths (color='w') Image [logz=True colorbar=True]
 
-    %%opts EdgePaths (color='w') Image [logz=True colorbar=True]
+def resolution_loss_function(min_distance=0, max_distance=1):
+    """min_distance and max_distance should be in between 0 and 1
+    because the total area is normalized to 1."""
+    def resolution_loss(ip):
+        from adaptive.learner.learner2D import default_loss, areas
+        loss = default_loss(ip)
 
-    def resolution_loss_function(min_distance=0, max_distance=1):
-        """min_distance and max_distance should be in between 0 and 1
-        because the total area is normalized to 1."""
-        def resolution_loss(ip):
-            from adaptive.learner.learner2D import default_loss, areas
-            loss = default_loss(ip)
+        A = areas(ip)
+        # Setting areas with a small area to zero such that they won't be chosen again
+        loss[A < min_distance**2] = 0
 
-            A = areas(ip)
-            # Setting areas with a small area to zero such that they won't be chosen again
-            loss[A < min_distance**2] = 0
+        # Setting triangles that have a size larger than max_distance to infinite loss
+        loss[A > max_distance**2] = np.inf
 
-            # Setting triangles that have a size larger than max_distance to infinite loss
-            loss[A > max_distance**2] = np.inf
+        return loss
+    return resolution_loss
+loss = resolution_loss_function(min_distance=0.01)
 
-            return loss
-        return resolution_loss
-    loss = resolution_loss_function(min_distance=0.01)
-
-    learner = adaptive.Learner2D(f_divergent_2d, [(-1, 1), (-1, 1)], loss_per_triangle=loss)
-    runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.02)
-    learner.plot(tri_alpha=0.3).relabel('1 / (x^2 + y^2) in log scale')
+learner = adaptive.Learner2D(f_divergent_2d, [(-1, 1), (-1, 1)], loss_per_triangle=loss)
+runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.02)
+learner.plot(tri_alpha=0.3).relabel('1 / (x^2 + y^2) in log scale')
 ```
 
 Awesome! We zoom in on the singularity, but not at the expense of
