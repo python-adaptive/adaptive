@@ -1,4 +1,4 @@
-# Tutorial `~adaptive.Learner2D`
+# Tutorial {class}`~adaptive.Learner2D`
 
 ```{note}
 Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
@@ -20,8 +20,7 @@ from functools import partial
 adaptive.notebook_extension()
 ```
 
-Besides 1D functions, we can also learn 2D functions:
-$\ f: ℝ^2 → ℝ$.
+Besides 1D functions, we can also learn 2D functions: $f: ℝ^2 → ℝ$.
 
 ```{jupyter-execute}
 def ring(xy, wait=True):

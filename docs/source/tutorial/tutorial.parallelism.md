@@ -5,7 +5,7 @@ Often you will want to evaluate the function on some remote computing resources.
 
 ## `concurrent.futures`
 
-On Unix-like systems by default {class}`adaptive.Runner` creates a `~concurrent.futures.ProcessPoolExecutor`, but you can also pass one explicitly e.g. to limit the number of workers:
+On Unix-like systems by default {class}`adaptive.Runner` creates a {class}`~concurrent.futures.ProcessPoolExecutor`, but you can also pass one explicitly e.g. to limit the number of workers:
 
 ```python
 from concurrent.futures import ProcessPoolExecutor
@@ -109,7 +109,7 @@ srun -n $SLURM_NTASKS --mpi=pmi2 ~/miniconda3/envs/py37_min/bin/python -m mpi4py
 
 ## `loky.get_reusable_executor`
 
-This executor is basically a powered-up version of `~concurrent.futures.ProcessPoolExecutor`, check its [documentation](https://loky.readthedocs.io/).
+This executor is basically a powered-up version of {class}`~concurrent.futures.ProcessPoolExecutor`, check its [documentation](https://loky.readthedocs.io/).
 Among other things, it allows to *reuse* the executor and uses `cloudpickle` for serialization.
 This means you can even learn closures, lambdas, or other functions that are not picklable with `pickle`.
 

@@ -1,4 +1,4 @@
-# Tutorial `~adaptive.LearnerND`
+# Tutorial {class}`~adaptive.LearnerND`
 
 ```{note}
 Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
@@ -27,7 +27,7 @@ def dynamicmap_to_holomap(dm):
     return hv.HoloMap(dm.select(**vals))
 ```
 
-Besides 1 and 2 dimensional functions, we can also learn N-D functions: $\ f: ℝ^N → ℝ^M, N \ge 2, M \ge 1$.
+Besides 1 and 2 dimensional functions, we can also learn N-D functions: $f: ℝ^N → ℝ^M, N \ge 2, M \ge 1$.
 
 Do keep in mind the speed and [effectiveness](https://en.wikipedia.org/wiki/Curse_of_dimensionality) of the learner drops quickly with increasing number of dimensions.
 

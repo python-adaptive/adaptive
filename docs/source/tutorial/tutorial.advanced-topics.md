@@ -72,7 +72,7 @@ control = adaptive.Learner1D(f, bounds=(-1, 1))
 control.copy_from(learner)
 ```
 
-One can also periodically save the learner while running in a `~adaptive.Runner`. Use it like:
+One can also periodically save the learner while running in a {class}`~adaptive.Runner`. Use it like:
 
 ```{jupyter-execute}
 def slow_f(x):
@@ -315,7 +315,7 @@ learner.plot().Scatter.I.opts(style=dict(size=6)) * reconstructed_learner.plot()
 
 ## Adding coroutines
 
-In the following example we'll add a `~asyncio.Task` that times the runner.
+In the following example we'll add a {class}`~asyncio.Task` that times the runner.
 This is *only* for demonstration purposes because one can simply check `runner.elapsed_time()` or use the `runner.live_info()` widget to see the time since the runner has started.
 
 So let's get on with the example. To time the runner you **cannot** simply use
@@ -365,7 +365,7 @@ timer.result()
 
 Runners can also be used from a Python script independently of the notebook.
 
-The simplest way to accomplish this is simply to use the `~adaptive.BlockingRunner`:
+The simplest way to accomplish this is simply to use the {class}`~adaptive.BlockingRunner`:
 
 ```python
 import adaptive

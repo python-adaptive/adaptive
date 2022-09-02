@@ -1,4 +1,4 @@
-# Tutorial `~adaptive.Learner1D`
+# Tutorial {class}`~adaptive.Learner1D`
 
 ```{note}
 Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
@@ -23,7 +23,7 @@ import random
 
 ## scalar output: `f:ℝ → ℝ`
 
-We start with the most common use-case: sampling a 1D function $\ f: ℝ → ℝ$.
+We start with the most common use-case: sampling a 1D function `f: ℝ → ℝ`.
 
 We will use the following function, which is a smooth (linear) background with a sharp peak at a random location:
 
@@ -49,10 +49,10 @@ learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
 Next we create a “runner” that will request points from the learner and evaluate ‘f’ on them.
 
-By default on Unix-like systems the runner will evaluate the points in parallel using local processes `concurrent.futures.ProcessPoolExecutor`.
+By default on Unix-like systems the runner will evaluate the points in parallel using local processes {class}`concurrent.futures.ProcessPoolExecutor`.
 
-On Windows systems the runner will use a `loky.get_reusable_executor`.
-A `~concurrent.futures.ProcessPoolExecutor` cannot be used on Windows for reasons.
+On Windows systems the runner will use a {class}`loky.get_reusable_executor`.
+A {class}`~concurrent.futures.ProcessPoolExecutor` cannot be used on Windows for reasons.
 
 ```{jupyter-execute}
 # The end condition is when the "loss" is less than 0.1. In the context of the
