@@ -10,35 +10,23 @@
 
 .. include:: logo.rst
 
-``adaptive`` is an open-source Python library designed to
-make adaptive parallel function evaluation simple. With ``adaptive`` you
-just supply a function with its bounds, and it will be evaluated at the
-“best” points in parameter space, rather than unnecessarily computing *all* points on a dense grid.
-With just a few lines of code you can evaluate functions on a computing cluster,
-live-plot the data as it returns, and fine-tune the adaptive sampling algorithm.
+``adaptive`` is an open-source Python library designed to make adaptive parallel function evaluation simple. With ``adaptive`` you just supply a function with its bounds, and it will be evaluated at the “best” points in parameter space, rather than unnecessarily computing *all* points on a dense grid.
+With just a few lines of code you can evaluate functions on a computing cluster, live-plot the data as it returns, and fine-tune the adaptive sampling algorithm.
 
-``adaptive`` shines on computations where each evaluation of the function
-takes *at least* ≈100ms due to the overhead of picking potentially interesting points.
+``adaptive`` shines on computations where each evaluation of the function takes *at least* ≈100ms due to the overhead of picking potentially interesting points.
 
-Run the ``adaptive`` example notebook `live on
-Binder <https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb>`_
-to see examples of how to use ``adaptive`` or visit the
-`tutorial on Read the Docs <https://adaptive.readthedocs.io/en/latest/tutorial/tutorial.html>`__.
+Run the ``adaptive`` example notebook `live on Binder <https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb>`_ to see examples of how to use ``adaptive`` or visit the `tutorial on Read the Docs <https://adaptive.readthedocs.io/en/latest/tutorial/tutorial.html>`__.
 
 .. summary-end
 
 Implemented algorithms
 ----------------------
 
-The core concept in ``adaptive`` is that of a *learner*. A *learner*
-samples a function at the best places in its parameter space to get
-maximum “information” about the function. As it evaluates the function
-at more and more points in the parameter space, it gets a better idea of
-where the best places are to sample next.
+The core concept in ``adaptive`` is that of a *learner*.
+A *learner* samples a function at the best places in its parameter space to get maximum “information” about the function.
+As it evaluates the function at more and more points in the parameter space, it gets a better idea of where the best places are to sample next.
 
-Of course, what qualifies as the “best places” will depend on your
-application domain! ``adaptive`` makes some reasonable default choices,
-but the details of the adaptive sampling are completely customizable.
+Of course, what qualifies as the “best places” will depend on your application domain! ``adaptive`` makes some reasonable default choices, but the details of the adaptive sampling are completely customizable.
 
 The following learners are implemented:
 
@@ -47,24 +35,17 @@ The following learners are implemented:
 - ``Learner1D``, for 1D functions ``f: ℝ → ℝ^N``,
 - ``Learner2D``, for 2D functions ``f: ℝ^2 → ℝ^N``,
 - ``LearnerND``, for ND functions ``f: ℝ^N → ℝ^M``,
-- ``AverageLearner``, for random variables where you want to
-  average the result over many evaluations,
-- ``AverageLearner1D``, for stochastic 1D functions where you want to
-  estimate the mean value of the function at each point,
-- ``IntegratorLearner``, for
-  when you want to intergrate a 1D function ``f: ℝ → ℝ``.
-- ``BalancingLearner``, for when you want to run several learners at once,
-  selecting the “best” one each time you get more points.
+- ``AverageLearner``, for random variables where you want to average the result over many evaluations,
+- ``AverageLearner1D``, for stochastic 1D functions where you want to estimate the mean value of the function at each point,
+- ``IntegratorLearner``, for when you want to intergrate a 1D function ``f: ℝ → ℝ``.
+- ``BalancingLearner``, for when you want to run several learners at once, selecting the “best” one each time you get more points.
 
 Meta-learners (to be used with other learners):
 
-- ``BalancingLearner``, for when you want to run several learners at once,
-  selecting the “best” one each time you get more points,
+- ``BalancingLearner``, for when you want to run several learners at once, selecting the “best” one each time you get more points,
 - ``DataSaver``, for when your function doesn't just return a scalar or a vector.
 
-In addition to the learners, ``adaptive`` also provides primitives for
-running the sampling across several cores and even several machines,
-with built-in support for
+In addition to the learners, ``adaptive`` also provides primitives for running the sampling across several cores and even several machines, with built-in support for
 `concurrent.futures <https://docs.python.org/3/library/concurrent.futures.html>`_,
 `mpi4py <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html>`_,
 `loky <https://loky.readthedocs.io/en/stable/>`_,
@@ -102,9 +83,7 @@ Adaptively learning a 1D function (the `gif` below) and live-plotting the proces
 Installation
 ------------
 
-``adaptive`` works with Python 3.7 and higher on Linux, Windows, or Mac,
-and provides optional extensions for working with the Jupyter/IPython
-Notebook.
+``adaptive`` works with Python 3.7 and higher on Linux, Windows, or Mac, and provides optional extensions for working with the Jupyter/IPython Notebook.
 
 The recommended way to install adaptive is using ``conda``:
 
@@ -116,10 +95,9 @@ The recommended way to install adaptive is using ``conda``:
 
 .. code:: bash
 
-    pip install adaptive[notebook]
+    pip install "adaptive[notebook]"
 
-The ``[notebook]`` above will also install the optional dependencies for
-running ``adaptive`` inside a Jupyter notebook.
+The ``[notebook]`` above will also install the optional dependencies for running ``adaptive`` inside a Jupyter notebook.
 
 To use Adaptive in Jupyterlab, you need to install the following labextensions.
 
@@ -131,20 +109,17 @@ To use Adaptive in Jupyterlab, you need to install the following labextensions.
 Development
 -----------
 
-Clone the repository and run ``setup.py develop`` to add a link to the
-cloned repo into your Python path:
+Clone the repository and run ``pip install -e ".[notebook,testing,other]"`` to add a link to the cloned repo into your Python path:
 
 .. code:: bash
 
     git clone git@github.com:python-adaptive/adaptive.git
     cd adaptive
-    python3 setup.py develop
+    pip install -e ".[notebook,testing,other]"
 
-We highly recommend using a Conda environment or a virtualenv to manage
-the versions of your installed packages while working on ``adaptive``.
+We highly recommend using a Conda environment or a virtualenv to manage the versions of your installed packages while working on ``adaptive``.
 
-In order to not pollute the history with the output of the notebooks,
-please setup the git filter by executing
+In order to not pollute the history with the output of the notebooks, please setup the git filter by executing
 
 .. code:: bash
 
@@ -190,12 +165,7 @@ We would like to give credits to the following people:
 
 .. credits-end
 
-For general discussion, we have a `Gitter chat
-channel <https://gitter.im/python-adaptive/adaptive>`_. If you find any
-bugs or have any feature suggestions please file a GitHub
-`issue <https://github.com/python-adaptive/adaptive/issues/new>`_
-or submit a `pull
-request <https://github.com/python-adaptive/adaptive/pulls>`_.
+For general discussion, we have a `Gitter chat channel <https://gitter.im/python-adaptive/adaptive>`_. If you find any bugs or have any feature suggestions please file a GitHub `issue <https://github.com/python-adaptive/adaptive/issues/new>`_ or submit a `pull request <https://github.com/python-adaptive/adaptive/pulls>`_.
 
 .. references-start
 .. |logo| image:: https://adaptive.readthedocs.io/en/latest/_static/logo.png
