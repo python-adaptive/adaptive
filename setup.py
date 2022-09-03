@@ -25,7 +25,7 @@ version, cmdclass = get_version_and_cmdclass("adaptive")
 
 
 install_requires = [
-    "scipy >= 1.8",
+    "scipy",
     "sortedcollections >= 1.1",
     "sortedcontainers >= 2.0",
     "cloudpickle",
