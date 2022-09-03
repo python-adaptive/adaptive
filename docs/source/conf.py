@@ -67,6 +67,7 @@ html_js_files = [
     "https://cdn.bokeh.org/bokeh/release/bokeh-tables-2.4.0.min.js",
     "https://cdn.bokeh.org/bokeh/release/bokeh-gl-2.4.0.min.js",
     "https://cdn.bokeh.org/bokeh/release/bokeh-mathjax-2.4.0.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js",
 ]
 html_logo = "_static/logo_docs.png"
 
