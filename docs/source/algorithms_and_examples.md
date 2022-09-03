@@ -8,6 +8,8 @@ jupytext:
     format_name: myst
     format_version: '0.13'
     jupytext_version: 1.13.8
+execution:
+  timeout: 300
 ---
 
 ```{include} ../../README.md
