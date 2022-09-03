@@ -134,7 +134,7 @@ def setup(nseconds=15):
     return npoints, learner, data, rounded_corners, fig, ax
 
 
-def animate_mp4(fname="source/_static/logo_docs.mp4"):
+def animate_mp4(fname="source/_static/logo_docs.mp4", nseconds=15):
     npoints, learner, data, rounded_corners, fig, ax = setup()
     artists = [
         get_new_artists(n, learner, data, rounded_corners, ax) for n in tqdm(npoints)
@@ -143,36 +143,40 @@ def animate_mp4(fname="source/_static/logo_docs.mp4"):
     ani.save(fname, writer=FFMpegWriter(fps=24))
 
 
-def animate_png(folder="source/_static/logo", nseconds=2):
+def animate_png(folder="/tmp", nseconds=15):
     npoints, learner, data, rounded_corners, fig, ax = setup(nseconds)
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
     fnames = []
+    ims = []
     for n in tqdm(npoints):
         fname = folder / f"logo_docs_{n:03d}.png"
         fnames.append(fname)
-        npoints, learner, data, _, fig, ax = setup(nseconds=2)
+        npoints, learner, data, _, fig, ax = setup(nseconds)
         get_new_artists(n, learner, data, None, ax)
         fig.savefig(fname, transparent=True)
         ax.cla()
-        remove_rounded_corners(fname)
-    return fnames
+        plt.close(fig)
+        im = remove_rounded_corners(fname)
+        ims.append(im)
+    return fnames, ims
 
 
 if __name__ == "__main__":
-    fname = Path("_static/logo_docs.mp4")
-    # if not fname.exists():
-    # ar = animate_mp4(fname)
-    animate_png()
-```
-
-```{code-cell} ipython3
-n = 10
-folder = Path("source/_static/logo")
-fname = folder / f"logo_docs_{n:03d}.png"
-npoints, learner, data, rounded_corners, fig, ax = setup(nseconds=2)
-get_new_artists(n, learner, data, None, ax)
-fig.savefig(fname, transparent=True)
+    fname_mp4 = Path("_static/logo_docs.mp4")
+    if not fname_mp4.exists():
+        animate_mp4(fname_mp4)
+    fname_webp = fname_mp4.with_suffix(".webp")
+    if not fname_webp.exists():
+        fnames, ims = animate_png()
+        im.save(
+            fname_webp,
+            save_all=True,
+            append_images=_ims,
+            opimize=False,
+            durarion=2,
+            quality=70,
+        )
 ```
 
 ```{eval-rst}
