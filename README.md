@@ -155,13 +155,8 @@ If you used Adaptive in a scientific work, please cite it as follows.
 
 We would like to give credits to the following people:
 
-- Pedro Gonnet for his implementation of [CQUAD](https://www.gnu.org/software/gsl/manual/html_node/CQUAD-doubly_002dadaptive-integration.html),
-  “Algorithm 4” as described in “Increasing the Reliability of Adaptive
-  Quadrature Using Explicit Interpolants”, P. Gonnet, ACM Transactions on
-  Mathematical Software, 37 (3), art. no. 26, 2010.
-- Pauli Virtanen for his `AdaptiveTriSampling` script (no longer
-  available online since SciPy Central went down) which served as
-  inspiration for the `~adaptive.Learner2D`.
+- Pedro Gonnet for his implementation of [CQUAD](https://www.gnu.org/software/gsl/manual/html_node/CQUAD-doubly_002dadaptive-integration.html), “Algorithm 4” as described in “Increasing the Reliability of Adaptive Quadrature Using Explicit Interpolants”, P. Gonnet, ACM Transactions on Mathematical Software, 37 (3), art. no. 26, 2010.
+- Pauli Virtanen for his `AdaptiveTriSampling` script (no longer available online since SciPy Central went down) which served as inspiration for the `adaptive.Learner2D`.
 
 <!-- credits-end -->
 
