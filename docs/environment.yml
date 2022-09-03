@@ -21,5 +21,4 @@ dependencies:
   - cloudpickle
   - loky
   - furo
-  - sphinx_rtd_theme  # Remove when https://github.com/executablebooks/MyST-NB/issues/54 is fixed (again)
   - myst-parser

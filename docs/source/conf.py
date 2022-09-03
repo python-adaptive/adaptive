@@ -45,7 +45,7 @@ language = None
 exclude_patterns = []
 pygments_style = "sphinx"
 # TODO: change to "furo" when https://github.com/executablebooks/MyST-NB/issues/54 is fixed (again)
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
 html_static_path = ["_static"]
 htmlhelp_basename = "adaptivedoc"
 
