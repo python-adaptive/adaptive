@@ -15,7 +15,7 @@ end-before: <!-- summary-end -->
 ---
 ```
 
-```{seealso}
+```{tip}
 [Click here](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial.Learner1D.html) to start with the 1D function learning tutorial, the `adaptive.Learner1D`.
 ```
 
