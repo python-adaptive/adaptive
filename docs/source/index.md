@@ -16,7 +16,7 @@ end-before: <!-- summary-end -->
 ```
 
 ```{tip}
-[Click here](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial.Learner1D.html) to start with the 1D function learning tutorial, the `adaptive.Learner1D`.
+Start with the {ref}`1D function learning tutorial<TutorialLearner1D>`.
 ```
 
 ```{include} ../../README.md

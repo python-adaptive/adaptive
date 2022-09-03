@@ -9,6 +9,7 @@ jupytext:
     format_version: '0.13'
     jupytext_version: 1.13.8
 ---
+(TutorialLearner1D)=
 # Tutorial {class}`~adaptive.Learner1D`
 
 ```{note}
