@@ -84,7 +84,6 @@ runner.live_plot()
 ```{code-cell} ipython3
 :tags: [hide-cell]
 
-
 def f(x, offset=0.07357338543088588):
     a = 0.01
     return x + a**2 / (a**2 + (x - offset) ** 2)
@@ -110,11 +109,9 @@ def get_hm(loss_per_interval, N=101):
     plots = {n: plot(learner, n) for n in range(N)}
     return hv.HoloMap(plots, kdims=["npoints"])
 
-
-layout = get_hm(uniform_loss).relabel("homogeneous samping") + get_hm(
-    default_loss
-).relabel("with adaptive")
-
+plot_homo = get_hm(uniform_loss).relabel("homogeneous samping")
+plot_adaptive = get_hm(default_loss).relabel("with adaptive")
+layout = plot_homo + plot_adaptive
 layout.opts(plot=dict(toolbar=None))
 ```
 

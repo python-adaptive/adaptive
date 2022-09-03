@@ -29,7 +29,7 @@ from functools import partial
 import holoviews as hv
 ```
 
-`~adaptive.Learner1D` and {class}`~adaptive.Learner2D` both work on the principle of subdividing their domain into subdomains, and assigning a property to each subdomain, which we call the *loss*.
+{class}`~adaptive.Learner1D` and {class}`~adaptive.Learner2D` both work on the principle of subdividing their domain into subdomains, and assigning a property to each subdomain, which we call the *loss*.
 The algorithm for choosing the best place to evaluate our function is then simply *take the subdomain with the largest loss and add a point in the center, creating new subdomains around this point*.
 
 The *loss function* that defines the loss per subdomain is the canonical place to define what regions of the domain are “interesting”.
@@ -164,4 +164,4 @@ Awesome! We zoom in on the singularity, but not at the expense of sampling the r
 
 The above strategy is available as {class}`adaptive.learner.learner2D.resolution_loss_function`.
 
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.custom-loss.ipynb`** and {download}`tutorial.custom-loss.md`.
+[^download]: This notebook can be downloaded as **{nb-download}`tutorial.custom_loss.ipynb`** and {download}`tutorial.custom_loss.md`.
