@@ -2,7 +2,7 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    =
+SPHINXOPTS    = -j auto
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = adaptive
 SOURCEDIR     = source
@@ -20,8 +20,6 @@ source/_static/logo_docs.png: logo.py
 # Fake target to avoid the catch-all target
 logo.py:
 	@echo "never executed"
-
-ALLSPHINXOPTS = $(ALLSPHINXOPTS) -j auto
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
