@@ -84,7 +84,7 @@ runner.live_plot()
 ```
 
 ```{code-cell} ipython3
-:tags: [hide-cell]
+:tags: [hide-input]
 
 def f(x, offset=0.07357338543088588):
     a = 0.01
@@ -120,7 +120,7 @@ layout.opts(plot=dict(toolbar=None))
 ## {class}`adaptive.Learner2D`
 
 ```{code-cell} ipython3
-:tags: [hide-cell]
+:tags: [hide-input]
 
 
 def ring(xy):
@@ -153,7 +153,7 @@ hv.HoloMap(plots, kdims=["npoints"]).collate()
 ## {class}`adaptive.AverageLearner`
 
 ```{code-cell} ipython3
-:tags: [hide-cell]
+:tags: [hide-input]
 
 
 def g(n):
@@ -179,7 +179,7 @@ hv.HoloMap(plots, kdims=["npoints"])
 ## {class}`adaptive.LearnerND`
 
 ```{code-cell} ipython3
-:tags: [hide-cell]
+:tags: [hide-input]
 
 
 def sphere(xyz):
