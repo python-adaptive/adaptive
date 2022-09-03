@@ -1,19 +1,22 @@
 ---
-kernelspec:
-  name: python3
-  display_name: python3
 jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: '0.13'
-    jupytext_version: 1.13.8
+    format_version: 0.13
+    jupytext_version: 1.14.1
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
 ---
 
 ```{code-cell} ipython3
 :tags: [remove-input]
 
 import os
+import functools
+from pathlib import Path
 
 import matplotlib.tri as mtri
 import numpy as np
@@ -26,7 +29,8 @@ from tqdm.auto import tqdm
 import adaptive
 
 
-def add_rounded_corners(size, rad):
+@functools.lru_cache
+def make_cut(size, rad):
     # Make new images
     circle = Image.new("L", (rad * 2, rad * 2), color=1)
     draw = ImageDraw.Draw(circle)
@@ -41,13 +45,28 @@ def add_rounded_corners(size, rad):
     alpha.paste(circle.crop((rad, rad, rad * 2, rad * 2)), (w - rad, h - rad))
 
     # To array
-    cut = np.array(alpha)
+    return np.array(alpha)
+
+
+@functools.lru_cache
+def add_rounded_corners(size=(1000, 1000), rad=300):
+    cut = make_cut(size, rad)
     cut = cut.reshape((*cut.shape, 1)).repeat(4, axis=2)
 
     # Set the corners to (252, 252, 252, 255) to match the RTD background #FCFCFC
     cut[:, :, -1] *= 255
     cut[:, :, :-1] *= 252
     return cut
+
+
+def remove_rounded_corners(fname):
+    im = Image.open(fname)
+    ar = np.array(im)
+    cut = make_cut(size=ar.shape[:-1], rad=round(ar.shape[0] * 0.3)).astype(bool)
+    ar[:, :, -1] = np.where(~cut, ar[:, :, -1], 0)
+    im_new = Image.fromarray(ar)
+    im_new.save(fname)
+    return im_new
 
 
 def learner_till(till, learner, data):
@@ -70,10 +89,14 @@ def get_new_artists(npoints, learner, data, rounded_corners, ax):
     line1, line2 = plot_tri(new_learner, ax)
     data = np.rot90(new_learner.interpolated_on_grid()[-1])
     im = ax.imshow(data, extent=(-0.5, 0.5, -0.5, 0.5), cmap="viridis")
-    im2 = ax.imshow(rounded_corners, extent=(-0.5, 0.5, -0.5, 0.5), zorder=10)
-    return im, line1, line2, im2
+    if rounded_corners is None:
+        return im, line1, line2
+    else:
+        im2 = ax.imshow(rounded_corners, extent=(-0.5, 0.5, -0.5, 0.5), zorder=10)
+        return im, line1, line2, im2
 
 
+@functools.lru_cache
 def create_and_run_learner():
     def ring(xy):
         import numpy as np
@@ -87,11 +110,7 @@ def create_and_run_learner():
     return learner
 
 
-def main(fname="source/_static/logo_docs.mp4"):
-    learner = create_and_run_learner()
-
-    data = list(learner.data.items())
-
+def get_figure():
     fig, ax = plt.subplots(figsize=(5, 5))
     fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
     ax.set_xticks([])
@@ -100,29 +119,83 @@ def main(fname="source/_static/logo_docs.mp4"):
     ax.spines["right"].set_visible(False)
     ax.spines["bottom"].set_visible(False)
     ax.spines["left"].set_visible(False)
+    return fig, ax
 
-    nseconds = 15
+
+def setup(nseconds=15):
+    learner = create_and_run_learner()
+
+    data = list(learner.data.items())
+
+    fig, ax = get_figure()
+
     npoints = (len(data) * np.linspace(0, 1, 24 * nseconds) ** 2).astype(int)
     rounded_corners = add_rounded_corners(size=(1000, 1000), rad=300)
+    return npoints, learner, data, rounded_corners, fig, ax
+
+
+def animate_mp4(fname="source/_static/logo_docs.mp4"):
+    npoints, learner, data, rounded_corners, fig, ax = setup()
     artists = [
         get_new_artists(n, learner, data, rounded_corners, ax) for n in tqdm(npoints)
     ]
-
     ani = animation.ArtistAnimation(fig, artists, blit=True)
     ani.save(fname, writer=FFMpegWriter(fps=24))
 
 
+def animate_png(folder="source/_static/logo", nseconds=2):
+    npoints, learner, data, rounded_corners, fig, ax = setup(nseconds)
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    fnames = []
+    for n in tqdm(npoints):
+        fname = folder / f"logo_docs_{n:03d}.png"
+        fnames.append(fname)
+        npoints, learner, data, _, fig, ax = setup(nseconds=2)
+        get_new_artists(n, learner, data, None, ax)
+        fig.savefig(fname, transparent=True)
+        ax.cla()
+        remove_rounded_corners(fname)
+    return fnames
+
+
 if __name__ == "__main__":
-    fname = "_static/logo_docs.mp4"
-    if not os.path.exists(fname):
-        main(fname)
+    fname = Path("_static/logo_docs.mp4")
+    # if not fname.exists():
+    # ar = animate_mp4(fname)
+    animate_png()
+```
+
+```{code-cell} ipython3
+n = 10
+folder = Path("source/_static/logo")
+fname = folder / f"logo_docs_{n:03d}.png"
+npoints, learner, data, rounded_corners, fig, ax = setup(nseconds=2)
+get_new_artists(n, learner, data, None, ax)
+fig.savefig(fname, transparent=True)
 ```
 
 ```{eval-rst}
 .. raw:: html
 
-    <video autoplay loop muted playsinline webkit-playsinline
-     style="width: 400px; max-width: 100%; margin: 0 auto; display:block;">
-      <source src="_static/logo_docs.mp4" type="video/mp4">
-    </video><br>
+    <style>
+    .dark-video {
+        display: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .dark-video {
+        display: block;
+        }
+
+        .light-video {
+        display: none;
+        }
+    }
+    </style>
+    <video autoplay loop muted playsinline webkit-playsinline style="width: 400px; max-width: 100%; margin: 0 auto; display:block;">
+    <source class="dark-video" src="_static/logo_docs.mp4" type="video/mp4">
+    <source class="light-video" src="_static/logo_docs1.mp4" type="video/mp4">
+    </video>
+    <br>
 ```
