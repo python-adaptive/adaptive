@@ -10,26 +10,26 @@ jupytext:
     jupytext_version: 1.13.8
 ---
 
-% summary-start
+% badges-start
 
 # ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) adaptive
 
-[[Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb)
-[[Conda](https://img.shields.io/badge/install%20with-conda-green.svg)](https://anaconda.org/conda-forge/adaptive)
-[[Coverage](https://img.shields.io/codecov/c/github/python-adaptive/adaptive)](https://codecov.io/gh/python-adaptive/adaptive)
-[[DOI](https://img.shields.io/badge/doi-10.5281%2Fzenodo.1182437-blue.svg)](https://doi.org/10.5281/zenodo.1182437)
-[[Documentation](https://readthedocs.org/projects/adaptive/badge/?version=latest)](https://adaptive.readthedocs.io/en/latest/?badge=latest)
-[[Downloads](https://img.shields.io/conda/dn/conda-forge/adaptive.svg)](https://anaconda.org/conda-forge/adaptive)
-[[GitHub](https://img.shields.io/github/stars/python-adaptive/adaptive.svg?style=social)](https://github.com/python-adaptive/adaptive/stargazers)
-[[Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive)
-[[Pipeline-status](https://dev.azure.com/python-adaptive/adaptive/_apis/build/status/python-adaptive.adaptive?branchName=master)](https://dev.azure.com/python-adaptive/adaptive/_build/latest?definitionId=6?branchName=master)
-[[PyPI](https://img.shields.io/pypi/v/adaptive.svg)](https://pypi.python.org/pypi/adaptive)
-
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb)
+[![Conda](https://img.shields.io/badge/install%20with-conda-green.svg)](https://anaconda.org/conda-forge/adaptive)
+[![Coverage](https://img.shields.io/codecov/c/github/python-adaptive/adaptive)](https://codecov.io/gh/python-adaptive/adaptive)
+[![DOI](https://img.shields.io/badge/doi-10.5281%2Fzenodo.1182437-blue.svg)](https://doi.org/10.5281/zenodo.1182437)
+[![Documentation](https://readthedocs.org/projects/adaptive/badge/?version=latest)](https://adaptive.readthedocs.io/en/latest/?badge=latest)
+[![Downloads](https://img.shields.io/conda/dn/conda-forge/adaptive.svg)](https://anaconda.org/conda-forge/adaptive)
+[![GitHub](https://img.shields.io/github/stars/python-adaptive/adaptive.svg?style=social)](https://github.com/python-adaptive/adaptive/stargazers)
+[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive)
+[![Pipeline-status](https://dev.azure.com/python-adaptive/adaptive/_apis/build/status/python-adaptive.adaptive?branchName=master)](https://dev.azure.com/python-adaptive/adaptive/_build/latest?definitionId=6?branchName=master)
+[![PyPI](https://img.shields.io/pypi/v/adaptive.svg)](https://pypi.python.org/pypi/adaptive)
 
 > *Adaptive*: parallel active learning of mathematical functions.
 
-```{include} logo.md
-```
+% badges-end
+
+% summary-start
 
 `adaptive` is an open-source Python library designed to make adaptive parallel function evaluation simple. With `adaptive` you just supply a function with its bounds, and it will be evaluated at the “best” points in parameter space, rather than unnecessarily computing *all* points on a dense grid.
 With just a few lines of code you can evaluate functions on a computing cluster, live-plot the data as it returns, and fine-tune the adaptive sampling algorithm.

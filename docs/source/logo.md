@@ -12,6 +12,7 @@ jupytext:
 
 ```{code-cell} ipython3
 :tags: [remove-input]
+
 import os
 
 import matplotlib.tri as mtri
@@ -117,7 +118,11 @@ if __name__ == "__main__":
         main(fname)
 ```
 
-<video autoplay loop muted playsinline webkit-playsinline
- style="width: 400px; max-width: 100%; margin: 0 auto; display:block;">
-  <source src="_static/logo_docs.mp4" type="video/mp4">
-</video><br>
+```{eval-rst}
+.. raw:: html
+
+    <video autoplay loop muted playsinline webkit-playsinline
+     style="width: 400px; max-width: 100%; margin: 0 auto; display:block;">
+      <source src="_static/logo_docs.mp4" type="video/mp4">
+    </video><br>
+```

@@ -1,5 +1,15 @@
 ```{include} ../../README.md
 ---
+start-after: badges-start
+end-before: badges-end
+---
+```
+
+```{include} logo.md
+```
+
+```{include} ../../README.md
+---
 start-after: summary-start
 end-before: summary-end
 ---
