@@ -10,7 +10,7 @@ jupytext:
     jupytext_version: 1.13.8
 ---
 
-% badges-start
+<!-- badges-start -->
 
 # ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) adaptive
 
@@ -27,9 +27,9 @@ jupytext:
 
 > *Adaptive*: parallel active learning of mathematical functions.
 
-% badges-end
+<!-- badges-end -->
 
-% summary-start
+<!-- summary-start -->
 
 `adaptive` is an open-source Python library designed to make adaptive parallel function evaluation simple. With `adaptive` you just supply a function with its bounds, and it will be evaluated at the “best” points in parameter space, rather than unnecessarily computing *all* points on a dense grid.
 With just a few lines of code you can evaluate functions on a computing cluster, live-plot the data as it returns, and fine-tune the adaptive sampling algorithm.
@@ -38,7 +38,7 @@ With just a few lines of code you can evaluate functions on a computing cluster,
 
 Run the `adaptive` example notebook [live on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb) to see examples of how to use `adaptive` or visit the [tutorial on Read the Docs](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial.html).
 
-% summary-end
+<!-- summary-end -->
 
 ## Implemented algorithms
 
@@ -50,7 +50,7 @@ Of course, what qualifies as the “best places” will depend on your applicati
 
 The following learners are implemented:
 
-% not-in-documentation-start
+<!-- not-in-documentation-start -->
 
 - `Learner1D`, for 1D functions `f: ℝ → ℝ^N`,
 - `Learner2D`, for 2D functions `f: ℝ^2 → ℝ^N`,
@@ -94,8 +94,7 @@ runner.live_plot()
 
 <img src="https://user-images.githubusercontent.com/6897215/38739170-6ac7c014-3f34-11e8-9e8f-93b3a3a3d61b.gif" width='20%'> </img> <img src="https://user-images.githubusercontent.com/6897215/35219611-ac8b2122-ff73-11e7-9332-adffab64a8ce.gif" width='40%'> </img> <img src="https://user-images.githubusercontent.com/6897215/47256441-d6d53700-d480-11e8-8224-d1cc49dbdcf5.gif" width='20%'> </img>
 
-
-% not-in-documentation-end
+<!-- not-in-documentation-end -->
 
 ## Installation
 
@@ -176,10 +175,10 @@ We would like to give credits to the following people:
   available online since SciPy Central went down) which served as
   inspiration for the `~adaptive.Learner2D`.
 
-% credits-end
+<!-- credits-end -->
 
 For general discussion, we have a [Gitter chat channel](https://gitter.im/python-adaptive/adaptive). If you find any bugs or have any feature suggestions please file a GitHub [issue](https://github.com/python-adaptive/adaptive/issues/new) or submit a [pull request](https://github.com/python-adaptive/adaptive/pulls).
 
-% references-start
+<!-- references-start -->
 
-% references-end
+<!-- references-end -->

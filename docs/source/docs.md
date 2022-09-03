@@ -1,7 +1,7 @@
 ```{include} ../../README.md
 ---
-start-after: not-in-documentation-end
-end-before: credits-end
+start-after: <!-- not-in-documentation-end -->
+end-before: <!-- credits-end -->
 ---
 ```
 
@@ -10,7 +10,7 @@ end-before: credits-end
 
 ```{include} ../../README.md
 ---
-start-after: credits-end
-end-before: references-start
+start-after: <!-- credits-end -->
+end-before: <!-- references-start -->
 ---
 ```

@@ -1,7 +1,7 @@
 ```{include} ../../README.md
 ---
-start-after: badges-start
-end-before: badges-end
+start-after: <!-- badges-start -->
+end-before: <!-- badges-end -->
 ---
 ```
 
@@ -10,8 +10,8 @@ end-before: badges-end
 
 ```{include} ../../README.md
 ---
-start-after: summary-start
-end-before: summary-end
+start-after: <!-- summary-start -->
+end-before: <!-- summary-end -->
 ---
 ```
 
@@ -21,8 +21,8 @@ end-before: summary-end
 
 ```{include} ../../README.md
 ---
-start-after: references-start
-end-before: references-end
+start-after: <!-- references-start -->
+end-before: <!-- references-end -->
 ---
 ```
 

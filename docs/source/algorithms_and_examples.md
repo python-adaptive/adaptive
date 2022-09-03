@@ -14,10 +14,12 @@ execution:
 
 ```{include} ../../README.md
 ---
-start-after: summary-end
-end-before: not-in-documentation-start
+start-after: <!-- summary-end -->
+end-before: not-in-documentation-start -->
 ---
 ```
+
+
 
 - {class}`~adaptive.Learner1D`, for 1D functions `f: ℝ → ℝ^N`,
 - {class}`~adaptive.Learner2D`, for 2D functions `f: ℝ^2 → ℝ^N`,
