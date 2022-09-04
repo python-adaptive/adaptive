@@ -111,7 +111,7 @@ def get_hm(loss_per_interval, N=101):
     plots = {n: plot(learner, n) for n in range(N)}
     return hv.HoloMap(plots, kdims=["npoints"])
 
-plot_homo = get_hm(uniform_loss).relabel("homogeneous samping")
+plot_homo = get_hm(uniform_loss).relabel("homogeneous sampling")
 plot_adaptive = get_hm(default_loss).relabel("with adaptive")
 layout = plot_homo + plot_adaptive
 layout.opts(plot=dict(toolbar=None))
