@@ -16,6 +16,7 @@ kernelspec:
 
 import os
 import functools
+import subprocess
 from pathlib import Path
 
 import matplotlib.tri as mtri
@@ -80,7 +81,7 @@ def learner_till(till, learner, data):
 
 def plot_tri(learner, ax):
     tri = learner.ip().tri
-    triang = mtri.Triangulation(*tri.points.T, triangles=tri.vertices)
+    triang = mtri.Triangulation(*tri.points.T, triangles=tri.simplices)
     return ax.triplot(triang, c="k", lw=0.8, alpha=0.8)
 
 
@@ -140,17 +141,19 @@ def animate_mp4(fname="source/_static/logo_docs.mp4", nseconds=15):
         get_new_artists(n, learner, data, rounded_corners, ax) for n in tqdm(npoints)
     ]
     ani = animation.ArtistAnimation(fig, artists, blit=True)
-    ani.save(fname, writer=FFMpegWriter(fps=24))
+    ani.save(fname, writer=FFMpegWriter(fps=24, codec="libvpx-vp9"))
 
 
-def animate_png(folder="/tmp", nseconds=15):
+def animate_png(folder=None, nseconds=15):
     npoints, learner, data, rounded_corners, fig, ax = setup(nseconds)
+    if folder is None:
+        folder = Path(tempfile.gettempdir()) / next(tempfile._get_candidate_names())
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
     fnames = []
     ims = []
-    for n in tqdm(npoints):
-        fname = folder / f"logo_docs_{n:03d}.png"
+    for i, n in tqdm(enumerate(npoints), total=len(npoints)):
+        fname = folder / f"logo_docs_{i:07d}.png"
         fnames.append(fname)
         npoints, learner, data, _, fig, ax = setup(nseconds)
         get_new_artists(n, learner, data, None, ax)
@@ -162,44 +165,52 @@ def animate_png(folder="/tmp", nseconds=15):
     return fnames, ims
 
 
+def save_webp(fname_webp, ims):
+    (im, *_ims) = ims
+    im.save(
+        fname_webp,
+        save_all=True,
+        append_images=_ims,
+        opimize=False,
+        durarion=2,
+        quality=70,
+    )
+
+
+def save_webm(fname, fnames):
+    args = [
+        "ffmpeg",
+        "-framerate",
+        "24",
+        "-f",
+        "image2",
+        "-i",
+        str(fnames[0]).replace("0000000", "%07d"),
+        "-c:v",
+        "libvpx-vp9",
+        "-pix_fmt",
+        "yuva420p",
+        "-y",
+        fname,
+    ]
+    return subprocess.run(args, capture_output=True)
+
+
 if __name__ == "__main__":
     fname_mp4 = Path("_static/logo_docs.mp4")
-    if not fname_mp4.exists():
-        animate_mp4(fname_mp4)
-    fname_webp = fname_mp4.with_suffix(".webp")
+    # if not fname_mp4.exists():
+    #     animate_mp4(fname_mp4)
+    fname_webm = fname_mp4.with_suffix(".webm")
     if not fname_webp.exists():
         fnames, ims = animate_png()
-        im.save(
-            fname_webp,
-            save_all=True,
-            append_images=_ims,
-            opimize=False,
-            durarion=2,
-            quality=70,
-        )
+        save_webm(fname_webm, fnames)
 ```
 
 ```{eval-rst}
 .. raw:: html
 
-    <style>
-    .dark-video {
-        display: none;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .dark-video {
-        display: block;
-        }
-
-        .light-video {
-        display: none;
-        }
-    }
-    </style>
-    <video autoplay loop muted playsinline webkit-playsinline style="width: 400px; max-width: 100%; margin: 0 auto; display:block;">
-    <source class="dark-video" src="_static/logo_docs.mp4" type="video/mp4">
-    <source class="light-video" src="_static/logo_docs1.mp4" type="video/mp4">
-    </video>
-    <br>
+    <video autoplay loop muted playsinline webkit-playsinline
+     style="width: 400px; max-width: 100%; margin: 0 auto; display:block;">
+      <source src="_static/logo_docs.webm" type="video/mp4">
+    </video><br>
 ```
