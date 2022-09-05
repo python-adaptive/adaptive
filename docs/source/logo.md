@@ -191,6 +191,8 @@ def save_webm(fname, fnames):
         "libvpx-vp9",
         "-pix_fmt",
         "yuva420p",
+        "-crf",
+        "23",  # 0 is lossless 51 is worst
         "-y",
         fname,
     ]
