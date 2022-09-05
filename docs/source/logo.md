@@ -17,6 +17,7 @@ kernelspec:
 import os
 import functools
 import subprocess
+import tempfile
 from pathlib import Path
 
 import matplotlib.tri as mtri
@@ -141,7 +142,7 @@ def animate_mp4(fname="source/_static/logo_docs.mp4", nseconds=15):
         get_new_artists(n, learner, data, rounded_corners, ax) for n in tqdm(npoints)
     ]
     ani = animation.ArtistAnimation(fig, artists, blit=True)
-    ani.save(fname, writer=FFMpegWriter(fps=24, codec="libvpx-vp9"))
+    ani.save(fname, writer=FFMpegWriter(fps=24))
 
 
 def animate_png(folder=None, nseconds=15):
