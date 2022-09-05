@@ -17,7 +17,7 @@ dependencies:
   - myst-nb=0.16.0
   - sphinx_fontawesome=0.0.6
   - sphinx=4.2.0
-  - ffmpeg=4.3.2
+  - ffmpeg=5.1.1
   - cloudpickle
   - loky
   - furo
