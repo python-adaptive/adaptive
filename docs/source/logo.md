@@ -201,7 +201,7 @@ if __name__ == "__main__":
     # if not fname_mp4.exists():
     #     animate_mp4(fname_mp4)
     fname_webm = fname_mp4.with_suffix(".webm")
-    if not fname_webp.exists():
+    if not fname_webm.exists():
         fnames, ims = animate_png()
         save_webm(fname_webm, fnames)
 ```
