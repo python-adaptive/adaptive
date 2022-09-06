@@ -9,7 +9,15 @@ import numpy as np
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Float, Real
-from adaptive.utils import cache_latest
+from adaptive.utils import cache_latest, default_parameters
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 
 class AverageLearner(BaseLearner):
@@ -69,6 +77,21 @@ class AverageLearner(BaseLearner):
     def to_numpy(self):
         """Data as NumPy array of size (npoints, 2) with seeds and values."""
         return np.array(sorted(self.data.items()))
+
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        seed_name: str = "seed",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        df = pandas.DataFrame(sorted(self.data.items()), columns=[seed_name, y_name])
+        if with_default_function_args:
+            defaults = default_parameters(self.function, function_prefix)
+            df = df.assign(**defaults)
+        return df
 
     def ask(self, n: int, tell_pending: bool = True) -> tuple[list[int], list[Float]]:
         points = list(range(self.n_requested, self.n_requested + n))

@@ -16,7 +16,15 @@ from adaptive.learner.learnerND import volume
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Float, Int, Real
-from adaptive.utils import cache_latest
+from adaptive.utils import cache_latest, default_parameters
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 # -- types --
 
@@ -320,6 +328,21 @@ class Learner1D(BaseLearner):
         """Data as NumPy array of size ``(npoints, 2)`` if ``learner.function`` returns a scalar
         and ``(npoints, 1+vdim)`` if ``learner.function`` returns a vector of length ``vdim``."""
         return np.array([(x, *np.atleast_1d(y)) for x, y in sorted(self.data.items())])
+
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        df = pandas.DataFrame(sorted(self.data.items()), columns=[x_name, y_name])
+        if with_default_function_args:
+            defaults = default_parameters(self.function, function_prefix)
+            df = df.assign(**defaults)
+        return df
 
     @property
     def npoints(self) -> int:

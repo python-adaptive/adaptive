@@ -1,6 +1,7 @@
 import abc
 import functools
 import gzip
+import inspect
 import os
 import pickle
 from contextlib import contextmanager
@@ -98,3 +99,13 @@ class _RequireAttrsABCMeta(abc.ABCMeta):
                     msg = f"The attribute '{name}' should be of type {type_}, not {type(x)}."
                     raise TypeError(msg)
         return obj
+
+
+def default_parameters(function, function_prefix="", start_index=1):
+    sig = inspect.signature(function)
+    defaults = {
+        f"{function_prefix}{k}": v.default
+        for i, (k, v) in enumerate(sig.parameters.items())
+        if v.default != inspect._empty and i >= start_index
+    }
+    return defaults

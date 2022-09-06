@@ -15,6 +15,15 @@ from sortedcontainers import SortedDict
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Real
+from adaptive.utils import default_parameters
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 Point = Tuple[int, Real]
 Points = List[Point]
@@ -126,6 +135,45 @@ class AverageLearner1D(Learner1D):
         if not self._number_samples:
             return 0
         return min(self._number_samples.values())
+
+    def to_numpy(self, mean: bool = True) -> np.ndarray:
+        if mean:
+            return super().to_numpy()
+        else:
+            return np.array(
+                [
+                    (seed, x, *np.atleast_1d(y))
+                    for x, seed_y in self._data_samples.items()
+                    for seed, y in seed_y.items()
+                ]
+            )
+
+    def to_dataframe(
+        self,
+        mean: bool = True,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        seed_name: str = "seed",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        if mean:
+            data = sorted(self.data.items())
+            columns = [x_name, y_name]
+        else:
+            data = [
+                (seed, x, y)
+                for x, seed_y in sorted(self._data_samples.items())
+                for seed, y in sorted(seed_y.items())
+            ]
+            columns = [seed_name, x_name, y_name]
+        df = pandas.DataFrame(data, columns=columns)
+        if with_default_function_args:
+            defaults = default_parameters(self.function, function_prefix)
+            df = df.assign(**defaults)
+        return df
 
     def ask(self, n: int, tell_pending: bool = True) -> tuple[Points, list[float]]:
         """Return 'n' points that are expected to maximally reduce the loss."""

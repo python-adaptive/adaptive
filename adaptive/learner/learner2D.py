@@ -11,7 +11,15 @@ from scipy import interpolate
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.utils import cache_latest
+from adaptive.utils import cache_latest, default_parameters
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 # Learner2D and helper functions.
 
@@ -384,6 +392,23 @@ class Learner2D(BaseLearner):
         return np.array(
             [(x, y, *np.atleast_1d(z)) for (x, y), z in sorted(self.data.items())]
         )
+
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+        z_name: str = "z",
+    ) -> pandas.DataFrame:
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        data = sorted((x, y, z) for (x, y), z in self.data.items())
+        df = pandas.DataFrame(data, columns=[x_name, y_name, z_name])
+        if with_default_function_args:
+            defaults = default_parameters(self.function, function_prefix)
+            df = df.assign(**defaults)
+        return df
 
     def _scale(self, points):
         points = np.asarray(points, dtype=float)

@@ -13,7 +13,15 @@ from sortedcontainers import SortedSet
 from adaptive.learner import integrator_coeffs as coeff
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.utils import cache_latest, restore
+from adaptive.utils import cache_latest, default_parameters, restore
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 
 def _downdate(c, nans, depth):
@@ -549,6 +557,21 @@ class IntegratorLearner(BaseLearner):
     def to_numpy(self):
         """Data as NumPy array of size (npoints, 2)."""
         return np.array(sorted(self.data.items()))
+
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        df = pandas.DataFrame(sorted(self.data.items()), columns=[x_name, y_name])
+        if with_default_function_args:
+            defaults = default_parameters(self.function, function_prefix)
+            df = df.assign(**defaults)
+        return df
 
     def _get_data(self):
         # Change the defaultdict of SortedSets to a normal dict of sets.
