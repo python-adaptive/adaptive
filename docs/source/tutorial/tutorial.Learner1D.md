@@ -202,4 +202,26 @@ adaptive.runner.simple(learner_2, goal=npoints_goal)
 
 More info about using custom loss functions can be found in {ref}`Custom adaptive logic for 1D and 2D`.
 
+## Exporting the data
+
+We can view the raw data by looking at the dictionary `learner.data`.
+Alternatively, we can view the data as NumPy array with
+
+```{code-cell} ipython3
+learner.to_numpy()
+```
+
+If Pandas is installed (optional dependency), you can also run
+```{code-cell} ipython3
+df = learner.to_dataframe()
+df
+```
+
+and load that data into a new learner with
+```{code-cell} ipython3
+new_learner = adaptive.Learner1D(sin_exp, (-1, 1))  # create an empty learner
+new_learner.load_dataframe(df)  # load the pandas.DataFrame's data
+new_learner.plot()
+```
+
 [^download]: This notebook can be downloaded as **{nb-download}`tutorial.Learner1D.ipynb`** and {download}`tutorial.Learner1D.md`.
