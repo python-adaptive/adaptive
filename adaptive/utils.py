@@ -109,3 +109,9 @@ def default_parameters(function, function_prefix="", start_index=1):
         if v.default != inspect._empty and i >= start_index
     }
     return defaults
+
+
+def assign_defaults(function, df, function_prefix="", start_index=1):
+    defaults = default_parameters(function, function_prefix, start_index)
+    for k, v in defaults.items():
+        df[k] = len(df) * [v]

@@ -11,7 +11,7 @@ from scipy import interpolate
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.utils import cache_latest, default_parameters
+from adaptive.utils import assign_defaults, cache_latest
 
 try:
     import pandas
@@ -406,8 +406,7 @@ class Learner2D(BaseLearner):
         data = sorted((x, y, z) for (x, y), z in self.data.items())
         df = pandas.DataFrame(data, columns=[x_name, y_name, z_name])
         if with_default_function_args:
-            defaults = default_parameters(self.function, function_prefix)
-            df = df.assign(**defaults)
+            assign_defaults(self.function, df, function_prefix)
         return df
 
     def _scale(self, points):

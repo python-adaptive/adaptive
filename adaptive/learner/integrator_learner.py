@@ -13,7 +13,7 @@ from sortedcontainers import SortedSet
 from adaptive.learner import integrator_coeffs as coeff
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.utils import cache_latest, default_parameters, restore
+from adaptive.utils import assign_defaults, cache_latest, restore
 
 try:
     import pandas
@@ -569,8 +569,7 @@ class IntegratorLearner(BaseLearner):
             raise ImportError("pandas is not installed.")
         df = pandas.DataFrame(sorted(self.data.items()), columns=[x_name, y_name])
         if with_default_function_args:
-            defaults = default_parameters(self.function, function_prefix)
-            df = df.assign(**defaults)
+            assign_defaults(self.function, df, function_prefix)
         return df
 
     def _get_data(self):

@@ -15,7 +15,7 @@ from sortedcontainers import SortedDict
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Real
-from adaptive.utils import default_parameters
+from adaptive.utils import assign_defaults
 
 try:
     import pandas
@@ -171,8 +171,7 @@ class AverageLearner1D(Learner1D):
             columns = [seed_name, x_name, y_name]
         df = pandas.DataFrame(data, columns=columns)
         if with_default_function_args:
-            defaults = default_parameters(self.function, function_prefix)
-            df = df.assign(**defaults)
+            assign_defaults(self.function, df, function_prefix)
         return df
 
     def ask(self, n: int, tell_pending: bool = True) -> tuple[Points, list[float]]:

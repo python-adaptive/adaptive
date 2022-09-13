@@ -9,7 +9,7 @@ import numpy as np
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Float, Real
-from adaptive.utils import cache_latest, default_parameters
+from adaptive.utils import assign_defaults, cache_latest
 
 try:
     import pandas
@@ -89,8 +89,7 @@ class AverageLearner(BaseLearner):
             raise ImportError("pandas is not installed.")
         df = pandas.DataFrame(sorted(self.data.items()), columns=[seed_name, y_name])
         if with_default_function_args:
-            defaults = default_parameters(self.function, function_prefix)
-            df = df.assign(**defaults)
+            assign_defaults(self.function, df, function_prefix)
         return df
 
     def ask(self, n: int, tell_pending: bool = True) -> tuple[list[int], list[Float]]:
