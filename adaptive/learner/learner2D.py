@@ -11,7 +11,11 @@ from scipy import interpolate
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.utils import assign_defaults, cache_latest
+from adaptive.utils import (
+    assign_defaults,
+    cache_latest,
+    partial_function_from_dataframe,
+)
 
 try:
     import pandas
@@ -408,6 +412,21 @@ class Learner2D(BaseLearner):
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df
+
+    def load_dataframe(
+        self,
+        df,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+        z_name: str = "z",
+    ):
+        self.tell_many(df[[x_name, y_name]].values, df[z_name].values)
+        if with_default_function_args:
+            self.function = partial_function_from_dataframe(
+                self.function, df, function_prefix
+            )
 
     def _scale(self, points):
         points = np.asarray(points, dtype=float)

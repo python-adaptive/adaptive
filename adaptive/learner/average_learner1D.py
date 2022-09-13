@@ -15,7 +15,7 @@ from sortedcontainers import SortedDict
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Real
-from adaptive.utils import assign_defaults
+from adaptive.utils import assign_defaults, partial_function_from_dataframe
 
 try:
     import pandas
@@ -173,6 +173,21 @@ class AverageLearner1D(Learner1D):
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df
+
+    def load_dataframe(
+        self,
+        df,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        seed_name: str = "seed",
+        x_name: str = "x",
+        y_name: str = "y",
+    ):
+        self.tell_many(df[[seed_name, x_name]].values, df[y_name].values)
+        if with_default_function_args:
+            self.function = partial_function_from_dataframe(
+                self.function, df, function_prefix
+            )
 
     def ask(self, n: int, tell_pending: bool = True) -> tuple[Points, list[float]]:
         """Return 'n' points that are expected to maximally reduce the loss."""

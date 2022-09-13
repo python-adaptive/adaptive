@@ -722,22 +722,7 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
 
     # Add points from the DataFrame to a new empty learner
     learner2 = learner_type(generate_random_parametrization(f), **learner_kwargs)
-
-    if learner_type is Learner1D:
-        learner2.tell_many(df["x"], df["y"])
-    elif learner_type is Learner2D:
-        learner2.tell_many(df[["x", "y"]].values, df["z"])
-    elif learner_type is LearnerND:
-        point_names = list(kw["point_names"])
-        learner2.tell_many(df[point_names].values, df["value"])
-    elif learner_type is AverageLearner:
-        learner2.tell_many(df["seed"].values, df["y"])
-    elif learner_type is AverageLearner1D:
-        learner2.tell_many(df[["seed", "x"]].values, df["y"])
-    elif learner_type is SequenceLearner:
-        learner2.tell_many(df[["i", "x"]].values, df["y"])
-    else:
-        raise NotImplementedError()
+    learner2.load_dataframe(df, **kw)
 
     # Test this for a learner in a BalancingLearner
     learners = [

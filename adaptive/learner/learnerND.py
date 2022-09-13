@@ -21,7 +21,12 @@ from adaptive.learner.triangulation import (
     simplex_volume_in_embedding,
 )
 from adaptive.notebook_integration import ensure_holoviews, ensure_plotly
-from adaptive.utils import assign_defaults, cache_latest, restore
+from adaptive.utils import (
+    assign_defaults,
+    cache_latest,
+    partial_function_from_dataframe,
+    restore,
+)
 
 try:
     import pandas
@@ -417,6 +422,20 @@ class LearnerND(BaseLearner):
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df
+
+    def load_dataframe(
+        self,
+        df,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        point_names: tuple[str, ...] = ("x", "y", "z"),
+        value_name: str = "value",
+    ):
+        self.tell_many(df[list(point_names)].values, df[value_name].values)
+        if with_default_function_args:
+            self.function = partial_function_from_dataframe(
+                self.function, df, function_prefix
+            )
 
     @property
     def bounds_are_done(self):
