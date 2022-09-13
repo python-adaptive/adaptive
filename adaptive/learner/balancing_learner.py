@@ -389,7 +389,7 @@ class BalancingLearner(BaseLearner):
             learners.append(learner)
         return cls(learners, cdims=arguments)
 
-    def to_dataframe(self, kwargs):
+    def to_dataframe(self, **kwargs):
         if not with_pandas:
             raise ImportError("pandas is not installed.")
         dfs = [learner.to_dataframe(**kwargs) for learner in self.learners]
