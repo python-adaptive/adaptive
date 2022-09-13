@@ -410,6 +410,31 @@ class LearnerND(BaseLearner):
         point_names: tuple[str, ...] = ("x", "y", "z"),
         value_name: str = "value",
     ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        point_names : tuple[str, ...], optional
+            Names of the input points, should be the same length as number
+            of input parameters by default ("x", "y", "z" )
+        value_name : str, optional
+            Name of the output value, by default "value"
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
         if not with_pandas:
             raise ImportError("pandas is not installed.")
         if len(point_names) != self.ndim:

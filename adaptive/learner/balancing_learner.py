@@ -390,6 +390,22 @@ class BalancingLearner(BaseLearner):
         return cls(learners, cdims=arguments)
 
     def to_dataframe(self, **kwargs):
+        """Return the data as a concatenated `pandas.DataFrame` from child learners.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Keyword arguments passed to each ``child_learner.to_dataframe(**kwargs)``.
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
         if not with_pandas:
             raise ImportError("pandas is not installed.")
         dfs = [learner.to_dataframe(**kwargs) for learner in self.learners]

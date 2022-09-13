@@ -407,6 +407,34 @@ class Learner2D(BaseLearner):
         y_name: str = "y",
         z_name: str = "z",
     ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        seed_name : str, optional
+            Name of the seed parameter, by default "seed"
+        x_name : str, optional
+            Name of the input x value, by default "x"
+        y_name : str, optional
+            Name of the input y value, by default "y"
+        z_name : str, optional
+            Name of the output value, by default "z"
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
         if not with_pandas:
             raise ImportError("pandas is not installed.")
         data = sorted((x, y, z) for (x, y), z in self.data.items())
