@@ -389,11 +389,14 @@ class BalancingLearner(BaseLearner):
             learners.append(learner)
         return cls(learners, cdims=arguments)
 
-    def to_dataframe(self, **kwargs):
+    def to_dataframe(self, index_name: str = "learner_index", **kwargs):
         """Return the data as a concatenated `pandas.DataFrame` from child learners.
 
         Parameters
         ----------
+        index_name : str, optional
+            The name of the index column indicating the learner index,
+            by default "learner_index".
         **kwargs : dict
             Keyword arguments passed to each ``child_learner.to_dataframe(**kwargs)``.
 
@@ -408,9 +411,32 @@ class BalancingLearner(BaseLearner):
         """
         if not with_pandas:
             raise ImportError("pandas is not installed.")
-        dfs = [learner.to_dataframe(**kwargs) for learner in self.learners]
+        dfs = []
+        for i, learner in enumerate(self.learners):
+            df = learner.to_dataframe(**kwargs)
+            cols = list(df.columns)
+            df[index_name] = i
+            df = df[[index_name] + cols]
+            dfs.append(df)
         df = pandas.concat(dfs, axis=0, ignore_index=True)
         return df
+
+    def load_dataframe(
+        self, df: pandas.DataFrame, index_name: str = "learner_index", **kwargs
+    ):
+        """Load the data from a `pandas.DataFrame` into the child learners.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame with the data to load.
+        index_name : str, optional
+            The ``index_name`` used in `to_dataframe`, by default "learner_index".
+        **kwargs : dict
+            Keyword arguments passed to each ``child_learner.load_dataframe(**kwargs)``.
+        """
+        for i, gr in df.groupby(index_name):
+            self.learners[i].load_dataframe(gr, **kwargs)
 
     def save(self, fname, compress=True):
         """Save the data of the child learners into pickle files

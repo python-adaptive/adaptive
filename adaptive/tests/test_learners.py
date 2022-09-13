@@ -736,12 +736,19 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
         learner_type(generate_random_parametrization(f), **learner_kwargs)
         for _ in range(2)
     ]
-    learner = BalancingLearner(learners)
-    simple_run(learner, 100)
-    df = learner.to_dataframe(**kw)
-    assert isinstance(df, pandas.DataFrame)
+    bal_learner = BalancingLearner(learners)
+    simple_run(bal_learner, 100)
+    df_bal = bal_learner.to_dataframe(**kw)
+    assert isinstance(df_bal, pandas.DataFrame)
 
     if learner_type is not AverageLearner1D:
-        assert len(df) == learner.npoints
+        assert len(df_bal) == bal_learner.npoints
 
-    # TODO: Test this for a learner in a DataSaver
+    # Test loading from a DataFrame into the BalancingLearner
+    learners2 = [
+        learner_type(generate_random_parametrization(f), **learner_kwargs)
+        for _ in range(2)
+    ]
+    bal_learner2 = BalancingLearner(learners2)
+    bal_learner2.load_dataframe(df_bal, **kw)
+    assert bal_learner2.npoints == bal_learner.npoints
