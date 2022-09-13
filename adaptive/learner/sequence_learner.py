@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from copy import copy
 
 import cloudpickle
@@ -150,7 +152,7 @@ class SequenceLearner(BaseLearner):
 
     def load_dataframe(
         self,
-        df,
+        df: pandas.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         index_name: str = "i",

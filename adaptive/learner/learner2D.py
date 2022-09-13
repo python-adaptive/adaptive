@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 import warnings
 from collections import OrderedDict
@@ -415,7 +417,7 @@ class Learner2D(BaseLearner):
 
     def load_dataframe(
         self,
-        df,
+        df: pandas.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         x_name: str = "x",

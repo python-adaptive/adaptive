@@ -712,6 +712,12 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
         kw = {}
 
     learner = learner_type(generate_random_parametrization(f), **learner_kwargs)
+
+    # Test empty dataframe
+    df = learner.to_dataframe()
+    assert len(df) == 0
+
+    # Run the learner
     simple_run(learner, 100)
     df = learner.to_dataframe(**kw)
     assert isinstance(df, pandas.DataFrame)
@@ -721,8 +727,9 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
         assert len(df) == learner.npoints
 
     # Add points from the DataFrame to a new empty learner
-    learner2 = learner_type(generate_random_parametrization(f), **learner_kwargs)
+    learner2 = learner_type(learner.function, **learner_kwargs)
     learner2.load_dataframe(df, **kw)
+    assert learner2.npoints == learner.npoints
 
     # Test this for a learner in a BalancingLearner
     learners = [

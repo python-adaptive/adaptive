@@ -351,7 +351,7 @@ class Learner1D(BaseLearner):
 
     def load_dataframe(
         self,
-        df,
+        df: pandas.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         x_name: str = "x",

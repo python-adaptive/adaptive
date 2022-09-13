@@ -98,7 +98,7 @@ class AverageLearner(BaseLearner):
 
     def load_dataframe(
         self,
-        df,
+        df: pandas.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         seed_name: str = "seed",
