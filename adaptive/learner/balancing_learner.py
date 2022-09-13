@@ -11,6 +11,14 @@ from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest, named_product, restore
 
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
+
 
 def dispatch(child_functions, arg):
     index, x = arg
@@ -380,6 +388,13 @@ class BalancingLearner(BaseLearner):
             learner = learner_type(function=partial(f, **combo), **learner_kwargs)
             learners.append(learner)
         return cls(learners, cdims=arguments)
+
+    def to_dataframe(self, kwargs):
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        dfs = [learner.to_dataframe(**kwargs) for learner in self.learners]
+        df = pandas.concat(dfs, axis=0, ignore_index=True)
+        return df
 
     def save(self, fname, compress=True):
         """Save the data of the child learners into pickle files
