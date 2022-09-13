@@ -4,6 +4,15 @@ import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
+from adaptive.utils import assign_defaults
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 
 class _IgnoreFirstArgument:
@@ -119,6 +128,25 @@ class SequenceLearner(BaseLearner):
     @property
     def npoints(self):
         return len(self.data)
+
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        index_name: str = "i",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        indices, ys = zip(*self.data.items()) if self.data else ([], [])
+        sequence = [self.sequence[i] for i in indices]
+        df = pandas.DataFrame(indices, columns=[index_name])
+        df[x_name] = sequence
+        df[y_name] = ys
+        if with_default_function_args:
+            assign_defaults(self.function, df, function_prefix)
+        return df
 
     def _get_data(self):
         return self.data

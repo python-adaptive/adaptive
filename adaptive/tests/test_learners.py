@@ -703,11 +703,11 @@ def test_learner_subdomain(learner_type, f, learner_kwargs):
     LearnerND,
     AverageLearner,
     AverageLearner1D,
-    # SequenceLearner,  # TODO: implement this
+    SequenceLearner,
 )
 def test_to_dataframe(learner_type, f, learner_kwargs):
     if learner_type is LearnerND:
-        kw = {"point_names": list("xyz")[: len(learner_kwargs["bounds"])]}
+        kw = {"point_names": tuple("xyz")[: len(learner_kwargs["bounds"])]}
     else:
         kw = {}
 
@@ -734,6 +734,8 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
         learner2.tell_many(df["seed"].values, df["y"])
     elif learner_type is AverageLearner1D:
         learner2.tell_many(df[["seed", "x"]].values, df["y"])
+    elif learner_type is SequenceLearner:
+        learner2.tell_many(df[["i", "x"]].values, df["y"])
     else:
         raise NotImplementedError()
 
