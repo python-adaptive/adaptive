@@ -136,7 +136,7 @@ class AverageLearner1D(Learner1D):
             return 0
         return min(self._number_samples.values())
 
-    def to_numpy(self, mean: bool = True) -> np.ndarray:
+    def to_numpy(self, mean: bool = False) -> np.ndarray:
         if mean:
             return super().to_numpy()
         else:
