@@ -19,7 +19,15 @@ from adaptive.learner.triangulation import (
     simplex_volume_in_embedding,
 )
 from adaptive.notebook_integration import ensure_holoviews, ensure_plotly
-from adaptive.utils import cache_latest, restore
+from adaptive.utils import assign_defaults, cache_latest, restore
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 
 def to_list(inp):
@@ -387,6 +395,26 @@ class LearnerND(BaseLearner):
         size of the input dimension and ``vdim`` is the length of the return value
         of ``learner.function``."""
         return np.array([(*p, *np.atleast_1d(v)) for p, v in sorted(self.data.items())])
+
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        point_names: tuple[str] = ("x", "y", "z"),
+        value_name: str = "y",
+    ) -> pandas.DataFrame:
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        if len(point_names) != self.ndim:
+            raise ValueError(
+                f"point_names ({point_names}) should have the"
+                f" same length as learner.ndims ({self.ndim})"
+            )
+        data = sorted((*x, y) for x, y in self.data.items())
+        df = pandas.DataFrame(data, columns=[*point_names, value_name])
+        if with_default_function_args:
+            assign_defaults(self.function, df, function_prefix)
+        return df
 
     @property
     def bounds_are_done(self):
