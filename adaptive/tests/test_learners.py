@@ -714,7 +714,7 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
     learner = learner_type(generate_random_parametrization(f), **learner_kwargs)
 
     # Test empty dataframe
-    df = learner.to_dataframe()
+    df = learner.to_dataframe(**kw)
     assert len(df) == 0
 
     # Run the learner
