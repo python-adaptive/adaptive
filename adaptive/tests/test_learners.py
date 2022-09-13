@@ -710,12 +710,34 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
         kw = {"point_names": list("xyz")[: len(learner_kwargs["bounds"])]}
     else:
         kw = {}
+
     learner = learner_type(generate_random_parametrization(f), **learner_kwargs)
     simple_run(learner, 100)
     df = learner.to_dataframe(**kw)
     assert isinstance(df, pandas.DataFrame)
-    assert len(df) == learner.npoints
+    if learner_type is AverageLearner1D:
+        assert len(df) == learner.nsamples
+    else:
+        assert len(df) == learner.npoints
 
+    # Add points from the DataFrame to a new empty learner
+    learner2 = learner_type(generate_random_parametrization(f), **learner_kwargs)
+
+    if learner_type is Learner1D:
+        learner2.tell_many(df["x"], df["y"])
+    elif learner_type is Learner2D:
+        learner2.tell_many(df[["x", "y"]].values, df["z"])
+    elif learner_type is LearnerND:
+        point_names = list(kw["point_names"])
+        learner2.tell_many(df[point_names].values, df["value"])
+    elif learner_type is AverageLearner:
+        learner2.tell_many(df["seed"].values, df["y"])
+    elif learner_type is AverageLearner1D:
+        learner2.tell_many(df[["seed", "x"]].values, df["y"])
+    else:
+        raise NotImplementedError()
+
+    # Test this for a learner in a BalancingLearner
     learners = [
         learner_type(generate_random_parametrization(f), **learner_kwargs)
         for _ in range(2)
@@ -724,4 +746,8 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
     simple_run(learner, 100)
     df = learner.to_dataframe(**kw)
     assert isinstance(df, pandas.DataFrame)
-    assert len(df) == learner.npoints
+
+    if learner_type is not AverageLearner1D:
+        assert len(df) == learner.npoints
+
+    # TODO: Test this for a learner in a DataSaver

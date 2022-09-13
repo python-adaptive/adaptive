@@ -150,7 +150,7 @@ class AverageLearner1D(Learner1D):
 
     def to_dataframe(
         self,
-        mean: bool = True,
+        mean: bool = False,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         seed_name: str = "seed",

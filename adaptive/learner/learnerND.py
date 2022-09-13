@@ -401,7 +401,7 @@ class LearnerND(BaseLearner):
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         point_names: tuple[str, ...] = ("x", "y", "z"),
-        value_name: str = "y",
+        value_name: str = "value",
     ) -> pandas.DataFrame:
         if not with_pandas:
             raise ImportError("pandas is not installed.")
@@ -410,7 +410,7 @@ class LearnerND(BaseLearner):
                 f"point_names ({point_names}) should have the"
                 f" same length as learner.ndims ({self.ndim})"
             )
-        data = sorted((*x, y) for x, y in self.data.items())
+        data = list((*x, y) for x, y in self.data.items())
         df = pandas.DataFrame(data, columns=[*point_names, value_name])
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
