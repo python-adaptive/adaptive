@@ -209,6 +209,28 @@ class AverageLearner1D(Learner1D):
         x_name: str = "x",
         y_name: str = "y",
     ):
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The data to load.
+        with_default_function_args : bool, optional
+            The ``with_default_function_args`` used in ``to_dataframe()``,
+            by default True
+        function_prefix : str, optional
+            The ``function_prefix`` used in ``to_dataframe``, by default "function."
+        seed_name : str, optional
+            The ``seed_name`` used in ``to_dataframe``, by default "seed"
+        x_name : str, optional
+            The ``x_name`` used in ``to_dataframe``, by default "x"
+        y_name : str, optional
+            The ``y_name`` used in ``to_dataframe``, by default "y"
+        """
         # Were using zip instead of df[[seed_name, x_name]].values because that will
         # make the seeds into floats
         seed_x = list(zip(df[seed_name].values.tolist(), df[x_name].values.tolist()))

@@ -452,6 +452,28 @@ class Learner2D(BaseLearner):
         y_name: str = "y",
         z_name: str = "z",
     ):
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The data to load.
+        with_default_function_args : bool, optional
+            The ``with_default_function_args`` used in ``to_dataframe()``,
+            by default True
+        function_prefix : str, optional
+            The ``function_prefix`` used in ``to_dataframe``, by default "function."
+        x_name : str, optional
+            The ``x_name`` used in ``to_dataframe``, by default "x"
+        y_name : str, optional
+            The ``y_name`` used in ``to_dataframe``, by default "y"
+        z_name : str, optional
+            The ``z_name`` used in ``to_dataframe``, by default "z"
+        """
         self.tell_many(df[[x_name, y_name]].values, df[z_name].values)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(

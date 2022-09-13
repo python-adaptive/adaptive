@@ -456,6 +456,26 @@ class LearnerND(BaseLearner):
         point_names: tuple[str, ...] = ("x", "y", "z"),
         value_name: str = "value",
     ):
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The data to load.
+        with_default_function_args : bool, optional
+            The ``with_default_function_args`` used in ``to_dataframe()``,
+            by default True
+        function_prefix : str, optional
+            The ``function_prefix`` used in ``to_dataframe``, by default "function."
+        point_names : str, optional
+            The ``point_names`` used in ``to_dataframe``, by default ("x", "y", "z")
+        value_name : str, optional
+            The ``value_name`` used in ``to_dataframe``, by default "value"
+        """
         self.tell_many(df[list(point_names)].values, df[value_name].values)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
