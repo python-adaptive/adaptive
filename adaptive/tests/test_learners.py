@@ -11,6 +11,7 @@ import tempfile
 
 import flaky
 import numpy as np
+import pandas
 import pytest
 import scipy.spatial
 
@@ -694,3 +695,33 @@ def test_learner_subdomain(learner_type, f, learner_kwargs):
     perform 'similarly' to learners defined on that subdomain only."""
     # XXX: not sure how to implement this. How do we measure "performance"?
     raise NotImplementedError()
+
+
+@run_with(
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    AverageLearner,
+    AverageLearner1D,
+    # SequenceLearner,  # TODO: implement this
+)
+def test_to_dataframe(learner_type, f, learner_kwargs):
+    if learner_type is LearnerND:
+        kw = {"point_names": list("xyz")[: len(learner_kwargs["bounds"])]}
+    else:
+        kw = {}
+    learner = learner_type(generate_random_parametrization(f), **learner_kwargs)
+    simple_run(learner, 100)
+    df = learner.to_dataframe(**kw)
+    assert isinstance(df, pandas.DataFrame)
+    assert len(df) == learner.npoints
+
+    learners = [
+        learner_type(generate_random_parametrization(f), **learner_kwargs)
+        for _ in range(2)
+    ]
+    learner = BalancingLearner(learners)
+    simple_run(learner, 100)
+    df = learner.to_dataframe(**kw)
+    assert isinstance(df, pandas.DataFrame)
+    assert len(df) == learner.npoints
