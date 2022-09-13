@@ -101,7 +101,7 @@ class _RequireAttrsABCMeta(abc.ABCMeta):
         return obj
 
 
-def default_parameters(function, function_prefix="", start_index=1):
+def _default_parameters(function, function_prefix="", start_index=1):
     sig = inspect.signature(function)
     defaults = {
         f"{function_prefix}{k}": v.default
@@ -112,6 +112,6 @@ def default_parameters(function, function_prefix="", start_index=1):
 
 
 def assign_defaults(function, df, function_prefix="", start_index=1):
-    defaults = default_parameters(function, function_prefix, start_index)
+    defaults = _default_parameters(function, function_prefix, start_index)
     for k, v in defaults.items():
         df[k] = len(df) * [v]
