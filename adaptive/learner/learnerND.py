@@ -400,7 +400,7 @@ class LearnerND(BaseLearner):
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
-        point_names: tuple[str] = ("x", "y", "z"),
+        point_names: tuple[str, ...] = ("x", "y", "z"),
         value_name: str = "y",
     ) -> pandas.DataFrame:
         if not with_pandas:
