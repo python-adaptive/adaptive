@@ -14,7 +14,7 @@ from sortedcontainers import SortedDict
 
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Real
+from adaptive.types import Int, Real
 from adaptive.utils import assign_defaults, partial_function_from_dataframe
 
 try:
@@ -183,7 +183,10 @@ class AverageLearner1D(Learner1D):
         x_name: str = "x",
         y_name: str = "y",
     ):
-        self.tell_many(df[[seed_name, x_name]].values, df[y_name].values)
+        # Were using zip instead of df[[seed_name, x_name]].values because that will
+        # make the seeds into floats
+        seed_x = list(zip(df[seed_name].values.tolist(), df[x_name].values.tolist()))
+        self.tell_many(seed_x, df[y_name].values)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
                 self.function, df, function_prefix
@@ -424,7 +427,9 @@ class AverageLearner1D(Learner1D):
         t_student = scipy.stats.t.ppf(1 - self.alpha, df=n - 1)
         return t_student * (variance_in_mean / n) ** 0.5
 
-    def tell_many(self, xs: Points, ys: Sequence[Real]) -> None:
+    def tell_many(
+        self, xs: Points | np.ndarray, ys: Sequence[Real] | np.ndarray
+    ) -> None:
         # Check that all x are within the bounds
         # TODO: remove this requirement, all other learners add the data
         # but ignore it going forward.
@@ -435,7 +440,7 @@ class AverageLearner1D(Learner1D):
             )
 
         # Create a mapping of points to a list of samples
-        mapping: DefaultDict[Real, DefaultDict[int, Real]] = defaultdict(
+        mapping: DefaultDict[Real, DefaultDict[Int, Real]] = defaultdict(
             lambda: defaultdict(dict)
         )
         for (seed, x), y in zip(xs, ys):

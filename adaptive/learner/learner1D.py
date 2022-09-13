@@ -563,8 +563,11 @@ class Learner1D(BaseLearner):
 
     def tell_many(
         self,
-        xs: Sequence[Float],
-        ys: (Sequence[Float] | Sequence[Sequence[Float]] | Sequence[np.ndarray]),
+        xs: Sequence[Float] | np.ndarray,
+        ys: Sequence[Float]
+        | Sequence[Sequence[Float]]
+        | Sequence[np.ndarray]
+        | np.ndarray,
         *,
         force: bool = False,
     ) -> None:

@@ -8,7 +8,7 @@ import numpy as np
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Float, Real
+from adaptive.types import Float, Int, Real
 from adaptive.utils import (
     assign_defaults,
     cache_latest,
@@ -127,7 +127,7 @@ class AverageLearner(BaseLearner):
                 self.tell_pending(p)
         return points, loss_improvements
 
-    def tell(self, n: int, value: Real) -> None:
+    def tell(self, n: Int, value: Real) -> None:
         if n in self.data:
             # The point has already been added before.
             return
