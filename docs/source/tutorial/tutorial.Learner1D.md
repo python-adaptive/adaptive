@@ -219,7 +219,7 @@ df
 
 and load that data into a new learner with
 ```{code-cell} ipython3
-new_learner = adaptive.Learner1D(sin_exp, (-1, 1))  # create an empty learner
+new_learner = adaptive.Learner1D(learner.function, (-1, 1))  # create an empty learner
 new_learner.load_dataframe(df)  # load the pandas.DataFrame's data
 new_learner.plot()
 ```
