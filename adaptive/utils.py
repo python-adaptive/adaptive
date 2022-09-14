@@ -101,7 +101,9 @@ class _RequireAttrsABCMeta(abc.ABCMeta):
         return obj
 
 
-def _default_parameters(function, function_prefix: str = "", start_index: int = 1):
+def _default_parameters(
+    function, function_prefix: str = "function.", start_index: int = 1
+):
     sig = inspect.signature(function)
     defaults = {
         f"{function_prefix}{k}": v.default
@@ -111,13 +113,20 @@ def _default_parameters(function, function_prefix: str = "", start_index: int = 
     return defaults
 
 
-def assign_defaults(function, df, function_prefix: str = "", start_index: int = 1):
+def assign_defaults(
+    function, df, function_prefix: str = "function.", start_index: int = 1
+):
     defaults = _default_parameters(function, function_prefix, start_index)
     for k, v in defaults.items():
         df[k] = len(df) * [v]
 
 
-def partial_function_from_dataframe(function, df, function_prefix: str = ""):
+def partial_function_from_dataframe(function, df, function_prefix: str = "function."):
+    if function_prefix == "":
+        raise ValueError(
+            "The function_prefix cannot be an empty string because"
+            " it is used to distinguish between function and learner parameters."
+        )
     kwargs = {}
     for col in df.columns:
         if col.startswith(function_prefix):
