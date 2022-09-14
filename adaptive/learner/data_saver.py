@@ -4,6 +4,14 @@ from collections import OrderedDict
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.utils import copy_docstring_from
 
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
+
 
 class DataSaver:
     """Save extra data associated with the values that need to be learned.
@@ -43,6 +51,39 @@ class DataSaver:
     @copy_docstring_from(BaseLearner.tell_pending)
     def tell_pending(self, x):
         self.learner.tell_pending(x)
+
+    def to_dataframe(
+        self, extra_data_name: str = "extra_data", **kwargs
+    ) -> pandas.DataFrame:
+        """Return the data as a concatenated `pandas.DataFrame` from child learners.
+
+        Parameters
+        ----------
+        extra_data_name : str, optional
+            The name of the column containing the extra data, by default "extra_data".
+        **kwargs : dict
+            Keyword arguments passed to the ``child_learner.to_dataframe(**kwargs)``.
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        df = self.learner.to_dataframe(**kwargs)
+
+        def to_key(x):
+            return tuple(x.values) if x.values.size > 1 else x.item()
+
+        df[extra_data_name] = [
+            self.extra_data[to_key(x)] for _, x in df[df.attrs["inputs"]].iterrows()
+        ]
+        return df
 
     def _get_data(self):
         return self.learner._get_data(), self.extra_data

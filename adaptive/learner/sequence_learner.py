@@ -172,6 +172,8 @@ class SequenceLearner(BaseLearner):
         df = pandas.DataFrame(indices, columns=[index_name])
         df[x_name] = sequence
         df[y_name] = ys
+        df.attrs["inputs"] = [index_name]
+        df.attrs["output"] = y_name
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df

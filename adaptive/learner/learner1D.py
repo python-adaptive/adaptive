@@ -369,6 +369,8 @@ class Learner1D(BaseLearner):
         xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
         df = pandas.DataFrame(xs, columns=[x_name])
         df[y_name] = ys
+        df.attrs["inputs"] = [x_name]
+        df.attrs["output"] = y_name
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df

@@ -8,6 +8,7 @@ import os
 import random
 import shutil
 import tempfile
+import time
 
 import flaky
 import numpy as np
@@ -697,6 +698,16 @@ def test_learner_subdomain(learner_type, f, learner_kwargs):
     raise NotImplementedError()
 
 
+def add_time(f):
+    @ft.wraps(f)
+    def wrapper(*args, **kwargs):
+        t0 = time.time()
+        result = f(*args, **kwargs)
+        return {"result": result, "time": time.time() - t0}
+
+    return wrapper
+
+
 @run_with(
     Learner1D,
     Learner2D,
@@ -704,6 +715,8 @@ def test_learner_subdomain(learner_type, f, learner_kwargs):
     AverageLearner,
     AverageLearner1D,
     SequenceLearner,
+    IntegratorLearner,
+    with_all_loss_functions=False,
 )
 def test_to_dataframe(learner_type, f, learner_kwargs):
     if learner_type is LearnerND:
@@ -752,3 +765,21 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
     bal_learner2 = BalancingLearner(learners2)
     bal_learner2.load_dataframe(df_bal, **kw)
     assert bal_learner2.npoints == bal_learner.npoints
+
+    if learner_type is SequenceLearner:
+        # We do not test the DataSaver with the SequenceLearner
+        # because the DataSaver is not compatible with the SequenceLearner.
+        return
+
+    # Test with DataSaver
+    learner = learner_type(
+        add_time(generate_random_parametrization(f)), **learner_kwargs
+    )
+    data_saver = DataSaver(learner, operator.itemgetter("result"))
+    df = data_saver.to_dataframe(**kw)  # test if empty dataframe works
+    simple_run(data_saver, 100)
+    df = data_saver.to_dataframe(**kw)
+    if learner_type is AverageLearner1D:
+        assert len(df) == data_saver.nsamples
+    else:
+        assert len(df) == data_saver.npoints

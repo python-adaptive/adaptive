@@ -116,6 +116,8 @@ class AverageLearner(BaseLearner):
         if not with_pandas:
             raise ImportError("pandas is not installed.")
         df = pandas.DataFrame(sorted(self.data.items()), columns=[seed_name, y_name])
+        df.attrs["inputs"] = [seed_name]
+        df.attrs["output"] = y_name
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df

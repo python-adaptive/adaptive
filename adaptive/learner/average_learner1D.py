@@ -196,6 +196,8 @@ class AverageLearner1D(Learner1D):
             ]
             columns = [seed_name, x_name, y_name]
         df = pandas.DataFrame(data, columns=columns)
+        df.attrs["inputs"] = [seed_name, x_name]
+        df.attrs["output"] = y_name
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df
