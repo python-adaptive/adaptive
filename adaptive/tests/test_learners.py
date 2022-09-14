@@ -729,6 +729,8 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
     # Test empty dataframe
     df = learner.to_dataframe(**kw)
     assert len(df) == 0
+    assert "inputs" in df.attrs
+    assert "output" in df.attrs
 
     # Run the learner
     simple_run(learner, 100)

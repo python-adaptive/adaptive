@@ -445,6 +445,7 @@ class LearnerND(BaseLearner):
         data = list((*x, y) for x, y in self.data.items())
         df = pandas.DataFrame(data, columns=[*point_names, value_name])
         df.attrs["inputs"] = list(point_names)
+        df.attrs["output"] = value_name
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df

@@ -87,7 +87,11 @@ class DataSaver:
         return df
 
     def load_dataframe(
-        self, df: pandas.DataFrame, extra_data_name: str = "extra_data", **kwargs
+        self,
+        df: pandas.DataFrame,
+        extra_data_name: str = "extra_data",
+        input_names: tuple[str] = (),
+        **kwargs
     ):
         """Load the data from a `pandas.DataFrame` into the learner.
 
@@ -97,11 +101,18 @@ class DataSaver:
             DataFrame with the data to load.
         extra_data_name : str, optional
             The ``extra_data_name`` used in `to_dataframe`, by default "extra_data".
+        input_names : tuple[str], optional
+            The input names of the child learner. By default the input names are
+            taken from ``df.attrs["inputs"]``, however, metadata is not preserved
+            when saving/loading a DataFrame to/from a file. In that case, the input
+            names can be passed explicitly. For example, for a 2D learner, this would
+            be ``input_names=('x', 'y')``.
         **kwargs : dict
             Keyword arguments passed to each ``child_learner.load_dataframe(**kwargs)``.
         """
         self.learner.load_dataframe(df, **kwargs)
-        for _, x in df[df.attrs["inputs"] + [extra_data_name]].iterrows():
+        keys = df.attrs.get("inputs", list(input_names))
+        for _, x in df[keys + [extra_data_name]].iterrows():
             key = _to_key(x[:-1])
             self.extra_data[key] = x[-1]
 

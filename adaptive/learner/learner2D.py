@@ -440,6 +440,7 @@ class Learner2D(BaseLearner):
         data = sorted((x, y, z) for (x, y), z in self.data.items())
         df = pandas.DataFrame(data, columns=[x_name, y_name, z_name])
         df.attrs["inputs"] = [x_name, y_name]
+        df.attrs["output"] = z_name
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df

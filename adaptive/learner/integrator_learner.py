@@ -594,6 +594,8 @@ class IntegratorLearner(BaseLearner):
         if not with_pandas:
             raise ImportError("pandas is not installed.")
         df = pandas.DataFrame(sorted(self.data.items()), columns=[x_name, y_name])
+        df.attrs["inputs"] = [x_name]
+        df.attrs["output"] = y_name
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df
