@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 from collections import OrderedDict
 
@@ -91,7 +93,7 @@ class DataSaver:
         df: pandas.DataFrame,
         extra_data_name: str = "extra_data",
         input_names: tuple[str] = (),
-        **kwargs
+        **kwargs,
     ):
         """Load the data from a `pandas.DataFrame` into the learner.
 
