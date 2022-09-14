@@ -150,7 +150,7 @@ class SequenceLearner(BaseLearner):
             Prefix to the ``learner.function``'s default arguments' names,
             by default "function."
         index_name : str, optional
-            Name of the index parameter, by default "index"
+            Name of the index parameter, by default "i"
         x_name : str, optional
             Name of the input value, by default "x"
         y_name : str, optional
@@ -200,6 +200,8 @@ class SequenceLearner(BaseLearner):
             by default True
         function_prefix : str, optional
             The ``function_prefix`` used in ``to_dataframe``, by default "function."
+        index_name : str, optional
+            The ``index_name`` used in ``to_dataframe``, by default "i"
         x_name : str, optional
             The ``x_name`` used in ``to_dataframe``, by default "x"
         y_name : str, optional
