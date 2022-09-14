@@ -474,7 +474,8 @@ class Learner2D(BaseLearner):
         z_name : str, optional
             The ``z_name`` used in ``to_dataframe``, by default "z"
         """
-        self.tell_many(df[[x_name, y_name]].values, df[z_name].values)
+        data = df.set_index([x_name, y_name])[z_name].to_dict()
+        self._set_data(data)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
                 self.function, df, function_prefix
