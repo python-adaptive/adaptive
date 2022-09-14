@@ -783,3 +783,13 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
         assert len(df) == data_saver.nsamples
     else:
         assert len(df) == data_saver.npoints
+
+    # Test loading from a DataFrame into a new DataSaver
+    learner2 = learner_type(learner.function, **learner_kwargs)
+    data_saver2 = DataSaver(learner2, operator.itemgetter("result"))
+    data_saver2.load_dataframe(df, **kw)
+    assert data_saver2.extra_data.keys() == data_saver.extra_data.keys()
+    assert all(
+        data_saver2.extra_data[k] == data_saver.extra_data[k]
+        for k in data_saver.extra_data.keys()
+    )

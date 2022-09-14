@@ -13,6 +13,10 @@ except ModuleNotFoundError:
     with_pandas = False
 
 
+def _to_key(x):
+    return tuple(x.values) if x.values.size > 1 else x.item()
+
+
 class DataSaver:
     """Save extra data associated with the values that need to be learned.
 
@@ -77,13 +81,29 @@ class DataSaver:
             raise ImportError("pandas is not installed.")
         df = self.learner.to_dataframe(**kwargs)
 
-        def to_key(x):
-            return tuple(x.values) if x.values.size > 1 else x.item()
-
         df[extra_data_name] = [
-            self.extra_data[to_key(x)] for _, x in df[df.attrs["inputs"]].iterrows()
+            self.extra_data[_to_key(x)] for _, x in df[df.attrs["inputs"]].iterrows()
         ]
         return df
+
+    def load_dataframe(
+        self, df: pandas.DataFrame, extra_data_name: str = "extra_data", **kwargs
+    ):
+        """Load the data from a `pandas.DataFrame` into the learner.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame with the data to load.
+        extra_data_name : str, optional
+            The ``extra_data_name`` used in `to_dataframe`, by default "extra_data".
+        **kwargs : dict
+            Keyword arguments passed to each ``child_learner.load_dataframe(**kwargs)``.
+        """
+        self.learner.load_dataframe(df, **kwargs)
+        for _, x in df[df.attrs["inputs"] + [extra_data_name]].iterrows():
+            key = _to_key(x[:-1])
+            self.extra_data[key] = x[-1]
 
     def _get_data(self):
         return self.learner._get_data(), self.extra_data
