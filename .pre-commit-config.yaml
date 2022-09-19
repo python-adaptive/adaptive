@@ -25,3 +25,14 @@ repos:
     rev: 3.9.2
     hooks:
       - id: flake8
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.5.0
+    hooks:
+      - id: nbqa-black
+        additional_dependencies: [jupytext, black]
+      - id: nbqa-pyupgrade
+        args: ["--py37-plus"]
+        additional_dependencies: [jupytext, pyupgrade]
+      - id: nbqa-isort
+        args: ["--profile=black"]
+        additional_dependencies: [jupytext, isort]
