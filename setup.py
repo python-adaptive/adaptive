@@ -30,6 +30,7 @@ install_requires = [
     "sortedcontainers >= 2.0",
     "cloudpickle",
     "loky >= 2.9",
+    "typing_extensions",  # TODO: remove when dropping Python 3.7
 ]
 
 extras_require = {

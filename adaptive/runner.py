@@ -11,10 +11,16 @@ import time
 import traceback
 import warnings
 from contextlib import suppress
+from typing import Any
 
 import loky
 
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 try:
     import ipyparallel
@@ -663,15 +669,26 @@ class AsyncRunner(BaseRunner):
             end_time = time.time()
         return end_time - self.start_time
 
-    def start_periodic_saving(self, save_kwargs, interval):
+    def start_periodic_saving(
+        self,
+        save_kwargs: dict[str, Any],
+        interval: int,
+        method: Literal["pickle", "pandas"] = "pickle",
+    ):
         """Periodically save the learner's data.
 
         Parameters
         ----------
         save_kwargs : dict
-            Key-word arguments for ``learner.save(**save_kwargs)``.
+            Key-word arguments for ``learner.save(**save_kwargs)``
+            or ``learner.to_dataframe(**save_kwargs)``.
         interval : int
             Number of seconds between saving the learner.
+        method : Literal["pickle", "pandas"]
+            The method to use for saving the learner. Can be either
+            "pickle" or "pandas". The default is "pickle" which calls
+            ``learner.save(**save_kwargs)``. The "pandas" method uses
+            ``learner.to_dataframe(**save_kwargs)``.
 
         Example
         -------
@@ -681,11 +698,19 @@ class AsyncRunner(BaseRunner):
         ...     interval=600)
         """
 
-        async def _saver(save_kwargs=save_kwargs, interval=interval):
-            while self.status() == "running":
+        def save():
+            if method == "pickle":
                 self.learner.save(**save_kwargs)
+            elif method == "pandas":
+                self.learner.to_dataframe(**save_kwargs)
+            else:
+                raise ValueError(f"Unknown method: {method}")
+
+        async def _saver():
+            while self.status() == "running":
+                save()
                 await asyncio.sleep(interval)
-            self.learner.save(**save_kwargs)  # one last time
+            save()  # one last time
 
         self.saving_task = self.ioloop.create_task(_saver())
         return self.saving_task
