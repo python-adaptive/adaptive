@@ -101,22 +101,18 @@ class _RequireAttrsABCMeta(abc.ABCMeta):
         return obj
 
 
-def _default_parameters(
-    function, function_prefix: str = "function.", start_index: int = 1
-):
+def _default_parameters(function, function_prefix: str = "function."):
     sig = inspect.signature(function)
     defaults = {
         f"{function_prefix}{k}": v.default
         for i, (k, v) in enumerate(sig.parameters.items())
-        if v.default != inspect._empty and i >= start_index
+        if v.default != inspect._empty and i >= 1
     }
     return defaults
 
 
-def assign_defaults(
-    function, df, function_prefix: str = "function.", start_index: int = 1
-):
-    defaults = _default_parameters(function, function_prefix, start_index)
+def assign_defaults(function, df, function_prefix: str = "function."):
+    defaults = _default_parameters(function, function_prefix)
     for k, v in defaults.items():
         df[k] = len(df) * [v]
         df[k] = df[k].astype("category")
