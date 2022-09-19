@@ -1,9 +1,20 @@
+from __future__ import annotations
+
 from copy import copy
 
 import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
+from adaptive.utils import assign_defaults, partial_function_from_dataframe
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 
 class _IgnoreFirstArgument:
@@ -119,6 +130,90 @@ class SequenceLearner(BaseLearner):
     @property
     def npoints(self):
         return len(self.data)
+
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        index_name: str = "i",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        index_name : str, optional
+            Name of the index parameter, by default "i"
+        x_name : str, optional
+            Name of the input value, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        indices, ys = zip(*self.data.items()) if self.data else ([], [])
+        sequence = [self.sequence[i] for i in indices]
+        df = pandas.DataFrame(indices, columns=[index_name])
+        df[x_name] = sequence
+        df[y_name] = ys
+        df.attrs["inputs"] = [index_name]
+        df.attrs["output"] = y_name
+        if with_default_function_args:
+            assign_defaults(self.function, df, function_prefix)
+        return df
+
+    def load_dataframe(
+        self,
+        df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        index_name: str = "i",
+        x_name: str = "x",
+        y_name: str = "y",
+    ):
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The data to load.
+        with_default_function_args : bool, optional
+            The ``with_default_function_args`` used in ``to_dataframe()``,
+            by default True
+        function_prefix : str, optional
+            The ``function_prefix`` used in ``to_dataframe``, by default "function."
+        index_name : str, optional
+            The ``index_name`` used in ``to_dataframe``, by default "i"
+        x_name : str, optional
+            The ``x_name`` used in ``to_dataframe``, by default "x"
+        y_name : str, optional
+            The ``y_name`` used in ``to_dataframe``, by default "y"
+        """
+        self.tell_many(df[[index_name, x_name]].values, df[y_name].values)
+        if with_default_function_args:
+            self.function = partial_function_from_dataframe(
+                self.function, df, function_prefix
+            )
 
     def _get_data(self):
         return self.data

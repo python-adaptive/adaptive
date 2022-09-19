@@ -1,8 +1,22 @@
+from __future__ import annotations
+
 import functools
 from collections import OrderedDict
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.utils import copy_docstring_from
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
+
+
+def _to_key(x):
+    return tuple(x.values) if x.values.size > 1 else x.item()
 
 
 class DataSaver:
@@ -43,6 +57,66 @@ class DataSaver:
     @copy_docstring_from(BaseLearner.tell_pending)
     def tell_pending(self, x):
         self.learner.tell_pending(x)
+
+    def to_dataframe(
+        self, extra_data_name: str = "extra_data", **kwargs
+    ) -> pandas.DataFrame:
+        """Return the data as a concatenated `pandas.DataFrame` from child learners.
+
+        Parameters
+        ----------
+        extra_data_name : str, optional
+            The name of the column containing the extra data, by default "extra_data".
+        **kwargs : dict
+            Keyword arguments passed to the ``child_learner.to_dataframe(**kwargs)``.
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        df = self.learner.to_dataframe(**kwargs)
+
+        df[extra_data_name] = [
+            self.extra_data[_to_key(x)] for _, x in df[df.attrs["inputs"]].iterrows()
+        ]
+        return df
+
+    def load_dataframe(
+        self,
+        df: pandas.DataFrame,
+        extra_data_name: str = "extra_data",
+        input_names: tuple[str] = (),
+        **kwargs,
+    ):
+        """Load the data from a `pandas.DataFrame` into the learner.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame with the data to load.
+        extra_data_name : str, optional
+            The ``extra_data_name`` used in `to_dataframe`, by default "extra_data".
+        input_names : tuple[str], optional
+            The input names of the child learner. By default the input names are
+            taken from ``df.attrs["inputs"]``, however, metadata is not preserved
+            when saving/loading a DataFrame to/from a file. In that case, the input
+            names can be passed explicitly. For example, for a 2D learner, this would
+            be ``input_names=('x', 'y')``.
+        **kwargs : dict
+            Keyword arguments passed to each ``child_learner.load_dataframe(**kwargs)``.
+        """
+        self.learner.load_dataframe(df, **kwargs)
+        keys = df.attrs.get("inputs", list(input_names))
+        for _, x in df[keys + [extra_data_name]].iterrows():
+            key = _to_key(x[:-1])
+            self.extra_data[key] = x[-1]
 
     def _get_data(self):
         return self.learner._get_data(), self.extra_data

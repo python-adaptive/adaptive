@@ -11,6 +11,14 @@ from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest, named_product, restore
 
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
+
 
 def dispatch(child_functions, arg):
     index, x = arg
@@ -380,6 +388,55 @@ class BalancingLearner(BaseLearner):
             learner = learner_type(function=partial(f, **combo), **learner_kwargs)
             learners.append(learner)
         return cls(learners, cdims=arguments)
+
+    def to_dataframe(self, index_name: str = "learner_index", **kwargs):
+        """Return the data as a concatenated `pandas.DataFrame` from child learners.
+
+        Parameters
+        ----------
+        index_name : str, optional
+            The name of the index column indicating the learner index,
+            by default "learner_index".
+        **kwargs : dict
+            Keyword arguments passed to each ``child_learner.to_dataframe(**kwargs)``.
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        dfs = []
+        for i, learner in enumerate(self.learners):
+            df = learner.to_dataframe(**kwargs)
+            cols = list(df.columns)
+            df[index_name] = i
+            df = df[[index_name] + cols]
+            dfs.append(df)
+        df = pandas.concat(dfs, axis=0, ignore_index=True)
+        return df
+
+    def load_dataframe(
+        self, df: pandas.DataFrame, index_name: str = "learner_index", **kwargs
+    ):
+        """Load the data from a `pandas.DataFrame` into the child learners.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame with the data to load.
+        index_name : str, optional
+            The ``index_name`` used in `to_dataframe`, by default "learner_index".
+        **kwargs : dict
+            Keyword arguments passed to each ``child_learner.load_dataframe(**kwargs)``.
+        """
+        for i, gr in df.groupby(index_name):
+            self.learners[i].load_dataframe(gr, **kwargs)
 
     def save(self, fname, compress=True):
         """Save the data of the child learners into pickle files

@@ -16,7 +16,19 @@ from adaptive.learner.learnerND import volume
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Float, Int, Real
-from adaptive.utils import cache_latest
+from adaptive.utils import (
+    assign_defaults,
+    cache_latest,
+    partial_function_from_dataframe,
+)
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 # -- types --
 
@@ -321,6 +333,82 @@ class Learner1D(BaseLearner):
         and ``(npoints, 1+vdim)`` if ``learner.function`` returns a vector of length ``vdim``."""
         return np.array([(x, *np.atleast_1d(y)) for x, y in sorted(self.data.items())])
 
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        x_name : str, optional
+            Name of the input value, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
+        df = pandas.DataFrame(xs, columns=[x_name])
+        df[y_name] = ys
+        df.attrs["inputs"] = [x_name]
+        df.attrs["output"] = y_name
+        if with_default_function_args:
+            assign_defaults(self.function, df, function_prefix)
+        return df
+
+    def load_dataframe(
+        self,
+        df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+    ):
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The data to load.
+        with_default_function_args : bool, optional
+            The ``with_default_function_args`` used in ``to_dataframe()``,
+            by default True
+        function_prefix : str, optional
+            The ``function_prefix`` used in ``to_dataframe``, by default "function."
+        x_name : str, optional
+            The ``x_name`` used in ``to_dataframe``, by default "x"
+        y_name : str, optional
+            The ``y_name`` used in ``to_dataframe``, by default "y"
+        """
+        self.tell_many(df[x_name].values, df[y_name].values)
+        if with_default_function_args:
+            self.function = partial_function_from_dataframe(
+                self.function, df, function_prefix
+            )
+
     @property
     def npoints(self) -> int:
         """Number of evaluated points."""
@@ -521,8 +609,11 @@ class Learner1D(BaseLearner):
 
     def tell_many(
         self,
-        xs: Sequence[Float],
-        ys: (Sequence[Float] | Sequence[Sequence[Float]] | Sequence[np.ndarray]),
+        xs: Sequence[Float] | np.ndarray,
+        ys: Sequence[Float]
+        | Sequence[Sequence[Float]]
+        | Sequence[np.ndarray]
+        | np.ndarray,
         *,
         force: bool = False,
     ) -> None:

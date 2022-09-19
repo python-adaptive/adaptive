@@ -1,6 +1,7 @@
 import abc
 import functools
 import gzip
+import inspect
 import os
 import pickle
 from contextlib import contextmanager
@@ -98,3 +99,40 @@ class _RequireAttrsABCMeta(abc.ABCMeta):
                     msg = f"The attribute '{name}' should be of type {type_}, not {type(x)}."
                     raise TypeError(msg)
         return obj
+
+
+def _default_parameters(function, function_prefix: str = "function."):
+    sig = inspect.signature(function)
+    defaults = {
+        f"{function_prefix}{k}": v.default
+        for i, (k, v) in enumerate(sig.parameters.items())
+        if v.default != inspect._empty and i >= 1
+    }
+    return defaults
+
+
+def assign_defaults(function, df, function_prefix: str = "function."):
+    defaults = _default_parameters(function, function_prefix)
+    for k, v in defaults.items():
+        df[k] = len(df) * [v]
+        df[k] = df[k].astype("category")
+
+
+def partial_function_from_dataframe(function, df, function_prefix: str = "function."):
+    if function_prefix == "":
+        raise ValueError(
+            "The function_prefix cannot be an empty string because"
+            " it is used to distinguish between function and learner parameters."
+        )
+    kwargs = {}
+    for col in df.columns:
+        if col.startswith(function_prefix):
+            k = col.split(function_prefix, 1)[1]
+            vs = df[col]
+            v, *rest = vs.unique()
+            if rest:
+                raise ValueError(f"The column '{col}' can only have one value.")
+            kwargs[k] = v
+    if not kwargs:
+        return function
+    return functools.partial(function, **kwargs)

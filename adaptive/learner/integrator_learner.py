@@ -13,7 +13,15 @@ from sortedcontainers import SortedSet
 from adaptive.learner import integrator_coeffs as coeff
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.utils import cache_latest, restore
+from adaptive.utils import assign_defaults, cache_latest, restore
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 
 def _downdate(c, nans, depth):
@@ -549,6 +557,48 @@ class IntegratorLearner(BaseLearner):
     def to_numpy(self):
         """Data as NumPy array of size (npoints, 2)."""
         return np.array(sorted(self.data.items()))
+
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        seed_name : str, optional
+            Name of the seed parameter, by default "seed"
+        x_name : str, optional
+            Name of the input value, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        df = pandas.DataFrame(sorted(self.data.items()), columns=[x_name, y_name])
+        df.attrs["inputs"] = [x_name]
+        df.attrs["output"] = y_name
+        if with_default_function_args:
+            assign_defaults(self.function, df, function_prefix)
+        return df
 
     def _get_data(self):
         # Change the defaultdict of SortedSets to a normal dict of sets.

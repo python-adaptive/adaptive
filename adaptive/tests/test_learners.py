@@ -8,9 +8,11 @@ import os
 import random
 import shutil
 import tempfile
+import time
 
 import flaky
 import numpy as np
+import pandas
 import pytest
 import scipy.spatial
 
@@ -694,3 +696,102 @@ def test_learner_subdomain(learner_type, f, learner_kwargs):
     perform 'similarly' to learners defined on that subdomain only."""
     # XXX: not sure how to implement this. How do we measure "performance"?
     raise NotImplementedError()
+
+
+def add_time(f):
+    @ft.wraps(f)
+    def wrapper(*args, **kwargs):
+        t0 = time.time()
+        result = f(*args, **kwargs)
+        return {"result": result, "time": time.time() - t0}
+
+    return wrapper
+
+
+@run_with(
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    AverageLearner,
+    AverageLearner1D,
+    SequenceLearner,
+    IntegratorLearner,
+    with_all_loss_functions=False,
+)
+def test_to_dataframe(learner_type, f, learner_kwargs):
+    if learner_type is LearnerND:
+        kw = {"point_names": tuple("xyz")[: len(learner_kwargs["bounds"])]}
+    else:
+        kw = {}
+
+    learner = learner_type(generate_random_parametrization(f), **learner_kwargs)
+
+    # Test empty dataframe
+    df = learner.to_dataframe(**kw)
+    assert len(df) == 0
+    assert "inputs" in df.attrs
+    assert "output" in df.attrs
+
+    # Run the learner
+    simple_run(learner, 100)
+    df = learner.to_dataframe(**kw)
+    assert isinstance(df, pandas.DataFrame)
+    if learner_type is AverageLearner1D:
+        assert len(df) == learner.nsamples
+    else:
+        assert len(df) == learner.npoints
+
+    # Add points from the DataFrame to a new empty learner
+    learner2 = learner_type(learner.function, **learner_kwargs)
+    learner2.load_dataframe(df, **kw)
+    assert learner2.npoints == learner.npoints
+
+    # Test this for a learner in a BalancingLearner
+    learners = [
+        learner_type(generate_random_parametrization(f), **learner_kwargs)
+        for _ in range(2)
+    ]
+    bal_learner = BalancingLearner(learners)
+    simple_run(bal_learner, 100)
+    df_bal = bal_learner.to_dataframe(**kw)
+    assert isinstance(df_bal, pandas.DataFrame)
+
+    if learner_type is not AverageLearner1D:
+        assert len(df_bal) == bal_learner.npoints
+
+    # Test loading from a DataFrame into the BalancingLearner
+    learners2 = [
+        learner_type(generate_random_parametrization(f), **learner_kwargs)
+        for _ in range(2)
+    ]
+    bal_learner2 = BalancingLearner(learners2)
+    bal_learner2.load_dataframe(df_bal, **kw)
+    assert bal_learner2.npoints == bal_learner.npoints
+
+    if learner_type is SequenceLearner:
+        # We do not test the DataSaver with the SequenceLearner
+        # because the DataSaver is not compatible with the SequenceLearner.
+        return
+
+    # Test with DataSaver
+    learner = learner_type(
+        add_time(generate_random_parametrization(f)), **learner_kwargs
+    )
+    data_saver = DataSaver(learner, operator.itemgetter("result"))
+    df = data_saver.to_dataframe(**kw)  # test if empty dataframe works
+    simple_run(data_saver, 100)
+    df = data_saver.to_dataframe(**kw)
+    if learner_type is AverageLearner1D:
+        assert len(df) == data_saver.nsamples
+    else:
+        assert len(df) == data_saver.npoints
+
+    # Test loading from a DataFrame into a new DataSaver
+    learner2 = learner_type(learner.function, **learner_kwargs)
+    data_saver2 = DataSaver(learner2, operator.itemgetter("result"))
+    data_saver2.load_dataframe(df, **kw)
+    assert data_saver2.extra_data.keys() == data_saver.extra_data.keys()
+    assert all(
+        data_saver2.extra_data[k] == data_saver.extra_data[k]
+        for k in data_saver.extra_data.keys()
+    )

@@ -14,7 +14,16 @@ from sortedcontainers import SortedDict
 
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Real
+from adaptive.types import Int, Real
+from adaptive.utils import assign_defaults, partial_function_from_dataframe
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 Point = Tuple[int, Real]
 Points = List[Point]
@@ -126,6 +135,112 @@ class AverageLearner1D(Learner1D):
         if not self._number_samples:
             return 0
         return min(self._number_samples.values())
+
+    def to_numpy(self, mean: bool = False) -> np.ndarray:
+        if mean:
+            return super().to_numpy()
+        else:
+            return np.array(
+                [
+                    (seed, x, *np.atleast_1d(y))
+                    for x, seed_y in self._data_samples.items()
+                    for seed, y in seed_y.items()
+                ]
+            )
+
+    def to_dataframe(
+        self,
+        mean: bool = False,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        seed_name: str = "seed",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        seed_name : str, optional
+            Name of the ``seed`` parameter, by default "seed"
+        x_name : str, optional
+            Name of the ``x`` parameter, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        if mean:
+            data = sorted(self.data.items())
+            columns = [x_name, y_name]
+        else:
+            data = [
+                (seed, x, y)
+                for x, seed_y in sorted(self._data_samples.items())
+                for seed, y in sorted(seed_y.items())
+            ]
+            columns = [seed_name, x_name, y_name]
+        df = pandas.DataFrame(data, columns=columns)
+        df.attrs["inputs"] = [seed_name, x_name]
+        df.attrs["output"] = y_name
+        if with_default_function_args:
+            assign_defaults(self.function, df, function_prefix)
+        return df
+
+    def load_dataframe(
+        self,
+        df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        seed_name: str = "seed",
+        x_name: str = "x",
+        y_name: str = "y",
+    ):
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The data to load.
+        with_default_function_args : bool, optional
+            The ``with_default_function_args`` used in ``to_dataframe()``,
+            by default True
+        function_prefix : str, optional
+            The ``function_prefix`` used in ``to_dataframe``, by default "function."
+        seed_name : str, optional
+            The ``seed_name`` used in ``to_dataframe``, by default "seed"
+        x_name : str, optional
+            The ``x_name`` used in ``to_dataframe``, by default "x"
+        y_name : str, optional
+            The ``y_name`` used in ``to_dataframe``, by default "y"
+        """
+        # Were using zip instead of df[[seed_name, x_name]].values because that will
+        # make the seeds into floats
+        seed_x = list(zip(df[seed_name].values.tolist(), df[x_name].values.tolist()))
+        self.tell_many(seed_x, df[y_name].values)
+        if with_default_function_args:
+            self.function = partial_function_from_dataframe(
+                self.function, df, function_prefix
+            )
 
     def ask(self, n: int, tell_pending: bool = True) -> tuple[Points, list[float]]:
         """Return 'n' points that are expected to maximally reduce the loss."""
@@ -362,7 +477,9 @@ class AverageLearner1D(Learner1D):
         t_student = scipy.stats.t.ppf(1 - self.alpha, df=n - 1)
         return t_student * (variance_in_mean / n) ** 0.5
 
-    def tell_many(self, xs: Points, ys: Sequence[Real]) -> None:
+    def tell_many(
+        self, xs: Points | np.ndarray, ys: Sequence[Real] | np.ndarray
+    ) -> None:
         # Check that all x are within the bounds
         # TODO: remove this requirement, all other learners add the data
         # but ignore it going forward.
@@ -373,7 +490,7 @@ class AverageLearner1D(Learner1D):
             )
 
         # Create a mapping of points to a list of samples
-        mapping: DefaultDict[Real, DefaultDict[int, Real]] = defaultdict(
+        mapping: DefaultDict[Real, DefaultDict[Int, Real]] = defaultdict(
             lambda: defaultdict(dict)
         )
         for (seed, x), y in zip(xs, ys):
