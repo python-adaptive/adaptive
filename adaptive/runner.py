@@ -671,8 +671,8 @@ class AsyncRunner(BaseRunner):
 
     def start_periodic_saving(
         self,
-        save_kwargs: dict[str, Any],
-        interval: int,
+        save_kwargs: dict[str, Any] | None = None,
+        interval: int = 30,
         method: Callable[[BaseLearner], None] | None = None,
     ):
         """Periodically save the learner's data.
@@ -680,8 +680,8 @@ class AsyncRunner(BaseRunner):
         Parameters
         ----------
         save_kwargs : dict
-            Key-word arguments for ``learner.save(**save_kwargs)``
-            or ``learner.to_dataframe(**save_kwargs)``.
+            Key-word arguments for ``learner.save(**save_kwargs)``.
+            Only used if ``method=None``.
         interval : int
             Number of seconds between saving the learner.
         method : callable
@@ -703,6 +703,8 @@ class AsyncRunner(BaseRunner):
 
         if method is None:
             method = save
+            if save_kwargs is None:
+                raise ValueError("Must provide `save_kwargs` if method=None.")
 
         async def _saver():
             while self.status() == "running":
