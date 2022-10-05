@@ -698,11 +698,11 @@ class AsyncRunner(BaseRunner):
         ...     interval=600)
         """
 
-        def save(learner):
+        def default_save(learner):
             learner.save(**save_kwargs)
 
         if method is None:
-            method = save
+            method = default_save
             if save_kwargs is None:
                 raise ValueError("Must provide `save_kwargs` if method=None.")
 
