@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import asyncio
 import concurrent.futures as concurrent
