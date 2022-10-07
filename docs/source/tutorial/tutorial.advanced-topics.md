@@ -27,7 +27,6 @@ import asyncio
 from functools import partial
 import random
 
-
 offset = random.uniform(-0.5, 0.5)
 
 
