@@ -26,8 +26,7 @@ adaptive.notebook_extension()
 import asyncio
 from functools import partial
 import random
-import time
-from dask.distributed import Client
+
 
 offset = random.uniform(-0.5, 0.5)
 
@@ -376,6 +375,8 @@ We require an asynchronous client to perform the execution of asynchronous tasks
 In this case, it is imported from `dask.distributed`.
 
 ```{code-cell} ipython3
+from dask.distributed import Client
+
 client = await Client(asynchronous=True)
 ```
 
@@ -386,6 +387,8 @@ In this case, we consider a function `h` that has some internal dependency on a 
 The function to be learned is `async_h`, which submits `h` as a coroutine to the client.
 
 ```{code-cell} ipython3
+import time
+
 def h(x, offset=offset):
     a = 0.01
     x = g(x)
