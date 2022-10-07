@@ -392,7 +392,7 @@ def h(x, offset=offset):
     return x + a**2 / (a**2 + (x - offset) ** 2)
 
 def g(x):
-    time.sleep(np.random.randint(5))
+    time.sleep(random.randrange(5))
     return x**2
 
 async def async_h(x):
