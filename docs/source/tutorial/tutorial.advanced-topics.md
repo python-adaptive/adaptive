@@ -26,6 +26,8 @@ adaptive.notebook_extension()
 import asyncio
 from functools import partial
 import random
+import time
+from dask.distributed import Client
 
 offset = random.uniform(-0.5, 0.5)
 
@@ -365,6 +367,58 @@ await runner.task  # This is not needed in a notebook environment!
 ```{code-cell} ipython3
 # The result will only be set when the runner is done.
 timer.result()
+```
+
+## Executing an asynchronous runner
+
+In this example we will show how to send complex tasks to adaptive as coroutines.
+We require an asynchronous client to perform the execution of asynchronous tasks.
+In this case, it is imported from `dask.distributed`.
+
+```{code-cell} ipython3
+client = await Client(asynchronous=True)
+```
+
+Once we have an asynchronous client, all its instances will be coroutines and they need to be called accordingly.
+For example, `await client.close()`.
+
+In this case, we consider a function `h` that has some internal dependency on a function `g`.
+The function to be learned is `async_h`, which submits `h` as a coroutine to the client.
+
+```{code-cell} ipython3
+def h(x, offset=offset):
+    a = 0.01
+    x = g(x)
+    return x + a**2 / (a**2 + (x - offset) ** 2)
+
+def g(x):
+    time.sleep(np.random.randint(5))
+    return x**2
+
+async def async_h(x):
+    return await client.submit(h, x)
+```
+
+When provide the asynchronous function to the `learner` and run it via `AsyncRunner`.
+
+```{code-cell} ipython3
+learner = adaptive.Learner1D(
+    async_h,
+    bounds=(-1, 1)
+)
+
+runner = adaptive.AsyncRunner(
+    learner,
+    goal=lambda l: l.loss() < 0.01,
+    ntasks=20
+)
+```
+
+We await for the runner to finish, and then plot the result.
+
+```{code-cell} ipython3
+await runner.task
+learner.plot
 ```
 
 ## Using Runners from a script
