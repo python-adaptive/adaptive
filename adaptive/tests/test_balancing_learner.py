@@ -1,6 +1,6 @@
 import pytest
 
-from adaptive.learner import BalancingLearner, Learner1D
+from adaptive.learner import BalancingLearner, Learner1D, SequenceLearner
 from adaptive.runner import simple
 
 strategies = ["loss", "loss_improvements", "npoints", "cycle"]
@@ -39,6 +39,16 @@ def test_distribute_first_points_over_learners(strategy):
         i_learner, xs = zip(*points)
         # assert that are all learners in the suggested points
         assert len(set(i_learner)) == len(learners)
+
+
+@pytest.mark.parametrize("strategy", strategies)
+def test_asking_more_points_than_available(strategy):
+    def dummy(x):
+        return x
+
+    bl = BalancingLearner([SequenceLearner(dummy, range(5))], strategy=strategy)
+    bl.ask(100)
+    bl.ask(100)
 
 
 @pytest.mark.parametrize("strategy", strategies)
