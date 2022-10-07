@@ -371,7 +371,7 @@ timer.result()
 
 In this example we will show how to send complex tasks to adaptive as coroutines.
 We require an asynchronous client to perform the execution of asynchronous tasks.
-In this case, it is imported from `dask.distributed`.
+Here we will use `dask.distributed`.
 
 ```{code-cell} ipython3
 from dask.distributed import Client
@@ -404,7 +404,7 @@ async def async_h(x):
     return await client.submit(h, x)
 ```
 
-When provide the asynchronous function to the `learner` and run it via `AsyncRunner`.
+When providing the asynchronous function to the `learner` and run it via `AsyncRunner`.
 
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(async_h, bounds=(-1, 1))
