@@ -388,14 +388,17 @@ The function to be learned is `async_h`, which submits `h` as a coroutine to the
 ```{code-cell} ipython3
 import time
 
+
 def h(x, offset=offset):
     a = 0.01
     x = g(x)
     return x + a**2 / (a**2 + (x - offset) ** 2)
 
+
 def g(x):
     time.sleep(random.randrange(5))
     return x**2
+
 
 async def async_h(x):
     return await client.submit(h, x)
@@ -404,16 +407,9 @@ async def async_h(x):
 When provide the asynchronous function to the `learner` and run it via `AsyncRunner`.
 
 ```{code-cell} ipython3
-learner = adaptive.Learner1D(
-    async_h,
-    bounds=(-1, 1)
-)
+learner = adaptive.Learner1D(async_h, bounds=(-1, 1))
 
-runner = adaptive.AsyncRunner(
-    learner,
-    goal=lambda l: l.loss() < 0.01,
-    ntasks=20
-)
+runner = adaptive.AsyncRunner(learner, goal=lambda l: l.loss() < 0.01, ntasks=20)
 ```
 
 We await for the runner to finish, and then plot the result.
