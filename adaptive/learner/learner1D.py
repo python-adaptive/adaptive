@@ -23,6 +23,12 @@ from adaptive.utils import (
 )
 
 try:
+    from typing import TypeAlias
+except ImportError:
+    # Remove this when we drop support for Python 3.9
+    from typing_extensions import TypeAlias
+
+try:
     import pandas
 
     with_pandas = True
@@ -33,21 +39,21 @@ except ModuleNotFoundError:
 # -- types --
 
 # Commonly used types
-Interval = Union[Tuple[float, float], Tuple[float, float, int]]
-NeighborsType = Dict[float, List[Union[float, None]]]
+Interval: TypeAlias = Union[Tuple[float, float], Tuple[float, float, int]]
+NeighborsType: TypeAlias = Dict[float, List[Union[float, None]]]
 
 # Types for loss_per_interval functions
-NoneFloat = Union[Float, None]
-NoneArray = Union[np.ndarray, None]
-XsType0 = Tuple[Float, Float]
-YsType0 = Union[Tuple[Float, Float], Tuple[np.ndarray, np.ndarray]]
-XsType1 = Tuple[NoneFloat, NoneFloat, NoneFloat, NoneFloat]
-YsType1 = Union[
+NoneFloat: TypeAlias = Union[Float, None]
+NoneArray: TypeAlias = Union[np.ndarray, None]
+XsType0: TypeAlias = Tuple[Float, Float]
+YsType0: TypeAlias = Union[Tuple[Float, Float], Tuple[np.ndarray, np.ndarray]]
+XsType1: TypeAlias = Tuple[NoneFloat, NoneFloat, NoneFloat, NoneFloat]
+YsType1: TypeAlias = Union[
     Tuple[NoneFloat, NoneFloat, NoneFloat, NoneFloat],
     Tuple[NoneArray, NoneArray, NoneArray, NoneArray],
 ]
-XsTypeN = Tuple[NoneFloat, ...]
-YsTypeN = Union[Tuple[NoneFloat, ...], Tuple[NoneArray, ...]]
+XsTypeN: TypeAlias = Tuple[NoneFloat, ...]
+YsTypeN: TypeAlias = Union[Tuple[NoneFloat, ...], Tuple[NoneArray, ...]]
 
 
 __all__ = [
