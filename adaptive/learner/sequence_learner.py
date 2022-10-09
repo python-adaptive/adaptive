@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
+from typing import Any, Tuple
 
 import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
@@ -16,6 +17,14 @@ try:
 except ModuleNotFoundError:
     with_pandas = False
 
+try:
+    from typing import TypeAlias
+except ImportError:
+    from typing_extensions import TypeAlias
+
+
+PointType: TypeAlias = Tuple[int, Any]
+
 
 class _IgnoreFirstArgument:
     """Remove the first argument from the call signature.
@@ -30,7 +39,7 @@ class _IgnoreFirstArgument:
     def __init__(self, function):
         self.function = function
 
-    def __call__(self, index_point, *args, **kwargs):
+    def __call__(self, index_point: PointType, *args, **kwargs):
         index, point = index_point
         return self.function(point, *args, **kwargs)
 
@@ -77,7 +86,9 @@ class SequenceLearner(BaseLearner):
         self.data = SortedDict()
         self.pending_points = set()
 
-    def ask(self, n, tell_pending=True):
+    def ask(
+        self, n: int, tell_pending: bool = True
+    ) -> tuple[list[PointType], list[float]]:
         indices = []
         points = []
         loss_improvements = []
@@ -95,40 +106,40 @@ class SequenceLearner(BaseLearner):
 
         return points, loss_improvements
 
-    def loss(self, real=True):
+    def loss(self, real: bool = True) -> float:
         if not (self._to_do_indices or self.pending_points):
-            return 0
+            return 0.0
         else:
             npoints = self.npoints + (0 if real else len(self.pending_points))
             return (self._ntotal - npoints) / self._ntotal
 
-    def remove_unfinished(self):
+    def remove_unfinished(self) -> None:
         for i in self.pending_points:
             self._to_do_indices.add(i)
         self.pending_points = set()
 
-    def tell(self, point, value):
+    def tell(self, point: PointType, value: Any) -> None:
         index, point = point
         self.data[index] = value
         self.pending_points.discard(index)
         self._to_do_indices.discard(index)
 
-    def tell_pending(self, point):
+    def tell_pending(self, point: PointType) -> None:
         index, point = point
         self.pending_points.add(index)
         self._to_do_indices.discard(index)
 
-    def done(self):
+    def done(self) -> bool:
         return not self._to_do_indices and not self.pending_points
 
-    def result(self):
+    def result(self) -> list[Any]:
         """Get the function values in the same order as ``sequence``."""
         if not self.done():
             raise Exception("Learner is not yet complete.")
         return list(self.data.values())
 
     @property
-    def npoints(self):
+    def npoints(self) -> int:
         return len(self.data)
 
     def to_dataframe(
@@ -215,10 +226,10 @@ class SequenceLearner(BaseLearner):
                 self.function, df, function_prefix
             )
 
-    def _get_data(self):
+    def _get_data(self) -> dict[int, Any]:
         return self.data
 
-    def _set_data(self, data):
+    def _set_data(self, data: dict[int, Any]) -> None:
         if data:
             indices, values = zip(*data.items())
             # the points aren't used by tell, so we can safely pass None
