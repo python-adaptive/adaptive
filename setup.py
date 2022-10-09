@@ -31,6 +31,8 @@ install_requires = [
     "cloudpickle",
     "loky >= 2.9",
 ]
+if sys.version_info < (3, 8):
+    install_requires.append("typing_extensions")
 
 extras_require = {
     "notebook": [
@@ -78,6 +80,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     packages=find_packages("."),
     install_requires=install_requires,
