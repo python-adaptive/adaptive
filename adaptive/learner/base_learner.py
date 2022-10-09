@@ -149,6 +149,11 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
     def _set_data(self):
         pass
 
+    @abc.abstractmethod
+    def new(self):
+        """Return a new learner with the same function and parameters."""
+        pass
+
     def copy_from(self, other):
         """Copy over the data from another learner.
 

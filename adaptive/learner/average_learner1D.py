@@ -125,6 +125,20 @@ class AverageLearner1D(Learner1D):
         # {xii: error[xii]/min(_distances[xi], _distances[xii], ...}
         self.rescaled_error: dict[Real, float] = decreasing_dict()
 
+    def new(self) -> AverageLearner1D:
+        """Create a copy of `~adaptive.AverageLearner1D` without the data."""
+        return AverageLearner1D(
+            self.function,
+            self.bounds,
+            self.loss_per_interval,
+            self.delta,
+            self.alpha,
+            self.neighbor_sampling,
+            self.min_samples,
+            self.max_samples,
+            self.min_error,
+        )
+
     @property
     def nsamples(self) -> int:
         """Returns the total number of samples"""

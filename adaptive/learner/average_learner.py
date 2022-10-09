@@ -74,6 +74,10 @@ class AverageLearner(BaseLearner):
         self.sum_f: Real = 0.0
         self.sum_f_sq: Real = 0.0
 
+    def new(self) -> AverageLearner:
+        """Create a copy of `~adaptive.AverageLearner` without the data."""
+        return AverageLearner(self.function, self.atol, self.rtol, self.min_npoints)
+
     @property
     def n_requested(self) -> int:
         return self.npoints + len(self.pending_points)

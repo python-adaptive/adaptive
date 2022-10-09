@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 from collections import defaultdict
 from collections.abc import Iterable
@@ -95,6 +97,14 @@ class BalancingLearner(BaseLearner):
             )
 
         self.strategy = strategy
+
+    def new(self) -> BalancingLearner:
+        """Create a new `BalancingLearner` with the same parameters."""
+        return BalancingLearner(
+            [learner.new() for learner in self.learners],
+            cdims=self._cdims_default,
+            strategy=self.strategy,
+        )
 
     @property
     def data(self):
