@@ -1,6 +1,4 @@
 import numpy as np
-import pandas as pd
-from pandas.testing import assert_series_equal
 
 from adaptive import AverageLearner1D
 from adaptive.tests.test_learners import (
@@ -11,7 +9,10 @@ from adaptive.tests.test_learners import (
 
 
 def almost_equal_dicts(a, b):
-    assert_series_equal(pd.Series(sorted(a.items())), pd.Series(sorted(b.items())))
+    assert a.keys() == b.keys()
+    for k, v1 in a.items():
+        v2 = b[k]
+        np.testing.assert_almost_equal(v1, v2)
 
 
 def test_tell_many_at_point():
