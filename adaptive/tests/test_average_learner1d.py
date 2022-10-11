@@ -12,7 +12,11 @@ def almost_equal_dicts(a, b):
     assert a.keys() == b.keys()
     for k, v1 in a.items():
         v2 = b[k]
-        np.testing.assert_almost_equal(v1, v2)
+        if v1 is None or v2 is None:
+            assert v1 is None
+            assert v2 is None
+        else:
+            np.testing.assert_almost_equal(v1, v2)
 
 
 def test_tell_many_at_point():
