@@ -12,7 +12,6 @@ import time
 
 import flaky
 import numpy as np
-import pandas
 import pytest
 import scipy.spatial
 
@@ -721,6 +720,8 @@ def add_time(f):
     with_all_loss_functions=False,
 )
 def test_to_dataframe(learner_type, f, learner_kwargs):
+    import pandas
+
     if learner_type is LearnerND:
         kw = {"point_names": tuple("xyz")[: len(learner_kwargs["bounds"])]}
     else:
