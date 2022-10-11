@@ -376,6 +376,10 @@ class LearnerND(BaseLearner):
         # _pop_highest_existing_simplex
         self._simplex_queue = SortedKeyList(key=_simplex_evaluation_priority)
 
+    def new(self) -> LearnerND:
+        """Create a new learner with the same function and bounds."""
+        return LearnerND(self.function, self.bounds, self.loss_per_simplex)
+
     @property
     def npoints(self):
         """Number of evaluated points."""

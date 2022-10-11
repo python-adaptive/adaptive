@@ -1,4 +1,5 @@
 # Based on an adaptive quadrature algorithm by Pedro Gonnet
+from __future__ import annotations
 
 import sys
 from collections import defaultdict
@@ -380,6 +381,10 @@ class IntegratorLearner(BaseLearner):
         ival = _Interval.make_first(*self.bounds)
         self.add_ival(ival)
         self.first_ival = ival
+
+    def new(self) -> IntegratorLearner:
+        """Create a copy of `~adaptive.Learner2D` without the data."""
+        return IntegratorLearner(self.function, self.bounds, self.tol)
 
     @property
     def approximating_intervals(self):

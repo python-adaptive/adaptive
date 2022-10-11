@@ -77,6 +77,10 @@ class SequenceLearner(BaseLearner):
         self.data = SortedDict()
         self.pending_points = set()
 
+    def new(self) -> SequenceLearner:
+        """Return a new `~adaptive.SequenceLearner` without the data."""
+        return SequenceLearner(self._original_function, self.sequence)
+
     def ask(self, n, tell_pending=True):
         indices = []
         points = []

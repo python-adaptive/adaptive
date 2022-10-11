@@ -303,10 +303,14 @@ class Learner1D(BaseLearner):
         # The precision in 'x' below which we set losses to 0.
         self._dx_eps = 2 * max(np.abs(bounds)) * np.finfo(float).eps
 
-        self.bounds = list(bounds)
+        self.bounds = tuple(bounds)
         self.__missing_bounds = set(self.bounds)  # cache of missing bounds
 
         self._vdim: int | None = None
+
+    def new(self) -> Learner1D:
+        """Create a copy of `~adaptive.Learner1D` without the data."""
+        return Learner1D(self.function, self.bounds, self.loss_per_interval)
 
     @property
     def vdim(self) -> int:

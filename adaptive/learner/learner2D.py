@@ -384,6 +384,9 @@ class Learner2D(BaseLearner):
 
         self.stack_size = 10
 
+    def new(self) -> Learner2D:
+        return Learner2D(self.function, self.bounds, self.loss_per_triangle)
+
     @property
     def xy_scale(self):
         xy_scale = self._xy_scale
