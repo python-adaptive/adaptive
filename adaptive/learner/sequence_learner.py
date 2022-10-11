@@ -7,6 +7,7 @@ import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
+from adaptive.types import Int
 from adaptive.utils import assign_defaults, partial_function_from_dataframe
 
 try:
@@ -23,7 +24,7 @@ except ImportError:
     from typing_extensions import TypeAlias
 
 
-PointType: TypeAlias = Tuple[int, Any]
+PointType: TypeAlias = Tuple[Int, Any]
 
 
 class _IgnoreFirstArgument:
@@ -224,7 +225,9 @@ class SequenceLearner(BaseLearner):
         y_name : str, optional
             The ``y_name`` used in ``to_dataframe``, by default "y"
         """
-        self.tell_many(df[[index_name, x_name]].values, df[y_name].values)
+        indices = df[index_name].values
+        xs = df[x_name].values
+        self.tell_many(zip(indices, xs), df[y_name].values)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
                 self._original_function, df, function_prefix
