@@ -42,6 +42,7 @@ extras_require = {
         "holoviews>=1.9.1",
         "ipywidgets",
         "bokeh",
+        "pandas",
         "matplotlib",
         "plotly",
     ],
@@ -52,7 +53,6 @@ extras_require = {
         "pytest-randomly",
         "pytest-timeout",
         "pre_commit",
-        "pandas",
         "typeguard",
     ],
     "other": [
