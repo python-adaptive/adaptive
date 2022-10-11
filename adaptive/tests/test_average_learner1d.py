@@ -1,3 +1,5 @@
+from itertools import chain
+
 import numpy as np
 
 from adaptive import AverageLearner1D
@@ -12,17 +14,24 @@ def almost_equal_dicts(a, b):
     assert a.keys() == b.keys()
     for k, v1 in a.items():
         v2 = b[k]
-        if v1 is None or v2 is None:
-            assert v1 is None
-            assert v2 is None
+        if (
+            v1 is None
+            or v2 is None
+            or isinstance(v1, (tuple, list))
+            and any(x is None for x in chain(v1, v2))
+        ):
+            assert v1 == v2
         else:
-            np.testing.assert_almost_equal(v1, v2)
+            try:
+                np.testing.assert_almost_equal(v1, v2)
+            except TypeError:
+                raise AssertionError(f"{v1} != {v2}")
 
 
 def test_tell_many_at_point():
     f = generate_random_parametrization(noisy_peak)
     learner = AverageLearner1D(f, bounds=(-2, 2))
-    control = AverageLearner1D(f, bounds=(-2, 2))
+    control = learner.new()
     learner._recompute_losses_factor = 1
     control._recompute_losses_factor = 1
     simple_run(learner, 100)
