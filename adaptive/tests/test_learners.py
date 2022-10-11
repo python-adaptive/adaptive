@@ -28,6 +28,7 @@ from adaptive.learner import (
     LearnerND,
     SequenceLearner,
 )
+from adaptive.learner.learner1D import with_pandas
 from adaptive.runner import simple
 
 try:
@@ -708,6 +709,7 @@ def add_time(f):
     return wrapper
 
 
+@pytest.mark.skipif(not with_pandas, reason="pandas is not installed")
 @run_with(
     Learner1D,
     Learner2D,
