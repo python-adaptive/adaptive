@@ -179,7 +179,7 @@ class SequenceLearner(BaseLearner):
         df.attrs["inputs"] = [index_name]
         df.attrs["output"] = y_name
         if with_default_function_args:
-            assign_defaults(self.function, df, function_prefix)
+            assign_defaults(self._original_function, df, function_prefix)
         return df
 
     def load_dataframe(
