@@ -216,7 +216,7 @@ class SequenceLearner(BaseLearner):
         self.tell_many(df[[index_name, x_name]].values, df[y_name].values)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
-                self.function, df, function_prefix
+                self._original_function, df, function_prefix
             )
 
     def _get_data(self):
