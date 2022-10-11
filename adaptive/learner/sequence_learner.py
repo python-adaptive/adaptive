@@ -86,6 +86,10 @@ class SequenceLearner(BaseLearner):
         self.data = SortedDict()
         self.pending_points = set()
 
+    def new(self) -> SequenceLearner:
+        """Return a new `~adaptive.SequenceLearner` without the data."""
+        return SequenceLearner(self._original_function, self.sequence)
+
     def ask(
         self, n: int, tell_pending: bool = True
     ) -> tuple[list[PointType], list[float]]:
@@ -186,7 +190,7 @@ class SequenceLearner(BaseLearner):
         df.attrs["inputs"] = [index_name]
         df.attrs["output"] = y_name
         if with_default_function_args:
-            assign_defaults(self.function, df, function_prefix)
+            assign_defaults(self._original_function, df, function_prefix)
         return df
 
     def load_dataframe(
@@ -223,7 +227,7 @@ class SequenceLearner(BaseLearner):
         self.tell_many(df[[index_name, x_name]].values, df[y_name].values)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
-                self.function, df, function_prefix
+                self._original_function, df, function_prefix
             )
 
     def _get_data(self) -> dict[int, Any]:

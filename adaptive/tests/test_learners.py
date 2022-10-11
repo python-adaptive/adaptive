@@ -294,7 +294,7 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
-    control = learner_type(f, **learner_kwargs)
+    control = learner.new()
     if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
@@ -345,7 +345,7 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     # XXX: learner, control and bounds are not defined
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
-    control = learner_type(f, **learner_kwargs)
+    control = learner.new()
 
     if learner_type is Learner2D:
         # If the stack_size is bigger then the number of points added,
@@ -395,7 +395,7 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     """
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
-    control = learner_type(f, **learner_kwargs)
+    control = learner.new()
 
     if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
@@ -581,7 +581,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
 def test_saving(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
-    control = learner_type(f, **learner_kwargs)
+    control = learner.new()
     if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
@@ -614,7 +614,7 @@ def test_saving(learner_type, f, learner_kwargs):
 def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = BalancingLearner([learner_type(f, **learner_kwargs)])
-    control = BalancingLearner([learner_type(f, **learner_kwargs)])
+    control = learner.new()
 
     if learner_type in (Learner1D, AverageLearner1D):
         for l, c in zip(learner.learners, control.learners):
@@ -654,7 +654,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
     g = lambda x: {"y": f(x), "t": random.random()}  # noqa: E731
     arg_picker = operator.itemgetter("y")
     learner = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
-    control = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
+    control = learner.new()
 
     if learner_type in (Learner1D, AverageLearner1D):
         learner.learner._recompute_losses_factor = 1
@@ -742,7 +742,7 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
         assert len(df) == learner.npoints
 
     # Add points from the DataFrame to a new empty learner
-    learner2 = learner_type(learner.function, **learner_kwargs)
+    learner2 = learner.new()
     learner2.load_dataframe(df, **kw)
     assert learner2.npoints == learner.npoints
 
@@ -787,8 +787,7 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
         assert len(df) == data_saver.npoints
 
     # Test loading from a DataFrame into a new DataSaver
-    learner2 = learner_type(learner.function, **learner_kwargs)
-    data_saver2 = DataSaver(learner2, operator.itemgetter("result"))
+    data_saver2 = data_saver.new()
     data_saver2.load_dataframe(df, **kw)
     assert data_saver2.extra_data.keys() == data_saver.extra_data.keys()
     assert all(

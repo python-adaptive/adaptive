@@ -45,6 +45,10 @@ class DataSaver:
         self.function = learner.function
         self.arg_picker = arg_picker
 
+    def new(self) -> DataSaver:
+        """Return a new `DataSaver` with the same `arg_picker` and `learner`."""
+        return DataSaver(self.learner.new(), self.arg_picker)
+
     def __getattr__(self, attr):
         return getattr(self.learner, attr)
 

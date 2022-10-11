@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 
 import numpy as np
@@ -27,7 +29,12 @@ class SKOptLearner(Optimizer, BaseLearner):
         self.function = function
         self.pending_points = set()
         self.data = collections.OrderedDict()
+        self._kwargs = kwargs
         super().__init__(**kwargs)
+
+    def new(self) -> SKOptLearner:
+        """Return a new `~adaptive.SKOptLearner` without the data."""
+        return SKOptLearner(self.function, **self._kwargs)
 
     def tell(self, x, y, fit=True):
         if isinstance(x, collections.abc.Iterable):

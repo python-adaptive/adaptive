@@ -4,6 +4,7 @@ import gzip
 import inspect
 import os
 import pickle
+import warnings
 from contextlib import contextmanager
 from itertools import product
 
@@ -135,4 +136,19 @@ def partial_function_from_dataframe(function, df, function_prefix: str = "functi
             kwargs[k] = v
     if not kwargs:
         return function
+
+    sig = inspect.signature(function)
+    for k, v in kwargs.items():
+        if k not in sig.parameters:
+            raise ValueError(
+                f"The DataFrame contains a default parameter"
+                f" ({k}={v}) but the function does not have that parameter."
+            )
+        default = sig.parameters[k].default
+        if default != inspect._empty and kwargs[k] != default:
+            warnings.warn(
+                f"The DataFrame contains a default parameter"
+                f" ({k}={v}) but the function already has a default ({k}={default})."
+                " The DataFrame's value will be used."
+            )
     return functools.partial(function, **kwargs)
