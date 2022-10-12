@@ -367,47 +367,68 @@ await runner.task  # This is not needed in a notebook environment!
 timer.result()
 ```
 
-## Executing an asynchronous runner
+## Custom parallelization using coroutines
 
-In this example we will show how to send complex tasks to adaptive as coroutines.
-We require an asynchronous client to perform the execution of asynchronous tasks.
-Here we will use `dask.distributed`.
+Adaptive by itself does not implement a way of sharing partial results between function executions.
+Its implementation of parallel computation using executors is minimal by design.
+Instead the appropriate way to implement custom parallelization is by using coroutines (asynchronous functions).
 
-```{code-cell} ipython3
-from dask.distributed import Client
-
-client = await Client(asynchronous=True)
-```
-
-Once we have an asynchronous client, all its instances will be coroutines and they need to be called accordingly.
-For example, `await client.close()`.
-
-In this case, we consider a function `h` that has some internal dependency on a function `g`.
-The function to be learned is `async_h`, which submits `h` as a coroutine to the client.
+We illustrate this approach by using `dask.distributed` for parallel computations in part because it supports asynchronous operation out-of-the-box.
+Let us consider the computation below which has a slow but reusable part, and a fast part that cannot be reused.
 
 ```{code-cell} ipython3
 import time
 
 
-def h(x, offset=offset):
-    a = 0.01
-    x = g(x)
-    return x + a**2 / (a**2 + (x - offset) ** 2)
-
-
 def g(x):
+    """Slow but reusable function"""
     time.sleep(random.randrange(5))
-    return x**2
+    return x**3
 
 
-async def async_h(x):
-    return await client.submit(h, x)
+def h(x):
+    """Fast function"""
+    return x**4
 ```
 
-When providing the asynchronous function to the `learner` and run it via `AsyncRunner`.
+We need to convert `f` into a dask graph by using `dask.delayed`.
+In this example we will show how to send complex tasks to adaptive as coroutines.
 
 ```{code-cell} ipython3
-learner = adaptive.Learner1D(async_h, bounds=(-1, 1))
+from dask import delayed
+
+# Convert f and g to dask.Delayed objects
+g, h = delayed(g), delayed(h)
+
+@delayed
+def f(x, y):
+    return (x + y)**2
+```
+
+Next we define a computation using coroutines such that it reuses previously submitted tasks.
+
+```{code-cell} ipython3
+from collections import defaultdict
+from dask.distributed import Client
+
+client = await Client(asynchronous=True)
+
+g_futures = {}
+
+async def f_parallel(x):
+    # Get or sumbit the slow function future
+    if (g_future := g_futures.get(int(x))) is None:
+        g_futures[int(x)] = g_future = client.compute(g(int(x)))
+
+    future_f = client.compute(f(g_future, h(x % 1)))
+
+    return await future_f
+```
+
+Finally we provide the asynchronous function to the `learner` and run it via `AsyncRunner`.
+
+```{code-cell} ipython3
+learner = adaptive.Learner1D(async_h, bounds=(-3.5, 3.5))
 
 runner = adaptive.AsyncRunner(learner, goal=lambda l: l.loss() < 0.01, ntasks=20)
 ```
