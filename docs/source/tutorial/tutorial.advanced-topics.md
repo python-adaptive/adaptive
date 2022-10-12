@@ -399,7 +399,7 @@ We need to convert `f` into a dask graph by using `dask.delayed`.
 ```{code-cell} ipython3
 from dask import delayed
 
-# Convert f and g to dask.Delayed objects
+# Convert g and h to dask.Delayed objects
 g, h = delayed(g), delayed(h)
 
 @delayed
