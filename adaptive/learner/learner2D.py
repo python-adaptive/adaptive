@@ -5,14 +5,17 @@ import warnings
 from collections import OrderedDict
 from copy import copy
 from math import sqrt
+from typing import Any, Callable, Iterable
 
 import cloudpickle
 import numpy as np
 from scipy import interpolate
+from scipy.interpolate.interpnd import LinearNDInterpolator
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
+from adaptive.types import Bool
 from adaptive.utils import (
     assign_defaults,
     cache_latest,
@@ -30,7 +33,7 @@ except ModuleNotFoundError:
 # Learner2D and helper functions.
 
 
-def deviations(ip):
+def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
     """Returns the deviation of the linear estimate.
 
     Is useful when defining custom loss functions.
@@ -68,7 +71,7 @@ def deviations(ip):
     return devs
 
 
-def areas(ip):
+def areas(ip: LinearNDInterpolator) -> np.ndarray:
     """Returns the area per triangle of the triangulation inside
     a `LinearNDInterpolator` instance.
 
@@ -89,7 +92,7 @@ def areas(ip):
     return areas
 
 
-def uniform_loss(ip):
+def uniform_loss(ip: LinearNDInterpolator) -> np.ndarray:
     """Loss function that samples the domain uniformly.
 
     Works with `~adaptive.Learner2D` only.
@@ -120,7 +123,9 @@ def uniform_loss(ip):
     return np.sqrt(areas(ip))
 
 
-def resolution_loss_function(min_distance=0, max_distance=1):
+def resolution_loss_function(
+    min_distance: float = 0, max_distance: float = 1
+) -> Callable[[LinearNDInterpolator], np.ndarray]:
     """Loss function that is similar to the `default_loss` function, but you
     can set the maximimum and minimum size of a triangle.
 
@@ -159,7 +164,7 @@ def resolution_loss_function(min_distance=0, max_distance=1):
     return resolution_loss
 
 
-def minimize_triangle_surface_loss(ip):
+def minimize_triangle_surface_loss(ip: LinearNDInterpolator) -> np.ndarray:
     """Loss function that is similar to the distance loss function in the
     `~adaptive.Learner1D`. The loss is the area spanned by the 3D
     vectors of the vertices.
@@ -205,7 +210,7 @@ def minimize_triangle_surface_loss(ip):
     return np.linalg.norm(np.cross(a, b) / 2, axis=1)
 
 
-def default_loss(ip):
+def default_loss(ip: LinearNDInterpolator) -> np.ndarray:
     """Loss function that combines `deviations` and `areas` of the triangles.
 
     Works with `~adaptive.Learner2D` only.
@@ -225,7 +230,7 @@ def default_loss(ip):
     return losses
 
 
-def choose_point_in_triangle(triangle, max_badness):
+def choose_point_in_triangle(triangle: np.ndarray, max_badness: int) -> np.ndarray:
     """Choose a new point in inside a triangle.
 
     If the ratio of the longest edge of the triangle squared
@@ -364,7 +369,12 @@ class Learner2D(BaseLearner):
     over each triangle.
     """
 
-    def __init__(self, function, bounds, loss_per_triangle=None):
+    def __init__(
+        self,
+        function: Callable,
+        bounds: tuple[tuple[int, int], tuple[int, int]],
+        loss_per_triangle: Callable | None = None,
+    ) -> None:
         self.ndim = len(bounds)
         self._vdim = None
         self.loss_per_triangle = loss_per_triangle or default_loss
@@ -379,7 +389,7 @@ class Learner2D(BaseLearner):
 
         self._bounds_points = list(itertools.product(*bounds))
         self._stack.update({p: np.inf for p in self._bounds_points})
-        self.function = function
+        self.function = function  # type: ignore
         self._ip = self._ip_combined = None
 
         self.stack_size = 10
@@ -388,7 +398,7 @@ class Learner2D(BaseLearner):
         return Learner2D(self.function, self.bounds, self.loss_per_triangle)
 
     @property
-    def xy_scale(self):
+    def xy_scale(self) -> np.ndarray:
         xy_scale = self._xy_scale
         if self.aspect_ratio == 1:
             return xy_scale
@@ -486,21 +496,21 @@ class Learner2D(BaseLearner):
                 self.function, df, function_prefix
             )
 
-    def _scale(self, points):
+    def _scale(self, points: Any) -> np.ndarray:
         points = np.asarray(points, dtype=float)
         return (points - self.xy_mean) / self.xy_scale
 
-    def _unscale(self, points):
+    def _unscale(self, points: np.ndarray) -> np.ndarray:
         points = np.asarray(points, dtype=float)
         return points * self.xy_scale + self.xy_mean
 
     @property
-    def npoints(self):
+    def npoints(self) -> int:
         """Number of evaluated points."""
         return len(self.data)
 
     @property
-    def vdim(self):
+    def vdim(self) -> int:
         """Length of the output of ``learner.function``.
         If the output is unsized (when it's a scalar)
         then `vdim = 1`.
@@ -516,12 +526,14 @@ class Learner2D(BaseLearner):
         return self._vdim or 1
 
     @property
-    def bounds_are_done(self):
+    def bounds_are_done(self) -> bool:
         return not any(
             (p in self.pending_points or p in self._stack) for p in self._bounds_points
         )
 
-    def interpolated_on_grid(self, n=None):
+    def interpolated_on_grid(
+        self, n: int = None
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get the interpolated data on a grid.
 
         Parameters
@@ -553,7 +565,7 @@ class Learner2D(BaseLearner):
         xs, ys = self._unscale(np.vstack([xs, ys]).T).T
         return xs, ys, zs
 
-    def _data_in_bounds(self):
+    def _data_in_bounds(self) -> tuple[np.ndarray, np.ndarray]:
         if self.data:
             points = np.array(list(self.data.keys()))
             values = np.array(list(self.data.values()), dtype=float)
@@ -562,7 +574,7 @@ class Learner2D(BaseLearner):
             return points[inds], values[inds].reshape(-1, self.vdim)
         return np.zeros((0, 2)), np.zeros((0, self.vdim), dtype=float)
 
-    def _data_interp(self):
+    def _data_interp(self) -> tuple[np.ndarray, np.ndarray]:
         if self.pending_points:
             points = list(self.pending_points)
             if self.bounds_are_done:
@@ -575,7 +587,7 @@ class Learner2D(BaseLearner):
             return points, values
         return np.zeros((0, 2)), np.zeros((0, self.vdim), dtype=float)
 
-    def _data_combined(self):
+    def _data_combined(self) -> tuple[np.ndarray, np.ndarray]:
         points, values = self._data_in_bounds()
         if not self.pending_points:
             return points, values
@@ -584,7 +596,7 @@ class Learner2D(BaseLearner):
         values_combined = np.vstack([values, values_interp])
         return points_combined, values_combined
 
-    def ip(self):
+    def ip(self) -> LinearNDInterpolator:
         """Deprecated, use `self.interpolator(scaled=True)`"""
         warnings.warn(
             "`learner.ip()` is deprecated, use `learner.interpolator(scaled=True)`."
@@ -593,7 +605,7 @@ class Learner2D(BaseLearner):
         )
         return self.interpolator(scaled=True)
 
-    def interpolator(self, *, scaled=False):
+    def interpolator(self, *, scaled: bool = False) -> LinearNDInterpolator:
         """A `scipy.interpolate.LinearNDInterpolator` instance
         containing the learner's data.
 
@@ -624,7 +636,7 @@ class Learner2D(BaseLearner):
             points, values = self._data_in_bounds()
             return interpolate.LinearNDInterpolator(points, values)
 
-    def _interpolator_combined(self):
+    def _interpolator_combined(self) -> LinearNDInterpolator:
         """A `scipy.interpolate.LinearNDInterpolator` instance
         containing the learner's data *and* interpolated data of
         the `pending_points`."""
@@ -634,12 +646,12 @@ class Learner2D(BaseLearner):
             self._ip_combined = interpolate.LinearNDInterpolator(points, values)
         return self._ip_combined
 
-    def inside_bounds(self, xy):
+    def inside_bounds(self, xy: tuple[float, float]) -> Bool:
         x, y = xy
         (xmin, xmax), (ymin, ymax) = self.bounds
         return xmin <= x <= xmax and ymin <= y <= ymax
 
-    def tell(self, point, value):
+    def tell(self, point: tuple[float, float], value: float | Iterable[float]) -> None:
         point = tuple(point)
         self.data[point] = value
         if not self.inside_bounds(point):
@@ -648,7 +660,7 @@ class Learner2D(BaseLearner):
         self._ip = None
         self._stack.pop(point, None)
 
-    def tell_pending(self, point):
+    def tell_pending(self, point: tuple[float, float]) -> None:
         point = tuple(point)
         if not self.inside_bounds(point):
             return
@@ -656,7 +668,9 @@ class Learner2D(BaseLearner):
         self._ip_combined = None
         self._stack.pop(point, None)
 
-    def _fill_stack(self, stack_till=1):
+    def _fill_stack(
+        self, stack_till: int = 1
+    ) -> tuple[list[tuple[float, float]], list[float]]:
         if len(self.data) + len(self.pending_points) < self.ndim + 1:
             raise ValueError("too few points...")
 
@@ -695,7 +709,9 @@ class Learner2D(BaseLearner):
 
         return points_new, losses_new
 
-    def ask(self, n, tell_pending=True):
+    def ask(
+        self, n: int, tell_pending: bool = True
+    ) -> tuple[list[tuple[float, float] | np.array], list[float]]:
         # Even if tell_pending is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
         points = list(self._stack.keys())
@@ -726,14 +742,14 @@ class Learner2D(BaseLearner):
         return points[:n], loss_improvements[:n]
 
     @cache_latest
-    def loss(self, real=True):
+    def loss(self, real: bool = True) -> float:
         if not self.bounds_are_done:
             return np.inf
         ip = self.interpolator(scaled=True) if real else self._interpolator_combined()
         losses = self.loss_per_triangle(ip)
         return losses.max()
 
-    def remove_unfinished(self):
+    def remove_unfinished(self) -> None:
         self.pending_points = set()
         for p in self._bounds_points:
             if p not in self.data:
@@ -807,10 +823,10 @@ class Learner2D(BaseLearner):
 
         return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
 
-    def _get_data(self):
+    def _get_data(self) -> OrderedDict:
         return self.data
 
-    def _set_data(self, data):
+    def _set_data(self, data: OrderedDict) -> None:
         self.data = data
         # Remove points from stack if they already exist
         for point in copy(self._stack):
