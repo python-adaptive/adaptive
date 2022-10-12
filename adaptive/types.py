@@ -11,3 +11,4 @@ except ImportError:
 Float: TypeAlias = Union[float, np.float_]
 Int: TypeAlias = Union[int, np.int_]
 Real: TypeAlias = Union[Float, Int]
+Bool: TypeAlias = Union[bool, np.bool_]
