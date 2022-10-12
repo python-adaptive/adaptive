@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from contextlib import suppress
 
 from adaptive.learner.average_learner import AverageLearner
