@@ -379,6 +379,9 @@ Let us consider the computation below which has a slow but reusable part, and a 
 ```{code-cell} ipython3
 import time
 
+def f(x, y):
+    return (g(x) + h(y))**2
+
 
 def g(x):
     """Slow but reusable function"""
@@ -392,7 +395,6 @@ def h(x):
 ```
 
 We need to convert `f` into a dask graph by using `dask.delayed`.
-In this example we will show how to send complex tasks to adaptive as coroutines.
 
 ```{code-cell} ipython3
 from dask import delayed
