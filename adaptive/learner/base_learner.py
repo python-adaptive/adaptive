@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import abc
 from contextlib import suppress
+from typing import Any, Callable
 
 import cloudpickle
 
 from adaptive.utils import _RequireAttrsABCMeta, load, save
 
 
-def uses_nth_neighbors(n: int):
+def uses_nth_neighbors(n: int) -> Callable:
     """Decorator to specify how many neighboring intervals the loss function uses.
 
     Wraps loss functions to indicate that they expect intervals together
@@ -82,10 +85,15 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
     """
 
     data: dict
-    npoints: int
     pending_points: set
+    function: Callable
 
-    def tell(self, x, y):
+    @property
+    @abc.abstractmethod
+    def npoints(self) -> int:
+        """Number of learned points."""
+
+    def tell(self, x: Any, y) -> None:
         """Tell the learner about a single value.
 
         Parameters
@@ -95,7 +103,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         """
         self.tell_many([x], [y])
 
-    def tell_many(self, xs, ys):
+    def tell_many(self, xs: Any, ys: Any) -> None:
         """Tell the learner about some values.
 
         Parameters
@@ -116,7 +124,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         """Remove uncomputed data from the learner."""
 
     @abc.abstractmethod
-    def loss(self, real=True):
+    def loss(self, real: bool = True) -> float:
         """Return the loss for the current state of the learner.
 
         Parameters
@@ -128,7 +136,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         """
 
     @abc.abstractmethod
-    def ask(self, n, tell_pending=True):
+    def ask(self, n: int, tell_pending: bool = True):
         """Choose the next 'n' points to evaluate.
 
         Parameters
@@ -146,7 +154,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         pass
 
     @abc.abstractmethod
-    def _set_data(self):
+    def _set_data(self, data: Any):
         pass
 
     @abc.abstractmethod
@@ -164,7 +172,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         """
         self._set_data(other._get_data())
 
-    def save(self, fname, compress=True):
+    def save(self, fname: str, compress: bool = True) -> None:
         """Save the data of the learner into a pickle file.
 
         Parameters
@@ -178,7 +186,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         data = self._get_data()
         save(fname, data, compress)
 
-    def load(self, fname, compress=True):
+    def load(self, fname: str, compress: bool = True) -> None:
         """Load the data of a learner from a pickle file.
 
         Parameters
@@ -193,8 +201,8 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
             data = load(fname, compress)
             self._set_data(data)
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         return cloudpickle.dumps(self.__dict__)
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: dict[str, Any]) -> None:
         self.__dict__ = cloudpickle.loads(state)
