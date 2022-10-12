@@ -57,7 +57,7 @@ def test_nonconforming_output(runner):
     def f(x):
         return [0]
 
-    runner(Learner2D(f, [(-1, 1), (-1, 1)]), trivial_goal)
+    runner(Learner2D(f, ((-1, 1), (-1, 1))), trivial_goal)
 
 
 def test_aync_def_function():

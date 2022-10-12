@@ -62,7 +62,7 @@ def balancing_learner(f, learner_type, learner_kwargs):
 
 learners_pairs = [
     (Learner1D, dict(bounds=(-1, 1))),
-    (Learner2D, dict(bounds=[(-1, 1), (-1, 1)])),
+    (Learner2D, dict(bounds=((-1, 1), (-1, 1)))),
     (SequenceLearner, dict(sequence=list(range(100)))),
     (IntegratorLearner, dict(bounds=(0, 1), tol=1e-3)),
     (AverageLearner, dict(atol=0.1)),
