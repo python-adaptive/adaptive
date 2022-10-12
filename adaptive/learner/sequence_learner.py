@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import Any, Tuple
+from typing import Any, Callable, Iterable, Tuple
 
 import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
@@ -37,17 +37,17 @@ class _IgnoreFirstArgument:
     pickable.
     """
 
-    def __init__(self, function):
-        self.function = function
+    def __init__(self, function: Callable) -> None:
+        self.function = function  # type: ignore
 
     def __call__(self, index_point: PointType, *args, **kwargs):
         index, point = index_point
         return self.function(point, *args, **kwargs)
 
-    def __getstate__(self):
+    def __getstate__(self) -> Callable:
         return self.function
 
-    def __setstate__(self, function):
+    def __setstate__(self, function: Callable) -> None:
         self.__init__(function)
 
 
@@ -78,9 +78,9 @@ class SequenceLearner(BaseLearner):
     the added benefit of having results in the local kernel already.
     """
 
-    def __init__(self, function, sequence):
+    def __init__(self, function: Callable, sequence: Iterable) -> None:
         self._original_function = function
-        self.function = _IgnoreFirstArgument(function)
+        self.function = _IgnoreFirstArgument(function)  # type: ignore
         self._to_do_indices = SortedSet({i for i, _ in enumerate(sequence)})
         self._ntotal = len(sequence)
         self.sequence = copy(sequence)
