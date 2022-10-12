@@ -379,19 +379,19 @@ Let us consider the computation below which has a slow but reusable part, and a 
 ```{code-cell} ipython3
 import time
 
-def f(x, y):
-    return (g(x) + h(y))**2
+def f(x):
+    return g(int(x)) + h(x % 1)
 
 
 def g(x):
     """Slow but reusable function"""
     time.sleep(random.randrange(5))
-    return x**3
+    return x**2
 
 
 def h(x):
     """Fast function"""
-    return x**4
+    return x**3
 ```
 
 We need to convert `f` into a dask graph by using `dask.delayed`.
