@@ -277,8 +277,8 @@ def test_tell_many():
     def assert_equal_dicts(d1, d2):
         xs1, ys1 = zip(*sorted(d1.items()))
         xs2, ys2 = zip(*sorted(d2.items()))
-        ys1 = np.array(ys1, dtype=np.float)
-        ys2 = np.array(ys2, dtype=np.float)
+        ys1 = np.array(ys1, dtype=np.float64)
+        ys2 = np.array(ys2, dtype=np.float64)
         np.testing.assert_almost_equal(xs1, xs2)
         np.testing.assert_almost_equal(ys1, ys2)
 
