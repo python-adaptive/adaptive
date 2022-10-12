@@ -1,5 +1,7 @@
 # This file is part of 'miniver': https://github.com/jbweston/miniver
 #
+from __future__ import annotations
+
 import os
 import subprocess
 from collections import namedtuple
@@ -10,7 +12,7 @@ from setuptools.command.sdist import sdist as sdist_orig
 Version = namedtuple("Version", ("release", "dev", "labels"))
 
 # No public API
-__all__ = []
+__all__: list[str] = []
 
 package_root = os.path.dirname(os.path.realpath(__file__))
 package_name = os.path.basename(package_root)
@@ -26,10 +28,9 @@ else:
 STATIC_VERSION_FILE = "_static_version.py"
 
 
-def get_version(version_file=STATIC_VERSION_FILE):
+def get_version(version_file: str = STATIC_VERSION_FILE) -> str:
     version_info = get_static_version_info(version_file)
-    version = version_info["version"]
-    if version == "__use_git__":
+    if version_info["version"] == "__use_git__":
         version = get_version_from_git()
         if not version:
             version = get_version_from_git_archive(version_info)
@@ -37,11 +38,11 @@ def get_version(version_file=STATIC_VERSION_FILE):
             version = Version("unknown", None, None)
         return pep440_format(version)
     else:
-        return version
+        return version_info["version"]
 
 
-def get_static_version_info(version_file=STATIC_VERSION_FILE):
-    version_info = {}
+def get_static_version_info(version_file: str = STATIC_VERSION_FILE) -> dict[str, str]:
+    version_info: dict[str, str] = {}
     with open(os.path.join(package_root, version_file), "rb") as f:
         exec(f.read(), {}, version_info)
     return version_info
@@ -51,7 +52,7 @@ def version_is_from_git(version_file=STATIC_VERSION_FILE):
     return get_static_version_info(version_file)["version"] == "__use_git__"
 
 
-def pep440_format(version_info):
+def pep440_format(version_info: Version) -> str:
     release, dev, labels = version_info
 
     version_parts = [release]
@@ -68,7 +69,7 @@ def pep440_format(version_info):
     return "".join(version_parts)
 
 
-def get_version_from_git():
+def get_version_from_git() -> Version:
     try:
         p = subprocess.Popen(
             ["git", "rev-parse", "--show-toplevel"],
@@ -77,14 +78,14 @@ def get_version_from_git():
             stderr=subprocess.PIPE,
         )
     except OSError:
-        return
+        return None
     if p.wait() != 0:
-        return
+        return None
     if not os.path.samefile(p.communicate()[0].decode().rstrip("\n"), distr_root):
         # The top-level directory of the current Git repository is not the same
         # as the root directory of the distribution: do not extract the
         # version from Git.
-        return
+        return None
 
     # git describe --first-parent does not take into account tags from branches
     # that were merged-in. The '--long' flag gets us the 'dev' version and
@@ -92,17 +93,17 @@ def get_version_from_git():
     for opts in [["--first-parent"], []]:
         try:
             p = subprocess.Popen(
-                ["git", "describe", "--long", "--always", "--tags"] + opts,
+                ["git", "describe", "--long", "--always", "--tags"] + opts,  # type: ignore
                 cwd=distr_root,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
         except OSError:
-            return
+            return None
         if p.wait() == 0:
             break
     else:
-        return
+        return None
 
     description = (
         p.communicate()[0]
@@ -142,7 +143,7 @@ def get_version_from_git():
 #       Currently we can only tell the tag the current commit is
 #       pointing to, or its hash (with no version info)
 #       if it is not tagged.
-def get_version_from_git_archive(version_info):
+def get_version_from_git_archive(version_info) -> Version:
     try:
         refnames = version_info["refnames"]
         git_hash = version_info["git_hash"]
@@ -165,7 +166,7 @@ def get_version_from_git_archive(version_info):
         return Version("unknown", dev=None, labels=[f"g{git_hash}"])
 
 
-__version__ = get_version()
+__version__: str = get_version()
 
 
 # The following section defines a module global 'cmdclass',
