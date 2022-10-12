@@ -45,7 +45,7 @@ def cache_latest(f: Callable) -> Callable:
     return wrapper
 
 
-def save(fname: str, data: Any, compress: bool = True) -> None:
+def save(fname: str, data: Any, compress: bool = True) -> bool:
     fname = os.path.expanduser(fname)
     dirname = os.path.dirname(fname)
     if dirname:
@@ -74,7 +74,7 @@ def save(fname: str, data: Any, compress: bool = True) -> None:
     return True
 
 
-def load(fname: str, compress: bool = True):
+def load(fname: str, compress: bool = True) -> Any:
     fname = os.path.expanduser(fname)
     _open = gzip.open if compress else open
     with _open(fname, "rb") as f:

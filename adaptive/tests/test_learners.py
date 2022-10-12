@@ -12,7 +12,6 @@ import time
 
 import flaky
 import numpy as np
-import pandas
 import pytest
 import scipy.spatial
 
@@ -28,6 +27,7 @@ from adaptive.learner import (
     LearnerND,
     SequenceLearner,
 )
+from adaptive.learner.learner1D import with_pandas
 from adaptive.runner import simple
 
 try:
@@ -708,6 +708,7 @@ def add_time(f):
     return wrapper
 
 
+@pytest.mark.skipif(not with_pandas, reason="pandas is not installed")
 @run_with(
     Learner1D,
     Learner2D,
@@ -719,6 +720,8 @@ def add_time(f):
     with_all_loss_functions=False,
 )
 def test_to_dataframe(learner_type, f, learner_kwargs):
+    import pandas
+
     if learner_type is LearnerND:
         kw = {"point_names": tuple("xyz")[: len(learner_kwargs["bounds"])]}
     else:
