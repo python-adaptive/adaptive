@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import functools
 from collections import OrderedDict
+from operator import itemgetter
+from typing import Any
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.utils import copy_docstring_from
@@ -39,7 +41,7 @@ class DataSaver:
     >>> learner = DataSaver(_learner, arg_picker=itemgetter('y'))
     """
 
-    def __init__(self, learner, arg_picker):
+    def __init__(self, learner: BaseLearner, arg_picker: itemgetter) -> None:
         self.learner = learner
         self.extra_data = OrderedDict()
         self.function = learner.function
@@ -49,7 +51,7 @@ class DataSaver:
         """Return a new `DataSaver` with the same `arg_picker` and `learner`."""
         return DataSaver(self.learner.new(), self.arg_picker)
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> Any:
         return getattr(self.learner, attr)
 
     @copy_docstring_from(BaseLearner.tell)
@@ -122,10 +124,17 @@ class DataSaver:
             key = _to_key(x[:-1])
             self.extra_data[key] = x[-1]
 
-    def _get_data(self):
+    def _get_data(self) -> tuple[Any, OrderedDict]:
         return self.learner._get_data(), self.extra_data
 
-    def _set_data(self, data):
+    def _set_data(
+        self,
+        data: (
+            tuple[OrderedDict, OrderedDict]
+            | tuple[dict[int | float, float], OrderedDict]
+            | tuple[tuple[dict[int, float], int, float, float], OrderedDict]
+        ),
+    ) -> None:
         learner_data, self.extra_data = data
         self.learner._set_data(learner_data)
 
