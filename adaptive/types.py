@@ -1,3 +1,5 @@
+from numbers import Integral as Int
+from numbers import Real
 from typing import Union
 
 import numpy as np
@@ -9,6 +11,7 @@ except ImportError:
     from typing_extensions import TypeAlias
 
 Float: TypeAlias = Union[float, np.float_]
-Int: TypeAlias = Union[int, np.int_]
-Real: TypeAlias = Union[Float, Int]
 Bool: TypeAlias = Union[bool, np.bool_]
+
+
+__all__ = ["Float", "Bool", "Int", "Real"]
