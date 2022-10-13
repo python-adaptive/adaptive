@@ -429,7 +429,7 @@ async def f_parallel(x):
 Finally we provide the asynchronous function to the `learner` and run it via `AsyncRunner`.
 
 ```{code-cell} ipython3
-learner = adaptive.Learner1D(async_h, bounds=(-3.5, 3.5))
+learner = adaptive.Learner1D(f_parallel, bounds=(-3.5, 3.5))
 
 runner = adaptive.AsyncRunner(learner, goal=lambda l: l.loss() < 0.01, ntasks=20)
 ```
