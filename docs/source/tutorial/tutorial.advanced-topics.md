@@ -410,7 +410,6 @@ def f(x, y):
 Next we define a computation using coroutines such that it reuses previously submitted tasks.
 
 ```{code-cell} ipython3
-from collections import defaultdict
 from dask.distributed import Client
 
 client = await Client(asynchronous=True)
