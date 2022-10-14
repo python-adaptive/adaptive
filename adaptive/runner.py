@@ -895,7 +895,7 @@ def auto_goal(
         If it is an integer, the goal is reached after that many points have been
         returned.
         If it is a float, the goal is reached when the learner has reached a loss
-        less than that.
+        equal or less than that.
         If it is a datetime, the goal is reached when the current time is after the
         datetime.
         If it is a timedelta, the goal is reached when the current time is after

@@ -44,7 +44,7 @@ def test_simple(runner):
 
     learner = Learner1D(f, (-1, 1))
     runner(learner, 10)
-    assert len(learner.data) > 10
+    assert len(learner.data) >= 10
 
 
 @pytest.mark.parametrize("runner", runners)

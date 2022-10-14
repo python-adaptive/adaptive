@@ -375,7 +375,7 @@ def test_curvature_loss():
     assert loss.nth_neighbors == 1
     learner = Learner1D(f, (-1, 1), loss_per_interval=loss)
     simple(learner, goal=100)
-    assert learner.npoints > 100
+    assert learner.npoints >= 100
 
 
 def test_curvature_loss_vectors():
@@ -386,7 +386,7 @@ def test_curvature_loss_vectors():
     assert loss.nth_neighbors == 1
     learner = Learner1D(f, (-1, 1), loss_per_interval=loss)
     simple(learner, goal=100)
-    assert learner.npoints > 100
+    assert learner.npoints >= 100
 
 
 def test_NaN_loss():
