@@ -5,7 +5,7 @@ from numbers import Integral as Int
 from typing import Any, Tuple
 
 import cloudpickle
-from sortedcontainers import SortedDict, SortedSet
+from sortedcontainers import SortedDict
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.utils import assign_defaults, partial_function_from_dataframe
@@ -81,9 +81,7 @@ class SequenceLearner(BaseLearner):
     def __init__(self, function, sequence):
         self._original_function = function
         self.function = _IgnoreFirstArgument(function)
-        # prefer range(len(...)) over enumerate to avoid slowdowns
-        # when passing lazy sequences
-        self._to_do_indices = SortedSet(range(len(sequence)))
+        self._to_do_indices = dict.fromkeys(range(len(sequence)))
         self._ntotal = len(sequence)
         self.sequence = copy(sequence)
         self.data = SortedDict()
@@ -122,19 +120,19 @@ class SequenceLearner(BaseLearner):
 
     def remove_unfinished(self) -> None:
         for i in self.pending_points:
-            self._to_do_indices.add(i)
+            self._to_do_indices[i] = None
         self.pending_points = set()
 
     def tell(self, point: PointType, value: Any) -> None:
         index, point = point
         self.data[index] = value
         self.pending_points.discard(index)
-        self._to_do_indices.discard(index)
+        self._to_do_indices.pop(index, None)
 
     def tell_pending(self, point: PointType) -> None:
         index, point = point
         self.pending_points.add(index)
-        self._to_do_indices.discard(index)
+        self._to_do_indices.pop(index, None)
 
     def done(self) -> bool:
         return not self._to_do_indices and not self.pending_points
