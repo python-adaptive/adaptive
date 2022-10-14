@@ -46,7 +46,7 @@ learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
 ```
 
 ```{code-cell} ipython3
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(learner, goal=0.01)
 ```
 
 ```{code-cell} ipython3

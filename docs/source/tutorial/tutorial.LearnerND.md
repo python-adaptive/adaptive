@@ -50,7 +50,7 @@ def sphere(xyz):
 
 
 learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1e-3)
+runner = adaptive.Runner(learner, goal=1e-3)
 ```
 
 ```{code-cell} ipython3

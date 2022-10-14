@@ -65,7 +65,7 @@ A {class}`~concurrent.futures.ProcessPoolExecutor` cannot be used on Windows for
 ```{code-cell} ipython3
 # The end condition is when the "loss" is less than 0.1. In the context of the
 # 1D learner this means that we will resolve features in 'func' with width 0.1 or wider.
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(learner, goal=0.01)
 ```
 
 ```{code-cell} ipython3
@@ -124,7 +124,7 @@ The `Learner1D` can be used for such functions:
 
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(f_levels, bounds=(-1, 1))
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(learner, goal=0.01)
 ```
 
 ```{code-cell} ipython3
@@ -156,7 +156,7 @@ from adaptive.learner.learner1D import (
 
 curvature_loss = curvature_loss_function()
 learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=curvature_loss)
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(learner, goal=0.01)
 ```
 
 ```{code-cell} ipython3

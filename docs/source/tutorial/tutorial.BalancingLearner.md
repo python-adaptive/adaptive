@@ -46,7 +46,7 @@ learners = [
 ]
 
 bal_learner = adaptive.BalancingLearner(learners)
-runner = adaptive.Runner(bal_learner, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(bal_learner, goal=0.01)
 ```
 
 ```{code-cell} ipython3
@@ -86,7 +86,7 @@ learner = adaptive.BalancingLearner.from_product(
     jacobi, adaptive.Learner1D, dict(bounds=(0, 1)), combos
 )
 
-runner = adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.BlockingRunner(learner, goal=0.01)
 
 # The `cdims` will automatically be set when using `from_product`, so
 # `plot()` will return a HoloMap with correctly labeled sliders.

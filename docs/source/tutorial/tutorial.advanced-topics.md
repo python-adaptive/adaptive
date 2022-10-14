@@ -51,7 +51,7 @@ learner = adaptive.Learner1D(f, bounds=(-1, 1))
 control = adaptive.Learner1D(f, bounds=(-1, 1))
 
 # Let's only run the learner
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(learner, goal=0.01)
 ```
 
 ```{code-cell} ipython3
@@ -134,7 +134,7 @@ The simplest way to accomplish this is to use {class}`adaptive.BlockingRunner`:
 
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
+adaptive.BlockingRunner(learner, goal=0.01)
 # This will only get run after the runner has finished
 learner.plot()
 ```
@@ -155,7 +155,7 @@ The simplest way is to use {class}`adaptive.runner.simple` to run your learner:
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
 # blocks until completion
-adaptive.runner.simple(learner, goal=lambda l: l.loss() < 0.01)
+adaptive.runner.simple(learner, goal=0.01)
 
 learner.plot()
 ```
@@ -169,7 +169,7 @@ from adaptive.runner import SequentialExecutor
 
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 runner = adaptive.Runner(
-    learner, executor=SequentialExecutor(), goal=lambda l: l.loss() < 0.01
+    learner, executor=SequentialExecutor(), goal=0.01
 )
 ```
 
@@ -292,7 +292,7 @@ One way to inspect runners is to instantiate one with `log=True`:
 
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01, log=True)
+runner = adaptive.Runner(learner, goal=0.01, log=True)
 ```
 
 ```{code-cell} ipython3
@@ -351,7 +351,7 @@ async def time(runner):
 ioloop = asyncio.get_event_loop()
 
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(learner, goal=0.01)
 
 timer = ioloop.create_task(time(runner))
 ```
@@ -462,7 +462,7 @@ def f(x):
 
 learner = adaptive.Learner1D(f, (-1, 1))
 
-adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.1)
+adaptive.BlockingRunner(learner, goal=0.1)
 ```
 
 If you use `asyncio` already in your script and want to integrate `adaptive` into it, then you can use the default {class}`~adaptive.Runner` as you would from a notebook.

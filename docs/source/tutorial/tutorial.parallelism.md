@@ -24,7 +24,7 @@ from concurrent.futures import ProcessPoolExecutor
 executor = ProcessPoolExecutor(max_workers=4)
 
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-runner = adaptive.Runner(learner, executor=executor, goal=lambda l: l.loss() < 0.05)
+runner = adaptive.Runner(learner, executor=executor, goal=0.05)
 runner.live_info()
 runner.live_plot(update_interval=0.1)
 ```
@@ -37,7 +37,7 @@ import ipyparallel
 client = ipyparallel.Client()  # You will need to start an `ipcluster` to make this work
 
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-runner = adaptive.Runner(learner, executor=client, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(learner, executor=client, goal=0.01)
 runner.live_info()
 runner.live_plot()
 ```
@@ -52,7 +52,7 @@ import distributed
 client = distributed.Client()
 
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-runner = adaptive.Runner(learner, executor=client, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(learner, executor=client, goal=0.01)
 runner.live_info()
 runner.live_plot(update_interval=0.1)
 ```
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         learner,
         executor=MPIPoolExecutor(),
         shutdown_executor=True,
-        goal=lambda l: l.loss() < 0.01,
+        goal=0.01,
     )
 
     # periodically save the data (in case the job dies)
@@ -132,6 +132,6 @@ ex = get_reusable_executor()
 f = lambda x: x
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01, executor=ex)
+runner = adaptive.Runner(learner, goal=0.01, executor=ex)
 runner.live_info()
 ```

@@ -52,10 +52,10 @@ def test_ask_0(strategy):
 @pytest.mark.parametrize(
     "strategy, goal",
     [
-        ("loss", lambda l: l.loss() < 0.1),
-        ("loss_improvements", lambda l: l.loss() < 0.1),
+        ("loss", 0.1),
+        ("loss_improvements", 0.1),
         ("npoints", lambda bl: all(l.npoints > 10 for l in bl.learners)),
-        ("cycle", lambda l: l.loss() < 0.1),
+        ("cycle", 0.1),
     ],
 )
 def test_strategies(strategy, goal):

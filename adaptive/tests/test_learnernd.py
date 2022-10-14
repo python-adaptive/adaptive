@@ -33,8 +33,8 @@ def test_interior_vs_bbox_gives_same_result():
     hull = scipy.spatial.ConvexHull(control._bounds_points)
     learner = LearnerND(f, bounds=hull)
 
-    simple(control, goal=lambda l: l.loss() < 0.1)
-    simple(learner, goal=lambda l: l.loss() < 0.1)
+    simple(control, goal=0.1)
+    simple(learner, goal=0.1)
 
     assert learner.data == control.data
 
@@ -47,4 +47,4 @@ def test_vector_return_with_a_flat_layer():
     h3 = lambda xy: np.array([0 * f(xy), g(xy)])  # noqa: E731
     for function in [h1, h2, h3]:
         learner = LearnerND(function, bounds=[(-1, 1), (-1, 1)])
-        simple(learner, goal=lambda l: l.loss() < 0.1)
+        simple(learner, goal=0.1)
