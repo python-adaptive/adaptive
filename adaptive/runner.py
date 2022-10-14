@@ -13,6 +13,7 @@ import time
 import traceback
 import warnings
 from contextlib import suppress
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Callable
 
 import loky
@@ -129,10 +130,11 @@ class BaseRunner(metaclass=abc.ABCMeta):
         shutdown_executor=False,
         retries=0,
         raise_if_retries_exceeded=True,
+        allow_running_forever=False,
     ):
 
         self.executor = _ensure_executor(executor)
-        self.goal = goal
+        self.goal = auto_goal(goal, learner, allow_running_forever)
 
         self._max_tasks = ntasks
 
@@ -396,6 +398,7 @@ class BlockingRunner(BaseRunner):
             shutdown_executor=shutdown_executor,
             retries=retries,
             raise_if_retries_exceeded=raise_if_retries_exceeded,
+            allow_running_forever=False,
         )
         self._run()
 
@@ -518,11 +521,6 @@ class AsyncRunner(BaseRunner):
         raise_if_retries_exceeded=True,
     ):
 
-        if goal is None:
-
-            def goal(_):
-                return False
-
         if (
             executor is None
             and _default_executor is concurrent.ProcessPoolExecutor
@@ -548,6 +546,7 @@ class AsyncRunner(BaseRunner):
             shutdown_executor=shutdown_executor,
             retries=retries,
             raise_if_retries_exceeded=raise_if_retries_exceeded,
+            allow_running_forever=True,
         )
         self.ioloop = ioloop or asyncio.get_event_loop()
         self.task = None
@@ -861,3 +860,89 @@ def _get_ncores(ex):
         return ex._pool.size  # not public API!
     else:
         raise TypeError(f"Cannot get number of cores for {ex.__class__}")
+
+
+class _TimeGoal:
+    def __init__(self, dt: timedelta | datetime):
+        self.dt = dt
+        self.start_time = None
+
+    def __call__(self, _):
+        if isinstance(self.dt, timedelta):
+            if self.start_time is None:
+                self.start_time = datetime.now()
+            return datetime.now() - self.start_time > self.dt
+        elif isinstance(self.dt, datetime):
+            return datetime.now() > self.dt
+        else:
+            raise TypeError(f"{self.dt=} is not a datetime or timedelta.")
+
+
+def auto_goal(
+    goal: Callable[[BaseLearner], bool] | int | float | datetime | timedelta | None,
+    learner: BaseLearner,
+    allow_running_forever: bool = True,
+):
+    """Extract a goal from the learners.
+
+    Parameters
+    ----------
+    goal
+        The goal to extract. Can be a callable, an integer, a float, a datetime,
+        a timedelta or None.
+        If it is a callable, it is returned as is.
+        If it is an integer, the goal is reached after that many points have been
+        returned.
+        If it is a float, the goal is reached when the learner has reached a loss
+        less than that.
+        If it is a datetime, the goal is reached when the current time is after the
+        datetime.
+        If it is a timedelta, the goal is reached when the current time is after
+        the start time plus that timedelta.
+        If it is None, and
+            - the learner type is `adaptive.SequenceLearner`, it continues until
+            it no more points to add
+            - the learner type is `adaptive.Integrator`, it continues until the
+            error is less than the tolerance.
+            - otherwise, it continues forever, unless `allow_running_forever` is
+            False, in which case it raises a ValueError.
+    learner
+        Learner for which to determine the goal.
+    allow_running_forever
+        If True, and the goal is None and the learner is not a SequenceLearner,
+        then a goal that never stops is returned, otherwise an exception is raised.
+
+    Returns
+    -------
+    Callable[[adaptive.BaseLearner], bool]
+    """
+    from adaptive import BalancingLearner, IntegratorLearner, SequenceLearner
+
+    if callable(goal):
+        return goal
+    if isinstance(goal, float):
+        return lambda learner: learner.loss() <= goal
+    if isinstance(learner, BalancingLearner):
+        # Note that the float loss goal is more efficiently implemented in the
+        # BalancingLearner itself. That is why the previous if statement is
+        # above this one.
+        goals = [auto_goal(goal, l, allow_running_forever) for l in learner.learners]
+        return lambda learner: all(goal(l) for l, goal in zip(learner.learners, goals))
+    if isinstance(goal, int):
+        return lambda learner: learner.npoints >= goal
+    if isinstance(goal, (timedelta, datetime)):
+        return _TimeGoal(goal)
+    if goal is None:
+        if isinstance(learner, SequenceLearner):
+            return SequenceLearner.done
+        if isinstance(learner, IntegratorLearner):
+            return IntegratorLearner.done
+        warnings.warn("Goal is None which means the learners continue forever!")
+        if allow_running_forever:
+            return lambda _: False
+        else:
+            raise ValueError(
+                "Goal is None which means the learners"
+                " continue forever and this is not allowed."
+            )
+    raise ValueError("Cannot determine goal from {goal}.")
