@@ -123,7 +123,7 @@ b = [(-1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, 1, 1), (1, 1, -1), (1, -1, -1)
 hull = scipy.spatial.ConvexHull(b)
 
 learner = adaptive.LearnerND(f, hull)
-adaptive.BlockingRunner(learner, goal=lambda l: l.npoints > 2000)
+adaptive.BlockingRunner(learner, goal=2000)
 
 learner.plot_isosurface(-0.5)
 ```

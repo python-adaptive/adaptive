@@ -187,7 +187,7 @@ learner_h = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=uniform_loss)
 learner_1 = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=default_loss)
 learner_2 = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=curvature_loss)
 
-npoints_goal = lambda l: l.npoints >= 100
+npoints_goal = 100
 # adaptive.runner.simple is a non parallel blocking runner.
 adaptive.runner.simple(learner_h, goal=npoints_goal)
 adaptive.runner.simple(learner_1, goal=npoints_goal)

@@ -43,7 +43,7 @@ def test_simple(runner):
         return x
 
     learner = Learner1D(f, (-1, 1))
-    runner(learner, lambda l: l.npoints > 10)
+    runner(learner, 10)
     assert len(learner.data) > 10
 
 
@@ -152,5 +152,5 @@ def test_loky_executor(loky_executor):
 
 def test_default_executor():
     learner = Learner1D(linear, (-1, 1))
-    runner = AsyncRunner(learner, goal=lambda l: l.npoints > 10)
+    runner = AsyncRunner(learner, goal=10)
     asyncio.get_event_loop().run_until_complete(runner.task)

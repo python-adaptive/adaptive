@@ -90,7 +90,7 @@ def slow_f(x):
 
 
 learner = adaptive.Learner1D(slow_f, bounds=[0, 1])
-runner = adaptive.Runner(learner, goal=lambda l: l.npoints > 100)
+runner = adaptive.Runner(learner, goal=100)
 runner.start_periodic_saving(
     save_kwargs=dict(fname="data/periodic_example.p"), interval=6
 )
