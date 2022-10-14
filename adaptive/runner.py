@@ -738,6 +738,7 @@ def simple(learner, goal):
         The end condition for the calculation. This function must take the
         learner as its sole argument, and return True if we should stop.
     """
+    goal = auto_goal(goal, learner)
     while not goal(learner):
         xs, _ = learner.ask(1)
         for x in xs:
