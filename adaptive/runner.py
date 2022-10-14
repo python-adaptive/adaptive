@@ -891,22 +891,23 @@ def auto_goal(
     goal
         The goal to extract. Can be a callable, an integer, a float, a datetime,
         a timedelta or None.
-        If it is a callable, it is returned as is.
-        If it is an integer, the goal is reached after that many points have been
-        returned.
-        If it is a float, the goal is reached when the learner has reached a loss
-        equal or less than that.
-        If it is a datetime, the goal is reached when the current time is after the
-        datetime.
-        If it is a timedelta, the goal is reached when the current time is after
-        the start time plus that timedelta.
-        If it is None, and
-            - the learner type is `adaptive.SequenceLearner`, it continues until
-            it no more points to add
-            - the learner type is `adaptive.IntegratorLearner`, it continues until the
-            error is less than the tolerance specified in the learner.
-            - otherwise, it continues forever, unless `allow_running_forever` is
-            False, in which case it raises a ValueError.
+        If the type of `goal` is:
+
+        * ``callable``, it is returned as is.
+        * ``int``, the goal is reached after that many points have been added.
+        * ``float``, the goal is reached when the learner has reached a loss
+          equal or less than that.
+        * `datetime.datetime`, the goal is reached when the current time is after the
+          datetime.
+        * `datetime.timedelta`, the goal is reached when the current time is after
+          the start time plus that timedelta.
+        * ``None`` and
+            * the learner type is `adaptive.SequenceLearner`, it continues until
+              it no more points to add
+            * the learner type is `adaptive.IntegratorLearner`, it continues until the
+              error is less than the tolerance specified in the learner.
+            * otherwise, it continues forever, unless ``allow_running_forever`` is
+              False, in which case it raises a ValueError.
     learner
         Learner for which to determine the goal.
     allow_running_forever
