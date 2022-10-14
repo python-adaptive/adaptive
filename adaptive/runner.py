@@ -903,8 +903,8 @@ def auto_goal(
         If it is None, and
             - the learner type is `adaptive.SequenceLearner`, it continues until
             it no more points to add
-            - the learner type is `adaptive.Integrator`, it continues until the
-            error is less than the tolerance.
+            - the learner type is `adaptive.IntegratorLearner`, it continues until the
+            error is less than the tolerance specified in the learner.
             - otherwise, it continues forever, unless `allow_running_forever` is
             False, in which case it raises a ValueError.
     learner
