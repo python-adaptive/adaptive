@@ -876,7 +876,7 @@ class _TimeGoal:
         elif isinstance(self.dt, datetime):
             return datetime.now() > self.dt
         else:
-            raise TypeError(f"{self.dt=} is not a datetime or timedelta.")
+            raise TypeError(f"`dt={self.dt}` is not a datetime or timedelta.")
 
 
 def auto_goal(
