@@ -14,14 +14,12 @@ import traceback
 import warnings
 from contextlib import suppress
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Callable
+from typing import Any, Callable
 
 import loky
 
+from adaptive import BalancingLearner, BaseLearner, IntegratorLearner, SequenceLearner
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
-
-if TYPE_CHECKING:
-    from adaptive import BaseLearner
 
 try:
     import ipyparallel
@@ -918,8 +916,6 @@ def auto_goal(
     -------
     Callable[[adaptive.BaseLearner], bool]
     """
-    from adaptive import BalancingLearner, IntegratorLearner, SequenceLearner
-
     if callable(goal):
         return goal
     if isinstance(goal, float):
