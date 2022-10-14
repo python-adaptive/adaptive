@@ -63,8 +63,8 @@ On Windows systems the runner will use a {class}`loky.get_reusable_executor`.
 A {class}`~concurrent.futures.ProcessPoolExecutor` cannot be used on Windows for reasons.
 
 ```{code-cell} ipython3
-# The end condition is when the "loss" is less than 0.1. In the context of the
-# 1D learner this means that we will resolve features in 'func' with width 0.1 or wider.
+# The end condition is when the "loss" is less than 0.01. In the context of the
+# 1D learner this means that we will resolve features in 'func' with width 0.01 or wider.
 runner = adaptive.Runner(learner, goal=0.01)
 ```
 
