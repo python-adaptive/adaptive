@@ -81,7 +81,9 @@ class SequenceLearner(BaseLearner):
     def __init__(self, function, sequence):
         self._original_function = function
         self.function = _IgnoreFirstArgument(function)
-        self._to_do_indices = SortedSet({i for i, _ in enumerate(sequence)})
+        # prefer range(len(...)) over enumerate to avoid slowdowns
+        # when passing lazy sequences
+        self._to_do_indices = SortedSet(range(len(sequence)))
         self._ntotal = len(sequence)
         self.sequence = copy(sequence)
         self.data = SortedDict()
