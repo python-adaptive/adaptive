@@ -119,7 +119,6 @@ def assign_defaults(function, df, function_prefix: str = "function."):
     defaults = _default_parameters(function, function_prefix)
     for k, v in defaults.items():
         df[k] = len(df) * [v]
-        df[k] = df[k].astype("category")
 
 
 def partial_function_from_dataframe(function, df, function_prefix: str = "function."):
