@@ -18,7 +18,7 @@ bumped.
 
 #### Ensure that all tests pass
 
-For major and minor releases we will be tagging the ``master`` branch.
+For major and minor releases we will be tagging the ``main`` branch.
 This should be as simple as verifying that the
 [latest CI pipeline](https://dev.azure.com/python-adaptive/adaptive/_build)
 succeeded.
