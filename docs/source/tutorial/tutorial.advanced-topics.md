@@ -373,7 +373,7 @@ Adaptive by itself does not implement a way of sharing partial results between f
 Its implementation of parallel computation using executors is minimal by design.
 Instead the appropriate way to implement custom parallelization is by using coroutines (asynchronous functions).
 
-We illustrate this approach by using dask.distributed for parallel computations in part because it supports asynchronous operation out-of-the-box.
+We illustrate this approach by using `dask.distributed` for parallel computations in part because it supports asynchronous operation out-of-the-box.
 Let us consider a function `f(x)` which is composed by two parts.
 It has a slow part `g` which can be reused by multiple inputs and shared between workers.
 It has fast part `h` that will be computed for every `x`.
@@ -382,6 +382,10 @@ It has fast part `h` that will be computed for every `x`.
 import time
 
 def f(x):
+    """
+    Integer part of `x` will be reused
+    Decimal part requires a new computation
+    """
     return g(int(x)) + h(x % 1)
 
 
