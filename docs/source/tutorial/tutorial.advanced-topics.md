@@ -373,8 +373,10 @@ Adaptive by itself does not implement a way of sharing partial results between f
 Its implementation of parallel computation using executors is minimal by design.
 Instead the appropriate way to implement custom parallelization is by using coroutines (asynchronous functions).
 
-We illustrate this approach by using `dask.distributed` for parallel computations in part because it supports asynchronous operation out-of-the-box.
-Let us consider the computation below which has a slow but reusable part, and a fast part that cannot be reused.
+We illustrate this approach by using dask.distributed for parallel computations in part because it supports asynchronous operation out-of-the-box.
+Let us consider a function `f(x)` which is composed by two parts.
+It has a slow part `g` which can be reused by multiple inputs and shared between workers.
+It has fast part `h` that will be computed for every `x`.
 
 ```{code-cell} ipython3
 import time
