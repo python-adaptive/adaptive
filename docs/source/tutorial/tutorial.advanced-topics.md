@@ -440,7 +440,7 @@ We await for the runner to finish, and then plot the result.
 
 ```{code-cell} ipython3
 await runner.task
-learner.plot
+learner.plot()
 ```
 
 ## Using Runners from a script
