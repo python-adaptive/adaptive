@@ -370,20 +370,19 @@ timer.result()
 ## Custom parallelization using coroutines
 
 Adaptive by itself does not implement a way of sharing partial results between function executions.
-Its implementation of parallel computation using executors is minimal by design.
-Instead the appropriate way to implement custom parallelization is by using coroutines (asynchronous functions).
+Instead its implementation of parallel computation using executors is minimal by design.
+The appropriate way to implement custom parallelization is by using coroutines (asynchronous functions).
 
 We illustrate this approach by using `dask.distributed` for parallel computations in part because it supports asynchronous operation out-of-the-box.
-Let us consider a function `f(x)` which is composed by two parts.
-It has a slow part `g` which can be reused by multiple inputs and shared between workers.
-It has fast part `h` that will be computed for every `x`.
+Let us consider a function `f(x)` which is composed by two parts:
+a slow part `g` which can be reused by multiple inputs and shared across function evaluations and a fast part `h` that will be computed for every `x`.
 
 ```{code-cell} ipython3
 import time
 
 def f(x):
     """
-    Integer part of `x` will be reused
+    Integer part of `x` repeats and should be reused
     Decimal part requires a new computation
     """
     return g(int(x)) + h(x % 1)
@@ -400,7 +399,7 @@ def h(x):
     return x**3
 ```
 
-We need to convert `f` into a dask graph by using `dask.delayed`.
+In order to combine reuse of values of `g` with adaptive, we need to convert `f` into a dask graph by using `dask.delayed`.
 
 ```{code-cell} ipython3
 from dask import delayed
@@ -432,7 +431,7 @@ async def f_parallel(x):
     return await future_f
 ```
 
-Finally we provide the asynchronous function to the `learner` and run it via `AsyncRunner`.
+To run the adaptive evaluation we provide the asynchronous function to the `learner` and run it via `AsyncRunner` without specifying an executor.
 
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(f_parallel, bounds=(-3.5, 3.5))
@@ -440,7 +439,7 @@ learner = adaptive.Learner1D(f_parallel, bounds=(-3.5, 3.5))
 runner = adaptive.AsyncRunner(learner, goal=lambda l: l.loss() < 0.01, ntasks=20)
 ```
 
-We await for the runner to finish, and then plot the result.
+Finally we await for the runner to finish, and then plot the result.
 
 ```{code-cell} ipython3
 await runner.task
