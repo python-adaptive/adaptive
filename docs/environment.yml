@@ -23,3 +23,4 @@ dependencies:
   - loky
   - furo
   - myst-parser
+  - dask
