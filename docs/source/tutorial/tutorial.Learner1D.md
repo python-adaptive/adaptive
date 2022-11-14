@@ -124,7 +124,7 @@ The `Learner1D` can be used for such functions:
 
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(f_levels, bounds=(-1, 1))
-runner = adaptive.Runner(learner, loss_goal=0.01)
+runner = adaptive.Runner(learner, loss_goal=0.01)  # continue until `learner.loss()<=1`
 ```
 
 ```{code-cell} ipython3

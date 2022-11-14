@@ -83,10 +83,18 @@ class BaseRunner(metaclass=abc.ABCMeta):
     Parameters
     ----------
     learner : `~adaptive.BaseLearner` instance
-    goal : callable
+    goal : callable, optional
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
-        stop requesting more points.
+        stop requesting more points. (Advanced use) Instead of providing a
+        function, see `auto_goal` for other types that are accepted here.
+    loss_goal : float, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the loss is smaller than this value.
+    npoints_goal : int, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the number of points is larger or
+        equal than this value.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -340,7 +348,15 @@ class BlockingRunner(BaseRunner):
     goal : callable
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
-        stop requesting more points.
+        stop requesting more points. (Advanced use) Instead of providing a
+        function, see `auto_goal` for other types that are accepted here.
+    loss_goal : float
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the loss is smaller than this value.
+    npoints_goal : int
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the number of points is larger or
+        equal than this value.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -465,8 +481,17 @@ class AsyncRunner(BaseRunner):
     goal : callable, optional
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
-        stop requesting more points. If not provided, the runner will run
-        forever, or until ``self.task.cancel()`` is called.
+        stop requesting more points. (Advanced use) Instead of providing a
+        function, see `auto_goal` for other types that are accepted here.
+        If not provided, the runner will run forever (or stop when no more
+        points can be added), or until ``self.task.cancel()`` is called.
+    loss_goal : float, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the loss is smaller than this value.
+    npoints_goal : int, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the number of points is larger or
+        equal than this value.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -765,8 +790,16 @@ def simple(
     ----------
     learner : ~`adaptive.BaseLearner` instance
     goal : callable
-        The end condition for the calculation. This function must take the
-        learner as its sole argument, and return True if we should stop.
+        The end condition for the calculation. This function must take
+        the learner as its sole argument, and return True when we should
+        stop requesting more points.
+    loss_goal : float, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the loss is smaller than this value.
+    npoints_goal : int, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the number of points is larger or
+        equal than this value.
     """
     goal = _goal(learner, goal, loss_goal, npoints_goal, allow_running_forever=False)
     while not goal(learner):
@@ -912,7 +945,7 @@ def auto_goal(
     goal: GoalTypes,
     learner: BaseLearner,
     allow_running_forever: bool = True,
-):
+) -> Callable[[BaseLearner], bool]:
     """Extract a goal from the learners.
 
     Parameters
