@@ -144,8 +144,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
     def __init__(
         self,
         learner,
-        *,
         goal: GoalTypes = None,
+        *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         executor=None,
@@ -410,8 +410,8 @@ class BlockingRunner(BaseRunner):
     def __init__(
         self,
         learner,
-        *,
         goal: GoalTypes = None,
+        *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         executor=None,
@@ -555,8 +555,8 @@ class AsyncRunner(BaseRunner):
     def __init__(
         self,
         learner,
-        *,
         goal: GoalTypes = None,
+        *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         executor=None,
@@ -770,8 +770,8 @@ Runner = AsyncRunner
 
 def simple(
     learner,
-    *,
     goal: GoalTypes = None,
+    *,
     loss_goal: float | None = None,
     npoints_goal: int | None = None,
 ):
