@@ -29,7 +29,7 @@ from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 
 try:
     from typing import TypeAlias
-except ModuleNotFoundError:
+except ImportError:
     # Python <3.10
     from typing_extensions import TypeAlias
 
