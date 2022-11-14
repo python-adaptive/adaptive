@@ -3,13 +3,22 @@ import platform
 import sys
 import time
 
+import numpy as np
 import pytest
 
-from adaptive.learner import Learner1D, Learner2D
+from adaptive.learner import (
+    BalancingLearner,
+    DataSaver,
+    IntegratorLearner,
+    Learner1D,
+    Learner2D,
+    SequenceLearner,
+)
 from adaptive.runner import (
     AsyncRunner,
     BlockingRunner,
     SequentialExecutor,
+    auto_goal,
     simple,
     stop_after,
     with_distributed,
@@ -150,3 +159,40 @@ def test_default_executor():
     learner = Learner1D(linear, (-1, 1))
     runner = AsyncRunner(learner, npoints_goal=10)
     asyncio.get_event_loop().run_until_complete(runner.task)
+
+
+def test_auto_goal():
+    learner = Learner1D(linear, (-1, 1))
+    simple(learner, auto_goal(4, learner))
+    assert learner.npoints == 4
+
+    learner = Learner1D(linear, (-1, 1))
+    simple(learner, auto_goal(0.5, learner))
+    assert learner.loss() <= 0.5
+
+    learner = SequenceLearner(linear, np.linspace(-1, 1))
+    simple(learner, auto_goal(None, learner))
+    assert learner.done()
+
+    learner = IntegratorLearner(linear, bounds=(0, 1), tol=0.1)
+    simple(learner, auto_goal(None, learner))
+    assert learner.done()
+
+    learner = Learner1D(linear, (-1, 1))
+    learner = DataSaver(learner, lambda x: x)
+    simple(learner, auto_goal(4, learner))
+    assert learner.npoints == 4
+
+    learner1 = Learner1D(linear, (-1, 1))
+    learner2 = Learner1D(linear, (-2, 2))
+    balancing_learner = BalancingLearner([learner1, learner2])
+    simple(balancing_learner, auto_goal(4, balancing_learner))
+    assert learner1.npoints == 4 and learner2.npoints == 4
+
+    learner1 = Learner1D(linear, bounds=(0, 1))
+    learner1 = DataSaver(learner1, lambda x: x)
+    learner2 = Learner1D(linear, bounds=(0, 1))
+    learner2 = DataSaver(learner2, lambda x: x)
+    balancing_learner = BalancingLearner([learner1, learner2])
+    simple(balancing_learner, auto_goal(10, balancing_learner))
+    assert learner1.npoints == 10 and learner2.npoints == 10
