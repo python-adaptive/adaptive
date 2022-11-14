@@ -18,7 +18,13 @@ from typing import Any, Callable, Union
 
 import loky
 
-from adaptive import BalancingLearner, BaseLearner, IntegratorLearner, SequenceLearner
+from adaptive import (
+    BalancingLearner,
+    BaseLearner,
+    DataSaver,
+    IntegratorLearner,
+    SequenceLearner,
+)
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 
 try:
@@ -955,6 +961,8 @@ def auto_goal(
         return lambda learner: learner.npoints >= goal
     if isinstance(goal, (timedelta, datetime)):
         return _TimeGoal(goal)
+    if isinstance(learner, DataSaver):
+        return auto_goal(goal, learner.learner, allow_running_forever)
     if goal is None:
         if isinstance(learner, SequenceLearner):
             return SequenceLearner.done
