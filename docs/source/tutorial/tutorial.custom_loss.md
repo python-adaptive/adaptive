@@ -74,7 +74,7 @@ def f_divergent_1d(x):
 learner = adaptive.Learner1D(
     f_divergent_1d, (-1, 1), loss_per_interval=uniform_sampling_1d
 )
-runner = adaptive.BlockingRunner(learner, goal=0.01)
+runner = adaptive.BlockingRunner(learner, loss_goal=0.01)
 learner.plot().select(y=(0, 10000))
 ```
 
@@ -99,7 +99,7 @@ learner = adaptive.Learner2D(
 )
 
 # this takes a while, so use the async Runner so we know *something* is happening
-runner = adaptive.Runner(learner, goal= l.loss() < 0.03 or l.npoints > 1000)
+runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.03 or l.npoints > 1000)
 ```
 
 ```{code-cell} ipython3
@@ -154,7 +154,7 @@ def resolution_loss_function(min_distance=0, max_distance=1):
 loss = resolution_loss_function(min_distance=0.01)
 
 learner = adaptive.Learner2D(f_divergent_2d, [(-1, 1), (-1, 1)], loss_per_triangle=loss)
-runner = adaptive.BlockingRunner(learner, goal=0.02)
+runner = adaptive.BlockingRunner(learner, loss_goal=0.02)
 learner.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale").opts(
     hv.opts.EdgePaths(color="w"), hv.opts.Image(logz=True, colorbar=True)
 )

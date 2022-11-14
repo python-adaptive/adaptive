@@ -65,7 +65,7 @@ A {class}`~concurrent.futures.ProcessPoolExecutor` cannot be used on Windows for
 ```{code-cell} ipython3
 # The end condition is when the "loss" is less than 0.01. In the context of the
 # 1D learner this means that we will resolve features in 'func' with width 0.01 or wider.
-runner = adaptive.Runner(learner, goal=0.01)
+runner = adaptive.Runner(learner, loss_goal=0.01)
 ```
 
 ```{code-cell} ipython3
@@ -124,7 +124,7 @@ The `Learner1D` can be used for such functions:
 
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(f_levels, bounds=(-1, 1))
-runner = adaptive.Runner(learner, goal=0.01)
+runner = adaptive.Runner(learner, loss_goal=0.01)
 ```
 
 ```{code-cell} ipython3
@@ -156,7 +156,7 @@ from adaptive.learner.learner1D import (
 
 curvature_loss = curvature_loss_function()
 learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=curvature_loss)
-runner = adaptive.Runner(learner, goal=0.01)
+runner = adaptive.Runner(learner, loss_goal=0.01)
 ```
 
 ```{code-cell} ipython3
@@ -187,11 +187,10 @@ learner_h = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=uniform_loss)
 learner_1 = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=default_loss)
 learner_2 = adaptive.Learner1D(sin_exp, (-1, 1), loss_per_interval=curvature_loss)
 
-npoints_goal = 100
 # adaptive.runner.simple is a non parallel blocking runner.
-adaptive.runner.simple(learner_h, goal=npoints_goal)
-adaptive.runner.simple(learner_1, goal=npoints_goal)
-adaptive.runner.simple(learner_2, goal=npoints_goal)
+adaptive.runner.simple(learner_h, npoints_goal=100)
+adaptive.runner.simple(learner_1, npoints_goal=100)
+adaptive.runner.simple(learner_2, npoints_goal=100)
 
 (
     learner_h.plot().relabel("homogeneous")

@@ -61,7 +61,7 @@ def test_min_npoints():
         learner = AverageLearner(
             constant_function, atol=0.01, rtol=0.01, min_npoints=min_npoints
         )
-        simple(learner, 1.0)
+        simple(learner, loss_goal=1.0)
         assert learner.npoints >= max(2, min_npoints)
 
 

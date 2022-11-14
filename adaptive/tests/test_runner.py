@@ -19,20 +19,16 @@ from adaptive.runner import (
 OPERATING_SYSTEM = platform.system()
 
 
-def blocking_runner(learner, goal):
-    BlockingRunner(learner, goal, executor=SequentialExecutor())
+def blocking_runner(learner, **kw):
+    BlockingRunner(learner, executor=SequentialExecutor(), **kw)
 
 
-def async_runner(learner, goal):
-    runner = AsyncRunner(learner, goal, executor=SequentialExecutor())
+def async_runner(learner, **kw):
+    runner = AsyncRunner(learner, executor=SequentialExecutor(), **kw)
     asyncio.get_event_loop().run_until_complete(runner.task)
 
 
 runners = [simple, blocking_runner, async_runner]
-
-
-def trivial_goal(learner):
-    return learner.npoints > 10
 
 
 @pytest.mark.parametrize("runner", runners)
@@ -43,7 +39,7 @@ def test_simple(runner):
         return x
 
     learner = Learner1D(f, (-1, 1))
-    runner(learner, 10)
+    runner(learner, npoints_goal=10)
     assert len(learner.data) >= 10
 
 
@@ -57,7 +53,7 @@ def test_nonconforming_output(runner):
     def f(x):
         return [0]
 
-    runner(Learner2D(f, ((-1, 1), (-1, 1))), trivial_goal)
+    runner(Learner2D(f, ((-1, 1), (-1, 1))), npoints_goal=10)
 
 
 def test_aync_def_function():
@@ -65,7 +61,7 @@ def test_aync_def_function():
         return x
 
     learner = Learner1D(f, (-1, 1))
-    runner = AsyncRunner(learner, trivial_goal)
+    runner = AsyncRunner(learner, npoints_goal=10)
     asyncio.get_event_loop().run_until_complete(runner.task)
 
 
@@ -88,7 +84,7 @@ def test_concurrent_futures_executor():
 
     BlockingRunner(
         Learner1D(linear, (-1, 1)),
-        trivial_goal,
+        npoints_goal=10,
         executor=ProcessPoolExecutor(max_workers=1),
     )
 
@@ -96,7 +92,7 @@ def test_concurrent_futures_executor():
 def test_stop_after_goal():
     seconds_to_wait = 0.2  # don't make this too large or the test will take ages
     start_time = time.time()
-    BlockingRunner(Learner1D(linear, (-1, 1)), stop_after(seconds=seconds_to_wait))
+    BlockingRunner(Learner1D(linear, (-1, 1)), goal=stop_after(seconds=seconds_to_wait))
     stop_time = time.time()
     assert stop_time - start_time > seconds_to_wait
 
@@ -119,7 +115,7 @@ def test_ipyparallel_executor():
     child.expect("Engines appear to have started successfully", timeout=35)
     ipyparallel_executor = Client()
     learner = Learner1D(linear, (-1, 1))
-    BlockingRunner(learner, trivial_goal, executor=ipyparallel_executor)
+    BlockingRunner(learner, npoints_goal=10, executor=ipyparallel_executor)
 
     assert learner.npoints > 0
 
@@ -137,7 +133,7 @@ def test_distributed_executor():
 
     learner = Learner1D(linear, (-1, 1))
     client = Client(n_workers=1)
-    BlockingRunner(learner, trivial_goal, executor=client)
+    BlockingRunner(learner, npoints_goal=10, executor=client)
     client.shutdown()
     assert learner.npoints > 0
 
@@ -145,12 +141,12 @@ def test_distributed_executor():
 def test_loky_executor(loky_executor):
     learner = Learner1D(lambda x: x, (-1, 1))
     BlockingRunner(
-        learner, trivial_goal, executor=loky_executor, shutdown_executor=True
+        learner, npoints_goal=10, executor=loky_executor, shutdown_executor=True
     )
     assert learner.npoints > 0
 
 
 def test_default_executor():
     learner = Learner1D(linear, (-1, 1))
-    runner = AsyncRunner(learner, goal=10)
+    runner = AsyncRunner(learner, npoints_goal=10)
     asyncio.get_event_loop().run_until_complete(runner.task)

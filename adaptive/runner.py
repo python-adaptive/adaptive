@@ -14,12 +14,18 @@ import traceback
 import warnings
 from contextlib import suppress
 from datetime import datetime, timedelta
-from typing import Any, Callable
+from typing import Any, Callable, Union
 
 import loky
 
 from adaptive import BalancingLearner, BaseLearner, IntegratorLearner, SequenceLearner
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
+
+try:
+    from typing import TypeAlias
+except ModuleNotFoundError:
+    # Python <3.10
+    from typing_extensions import TypeAlias
 
 try:
     import ipyparallel
@@ -59,6 +65,10 @@ else:
     # See https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor
     # and https://github.com/python-adaptive/adaptive/issues/301
     _default_executor = loky.get_reusable_executor
+
+GoalTypes: TypeAlias = Union[
+    Callable[[BaseLearner], bool], int, float, datetime, timedelta, None
+]
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
@@ -120,8 +130,10 @@ class BaseRunner(metaclass=abc.ABCMeta):
     def __init__(
         self,
         learner,
-        goal,
         *,
+        goal: GoalTypes = None,
+        loss_goal: float | None = None,
+        npoints_goal: int | None = None,
         executor=None,
         ntasks=None,
         log=False,
@@ -132,7 +144,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
     ):
 
         self.executor = _ensure_executor(executor)
-        self.goal = auto_goal(goal, learner, allow_running_forever)
+        self.goal = _goal(learner, goal, loss_goal, npoints_goal, allow_running_forever)
 
         self._max_tasks = ntasks
 
@@ -376,8 +388,10 @@ class BlockingRunner(BaseRunner):
     def __init__(
         self,
         learner,
-        goal,
         *,
+        goal: GoalTypes = None,
+        loss_goal: float | None = None,
+        npoints_goal: int | None = None,
         executor=None,
         ntasks=None,
         log=False,
@@ -389,7 +403,9 @@ class BlockingRunner(BaseRunner):
             raise ValueError("Coroutine functions can only be used with 'AsyncRunner'.")
         super().__init__(
             learner,
-            goal,
+            goal=goal,
+            loss_goal=loss_goal,
+            npoints_goal=npoints_goal,
             executor=executor,
             ntasks=ntasks,
             log=log,
@@ -508,8 +524,10 @@ class AsyncRunner(BaseRunner):
     def __init__(
         self,
         learner,
-        goal=None,
         *,
+        goal: GoalTypes = None,
+        loss_goal: float | None = None,
+        npoints_goal: int | None = None,
         executor=None,
         ntasks=None,
         log=False,
@@ -537,7 +555,9 @@ class AsyncRunner(BaseRunner):
 
         super().__init__(
             learner,
-            goal,
+            goal=goal,
+            loss_goal=loss_goal,
+            npoints_goal=npoints_goal,
             executor=executor,
             ntasks=ntasks,
             log=log,
@@ -717,7 +737,13 @@ class AsyncRunner(BaseRunner):
 Runner = AsyncRunner
 
 
-def simple(learner, goal):
+def simple(
+    learner,
+    *,
+    goal: GoalTypes = None,
+    loss_goal: float | None = None,
+    npoints_goal: int | None = None,
+):
     """Run the learner until the goal is reached.
 
     Requests a single point from the learner, evaluates
@@ -736,7 +762,7 @@ def simple(learner, goal):
         The end condition for the calculation. This function must take the
         learner as its sole argument, and return True if we should stop.
     """
-    goal = auto_goal(goal, learner)
+    goal = _goal(learner, goal, loss_goal, npoints_goal, allow_running_forever=False)
     while not goal(learner):
         xs, _ = learner.ask(1)
         for x in xs:
@@ -871,14 +897,13 @@ class _TimeGoal:
             if self.start_time is None:
                 self.start_time = datetime.now()
             return datetime.now() - self.start_time > self.dt
-        elif isinstance(self.dt, datetime):
+        if isinstance(self.dt, datetime):
             return datetime.now() > self.dt
-        else:
-            raise TypeError(f"`dt={self.dt}` is not a datetime or timedelta.")
+        raise TypeError(f"`dt={self.dt}` is not a datetime or timedelta.")
 
 
 def auto_goal(
-    goal: Callable[[BaseLearner], bool] | int | float | datetime | timedelta | None,
+    goal: GoalTypes,
     learner: BaseLearner,
     allow_running_forever: bool = True,
 ):
@@ -935,12 +960,28 @@ def auto_goal(
             return SequenceLearner.done
         if isinstance(learner, IntegratorLearner):
             return IntegratorLearner.done
-        warnings.warn("Goal is None which means the learners continue forever!")
-        if allow_running_forever:
-            return lambda _: False
-        else:
+        if not allow_running_forever:
             raise ValueError(
                 "Goal is None which means the learners"
                 " continue forever and this is not allowed."
             )
+        warnings.warn("Goal is None which means the learners continue forever!")
+        return lambda _: False
     raise ValueError("Cannot determine goal from {goal}.")
+
+
+def _goal(
+    learner: BaseLearner,
+    goal: GoalTypes,
+    loss_goal: float | None,
+    npoints_goal: int | None,
+    allow_running_forever: bool,
+):
+    # goal, loss_goal, npoints_goal are mutually exclusive, only one can be not None
+    if goal is not None and (loss_goal is not None or npoints_goal is not None):
+        raise ValueError("Either goal, loss_goal, or npoints_goal can be specified.")
+    if loss_goal is not None:
+        goal = float(loss_goal)
+    if npoints_goal is not None:
+        goal = int(npoints_goal)
+    return auto_goal(goal, learner, allow_running_forever)

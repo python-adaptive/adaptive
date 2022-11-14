@@ -75,7 +75,7 @@ def peak(x, a=0.01):
 
 
 learner = Learner1D(peak, bounds=(-1, 1))
-runner = Runner(learner, goal=0.01)
+runner = Runner(learner, loss_goal=0.01)
 runner.live_info()
 runner.live_plot()
 ```

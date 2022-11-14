@@ -42,8 +42,8 @@ def f(x):
 seq = np.linspace(-15, 15, 1000)
 learner = SequenceLearner(f, seq)
 
-runner = adaptive.Runner(learner, SequenceLearner.done)
-# that goal is same as `lambda learner: learner.done()`
+runner = adaptive.Runner(learner)
+# not providing a goal is same as `lambda learner: learner.done()`
 ```
 
 ```{code-cell} ipython3
