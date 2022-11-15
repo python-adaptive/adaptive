@@ -14,7 +14,7 @@ import traceback
 import warnings
 from contextlib import suppress
 from datetime import datetime, timedelta
-from typing import Any, Callable, Union
+from typing import Any, Callable
 
 import loky
 
@@ -26,12 +26,6 @@ from adaptive import (
     SequenceLearner,
 )
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
-
-try:
-    from typing import TypeAlias
-except ImportError:
-    # Python <3.10
-    from typing_extensions import TypeAlias
 
 try:
     import ipyparallel
@@ -71,10 +65,6 @@ else:
     # See https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor
     # and https://github.com/python-adaptive/adaptive/issues/301
     _default_executor = loky.get_reusable_executor
-
-_GoalTypes: TypeAlias = Union[
-    Callable[[BaseLearner], bool], int, float, datetime, timedelta, None
-]
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
