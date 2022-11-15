@@ -163,30 +163,30 @@ def test_default_executor():
 
 def test_auto_goal():
     learner = Learner1D(linear, (-1, 1))
-    simple(learner, auto_goal(4, learner))
+    simple(learner, auto_goal(npoints=4))
     assert learner.npoints == 4
 
     learner = Learner1D(linear, (-1, 1))
-    simple(learner, auto_goal(0.5, learner))
+    simple(learner, auto_goal(loss=0.5))
     assert learner.loss() <= 0.5
 
     learner = SequenceLearner(linear, np.linspace(-1, 1))
-    simple(learner, auto_goal(None, learner))
+    simple(learner, auto_goal(learner=learner))
     assert learner.done()
 
     learner = IntegratorLearner(linear, bounds=(0, 1), tol=0.1)
-    simple(learner, auto_goal(None, learner))
+    simple(learner, auto_goal(learner=learner))
     assert learner.done()
 
     learner = Learner1D(linear, (-1, 1))
     learner = DataSaver(learner, lambda x: x)
-    simple(learner, auto_goal(4, learner))
+    simple(learner, auto_goal(npoints=4, learner=learner))
     assert learner.npoints == 4
 
     learner1 = Learner1D(linear, (-1, 1))
     learner2 = Learner1D(linear, (-2, 2))
     balancing_learner = BalancingLearner([learner1, learner2])
-    simple(balancing_learner, auto_goal(4, balancing_learner))
+    simple(balancing_learner, auto_goal(npoints=4, learner=balancing_learner))
     assert learner1.npoints == 4 and learner2.npoints == 4
 
     learner1 = Learner1D(linear, bounds=(0, 1))
@@ -194,5 +194,5 @@ def test_auto_goal():
     learner2 = Learner1D(linear, bounds=(0, 1))
     learner2 = DataSaver(learner2, lambda x: x)
     balancing_learner = BalancingLearner([learner1, learner2])
-    simple(balancing_learner, auto_goal(10, balancing_learner))
+    simple(balancing_learner, auto_goal(npoints=10, learner=balancing_learner))
     assert learner1.npoints == 10 and learner2.npoints == 10
