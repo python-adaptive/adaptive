@@ -113,6 +113,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
         the point is present in ``runner.failed``.
     raise_if_retries_exceeded : bool, default: True
         Raise the error after a point ``x`` failed `retries`.
+    allow_running_forever : bool, default: False
+        Allow the runner to run forever when the goal is None.
 
     Attributes
     ----------
@@ -436,6 +438,8 @@ class BlockingRunner(BaseRunner):
             goal=goal,
             loss_goal=loss_goal,
             npoints_goal=npoints_goal,
+            datetime_goal=datetime_goal,
+            timedelta_goal=timedelta_goal,
             executor=executor,
             ntasks=ntasks,
             log=log,
@@ -531,6 +535,8 @@ class AsyncRunner(BaseRunner):
         the point is present in ``runner.failed``.
     raise_if_retries_exceeded : bool, default: True
         Raise the error after a point ``x`` failed `retries`.
+    allow_running_forever : bool, default: True
+        If True, the runner will run forever if the goal is not provided.
 
     Attributes
     ----------
@@ -606,6 +612,8 @@ class AsyncRunner(BaseRunner):
             goal=goal,
             loss_goal=loss_goal,
             npoints_goal=npoints_goal,
+            datetime_goal=datetime_goal,
+            timedelta_goal=timedelta_goal,
             executor=executor,
             ntasks=ntasks,
             log=log,
