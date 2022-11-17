@@ -88,7 +88,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
-    timedelta_goal : timedelta, optional
+    timedelta_goal : timedelta or int, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
         ``start_time + timedelta_goal``.
@@ -507,7 +507,7 @@ class AsyncRunner(BaseRunner):
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
-    timedelta_goal : timedelta, optional
+    timedelta_goal : timedelta or int, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
         ``start_time + timedelta_goal``.
@@ -831,7 +831,7 @@ def simple(
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
-    timedelta_goal : timedelta, optional
+    timedelta_goal : timedelta or int, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
         ``start_time + timedelta_goal``.
@@ -970,7 +970,9 @@ def _get_ncores(ex):
 
 
 class _TimeGoal:
-    def __init__(self, dt: timedelta | datetime):
+    def __init__(self, dt: timedelta | datetime | int):
+        if isinstance(dt, int):
+            self.dt = timedelta(seconds=dt)
         self.dt = dt
         self.start_time = None
 
@@ -989,7 +991,7 @@ def auto_goal(
     loss: float | None = None,
     npoints: int | None = None,
     datetime: datetime | None = None,
-    timedelta: timedelta | None = None,
+    timedelta: timedelta | int | None = None,
     learner: BaseLearner | None = None,
     allow_running_forever: bool = True,
 ) -> Callable[[BaseLearner], bool]:
@@ -997,25 +999,14 @@ def auto_goal(
 
     Parameters
     ----------
-    goal
-        The goal to extract. Can be a callable, an integer, a float, a datetime,
-        a timedelta or None.
-        If the type of `goal` is:
-        * ``callable``, it is returned as is.
-        * ``int``, the goal is reached after that many points have been added.
-        * ``float``, the goal is reached when the learner has reached a loss
-          equal or less than that.
-        * `datetime.datetime`, the goal is reached when the current time is after the
-          datetime.
-        * `datetime.timedelta`, the goal is reached when the current time is after
-          the start time plus that timedelta.
-        * ``None`` and
-            * the learner type is `adaptive.SequenceLearner`, it continues until
-              it no more points to add
-            * the learner type is `adaptive.IntegratorLearner`, it continues until the
-              error is less than the tolerance specified in the learner.
-            * otherwise, it continues forever, unless ``allow_running_forever`` is
-              False, in which case it raises a ValueError.
+    loss
+        TODO
+    npoints
+        TODO
+    datetime
+        TODO
+    timedelta
+        TODO
     learner
         Learner for which to determine the goal.
     allow_running_forever
