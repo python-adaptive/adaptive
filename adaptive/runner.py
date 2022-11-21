@@ -84,7 +84,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the number of points is larger or
         equal than this value.
-    datetime_goal : datetime, optional
+    end_time_goal : datetime, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
@@ -147,7 +147,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
-        datetime_goal: datetime | None = None,
+        end_time_goal: datetime | None = None,
         duration_goal: timedelta | None = None,
         executor=None,
         ntasks=None,
@@ -164,7 +164,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
             goal,
             loss_goal,
             npoints_goal,
-            datetime_goal,
+            end_time_goal,
             duration_goal,
             allow_running_forever,
         )
@@ -422,7 +422,7 @@ class BlockingRunner(BaseRunner):
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
-        datetime_goal: datetime | None = None,
+        end_time_goal: datetime | None = None,
         duration_goal: timedelta | None = None,
         executor=None,
         ntasks=None,
@@ -438,7 +438,7 @@ class BlockingRunner(BaseRunner):
             goal=goal,
             loss_goal=loss_goal,
             npoints_goal=npoints_goal,
-            datetime_goal=datetime_goal,
+            end_time_goal=end_time_goal,
             duration_goal=duration_goal,
             executor=executor,
             ntasks=ntasks,
@@ -503,7 +503,7 @@ class AsyncRunner(BaseRunner):
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the number of points is larger or
         equal than this value.
-    datetime_goal : datetime, optional
+    end_time_goal : datetime, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
@@ -580,7 +580,7 @@ class AsyncRunner(BaseRunner):
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
-        datetime_goal: datetime | None = None,
+        end_time_goal: datetime | None = None,
         duration_goal: timedelta | None = None,
         executor=None,
         ntasks=None,
@@ -612,7 +612,7 @@ class AsyncRunner(BaseRunner):
             goal=goal,
             loss_goal=loss_goal,
             npoints_goal=npoints_goal,
-            datetime_goal=datetime_goal,
+            end_time_goal=end_time_goal,
             duration_goal=duration_goal,
             executor=executor,
             ntasks=ntasks,
@@ -799,7 +799,7 @@ def simple(
     *,
     loss_goal: float | None = None,
     npoints_goal: int | None = None,
-    datetime_goal: datetime | None = None,
+    end_time_goal: datetime | None = None,
     duration_goal: timedelta | None = None,
 ):
     """Run the learner until the goal is reached.
@@ -827,7 +827,7 @@ def simple(
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the number of points is larger or
         equal than this value.
-    datetime_goal : datetime, optional
+    end_time_goal : datetime, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
@@ -841,7 +841,7 @@ def simple(
         goal,
         loss_goal,
         npoints_goal,
-        datetime_goal,
+        end_time_goal,
         duration_goal,
         allow_running_forever=False,
     )
@@ -973,7 +973,8 @@ class _TimeGoal:
     def __init__(self, dt: timedelta | datetime | int | float):
         if not isinstance(dt, (timedelta, datetime)):
             self.dt = timedelta(seconds=dt)
-        self.dt = dt
+        else:
+            self.dt = dt
         self.start_time = None
 
     def __call__(self, _):
@@ -990,7 +991,7 @@ def auto_goal(
     *,
     loss: float | None = None,
     npoints: int | None = None,
-    datetime: datetime | None = None,
+    end_time: datetime | None = None,
     duration: timedelta | int | None = None,
     learner: BaseLearner | None = None,
     allow_running_forever: bool = True,
@@ -1003,7 +1004,7 @@ def auto_goal(
         TODO
     npoints
         TODO
-    datetime
+    end_time
         TODO
     duration
         TODO
@@ -1020,14 +1021,14 @@ def auto_goal(
     kw = dict(
         loss=loss,
         npoints=npoints,
-        datetime=datetime,
+        end_time=end_time,
         duration=duration,
         allow_running_forever=allow_running_forever,
     )
-    opts = (loss, npoints, datetime, duration)  # all are mutually exclusive
+    opts = (loss, npoints, end_time, duration)  # all are mutually exclusive
     if sum(v is not None for v in opts) > 1:
         raise ValueError(
-            "Only one of loss, npoints, datetime, duration can be specified."
+            "Only one of loss, npoints, end_time, duration can be specified."
         )
 
     if loss is not None:
@@ -1040,8 +1041,8 @@ def auto_goal(
         return lambda learner: all(goal(l) for l, goal in zip(learner.learners, goals))
     if npoints is not None:
         return lambda learner: learner.npoints >= npoints
-    if datetime is not None:
-        return _TimeGoal(datetime)
+    if end_time is not None:
+        return _TimeGoal(end_time)
     if duration is not None:
         return _TimeGoal(duration)
     if isinstance(learner, DataSaver):
@@ -1066,7 +1067,7 @@ def _goal(
     goal: Callable[[BaseLearner], bool] | None,
     loss_goal: float | None,
     npoints_goal: int | None,
-    datetime_goal: datetime | None,
+    end_time_goal: datetime | None,
     duration_goal: timedelta | None,
     allow_running_forever: bool,
 ):
@@ -1076,18 +1077,18 @@ def _goal(
     if goal is not None and (
         loss_goal is not None
         or npoints_goal is not None
-        or datetime_goal is not None
+        or end_time_goal is not None
         or duration_goal is not None
     ):
         raise ValueError(
-            "Either goal, loss_goal, npoints_goal, datetime_goal or"
+            "Either goal, loss_goal, npoints_goal, end_time_goal or"
             " duration_goal can be specified, not multiple."
         )
     return auto_goal(
         learner=learner,
         loss=loss_goal,
         npoints=npoints_goal,
-        datetime=datetime_goal,
+        end_time=end_time_goal,
         duration=duration_goal,
         allow_running_forever=allow_running_forever,
     )

@@ -199,6 +199,6 @@ def test_auto_goal():
 
     learner = Learner1D(linear, (-1, 1))
     t_start = time.time()
-    simple(learner, auto_goal(timedelta=1e-2, learner=learner))
+    simple(learner, auto_goal(duration=1e-2, learner=learner))
     t_end = time.time()
     assert t_end - t_start >= 1e-2
