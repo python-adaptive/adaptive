@@ -88,10 +88,10 @@ class BaseRunner(metaclass=abc.ABCMeta):
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
-    timedelta_goal : timedelta or int, optional
+    duration_goal : timedelta or number, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
-        ``start_time + timedelta_goal``.
+        ``start_time + duration_goal``.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -148,7 +148,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         datetime_goal: datetime | None = None,
-        timedelta_goal: timedelta | None = None,
+        duration_goal: timedelta | None = None,
         executor=None,
         ntasks=None,
         log=False,
@@ -165,7 +165,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
             loss_goal,
             npoints_goal,
             datetime_goal,
-            timedelta_goal,
+            duration_goal,
             allow_running_forever,
         )
 
@@ -423,7 +423,7 @@ class BlockingRunner(BaseRunner):
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         datetime_goal: datetime | None = None,
-        timedelta_goal: timedelta | None = None,
+        duration_goal: timedelta | None = None,
         executor=None,
         ntasks=None,
         log=False,
@@ -439,7 +439,7 @@ class BlockingRunner(BaseRunner):
             loss_goal=loss_goal,
             npoints_goal=npoints_goal,
             datetime_goal=datetime_goal,
-            timedelta_goal=timedelta_goal,
+            duration_goal=duration_goal,
             executor=executor,
             ntasks=ntasks,
             log=log,
@@ -507,10 +507,10 @@ class AsyncRunner(BaseRunner):
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
-    timedelta_goal : timedelta or int, optional
+    duration_goal : timedelta or number, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
-        ``start_time + timedelta_goal``.
+        ``start_time + duration_goal``.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -581,7 +581,7 @@ class AsyncRunner(BaseRunner):
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         datetime_goal: datetime | None = None,
-        timedelta_goal: timedelta | None = None,
+        duration_goal: timedelta | None = None,
         executor=None,
         ntasks=None,
         log=False,
@@ -613,7 +613,7 @@ class AsyncRunner(BaseRunner):
             loss_goal=loss_goal,
             npoints_goal=npoints_goal,
             datetime_goal=datetime_goal,
-            timedelta_goal=timedelta_goal,
+            duration_goal=duration_goal,
             executor=executor,
             ntasks=ntasks,
             log=log,
@@ -800,7 +800,7 @@ def simple(
     loss_goal: float | None = None,
     npoints_goal: int | None = None,
     datetime_goal: datetime | None = None,
-    timedelta_goal: timedelta | None = None,
+    duration_goal: timedelta | None = None,
 ):
     """Run the learner until the goal is reached.
 
@@ -831,10 +831,10 @@ def simple(
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
-    timedelta_goal : timedelta or int, optional
+    duration_goal : timedelta or number, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
-        ``start_time + timedelta_goal``.
+        ``start_time + duration_goal``.
     """
     goal = _goal(
         learner,
@@ -842,7 +842,7 @@ def simple(
         loss_goal,
         npoints_goal,
         datetime_goal,
-        timedelta_goal,
+        duration_goal,
         allow_running_forever=False,
     )
     while not goal(learner):
@@ -970,8 +970,8 @@ def _get_ncores(ex):
 
 
 class _TimeGoal:
-    def __init__(self, dt: timedelta | datetime | int):
-        if isinstance(dt, int):
+    def __init__(self, dt: timedelta | datetime | int | float):
+        if not isinstance(dt, (timedelta, datetime)):
             self.dt = timedelta(seconds=dt)
         self.dt = dt
         self.start_time = None
@@ -983,7 +983,7 @@ class _TimeGoal:
             return datetime.now() - self.start_time > self.dt
         if isinstance(self.dt, datetime):
             return datetime.now() > self.dt
-        raise TypeError(f"`dt={self.dt}` is not a datetime or timedelta.")
+        raise TypeError(f"`dt={self.dt}` is not a datetime, timedelta, or number.")
 
 
 def auto_goal(
@@ -991,7 +991,7 @@ def auto_goal(
     loss: float | None = None,
     npoints: int | None = None,
     datetime: datetime | None = None,
-    timedelta: timedelta | int | None = None,
+    duration: timedelta | int | None = None,
     learner: BaseLearner | None = None,
     allow_running_forever: bool = True,
 ) -> Callable[[BaseLearner], bool]:
@@ -1005,7 +1005,7 @@ def auto_goal(
         TODO
     datetime
         TODO
-    timedelta
+    duration
         TODO
     learner
         Learner for which to determine the goal.
@@ -1021,13 +1021,13 @@ def auto_goal(
         loss=loss,
         npoints=npoints,
         datetime=datetime,
-        timedelta=timedelta,
+        duration=duration,
         allow_running_forever=allow_running_forever,
     )
-    opts = (loss, npoints, datetime, timedelta)  # all are mutually exclusive
+    opts = (loss, npoints, datetime, duration)  # all are mutually exclusive
     if sum(v is not None for v in opts) > 1:
         raise ValueError(
-            "Only one of loss, npoints, datetime, timedelta can be specified."
+            "Only one of loss, npoints, datetime, duration can be specified."
         )
 
     if loss is not None:
@@ -1042,8 +1042,8 @@ def auto_goal(
         return lambda learner: learner.npoints >= npoints
     if datetime is not None:
         return _TimeGoal(datetime)
-    if timedelta is not None:
-        return _TimeGoal(timedelta)
+    if duration is not None:
+        return _TimeGoal(duration)
     if isinstance(learner, DataSaver):
         return auto_goal(**kw, learner=learner.learner)
     if all(v is None for v in opts):
@@ -1067,7 +1067,7 @@ def _goal(
     loss_goal: float | None,
     npoints_goal: int | None,
     datetime_goal: datetime | None,
-    timedelta_goal: timedelta | None,
+    duration_goal: timedelta | None,
     allow_running_forever: bool,
 ):
     if callable(goal):
@@ -1077,17 +1077,17 @@ def _goal(
         loss_goal is not None
         or npoints_goal is not None
         or datetime_goal is not None
-        or timedelta_goal is not None
+        or duration_goal is not None
     ):
         raise ValueError(
             "Either goal, loss_goal, npoints_goal, datetime_goal or"
-            " timedelta_goal can be specified, not multiple."
+            " duration_goal can be specified, not multiple."
         )
     return auto_goal(
         learner=learner,
         loss=loss_goal,
         npoints=npoints_goal,
         datetime=datetime_goal,
-        timedelta=timedelta_goal,
+        duration=duration_goal,
         allow_running_forever=allow_running_forever,
     )
