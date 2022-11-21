@@ -196,3 +196,9 @@ def test_auto_goal():
     balancing_learner = BalancingLearner([learner1, learner2])
     simple(balancing_learner, auto_goal(npoints=10, learner=balancing_learner))
     assert learner1.npoints == 10 and learner2.npoints == 10
+
+    learner = Learner1D(linear, (-1, 1))
+    t_start = time.time()
+    simple(learner, auto_goal(timedelta=1e-2, learner=learner))
+    t_end = time.time()
+    assert t_end - t_start >= 1e-2
