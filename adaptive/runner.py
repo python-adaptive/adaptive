@@ -91,7 +91,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
     duration_goal : timedelta or number, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
-        ``start_time + duration_goal``.
+        ``start_time + duration_goal``. ``duration_goal`` can be a number
+        indicating the number of seconds
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -510,7 +511,8 @@ class AsyncRunner(BaseRunner):
     duration_goal : timedelta or number, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
-        ``start_time + duration_goal``.
+        ``start_time + duration_goal``. ``duration_goal`` can be a number
+        indicating the number of seconds.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -834,7 +836,8 @@ def simple(
     duration_goal : timedelta or number, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
-        ``start_time + duration_goal``.
+        ``start_time + duration_goal``. ``duration_goal`` can be a number
+        indicating the number of seconds.
     """
     goal = _goal(
         learner,
@@ -1000,14 +1003,16 @@ def auto_goal(
 
     Parameters
     ----------
-    loss
-        TODO
-    npoints
-        TODO
-    end_time
-        TODO
-    duration
-        TODO
+    loss : float, optional
+        Stop when the loss is smaller than this value.
+    npoints : int, optional
+        Stop when the number of points is larger or equal than this value.
+    end_time : datetime, optional
+        Stop when the current time is larger or equal than this value.
+    duration : timedelta or number, optional
+        Stop when the current time is larger or equal than
+        ``start_time + duration``. ``duration`` can be a number
+        indicating the number of seconds.
     learner
         Learner for which to determine the goal.
     allow_running_forever
