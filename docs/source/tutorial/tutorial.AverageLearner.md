@@ -45,8 +45,8 @@ def g(n):
 
 ```{code-cell} ipython3
 learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
-# `loss < 1` means that we reached the `rtol` or `atol`
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1)
+# `loss < 1.0` means that we reached the `rtol` or `atol`
+runner = adaptive.Runner(learner, loss_goal=1.0)
 ```
 
 ```{code-cell} ipython3

@@ -55,7 +55,7 @@ learner = adaptive.DataSaver(_learner, arg_picker=itemgetter("y"))
 `learner.learner` is the original learner, so `learner.learner.loss()` will call the correct loss method.
 
 ```{code-cell} ipython3
-runner = adaptive.Runner(learner, goal=lambda l: l.learner.loss() < 0.1)
+runner = adaptive.Runner(learner, loss_goal=0.1)
 ```
 
 ```{code-cell} ipython3

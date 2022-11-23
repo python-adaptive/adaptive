@@ -60,7 +60,7 @@ extras_require = {
         "distributed",
         "ipyparallel>=6.2.5",  # because of https://github.com/ipython/ipyparallel/issues/404
         "scikit-optimize>=0.8.1",  # because of https://github.com/scikit-optimize/scikit-optimize/issues/931
-        "scikit-learn<=0.24.2",  # because of https://github.com/scikit-optimize/scikit-optimize/issues/1059
+        "scikit-learn",
         "wexpect" if os.name == "nt" else "pexpect",
     ],
 }

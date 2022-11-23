@@ -83,7 +83,8 @@ def load(fname: str, compress: bool = True) -> Any:
 
 def copy_docstring_from(other: Callable) -> Callable:
     def decorator(method):
-        return functools.wraps(other)(method)
+        method.__doc__ = other.__doc__
+        return method
 
     return decorator
 

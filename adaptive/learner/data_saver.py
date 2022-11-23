@@ -20,7 +20,7 @@ def _to_key(x):
     return tuple(x.values) if x.values.size > 1 else x.item()
 
 
-class DataSaver:
+class DataSaver(BaseLearner):
     """Save extra data associated with the values that need to be learned.
 
     Parameters
@@ -49,6 +49,18 @@ class DataSaver:
     def new(self) -> DataSaver:
         """Return a new `DataSaver` with the same `arg_picker` and `learner`."""
         return DataSaver(self.learner.new(), self.arg_picker)
+
+    @copy_docstring_from(BaseLearner.ask)
+    def ask(self, *args, **kwargs):
+        return self.learner.ask(*args, **kwargs)
+
+    @copy_docstring_from(BaseLearner.loss)
+    def loss(self, *args, **kwargs):
+        return self.learner.loss(*args, **kwargs)
+
+    @copy_docstring_from(BaseLearner.remove_unfinished)
+    def remove_unfinished(self, *args, **kwargs):
+        return self.learner.remove_unfinished(*args, **kwargs)
 
     def __getattr__(self, attr: str) -> Any:
         return getattr(self.learner, attr)

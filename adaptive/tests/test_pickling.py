@@ -94,7 +94,7 @@ def test_serialization_for(learner_type, learner_kwargs, serializer, f):
 
     learner = learner_type(f, **learner_kwargs)
 
-    simple(learner, goal_1)
+    simple(learner, goal=goal_1)
     learner_bytes = serializer.dumps(learner)
     loss = learner.loss()
     asked = learner.ask(10)
@@ -113,5 +113,5 @@ def test_serialization_for(learner_type, learner_kwargs, serializer, f):
     # load again to undo the ask
     learner_loaded = serializer.loads(learner_bytes)
 
-    simple(learner_loaded, goal_2)
+    simple(learner_loaded, goal=goal_2)
     assert learner_loaded.npoints == 20
