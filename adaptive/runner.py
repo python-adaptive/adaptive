@@ -1023,7 +1023,8 @@ def auto_goal(
         ``start_time + duration``. ``duration`` can be a number
         indicating the number of seconds.
     learner
-        Learner for which to determine the goal.
+        Learner for which to determine the goal. Only used if the learner type
+        is `BalancingLearner`, `DataSaver`, `SequenceLearner`, or `IntegratorLearner`.
     allow_running_forever
         If True, and the goal is None and the learner is not a SequenceLearner,
         then a goal that never stops is returned, otherwise an exception is raised.
