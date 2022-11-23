@@ -223,6 +223,11 @@ class BaseRunner(metaclass=abc.ABCMeta):
             try:
                 y = fut.result()
                 t = time.time() - fut.start_time  # total execution time
+            except asyncio.CancelledError:
+                # Cleanup
+                self._to_retry.pop(pid, None)
+                self._tracebacks.pop(pid, None)
+                self._id_to_point.pop(pid, None)
             except Exception as e:
                 self._tracebacks[pid] = traceback.format_exc()
                 self._to_retry[pid] = self._to_retry.get(pid, 0) + 1
@@ -669,6 +674,22 @@ class AsyncRunner(BaseRunner):
         else:
             end_time = time.time()
         return end_time - self.start_time
+
+    def cancel_point(
+        self, point: Any | None = None, future: asyncio.Future | None = None
+    ):
+        """Cancel a point that is currently being evaluated.
+
+        Parameters
+        ----------
+        point
+            The point that should be cancelled.
+        """
+        if point is None and future is None:
+            raise ValueError("Either point or future must be given")
+        if future is None:
+            future = next(fut for fut, p in self.pending_points if p == point)
+        future.cancel()
 
     def add_periodic_callback(
         self,
