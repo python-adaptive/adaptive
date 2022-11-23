@@ -1,6 +1,5 @@
 from contextlib import suppress
 
-from adaptive import learner, runner, utils
 from adaptive._version import __version__
 from adaptive.learner import (
     AverageLearner,
@@ -21,6 +20,8 @@ from adaptive.notebook_integration import (
     notebook_extension,
 )
 from adaptive.runner import AsyncRunner, BlockingRunner, Runner
+
+from adaptive import learner, runner, utils  # isort:skip
 
 __all__ = [
     "learner",

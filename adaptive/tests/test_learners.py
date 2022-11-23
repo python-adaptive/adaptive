@@ -103,7 +103,7 @@ def simple_run(learner, n):
             return get_goal(learner.learner)
         return get_goal(learner)
 
-    simple(learner, goal())
+    simple(learner, goal=goal())
 
 
 # Library of functions and associated learners.
