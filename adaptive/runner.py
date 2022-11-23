@@ -676,12 +676,16 @@ class AsyncRunner(BaseRunner):
         return end_time - self.start_time
 
     def cancel_point(
-        self, point: Any | None = None, future: asyncio.Future | None = None
+        self, future: asyncio.Future | None = None, point: Any | None = None
     ):
-        """Cancel a point that is currently being evaluated.
+        """Cancel a future or point that is currently being evaluated.
+
+        Either the ``future`` or the ``point`` must be provided.
 
         Parameters
         ----------
+        future : asyncio.Future
+            The future that is currently being evaluated.
         point
             The point that should be cancelled.
         """
@@ -691,9 +695,9 @@ class AsyncRunner(BaseRunner):
             future = next(fut for fut, p in self.pending_points if p == point)
         future.cancel()
 
-    def add_periodic_callback(
+    def start_periodic_callback(
         self,
-        method: Callable[[AsyncRunner]],
+        method: Callable[[AsyncRunner], None],
         interval: int = 30,
     ):
         """Start a periodic callback that calls the given method on the runner.
@@ -753,9 +757,11 @@ class AsyncRunner(BaseRunner):
         if method is None:
             method = default_save
             if save_kwargs is None:
-                raise ValueError("Must provide `save_kwargs` if method=None.")
+                raise ValueError("Must provide `save_kwargs` if `method=None`.")
 
-        self.saving_task = self.add_periodic_callback(method, interval=interval)
+        self.saving_task = self.start_periodic_callback(
+            lambda r: method(r.learner), interval=interval
+        )
         return self.saving_task
 
 
