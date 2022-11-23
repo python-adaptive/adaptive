@@ -149,7 +149,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
-        duration_goal: timedelta | None = None,
+        duration_goal: timedelta | int | float | None = None,
         executor=None,
         ntasks=None,
         log=False,
@@ -424,7 +424,7 @@ class BlockingRunner(BaseRunner):
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
-        duration_goal: timedelta | None = None,
+        duration_goal: timedelta | int | float | None = None,
         executor=None,
         ntasks=None,
         log=False,
@@ -583,7 +583,7 @@ class AsyncRunner(BaseRunner):
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
-        duration_goal: timedelta | None = None,
+        duration_goal: timedelta | int | float | None = None,
         executor=None,
         ntasks=None,
         log=False,
@@ -802,7 +802,7 @@ def simple(
     loss_goal: float | None = None,
     npoints_goal: int | None = None,
     end_time_goal: datetime | None = None,
-    duration_goal: timedelta | None = None,
+    duration_goal: timedelta | int | float | None = None,
 ):
     """Run the learner until the goal is reached.
 
@@ -995,7 +995,7 @@ def auto_goal(
     loss: float | None = None,
     npoints: int | None = None,
     end_time: datetime | None = None,
-    duration: timedelta | int | None = None,
+    duration: timedelta | int | float | None = None,
     learner: BaseLearner | None = None,
     allow_running_forever: bool = True,
 ) -> Callable[[BaseLearner], bool]:
