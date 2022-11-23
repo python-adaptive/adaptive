@@ -92,7 +92,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
         ``start_time + duration_goal``. ``duration_goal`` can be a number
-        indicating the number of seconds
+        indicating the number of seconds.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -355,14 +355,14 @@ class BlockingRunner(BaseRunner):
     Parameters
     ----------
     learner : `~adaptive.BaseLearner` instance
-    goal : callable
+    goal : callable, optional
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
-    loss_goal : float
+    loss_goal : float, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the loss is smaller than this value.
-    npoints_goal : int
+    npoints_goal : int, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the number of points is larger or
         equal than this value.
@@ -374,7 +374,7 @@ class BlockingRunner(BaseRunner):
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
         ``start_time + duration_goal``. ``duration_goal`` can be a number
-        indicating the number of seconds
+        indicating the number of seconds.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -505,7 +505,7 @@ class AsyncRunner(BaseRunner):
         the learner as its sole argument, and return True when we should
         stop requesting more points.
         If not provided, the runner will run forever (or stop when no more
-        points can be added), or until ``self.task.cancel()`` is called.
+        points can be added), or until ``runner.task.cancel()`` is called.
     loss_goal : float, optional
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the loss is smaller than this value.
@@ -827,7 +827,7 @@ def simple(
     Parameters
     ----------
     learner : ~`adaptive.BaseLearner` instance
-    goal : callable
+    goal : callable, optional
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
