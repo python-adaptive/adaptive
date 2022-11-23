@@ -565,6 +565,7 @@ class AsyncRunner(BaseRunner):
 
         self.task = self.ioloop.create_task(self._run())
         self.saving_task = None
+        self.callbacks = []
         if in_ipynb() and not self.ioloop.is_running():
             warnings.warn(
                 "The runner has been scheduled, but the asyncio "
@@ -669,6 +670,31 @@ class AsyncRunner(BaseRunner):
             end_time = time.time()
         return end_time - self.start_time
 
+    def add_periodic_callback(
+        self,
+        method: Callable[[AsyncRunner]],
+        interval: int = 30,
+    ):
+        """Start a periodic callback that calls the given method on the runner.
+
+        Parameters
+        ----------
+        method : callable
+            The method to call periodically.
+        interval : int
+            The interval in seconds between the calls.
+        """
+
+        async def _callback():
+            while self.status() == "running":
+                method(self)
+                await asyncio.sleep(interval)
+            method(self)  # one last time
+
+        task = self.ioloop.create_task(_callback())
+        self.callbacks.append(task)
+        return task
+
     def start_periodic_saving(
         self,
         save_kwargs: dict[str, Any] | None = None,
@@ -697,6 +723,8 @@ class AsyncRunner(BaseRunner):
         ...     save_kwargs=dict(fname='data/test.pickle'),
         ...     interval=600)
         """
+        if self.saving_task is not None:
+            raise RuntimeError("Already saving.")
 
         def default_save(learner):
             learner.save(**save_kwargs)
@@ -706,13 +734,7 @@ class AsyncRunner(BaseRunner):
             if save_kwargs is None:
                 raise ValueError("Must provide `save_kwargs` if method=None.")
 
-        async def _saver():
-            while self.status() == "running":
-                method(self.learner)
-                await asyncio.sleep(interval)
-            method(self.learner)  # one last time
-
-        self.saving_task = self.ioloop.create_task(_saver())
+        self.saving_task = self.add_periodic_callback(method, interval=interval)
         return self.saving_task
 
 
