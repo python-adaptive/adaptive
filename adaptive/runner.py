@@ -366,6 +366,15 @@ class BlockingRunner(BaseRunner):
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the number of points is larger or
         equal than this value.
+    end_time_goal : datetime, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the current time is larger or equal than this
+        value.
+    duration_goal : timedelta or number, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the current time is larger or equal than
+        ``start_time + duration_goal``. ``duration_goal`` can be a number
+        indicating the number of seconds
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
