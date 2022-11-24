@@ -4,6 +4,8 @@ import collections.abc
 import itertools
 import math
 from copy import copy, deepcopy
+from numbers import Integral as Int
+from numbers import Real
 from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 
 import cloudpickle
@@ -15,7 +17,7 @@ from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
 from adaptive.learner.learnerND import volume
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Float, Int, Real
+from adaptive.types import Float
 from adaptive.utils import (
     assign_defaults,
     cache_latest,

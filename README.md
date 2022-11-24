@@ -2,7 +2,7 @@
 
 # ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) adaptive
 
-[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb)
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb)
 [![Conda](https://img.shields.io/badge/install%20with-conda-green.svg)](https://anaconda.org/conda-forge/adaptive)
 [![Coverage](https://img.shields.io/codecov/c/github/python-adaptive/adaptive)](https://codecov.io/gh/python-adaptive/adaptive)
 [![DOI](https://img.shields.io/badge/doi-10.5281%2Fzenodo.1182437-blue.svg)](https://doi.org/10.5281/zenodo.1182437)
@@ -10,7 +10,7 @@
 [![Downloads](https://img.shields.io/conda/dn/conda-forge/adaptive.svg)](https://anaconda.org/conda-forge/adaptive)
 [![GitHub](https://img.shields.io/github/stars/python-adaptive/adaptive.svg?style=social)](https://github.com/python-adaptive/adaptive/stargazers)
 [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive)
-[![Pipeline-status](https://dev.azure.com/python-adaptive/adaptive/_apis/build/status/python-adaptive.adaptive?branchName=master)](https://dev.azure.com/python-adaptive/adaptive/_build/latest?definitionId=6?branchName=master)
+[![Pipeline-status](https://dev.azure.com/python-adaptive/adaptive/_apis/build/status/python-adaptive.adaptive?branchName=main)](https://dev.azure.com/python-adaptive/adaptive/_build/latest?definitionId=6?branchName=main)
 [![PyPI](https://img.shields.io/pypi/v/adaptive.svg)](https://pypi.python.org/pypi/adaptive)
 
 > *Adaptive*: parallel active learning of mathematical functions.
@@ -24,7 +24,7 @@ With just a few lines of code you can evaluate functions on a computing cluster,
 
 `adaptive` excels on computations where each function evaluation takes *at least* ≈50ms due to the overhead of picking potentially interesting points.
 
-Run the `adaptive` example notebook [live on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/master?filepath=example-notebook.ipynb) to see examples of how to use `adaptive` or visit the [tutorial on Read the Docs](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial.html).
+Run the `adaptive` example notebook [live on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb) to see examples of how to use `adaptive` or visit the [tutorial on Read the Docs](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial.html).
 
 <!-- summary-end -->
 
@@ -75,7 +75,7 @@ def peak(x, a=0.01):
 
 
 learner = Learner1D(peak, bounds=(-1, 1))
-runner = Runner(learner, goal=lambda l: l.loss() < 0.01)
+runner = Runner(learner, loss_goal=0.01)
 runner.live_info()
 runner.live_plot()
 ```

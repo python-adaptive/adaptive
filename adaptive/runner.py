@@ -13,12 +13,19 @@ import time
 import traceback
 import warnings
 from contextlib import suppress
+from datetime import datetime, timedelta
 from typing import Any, Callable, Union
 
 import loky
 from _asyncio import Future, Task
 
-from adaptive.learner.base_learner import BaseLearner
+from adaptive import (
+    BalancingLearner,
+    BaseLearner,
+    DataSaver,
+    IntegratorLearner,
+    SequenceLearner,
+)
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 
 _ThirdPartyClient = []
@@ -27,7 +34,7 @@ _FutureTypes = [concurrent.Future, Future, Task]
 
 
 try:
-    from types import TypeAlias
+    from typing import TypeAlias
 except ImportError:
     from typing_extensions import TypeAlias
 
@@ -160,10 +167,26 @@ class BaseRunner(metaclass=abc.ABCMeta):
     Parameters
     ----------
     learner : `~adaptive.BaseLearner` instance
-    goal : callable
+    goal : callable, optional
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
+    loss_goal : float, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the loss is smaller than this value.
+    npoints_goal : int, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the number of points is larger or
+        equal than this value.
+    end_time_goal : datetime, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the current time is larger or equal than this
+        value.
+    duration_goal : timedelta or number, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the current time is larger or equal than
+        ``start_time + duration_goal``. ``duration_goal`` can be a number
+        indicating the number of seconds.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -185,6 +208,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
         the point is present in ``runner.failed``.
     raise_if_retries_exceeded : bool, default: True
         Raise the error after a point ``x`` failed `retries`.
+    allow_running_forever : bool, default: False
+        Allow the runner to run forever when the goal is None.
 
     Attributes
     ----------
@@ -212,25 +237,39 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        learner: BaseLearner,
-        goal: Callable,
+        learner,
+        goal: Callable[[BaseLearner], bool] | None = None,
         *,
+        loss_goal: float | None = None,
+        npoints_goal: int | None = None,
+        end_time_goal: datetime | None = None,
+        duration_goal: timedelta | int | float | None = None,
         executor: (
             _ThirdPartyClient
             | _ThirdPartyExecutor
             | concurrent.ProcessPoolExecutor
             | concurrent.ThreadPoolExecutor
             | SequentialExecutor
+            | None
         ) = None,
         ntasks: int = None,
         log: bool = False,
         shutdown_executor: bool = False,
         retries: int = 0,
         raise_if_retries_exceeded: bool = True,
-    ) -> None:
+        allow_running_forever=False,
+    ):
 
         self.executor = _ensure_executor(executor)
-        self.goal = goal
+        self.goal = _goal(
+            learner,
+            goal,
+            loss_goal,
+            npoints_goal,
+            end_time_goal,
+            duration_goal,
+            allow_running_forever,
+        )
 
         self._max_tasks = ntasks
 
@@ -422,10 +461,26 @@ class BlockingRunner(BaseRunner):
     Parameters
     ----------
     learner : `~adaptive.BaseLearner` instance
-    goal : callable
+    goal : callable, optional
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
+    loss_goal : float, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the loss is smaller than this value.
+    npoints_goal : int, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the number of points is larger or
+        equal than this value.
+    end_time_goal : datetime, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the current time is larger or equal than this
+        value.
+    duration_goal : timedelta or number, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the current time is larger or equal than
+        ``start_time + duration_goal``. ``duration_goal`` can be a number
+        indicating the number of seconds.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -478,15 +533,20 @@ class BlockingRunner(BaseRunner):
 
     def __init__(
         self,
-        learner: BaseLearner,
-        goal: Callable,
+        learner,
+        goal: Callable[[BaseLearner], bool] | None = None,
         *,
+        loss_goal: float | None = None,
+        npoints_goal: int | None = None,
+        end_time_goal: datetime | None = None,
+        duration_goal: timedelta | int | float | None = None,
         executor: (
             _ThirdPartyClient
             | _ThirdPartyExecutor
             | concurrent.ProcessPoolExecutor
             | concurrent.ThreadPoolExecutor
             | SequentialExecutor
+            | None
         ) = None,
         ntasks: int | None = None,
         log=False,
@@ -498,13 +558,18 @@ class BlockingRunner(BaseRunner):
             raise ValueError("Coroutine functions can only be used with 'AsyncRunner'.")
         super().__init__(
             learner,
-            goal,
+            goal=goal,
+            loss_goal=loss_goal,
+            npoints_goal=npoints_goal,
+            end_time_goal=end_time_goal,
+            duration_goal=duration_goal,
             executor=executor,
             ntasks=ntasks,
             log=log,
             shutdown_executor=shutdown_executor,
             retries=retries,
             raise_if_retries_exceeded=raise_if_retries_exceeded,
+            allow_running_forever=False,
         )
         self._run()
 
@@ -551,8 +616,25 @@ class AsyncRunner(BaseRunner):
     goal : callable, optional
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
-        stop requesting more points. If not provided, the runner will run
-        forever, or until ``self.task.cancel()`` is called.
+        stop requesting more points.
+        If not provided, the runner will run forever (or stop when no more
+        points can be added), or until ``runner.task.cancel()`` is called.
+    loss_goal : float, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the loss is smaller than this value.
+    npoints_goal : int, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the number of points is larger or
+        equal than this value.
+    end_time_goal : datetime, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the current time is larger or equal than this
+        value.
+    duration_goal : timedelta or number, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the current time is larger or equal than
+        ``start_time + duration_goal``. ``duration_goal`` can be a number
+        indicating the number of seconds.
     executor : `concurrent.futures.Executor`, `distributed.Client`,\
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
@@ -577,6 +659,8 @@ class AsyncRunner(BaseRunner):
         the point is present in ``runner.failed``.
     raise_if_retries_exceeded : bool, default: True
         Raise the error after a point ``x`` failed `retries`.
+    allow_running_forever : bool, default: True
+        If True, the runner will run forever if the goal is not provided.
 
     Attributes
     ----------
@@ -615,15 +699,20 @@ class AsyncRunner(BaseRunner):
 
     def __init__(
         self,
-        learner: BaseLearner,
-        goal: Callable | None = None,
+        learner,
+        goal: Callable[[BaseLearner], bool] | None = None,
         *,
+        loss_goal: float | None = None,
+        npoints_goal: int | None = None,
+        end_time_goal: datetime | None = None,
+        duration_goal: timedelta | int | float | None = None,
         executor: (
             _ThirdPartyClient
             | _ThirdPartyExecutor
             | concurrent.ProcessPoolExecutor
             | concurrent.ThreadPoolExecutor
             | SequentialExecutor
+            | None
         ) = None,
         ntasks: int | None = None,
         log: bool = False,
@@ -632,11 +721,6 @@ class AsyncRunner(BaseRunner):
         retries: int = 0,
         raise_if_retries_exceeded: bool = True,
     ) -> None:
-
-        if goal is None:
-
-            def goal(_):
-                return False
 
         if (
             executor is None
@@ -656,13 +740,18 @@ class AsyncRunner(BaseRunner):
 
         super().__init__(
             learner,
-            goal,
+            goal=goal,
+            loss_goal=loss_goal,
+            npoints_goal=npoints_goal,
+            end_time_goal=end_time_goal,
+            duration_goal=duration_goal,
             executor=executor,
             ntasks=ntasks,
             log=log,
             shutdown_executor=shutdown_executor,
             retries=retries,
             raise_if_retries_exceeded=raise_if_retries_exceeded,
+            allow_running_forever=True,
         )
         self.ioloop = ioloop or asyncio.get_event_loop()
         self.task = None
@@ -837,7 +926,15 @@ class AsyncRunner(BaseRunner):
 Runner = AsyncRunner
 
 
-def simple(learner: BaseLearner, goal: Callable) -> None:
+def simple(
+    learner: BaseLearner,
+    goal: Callable[[BaseLearner], bool] | None = None,
+    *,
+    loss_goal: float | None = None,
+    npoints_goal: int | None = None,
+    end_time_goal: datetime | None = None,
+    duration_goal: timedelta | int | float | None = None,
+):
     """Run the learner until the goal is reached.
 
     Requests a single point from the learner, evaluates
@@ -852,10 +949,36 @@ def simple(learner: BaseLearner, goal: Callable) -> None:
     Parameters
     ----------
     learner : ~`adaptive.BaseLearner` instance
-    goal : callable
-        The end condition for the calculation. This function must take the
-        learner as its sole argument, and return True if we should stop.
+    goal : callable, optional
+        The end condition for the calculation. This function must take
+        the learner as its sole argument, and return True when we should
+        stop requesting more points.
+    loss_goal : float, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the loss is smaller than this value.
+    npoints_goal : int, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the number of points is larger or
+        equal than this value.
+    end_time_goal : datetime, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the current time is larger or equal than this
+        value.
+    duration_goal : timedelta or number, optional
+        Convenience argument, use instead of ``goal``. The end condition for the
+        calculation. Stop when the current time is larger or equal than
+        ``start_time + duration_goal``. ``duration_goal`` can be a number
+        indicating the number of seconds.
     """
+    goal = _goal(
+        learner,
+        goal,
+        loss_goal,
+        npoints_goal,
+        end_time_goal,
+        duration_goal,
+        allow_running_forever=False,
+    )
     while not goal(learner):
         xs, _ = learner.ask(1)
         for x in xs:
@@ -914,3 +1037,134 @@ def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable:
     """
     stop_time = time.time() + seconds + 60 * minutes + 3600 * hours
     return lambda _: time.time() > stop_time
+
+
+# -- Internal executor-related, things
+
+
+class _TimeGoal:
+    def __init__(self, dt: timedelta | datetime | int | float):
+        if not isinstance(dt, (timedelta, datetime)):
+            self.dt = timedelta(seconds=dt)
+        else:
+            self.dt = dt
+        self.start_time = None
+
+    def __call__(self, _):
+        if isinstance(self.dt, timedelta):
+            if self.start_time is None:
+                self.start_time = datetime.now()
+            return datetime.now() - self.start_time > self.dt
+        if isinstance(self.dt, datetime):
+            return datetime.now() > self.dt
+        raise TypeError(f"`dt={self.dt}` is not a datetime, timedelta, or number.")
+
+
+def auto_goal(
+    *,
+    loss: float | None = None,
+    npoints: int | None = None,
+    end_time: datetime | None = None,
+    duration: timedelta | int | float | None = None,
+    learner: BaseLearner | None = None,
+    allow_running_forever: bool = True,
+) -> Callable[[BaseLearner], bool]:
+    """Extract a goal from the learners.
+
+    Parameters
+    ----------
+    loss : float, optional
+        Stop when the loss is smaller than this value.
+    npoints : int, optional
+        Stop when the number of points is larger or equal than this value.
+    end_time : datetime, optional
+        Stop when the current time is larger or equal than this value.
+    duration : timedelta or number, optional
+        Stop when the current time is larger or equal than
+        ``start_time + duration``. ``duration`` can be a number
+        indicating the number of seconds.
+    learner
+        Learner for which to determine the goal. Only used if the learner type
+        is `BalancingLearner`, `DataSaver`, `SequenceLearner`, or `IntegratorLearner`.
+    allow_running_forever
+        If True, and the goal is None and the learner is not a SequenceLearner,
+        then a goal that never stops is returned, otherwise an exception is raised.
+
+    Returns
+    -------
+    Callable[[adaptive.BaseLearner], bool]
+    """
+    kw = dict(
+        loss=loss,
+        npoints=npoints,
+        end_time=end_time,
+        duration=duration,
+        allow_running_forever=allow_running_forever,
+    )
+    opts = (loss, npoints, end_time, duration)  # all are mutually exclusive
+    if sum(v is not None for v in opts) > 1:
+        raise ValueError(
+            "Only one of loss, npoints, end_time, duration can be specified."
+        )
+
+    if loss is not None:
+        return lambda learner: learner.loss() <= loss
+    if isinstance(learner, BalancingLearner):
+        # Note that the float loss goal is more efficiently implemented in the
+        # BalancingLearner itself. That is why the previous if statement is
+        # above this one.
+        goals = [auto_goal(learner=l, **kw) for l in learner.learners]
+        return lambda learner: all(goal(l) for l, goal in zip(learner.learners, goals))
+    if npoints is not None:
+        return lambda learner: learner.npoints >= npoints
+    if end_time is not None:
+        return _TimeGoal(end_time)
+    if duration is not None:
+        return _TimeGoal(duration)
+    if isinstance(learner, DataSaver):
+        return auto_goal(**kw, learner=learner.learner)
+    if all(v is None for v in opts):
+        if isinstance(learner, SequenceLearner):
+            return SequenceLearner.done
+        if isinstance(learner, IntegratorLearner):
+            return IntegratorLearner.done
+        if not allow_running_forever:
+            raise ValueError(
+                "Goal is None which means the learners"
+                " continue forever and this is not allowed."
+            )
+        warnings.warn("Goal is None which means the learners continue forever!")
+        return lambda _: False
+    raise ValueError("Cannot determine goal from {goal}.")
+
+
+def _goal(
+    learner: BaseLearner | None,
+    goal: Callable[[BaseLearner], bool] | None,
+    loss_goal: float | None,
+    npoints_goal: int | None,
+    end_time_goal: datetime | None,
+    duration_goal: timedelta | None,
+    allow_running_forever: bool,
+):
+    if callable(goal):
+        return goal
+
+    if goal is not None and (
+        loss_goal is not None
+        or npoints_goal is not None
+        or end_time_goal is not None
+        or duration_goal is not None
+    ):
+        raise ValueError(
+            "Either goal, loss_goal, npoints_goal, end_time_goal or"
+            " duration_goal can be specified, not multiple."
+        )
+    return auto_goal(
+        learner=learner,
+        loss=loss_goal,
+        npoints=npoints_goal,
+        end_time=end_time_goal,
+        duration=duration_goal,
+        allow_running_forever=allow_running_forever,
+    )

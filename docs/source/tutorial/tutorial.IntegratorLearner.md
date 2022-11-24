@@ -61,7 +61,7 @@ learner = adaptive.IntegratorLearner(f24, bounds=(0, 3), tol=1e-8)
 # *this* process only. This means we don't pay
 # the overhead of evaluating the function in another process.
 runner = adaptive.Runner(
-    learner, executor=SequentialExecutor(), goal=lambda l: l.done()
+    learner, executor=SequentialExecutor()
 )
 ```
 
@@ -75,7 +75,7 @@ await runner.task  # This is not needed in a notebook environment!
 runner.live_info()
 ```
 
-Now we could do the live plotting again, but lets just wait untill the
+Now we could do the live plotting again, but let's just wait until the
 runner is done.
 
 ```{code-cell} ipython3

@@ -16,21 +16,21 @@ def ring_of_fire(xy, d=0.75):
 
 def test_learnerND_runs_to_10_points():
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)])
-    SimpleRunner(learner, goal=lambda l: l.npoints >= 10)
+    SimpleRunner(learner, npoints_goal=10)
     assert learner.npoints == 10
 
 
 @pytest.mark.parametrize("execution_number", range(5))
 def test_learnerND_runs_to_10_points_Blocking(execution_number):
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)])
-    BlockingRunner(learner, goal=lambda l: l.npoints >= 10)
+    BlockingRunner(learner, npoints_goal=10)
     assert learner.npoints >= 10
 
 
 def test_learnerND_curvature_runs_to_10_points():
     loss = curvature_loss_function()
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)], loss_per_simplex=loss)
-    SimpleRunner(learner, goal=lambda l: l.npoints >= 10)
+    SimpleRunner(learner, npoints_goal=10)
     assert learner.npoints == 10
 
 
@@ -38,7 +38,7 @@ def test_learnerND_curvature_runs_to_10_points():
 def test_learnerND_curvature_runs_to_10_points_Blocking(execution_number):
     loss = curvature_loss_function()
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)], loss_per_simplex=loss)
-    BlockingRunner(learner, goal=lambda l: l.npoints >= 10)
+    BlockingRunner(learner, npoints_goal=10)
     assert learner.npoints >= 10
 
 
