@@ -140,7 +140,7 @@ def _get_ncores(
         | concurrent.ThreadPoolExecutor
         | SequentialExecutor
     ),
-):
+) -> int:
     """Return the maximum  number of cores that an executor can use."""
     if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
         return len(ex.view)
@@ -237,7 +237,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        learner,
+        learner: BaseLearner,
         goal: Callable[[BaseLearner], bool] | None = None,
         *,
         loss_goal: float | None = None,
@@ -257,7 +257,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         shutdown_executor: bool = False,
         retries: int = 0,
         raise_if_retries_exceeded: bool = True,
-        allow_running_forever=False,
+        allow_running_forever: bool = False,
     ):
 
         self.executor = _ensure_executor(executor)
@@ -301,7 +301,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
     def _get_max_tasks(self) -> int:
         return self._max_tasks or _get_ncores(self.executor)
 
-    def _do_raise(self, e: Exception, pid: int):
+    def _do_raise(self, e: Exception, pid: int) -> None:
         tb = self._tracebacks[pid]
         x = self._id_to_point[pid]
         raise RuntimeError(
@@ -331,7 +331,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
                 pids.append(pid)
         return pids, loss_improvements
 
-    def overhead(self):
+    def overhead(self) -> float:
         """Overhead of using Adaptive and the executor in percent.
 
         This is measured as ``100 * (1 - t_function / t_elapsed)``.
@@ -424,8 +424,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
         self.end_time = time.time()
 
     @property
-    def failed(self) -> set[Any]:
-        """Set of points that failed ``runner.retries`` times."""
+    def failed(self) -> set[int]:
+        """Set of points ids that failed ``runner.retries`` times."""
         return set(self._tracebacks) - set(self._to_retry)
 
     @abc.abstractmethod
@@ -533,7 +533,7 @@ class BlockingRunner(BaseRunner):
 
     def __init__(
         self,
-        learner,
+        learner: BaseLearner,
         goal: Callable[[BaseLearner], bool] | None = None,
         *,
         loss_goal: float | None = None,
@@ -549,10 +549,10 @@ class BlockingRunner(BaseRunner):
             | None
         ) = None,
         ntasks: int | None = None,
-        log=False,
-        shutdown_executor=False,
-        retries=0,
-        raise_if_retries_exceeded=True,
+        log: bool = False,
+        shutdown_executor: bool = False,
+        retries: int = 0,
+        raise_if_retries_exceeded: bool = True,
     ) -> None:
         if inspect.iscoroutinefunction(learner.function):
             raise ValueError("Coroutine functions can only be used with 'AsyncRunner'.")
@@ -597,7 +597,7 @@ class BlockingRunner(BaseRunner):
                 self._process_futures(with_result)
             self._cleanup()
 
-    def elapsed_time(self):
+    def elapsed_time(self) -> float:
         """Return the total time elapsed since the runner
         was started."""
         if self.end_time is None:
@@ -699,7 +699,7 @@ class AsyncRunner(BaseRunner):
 
     def __init__(
         self,
-        learner,
+        learner: BaseLearner,
         goal: Callable[[BaseLearner], bool] | None = None,
         *,
         loss_goal: float | None = None,
@@ -777,16 +777,14 @@ class AsyncRunner(BaseRunner):
                 "'adaptive.notebook_extension()'"
             )
 
-    def _submit(
-        self, x: tuple[int, int] | int | tuple[float, float] | float
-    ) -> Task | Future:
+    def _submit(self, x: Any) -> Task | Future:
         ioloop = self.ioloop
         if inspect.iscoroutinefunction(self.learner.function):
             return ioloop.create_task(self.learner.function(x))
         else:
             return ioloop.run_in_executor(self.executor, self.learner.function, x)
 
-    def status(self):
+    def status(self) -> str:
         """Return the runner status as a string.
 
         The possible statuses are: running, cancelled, failed, and finished.
@@ -802,7 +800,7 @@ class AsyncRunner(BaseRunner):
         else:
             return "finished"
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancel the runner.
 
         This is equivalent to calling ``runner.task.cancel()``.
