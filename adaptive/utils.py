@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import concurrent.futures as concurrent
 import functools
 import gzip
 import inspect
@@ -155,3 +156,24 @@ def partial_function_from_dataframe(function, df, function_prefix: str = "functi
                 " The DataFrame's value will be used."
             )
     return functools.partial(function, **kwargs)
+
+
+class SequentialExecutor(concurrent.Executor):
+    """A trivial executor that runs functions synchronously.
+
+    This executor is mainly for testing.
+    """
+
+    def submit(self, fn: Callable, *args, **kwargs) -> concurrent.Future:
+        fut: concurrent.Future = concurrent.Future()
+        try:
+            fut.set_result(fn(*args, **kwargs))
+        except Exception as e:
+            fut.set_exception(e)
+        return fut
+
+    def map(self, fn, *iterable, timeout=None, chunksize=1):
+        return map(fn, iterable)
+
+    def shutdown(self, wait=True):
+        pass
