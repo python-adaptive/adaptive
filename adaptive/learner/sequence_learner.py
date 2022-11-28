@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from copy import copy
+from numbers import Integral as Int
 from typing import Any, Tuple
 
 import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
-from adaptive.types import Int
 from adaptive.utils import assign_defaults, partial_function_from_dataframe
 
 try:
@@ -81,7 +81,9 @@ class SequenceLearner(BaseLearner):
     def __init__(self, function, sequence):
         self._original_function = function
         self.function = _IgnoreFirstArgument(function)
-        self._to_do_indices = SortedSet({i for i, _ in enumerate(sequence)})
+        # prefer range(len(...)) over enumerate to avoid slowdowns
+        # when passing lazy sequences
+        self._to_do_indices = SortedSet(range(len(sequence)))
         self._ntotal = len(sequence)
         self.sequence = copy(sequence)
         self.data = SortedDict()

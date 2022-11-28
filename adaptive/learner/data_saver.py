@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 from collections import OrderedDict
+from typing import Any, Callable
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.utils import copy_docstring_from
@@ -19,7 +20,7 @@ def _to_key(x):
     return tuple(x.values) if x.values.size > 1 else x.item()
 
 
-class DataSaver:
+class DataSaver(BaseLearner):
     """Save extra data associated with the values that need to be learned.
 
     Parameters
@@ -39,7 +40,7 @@ class DataSaver:
     >>> learner = DataSaver(_learner, arg_picker=itemgetter('y'))
     """
 
-    def __init__(self, learner, arg_picker):
+    def __init__(self, learner: BaseLearner, arg_picker: Callable) -> None:
         self.learner = learner
         self.extra_data = OrderedDict()
         self.function = learner.function
@@ -49,21 +50,33 @@ class DataSaver:
         """Return a new `DataSaver` with the same `arg_picker` and `learner`."""
         return DataSaver(self.learner.new(), self.arg_picker)
 
-    def __getattr__(self, attr):
+    @copy_docstring_from(BaseLearner.ask)
+    def ask(self, *args, **kwargs):
+        return self.learner.ask(*args, **kwargs)
+
+    @copy_docstring_from(BaseLearner.loss)
+    def loss(self, *args, **kwargs):
+        return self.learner.loss(*args, **kwargs)
+
+    @copy_docstring_from(BaseLearner.remove_unfinished)
+    def remove_unfinished(self, *args, **kwargs):
+        return self.learner.remove_unfinished(*args, **kwargs)
+
+    def __getattr__(self, attr: str) -> Any:
         return getattr(self.learner, attr)
 
     @copy_docstring_from(BaseLearner.tell)
-    def tell(self, x, result):
+    def tell(self, x: Any, result: Any) -> None:
         y = self.arg_picker(result)
         self.extra_data[x] = result
         self.learner.tell(x, y)
 
     @copy_docstring_from(BaseLearner.tell_pending)
-    def tell_pending(self, x):
+    def tell_pending(self, x: Any) -> None:
         self.learner.tell_pending(x)
 
     def to_dataframe(
-        self, extra_data_name: str = "extra_data", **kwargs
+        self, extra_data_name: str = "extra_data", **kwargs: Any
     ) -> pandas.DataFrame:
         """Return the data as a concatenated `pandas.DataFrame` from child learners.
 
@@ -98,7 +111,7 @@ class DataSaver:
         extra_data_name: str = "extra_data",
         input_names: tuple[str] = (),
         **kwargs,
-    ):
+    ) -> None:
         """Load the data from a `pandas.DataFrame` into the learner.
 
         Parameters
@@ -122,33 +135,36 @@ class DataSaver:
             key = _to_key(x[:-1])
             self.extra_data[key] = x[-1]
 
-    def _get_data(self):
+    def _get_data(self) -> tuple[Any, OrderedDict]:
         return self.learner._get_data(), self.extra_data
 
-    def _set_data(self, data):
+    def _set_data(
+        self,
+        data: tuple[Any, OrderedDict],
+    ) -> None:
         learner_data, self.extra_data = data
         self.learner._set_data(learner_data)
 
-    def __getstate__(self):
+    def __getstate__(self) -> tuple[BaseLearner, Callable, OrderedDict]:
         return (
             self.learner,
             self.arg_picker,
             self.extra_data,
         )
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: tuple[BaseLearner, Callable, OrderedDict]) -> None:
         learner, arg_picker, extra_data = state
         self.__init__(learner, arg_picker)
         self.extra_data = extra_data
 
     @copy_docstring_from(BaseLearner.save)
-    def save(self, fname, compress=True):
+    def save(self, fname, compress=True) -> None:
         # We copy this method because the 'DataSaver' is not a
         # subclass of the 'BaseLearner'.
         BaseLearner.save(self, fname, compress)
 
     @copy_docstring_from(BaseLearner.load)
-    def load(self, fname, compress=True):
+    def load(self, fname, compress=True) -> None:
         # We copy this method because the 'DataSaver' is not a
         # subclass of the 'BaseLearner'.
         BaseLearner.load(self, fname, compress)

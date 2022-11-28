@@ -50,15 +50,15 @@ def test_ask_0(strategy):
 
 
 @pytest.mark.parametrize(
-    "strategy, goal",
+    "strategy, goal_type, goal",
     [
-        ("loss", lambda l: l.loss() < 0.1),
-        ("loss_improvements", lambda l: l.loss() < 0.1),
-        ("npoints", lambda bl: all(l.npoints > 10 for l in bl.learners)),
-        ("cycle", lambda l: l.loss() < 0.1),
+        ("loss", "loss_goal", 0.1),
+        ("loss_improvements", "loss_goal", 0.1),
+        ("npoints", "goal", lambda bl: all(l.npoints > 10 for l in bl.learners)),
+        ("cycle", "loss_goal", 0.1),
     ],
 )
-def test_strategies(strategy, goal):
+def test_strategies(strategy, goal_type, goal):
     learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
     learner = BalancingLearner(learners, strategy=strategy)
-    simple(learner, goal=goal)
+    simple(learner, **{goal_type: goal})

@@ -5,6 +5,8 @@ import sys
 from collections import defaultdict
 from copy import deepcopy
 from math import hypot
+from numbers import Integral as Int
+from numbers import Real
 from typing import Callable, DefaultDict, Iterable, List, Sequence, Tuple
 
 import numpy as np
@@ -14,7 +16,6 @@ from sortedcontainers import SortedDict
 
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Int, Real
 from adaptive.utils import assign_defaults, partial_function_from_dataframe
 
 try:
@@ -576,10 +577,10 @@ class AverageLearner1D(Learner1D):
                     self._update_interpolated_loss_in_interval(*interval)
                 self._oldscale = deepcopy(self._scale)
 
-    def _get_data(self) -> dict[Real, Real]:
+    def _get_data(self) -> dict[Real, dict[Int, Real]]:
         return self._data_samples
 
-    def _set_data(self, data: dict[Real, Real]) -> None:
+    def _set_data(self, data: dict[Real, dict[Int, Real]]) -> None:
         if data:
             for x, samples in data.items():
                 self.tell_many_at_point(x, samples)

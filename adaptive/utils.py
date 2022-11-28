@@ -1,24 +1,28 @@
+from __future__ import annotations
+
 import abc
+import concurrent.futures as concurrent
 import functools
 import gzip
 import inspect
 import os
 import pickle
 import warnings
-from contextlib import contextmanager
+from contextlib import _GeneratorContextManager, contextmanager
 from itertools import product
+from typing import Any, Callable, Mapping, Sequence
 
 import cloudpickle
 
 
-def named_product(**items):
+def named_product(**items: Mapping[str, Sequence[Any]]):
     names = items.keys()
     vals = items.values()
     return [dict(zip(names, res)) for res in product(*vals)]
 
 
 @contextmanager
-def restore(*learners):
+def restore(*learners) -> _GeneratorContextManager:
     states = [learner.__getstate__() for learner in learners]
     try:
         yield
@@ -27,7 +31,7 @@ def restore(*learners):
             learner.__setstate__(state)
 
 
-def cache_latest(f):
+def cache_latest(f: Callable) -> Callable:
     """Cache the latest return value of the function and add it
     as 'self._cache[f.__name__]'."""
 
@@ -42,7 +46,7 @@ def cache_latest(f):
     return wrapper
 
 
-def save(fname, data, compress=True):
+def save(fname: str, data: Any, compress: bool = True) -> bool:
     fname = os.path.expanduser(fname)
     dirname = os.path.dirname(fname)
     if dirname:
@@ -71,16 +75,17 @@ def save(fname, data, compress=True):
     return True
 
 
-def load(fname, compress=True):
+def load(fname: str, compress: bool = True) -> Any:
     fname = os.path.expanduser(fname)
     _open = gzip.open if compress else open
     with _open(fname, "rb") as f:
         return cloudpickle.load(f)
 
 
-def copy_docstring_from(other):
+def copy_docstring_from(other: Callable) -> Callable:
     def decorator(method):
-        return functools.wraps(other)(method)
+        method.__doc__ = other.__doc__
+        return method
 
     return decorator
 
@@ -116,7 +121,6 @@ def assign_defaults(function, df, function_prefix: str = "function."):
     defaults = _default_parameters(function, function_prefix)
     for k, v in defaults.items():
         df[k] = len(df) * [v]
-        df[k] = df[k].astype("category")
 
 
 def partial_function_from_dataframe(function, df, function_prefix: str = "function."):
@@ -152,3 +156,24 @@ def partial_function_from_dataframe(function, df, function_prefix: str = "functi
                 " The DataFrame's value will be used."
             )
     return functools.partial(function, **kwargs)
+
+
+class SequentialExecutor(concurrent.Executor):
+    """A trivial executor that runs functions synchronously.
+
+    This executor is mainly for testing.
+    """
+
+    def submit(self, fn: Callable, *args, **kwargs) -> concurrent.Future:
+        fut: concurrent.Future = concurrent.Future()
+        try:
+            fut.set_result(fn(*args, **kwargs))
+        except Exception as e:
+            fut.set_exception(e)
+        return fut
+
+    def map(self, fn, *iterable, timeout=None, chunksize=1):
+        return map(fn, iterable)
+
+    def shutdown(self, wait=True):
+        pass

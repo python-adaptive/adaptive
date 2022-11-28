@@ -50,7 +50,7 @@ def sphere(xyz):
 
 
 learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1e-3)
+runner = adaptive.Runner(learner, loss_goal=1e-3)
 ```
 
 ```{code-cell} ipython3
@@ -123,7 +123,7 @@ b = [(-1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, 1, 1), (1, 1, -1), (1, -1, -1)
 hull = scipy.spatial.ConvexHull(b)
 
 learner = adaptive.LearnerND(f, hull)
-adaptive.BlockingRunner(learner, goal=lambda l: l.npoints > 2000)
+adaptive.BlockingRunner(learner, npoints_goal=2000)
 
 learner.plot_isosurface(-0.5)
 ```

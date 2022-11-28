@@ -102,7 +102,7 @@ def plot_loss_interval(learner):
 
 
 def plot(learner, npoints):
-    adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
+    adaptive.runner.simple(learner, npoints_goal= npoints)
     return (learner.plot() * plot_loss_interval(learner))[:, -1.1:1.1]
 
 
@@ -132,7 +132,7 @@ def ring(xy):
 
 
 def plot(learner, npoints):
-    adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
+    adaptive.runner.simple(learner, npoints_goal=npoints)
     learner2 = adaptive.Learner2D(ring, bounds=learner.bounds)
     xs = ys = np.linspace(*learner.bounds[0], int(learner.npoints**0.5))
     xys = list(itertools.product(xs, ys))
@@ -168,7 +168,7 @@ learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
 
 
 def plot(learner, npoints):
-    adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
+    adaptive.runner.simple(learner, npoints_goal=npoints)
     return learner.plot().relabel(f"loss={learner.loss():.2f}")
 
 
@@ -191,7 +191,7 @@ def sphere(xyz):
 
 
 learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
-adaptive.runner.simple(learner, lambda l: l.npoints == 5000)
+adaptive.runner.simple(learner, npoints_goal=5000)
 
 fig = learner.plot_3D(return_fig=True)
 

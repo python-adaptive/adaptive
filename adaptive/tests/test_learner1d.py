@@ -277,8 +277,8 @@ def test_tell_many():
     def assert_equal_dicts(d1, d2):
         xs1, ys1 = zip(*sorted(d1.items()))
         xs2, ys2 = zip(*sorted(d2.items()))
-        ys1 = np.array(ys1, dtype=np.float)
-        ys2 = np.array(ys2, dtype=np.float)
+        ys1 = np.array(ys1, dtype=np.float64)
+        ys2 = np.array(ys2, dtype=np.float64)
         np.testing.assert_almost_equal(xs1, xs2)
         np.testing.assert_almost_equal(ys1, ys2)
 
@@ -298,7 +298,7 @@ def test_tell_many():
     for function in [f, f_vec]:
         learner = Learner1D(function, bounds=(-1, 1))
         learner2 = Learner1D(function, bounds=(-1, 1))
-        simple(learner, goal=lambda l: l.npoints > 200)
+        simple(learner, npoints_goal=200)
         xs, ys = zip(*learner.data.items())
 
         # Make the scale huge to no get a scale doubling
@@ -374,8 +374,8 @@ def test_curvature_loss():
     loss = curvature_loss_function()
     assert loss.nth_neighbors == 1
     learner = Learner1D(f, (-1, 1), loss_per_interval=loss)
-    simple(learner, goal=lambda l: l.npoints > 100)
-    assert learner.npoints > 100
+    simple(learner, npoints_goal=100)
+    assert learner.npoints >= 100
 
 
 def test_curvature_loss_vectors():
@@ -385,8 +385,8 @@ def test_curvature_loss_vectors():
     loss = curvature_loss_function()
     assert loss.nth_neighbors == 1
     learner = Learner1D(f, (-1, 1), loss_per_interval=loss)
-    simple(learner, goal=lambda l: l.npoints > 100)
-    assert learner.npoints > 100
+    simple(learner, npoints_goal=100)
+    assert learner.npoints >= 100
 
 
 def test_NaN_loss():
@@ -398,7 +398,7 @@ def test_NaN_loss():
         return x + a**2 / (a**2 + x**2)
 
     learner = Learner1D(f, bounds=(-1, 1))
-    simple(learner, lambda l: l.npoints > 100)
+    simple(learner, npoints_goal=100)
 
 
 def test_inf_loss_with_missing_bounds():
@@ -408,6 +408,6 @@ def test_inf_loss_with_missing_bounds():
         loss_per_interval=curvature_loss_function(),
     )
     # must be done in parallel because otherwise the bounds will be evaluated first
-    BlockingRunner(learner, goal=lambda learner: learner.loss() < 0.01)
+    BlockingRunner(learner, loss_goal=0.01)
 
     learner.npoints > 20

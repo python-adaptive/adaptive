@@ -110,7 +110,7 @@ def create_and_run_learner():
         return x + np.exp(-((x**2 + y**2 - 0.75**2) ** 2) / a**4)
 
     learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
-    adaptive.runner.simple(learner, goal=lambda l: l.loss() < 0.005)
+    adaptive.runner.simple(learner, loss_goal=0.005)
     return learner
 
 
