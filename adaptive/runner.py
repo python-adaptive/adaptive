@@ -14,7 +14,7 @@ import traceback
 import warnings
 from contextlib import suppress
 from datetime import datetime, timedelta
-from typing import Any, Callable, Union
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 import loky
 from _asyncio import Future, Task
@@ -27,11 +27,18 @@ from adaptive import (
     SequenceLearner,
 )
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
+from adaptive.utils import SequentialExecutor
 
-_ThirdPartyClient = []
-_ThirdPartyExecutor = [loky.reusable_executor._ReusablePoolExecutor]
-_FutureTypes = [concurrent.Future, Future, Task]
+ExecutorTypes: TypeAlias = Union[
+    concurrent.ProcessPoolExecutor,
+    concurrent.ThreadPoolExecutor,
+    SequentialExecutor,
+    loky.reusable_executor._ReusablePoolExecutor,
+]
+FutureTypes: TypeAlias = Union[concurrent.Future, Future, Task]
 
+if TYPE_CHECKING:
+    import holoviews
 
 try:
     from typing import TypeAlias
@@ -39,13 +46,20 @@ except ImportError:
     from typing_extensions import TypeAlias
 
 try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
+
+try:
     import ipyparallel
     from ipyparallel.client.asyncresult import AsyncResult
 
     with_ipyparallel = True
-    _ThirdPartyClient.append(ipyparallel.Client)
-    _ThirdPartyExecutor.append(ipyparallel.client.view.ViewExecutor)
-    _FutureTypes.append(AsyncResult)
+    ExecutorTypes: TypeAlias = Union[
+        ExecutorTypes, ipyparallel.Client, ipyparallel.client.view.ViewExecutor
+    ]
+    FutureTypes: TypeAlias = Union[FutureTypes, AsyncResult]
 except ModuleNotFoundError:
     with_ipyparallel = False
 
@@ -53,8 +67,9 @@ try:
     import distributed
 
     with_distributed = True
-    _ThirdPartyClient.append(distributed.Client)
-    _ThirdPartyExecutor.append(distributed.cfexecutor.ClientExecutor)
+    ExecutorTypes: TypeAlias = Union[
+        ExecutorTypes, distributed.Client, distributed.cfexecutor.ClientExecutor
+    ]
 except ModuleNotFoundError:
     with_distributed = False
 
@@ -62,7 +77,7 @@ try:
     import mpi4py.futures
 
     with_mpi4py = True
-    _ThirdPartyExecutor.append(mpi4py.futures.MPIPoolExecutor)
+    ExecutorTypes: TypeAlias = Union[ExecutorTypes, mpi4py.futures.MPIPoolExecutor]
 except ModuleNotFoundError:
     with_mpi4py = False
 
@@ -71,10 +86,6 @@ with suppress(ModuleNotFoundError):
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-
-_ThirdPartyClient: TypeAlias = Union[tuple(_ThirdPartyClient)]
-_ThirdPartyExecutor: TypeAlias = Union[tuple(_ThirdPartyExecutor)]
-_FutureTypes: TypeAlias = Union[tuple(_FutureTypes)]
 
 # -- Runner definitions
 
@@ -93,29 +104,8 @@ else:
 # -- Internal executor-related, things
 
 
-class SequentialExecutor(concurrent.Executor):
-    """A trivial executor that runs functions synchronously.
-
-    This executor is mainly for testing.
-    """
-
-    def submit(self, fn: Callable, *args, **kwargs) -> _FutureTypes:
-        fut: concurrent.Future = concurrent.Future()
-        try:
-            fut.set_result(fn(*args, **kwargs))
-        except Exception as e:
-            fut.set_exception(e)
-        return fut
-
-    def map(self, fn, *iterable, timeout=None, chunksize=1):
-        return map(fn, iterable)
-
-    def shutdown(self, wait=True):
-        pass
-
-
 def _ensure_executor(
-    executor: _ThirdPartyClient | concurrent.Executor | None,
+    executor: ExecutorTypes | None,
 ) -> concurrent.Executor:
     if executor is None:
         executor = concurrent.ProcessPoolExecutor()
@@ -128,18 +118,14 @@ def _ensure_executor(
         return executor.get_executor()
     else:
         raise TypeError(
+            # TODO: check if this is correct. Isn't MPI,loky supported?
             "Only a concurrent.futures.Executor, distributed.Client,"
             " or ipyparallel.Client can be used."
         )
 
 
 def _get_ncores(
-    ex: (
-        _ThirdPartyExecutor
-        | concurrent.ProcessPoolExecutor
-        | concurrent.ThreadPoolExecutor
-        | SequentialExecutor
-    ),
+    ex: (ExecutorTypes),
 ) -> int:
     """Return the maximum  number of cores that an executor can use."""
     if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
@@ -244,14 +230,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor: (
-            _ThirdPartyClient
-            | _ThirdPartyExecutor
-            | concurrent.ProcessPoolExecutor
-            | concurrent.ThreadPoolExecutor
-            | SequentialExecutor
-            | None
-        ) = None,
+        executor: (ExecutorTypes | None) = None,
         ntasks: int = None,
         log: bool = False,
         shutdown_executor: bool = False,
@@ -356,7 +335,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _process_futures(
         self,
-        done_futs: set[_FutureTypes],
+        done_futs: set[FutureTypes],
     ) -> None:
         for fut in done_futs:
             pid = self._pending_tasks.pop(fut)
@@ -381,7 +360,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def _get_futures(
         self,
-    ) -> list[_FutureTypes]:
+    ) -> list[FutureTypes]:
         # Launch tasks to replace the ones that completed
         # on the last iteration, making sure to fill workers
         # that have started since the last iteration.
@@ -403,7 +382,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         futures = list(self._pending_tasks.keys())
         return futures
 
-    def _remove_unfinished(self) -> list[_FutureTypes]:
+    def _remove_unfinished(self) -> list[FutureTypes]:
         # remove points with 'None' values from the learner
         self.learner.remove_unfinished()
         # cancel any outstanding tasks
@@ -540,14 +519,7 @@ class BlockingRunner(BaseRunner):
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor: (
-            _ThirdPartyClient
-            | _ThirdPartyExecutor
-            | concurrent.ProcessPoolExecutor
-            | concurrent.ThreadPoolExecutor
-            | SequentialExecutor
-            | None
-        ) = None,
+        executor: (ExecutorTypes | None) = None,
         ntasks: int | None = None,
         log: bool = False,
         shutdown_executor: bool = False,
@@ -573,7 +545,7 @@ class BlockingRunner(BaseRunner):
         )
         self._run()
 
-    def _submit(self, x: tuple[float, ...] | float | int) -> _FutureTypes:
+    def _submit(self, x: tuple[float, ...] | float | int) -> FutureTypes:
         return self.executor.submit(self.learner.function, x)
 
     def _run(self) -> None:
@@ -706,14 +678,7 @@ class AsyncRunner(BaseRunner):
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor: (
-            _ThirdPartyClient
-            | _ThirdPartyExecutor
-            | concurrent.ProcessPoolExecutor
-            | concurrent.ThreadPoolExecutor
-            | SequentialExecutor
-            | None
-        ) = None,
+        executor: (ExecutorTypes | None) = None,
         ntasks: int | None = None,
         log: bool = False,
         shutdown_executor: bool = False,
@@ -807,7 +772,14 @@ class AsyncRunner(BaseRunner):
         """
         self.task.cancel()
 
-    def live_plot(self, *, plotter=None, update_interval=2, name=None, normalize=True):
+    def live_plot(
+        self,
+        *,
+        plotter: Callable[[BaseLearner], holoviews.Element] | None = None,
+        update_interval: float = 2.0,
+        name: str = None,
+        normalize: bool = True,
+    ) -> holoviews.DynamicMap:
         """Live plotting of the learner's data.
 
         Parameters
@@ -831,10 +803,14 @@ class AsyncRunner(BaseRunner):
             The plot that automatically updates every `update_interval`.
         """
         return live_plot(
-            self, plotter=plotter, update_interval=update_interval, name=name
+            self,
+            plotter=plotter,
+            update_interval=update_interval,
+            name=name,
+            normalize=normalize,
         )
 
-    def live_info(self, *, update_interval=0.1):
+    def live_info(self, *, update_interval: float = 0.1) -> None:
         """Display live information about the runner.
 
         Returns an interactive ipywidget that can be
@@ -984,7 +960,10 @@ def simple(
             learner.tell(x, y)
 
 
-def replay_log(learner: BaseLearner, log) -> None:
+def replay_log(
+    learner: BaseLearner,
+    log: list[tuple[Literal["tell"], Any, Any] | tuple[Literal["ask"], int]],
+) -> None:
     """Apply a sequence of method calls to a learner.
 
     This is useful for debugging runners.
@@ -1002,8 +981,8 @@ def replay_log(learner: BaseLearner, log) -> None:
 
 # --- Useful runner goals
 
-
-def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable:
+# TODO: deprecate
+def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[BaseLearner], bool]:
     """Stop a runner after a specified time.
 
     For example, to specify a runner that should stop after
@@ -1042,10 +1021,7 @@ def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable:
 
 class _TimeGoal:
     def __init__(self, dt: timedelta | datetime | int | float):
-        if not isinstance(dt, (timedelta, datetime)):
-            self.dt = timedelta(seconds=dt)
-        else:
-            self.dt = dt
+        self.dt = dt if isinstance(dt, (timedelta, datetime)) else timedelta(seconds=dt)
         self.start_time = None
 
     def __call__(self, _):
