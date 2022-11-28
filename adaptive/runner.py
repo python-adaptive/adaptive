@@ -17,7 +17,6 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Callable, Union
 
 import loky
-from _asyncio import Future, Task
 
 from adaptive import (
     BalancingLearner,
@@ -35,7 +34,7 @@ ExecutorTypes: TypeAlias = Union[
     SequentialExecutor,
     loky.reusable_executor._ReusablePoolExecutor,
 ]
-FutureTypes: TypeAlias = Union[concurrent.Future, Future, Task]
+FutureTypes: TypeAlias = Union[concurrent.Future, asyncio.Future, asyncio.Task]
 
 if TYPE_CHECKING:
     import holoviews
@@ -381,7 +380,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         return [(self._id_to_point[pid], n) for pid, n in self._to_retry.items()]
 
     @property
-    def pending_points(self) -> list[tuple[Future, Any]]:
+    def pending_points(self) -> list[tuple[FutureTypes, Any]]:
         return [
             (fut, self._id_to_point[pid]) for fut, pid in self._pending_tasks.items()
         ]
@@ -686,7 +685,7 @@ class AsyncRunner(BaseRunner):
             self.executor.shutdown()  # Make sure we don't shoot ourselves later
 
         self.task = self.ioloop.create_task(self._run())
-        self.saving_task: Task | None = None
+        self.saving_task: asyncio.Task | None = None
         if in_ipynb() and not self.ioloop.is_running():
             warnings.warn(
                 "The runner has been scheduled, but the asyncio "
@@ -695,7 +694,7 @@ class AsyncRunner(BaseRunner):
                 "'adaptive.notebook_extension()'"
             )
 
-    def _submit(self, x: Any) -> Task | Future:
+    def _submit(self, x: Any) -> asyncio.Task | asyncio.Future:
         ioloop = self.ioloop
         if inspect.iscoroutinefunction(self.learner.function):
             return ioloop.create_task(self.learner.function(x))
