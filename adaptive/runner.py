@@ -50,7 +50,6 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
-
 try:
     import ipyparallel
     from ipyparallel.client.asyncresult import AsyncResult
@@ -99,52 +98,6 @@ else:
     # See https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor
     # and https://github.com/python-adaptive/adaptive/issues/301
     _default_executor = loky.get_reusable_executor
-
-
-# -- Internal executor-related, things
-
-
-def _ensure_executor(
-    executor: ExecutorTypes | None,
-) -> concurrent.Executor:
-    if executor is None:
-        executor = concurrent.ProcessPoolExecutor()
-
-    if isinstance(executor, concurrent.Executor):
-        return executor
-    elif with_ipyparallel and isinstance(executor, ipyparallel.Client):
-        return executor.executor()
-    elif with_distributed and isinstance(executor, distributed.Client):
-        return executor.get_executor()
-    else:
-        raise TypeError(
-            # TODO: check if this is correct. Isn't MPI,loky supported?
-            "Only a concurrent.futures.Executor, distributed.Client,"
-            " or ipyparallel.Client can be used."
-        )
-
-
-def _get_ncores(
-    ex: (ExecutorTypes),
-) -> int:
-    """Return the maximum  number of cores that an executor can use."""
-    if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
-        return len(ex.view)
-    elif isinstance(
-        ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
-    ):
-        return ex._max_workers  # not public API!
-    elif isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
-        return ex._max_workers  # not public API!
-    elif isinstance(ex, SequentialExecutor):
-        return 1
-    elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
-        return sum(n for n in ex._client.ncores().values())
-    elif with_mpi4py and isinstance(ex, mpi4py.futures.MPIPoolExecutor):
-        ex.bootup()  # wait until all workers are up and running
-        return ex._pool.size  # not public API!
-    else:
-        raise TypeError(f"Cannot get number of cores for {ex.__class__}")
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
@@ -979,6 +932,52 @@ def replay_log(
         getattr(learner, method)(*args)
 
 
+# -- Internal executor-related, things
+
+
+def _ensure_executor(
+    executor: ExecutorTypes | None,
+) -> concurrent.Executor:
+    if executor is None:
+        executor = concurrent.ProcessPoolExecutor()
+
+    if isinstance(executor, concurrent.Executor):
+        return executor
+    elif with_ipyparallel and isinstance(executor, ipyparallel.Client):
+        return executor.executor()
+    elif with_distributed and isinstance(executor, distributed.Client):
+        return executor.get_executor()
+    else:
+        raise TypeError(
+            # TODO: check if this is correct. Isn't MPI,loky supported?
+            "Only a concurrent.futures.Executor, distributed.Client,"
+            " or ipyparallel.Client can be used."
+        )
+
+
+def _get_ncores(
+    ex: (ExecutorTypes),
+) -> int:
+    """Return the maximum  number of cores that an executor can use."""
+    if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
+        return len(ex.view)
+    elif isinstance(
+        ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
+    ):
+        return ex._max_workers  # not public API!
+    elif isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
+        return ex._max_workers  # not public API!
+    elif isinstance(ex, SequentialExecutor):
+        return 1
+    elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
+        return sum(n for n in ex._client.ncores().values())
+    elif with_mpi4py and isinstance(ex, mpi4py.futures.MPIPoolExecutor):
+        ex.bootup()  # wait until all workers are up and running
+        return ex._pool.size  # not public API!
+    else:
+        raise TypeError(f"Cannot get number of cores for {ex.__class__}")
+
+
 # --- Useful runner goals
 
 # TODO: deprecate
@@ -1014,9 +1013,6 @@ def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[BaseLearner], bool
     """
     stop_time = time.time() + seconds + 60 * minutes + 3600 * hours
     return lambda _: time.time() > stop_time
-
-
-# -- Internal executor-related, things
 
 
 class _TimeGoal:
