@@ -14,7 +14,7 @@ import traceback
 import warnings
 from contextlib import suppress
 from datetime import datetime, timedelta
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 import loky
 
@@ -26,11 +26,38 @@ from adaptive import (
     SequenceLearner,
 )
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
+from adaptive.utils import SequentialExecutor
+
+ExecutorTypes: TypeAlias = Union[
+    concurrent.ProcessPoolExecutor,
+    concurrent.ThreadPoolExecutor,
+    SequentialExecutor,
+    loky.reusable_executor._ReusablePoolExecutor,
+]
+FutureTypes: TypeAlias = Union[concurrent.Future, asyncio.Future, asyncio.Task]
+
+if TYPE_CHECKING:
+    import holoviews
+
+try:
+    from typing import TypeAlias
+except ImportError:
+    from typing_extensions import TypeAlias
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 try:
     import ipyparallel
+    from ipyparallel.client.asyncresult import AsyncResult
 
     with_ipyparallel = True
+    ExecutorTypes: TypeAlias = Union[
+        ExecutorTypes, ipyparallel.Client, ipyparallel.client.view.ViewExecutor
+    ]
+    FutureTypes: TypeAlias = Union[FutureTypes, AsyncResult]
 except ModuleNotFoundError:
     with_ipyparallel = False
 
@@ -38,6 +65,9 @@ try:
     import distributed
 
     with_distributed = True
+    ExecutorTypes: TypeAlias = Union[
+        ExecutorTypes, distributed.Client, distributed.cfexecutor.ClientExecutor
+    ]
 except ModuleNotFoundError:
     with_distributed = False
 
@@ -45,15 +75,17 @@ try:
     import mpi4py.futures
 
     with_mpi4py = True
+    ExecutorTypes: TypeAlias = Union[ExecutorTypes, mpi4py.futures.MPIPoolExecutor]
 except ModuleNotFoundError:
     with_mpi4py = False
-
 
 with suppress(ModuleNotFoundError):
     import uvloop
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
+
+# -- Runner definitions
 
 if platform.system() == "Linux":
     _default_executor = concurrent.ProcessPoolExecutor
@@ -68,7 +100,7 @@ else:
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
-    r"""Base class for runners that use `concurrent.futures.Executors`.
+    r"""Base class for runners that use `concurrent.futures.Executor`\'s.
 
     Parameters
     ----------
@@ -143,20 +175,20 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        learner,
+        learner: BaseLearner,
         goal: Callable[[BaseLearner], bool] | None = None,
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor=None,
-        ntasks=None,
-        log=False,
-        shutdown_executor=False,
-        retries=0,
-        raise_if_retries_exceeded=True,
-        allow_running_forever=False,
+        executor: (ExecutorTypes | None) = None,
+        ntasks: int = None,
+        log: bool = False,
+        shutdown_executor: bool = False,
+        retries: int = 0,
+        raise_if_retries_exceeded: bool = True,
+        allow_running_forever: bool = False,
     ):
 
         self.executor = _ensure_executor(executor)
@@ -172,37 +204,37 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
         self._max_tasks = ntasks
 
-        self._pending_tasks = {}  # mapping from concurrent.futures.Future → point id
+        self._pending_tasks: dict[concurrent.Future, int] = {}
 
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
         self.shutdown_executor = shutdown_executor or (executor is None)
 
         self.learner = learner
-        self.log = [] if log else None
+        self.log: list | None = [] if log else None
 
         # Timing
         self.start_time = time.time()
-        self.end_time = None
+        self.end_time: float | None = None
         self._elapsed_function_time = 0
 
         # Error handling attributes
         self.retries = retries
         self.raise_if_retries_exceeded = raise_if_retries_exceeded
-        self._to_retry = {}
-        self._tracebacks = {}
+        self._to_retry: dict[int, int] = {}
+        self._tracebacks: dict[int, str] = {}
 
-        self._id_to_point = {}
-        self._next_id = functools.partial(
+        self._id_to_point: dict[int, Any] = {}
+        self._next_id: Callable[[], int] = functools.partial(
             next, itertools.count()
         )  # some unique id to be associated with each point
 
-    def _get_max_tasks(self):
+    def _get_max_tasks(self) -> int:
         return self._max_tasks or _get_ncores(self.executor)
 
-    def _do_raise(self, e, i):
-        tb = self._tracebacks[i]
-        x = self._id_to_point[i]
+    def _do_raise(self, e: Exception, pid: int) -> None:
+        tb = self._tracebacks[pid]
+        x = self._id_to_point[pid]
         raise RuntimeError(
             "An error occured while evaluating "
             f'"learner.function({x})". '
@@ -210,10 +242,10 @@ class BaseRunner(metaclass=abc.ABCMeta):
         ) from e
 
     @property
-    def do_log(self):
+    def do_log(self) -> bool:
         return self.log is not None
 
-    def _ask(self, n):
+    def _ask(self, n: int) -> tuple[list[int], list[float]]:
         pending_ids = self._pending_tasks.values()
         # using generator here because we only need until `n`
         pids_gen = (pid for pid in self._to_retry.keys() if pid not in pending_ids)
@@ -230,7 +262,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
                 pids.append(pid)
         return pids, loss_improvements
 
-    def overhead(self):
+    def overhead(self) -> float:
         """Overhead of using Adaptive and the executor in percent.
 
         This is measured as ``100 * (1 - t_function / t_elapsed)``.
@@ -253,7 +285,10 @@ class BaseRunner(metaclass=abc.ABCMeta):
         t_total = self.elapsed_time()
         return (1 - t_function / t_total) * 100
 
-    def _process_futures(self, done_futs):
+    def _process_futures(
+        self,
+        done_futs: set[FutureTypes],
+    ) -> None:
         for fut in done_futs:
             pid = self._pending_tasks.pop(fut)
             try:
@@ -275,7 +310,9 @@ class BaseRunner(metaclass=abc.ABCMeta):
                     self.log.append(("tell", x, y))
                 self.learner.tell(x, y)
 
-    def _get_futures(self):
+    def _get_futures(
+        self,
+    ) -> list[FutureTypes]:
         # Launch tasks to replace the ones that completed
         # on the last iteration, making sure to fill workers
         # that have started since the last iteration.
@@ -297,7 +334,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         futures = list(self._pending_tasks.keys())
         return futures
 
-    def _remove_unfinished(self):
+    def _remove_unfinished(self) -> list[FutureTypes]:
         # remove points with 'None' values from the learner
         self.learner.remove_unfinished()
         # cancel any outstanding tasks
@@ -306,7 +343,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
             fut.cancel()
         return remaining
 
-    def _cleanup(self):
+    def _cleanup(self) -> None:
         if self.shutdown_executor:
             # XXX: temporary set wait=True because of a bug with Python ≥3.7
             # and loky in any Python version.
@@ -318,8 +355,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
         self.end_time = time.time()
 
     @property
-    def failed(self):
-        """Set of points that failed ``runner.retries`` times."""
+    def failed(self) -> set[int]:
+        """Set of points ids that failed ``runner.retries`` times."""
         return set(self._tracebacks) - set(self._to_retry)
 
     @abc.abstractmethod
@@ -335,15 +372,15 @@ class BaseRunner(metaclass=abc.ABCMeta):
         """Is called in `_get_futures`."""
 
     @property
-    def tracebacks(self):
+    def tracebacks(self) -> list[tuple[int, str]]:
         return [(self._id_to_point[pid], tb) for pid, tb in self._tracebacks.items()]
 
     @property
-    def to_retry(self):
+    def to_retry(self) -> list[tuple[int, int]]:
         return [(self._id_to_point[pid], n) for pid, n in self._to_retry.items()]
 
     @property
-    def pending_points(self):
+    def pending_points(self) -> list[tuple[FutureTypes, Any]]:
         return [
             (fut, self._id_to_point[pid]) for fut, pid in self._pending_tasks.items()
         ]
@@ -427,20 +464,20 @@ class BlockingRunner(BaseRunner):
 
     def __init__(
         self,
-        learner,
+        learner: BaseLearner,
         goal: Callable[[BaseLearner], bool] | None = None,
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor=None,
-        ntasks=None,
-        log=False,
-        shutdown_executor=False,
-        retries=0,
-        raise_if_retries_exceeded=True,
-    ):
+        executor: (ExecutorTypes | None) = None,
+        ntasks: int | None = None,
+        log: bool = False,
+        shutdown_executor: bool = False,
+        retries: int = 0,
+        raise_if_retries_exceeded: bool = True,
+    ) -> None:
         if inspect.iscoroutinefunction(learner.function):
             raise ValueError("Coroutine functions can only be used with 'AsyncRunner'.")
         super().__init__(
@@ -460,10 +497,10 @@ class BlockingRunner(BaseRunner):
         )
         self._run()
 
-    def _submit(self, x):
+    def _submit(self, x: tuple[float, ...] | float | int) -> FutureTypes:
         return self.executor.submit(self.learner.function, x)
 
-    def _run(self):
+    def _run(self) -> None:
         first_completed = concurrent.FIRST_COMPLETED
 
         if self._get_max_tasks() < 1:
@@ -480,11 +517,11 @@ class BlockingRunner(BaseRunner):
                 concurrent.wait(remaining)
                 # Some futures get their result set, despite being cancelled.
                 # see https://github.com/python-adaptive/adaptive/issues/319
-                with_result = [f for f in remaining if not f.cancelled() and f.done()]
+                with_result = {f for f in remaining if not f.cancelled() and f.done()}
                 self._process_futures(with_result)
             self._cleanup()
 
-    def elapsed_time(self):
+    def elapsed_time(self) -> float:
         """Return the total time elapsed since the runner
         was started."""
         if self.end_time is None:
@@ -586,21 +623,21 @@ class AsyncRunner(BaseRunner):
 
     def __init__(
         self,
-        learner,
+        learner: BaseLearner,
         goal: Callable[[BaseLearner], bool] | None = None,
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor=None,
-        ntasks=None,
-        log=False,
-        shutdown_executor=False,
+        executor: (ExecutorTypes | None) = None,
+        ntasks: int | None = None,
+        log: bool = False,
+        shutdown_executor: bool = False,
         ioloop=None,
-        retries=0,
-        raise_if_retries_exceeded=True,
-    ):
+        retries: int = 0,
+        raise_if_retries_exceeded: bool = True,
+    ) -> None:
 
         if (
             executor is None
@@ -648,7 +685,7 @@ class AsyncRunner(BaseRunner):
             self.executor.shutdown()  # Make sure we don't shoot ourselves later
 
         self.task = self.ioloop.create_task(self._run())
-        self.saving_task = None
+        self.saving_task: asyncio.Task | None = None
         if in_ipynb() and not self.ioloop.is_running():
             warnings.warn(
                 "The runner has been scheduled, but the asyncio "
@@ -657,14 +694,14 @@ class AsyncRunner(BaseRunner):
                 "'adaptive.notebook_extension()'"
             )
 
-    def _submit(self, x):
+    def _submit(self, x: Any) -> asyncio.Task | asyncio.Future:
         ioloop = self.ioloop
         if inspect.iscoroutinefunction(self.learner.function):
             return ioloop.create_task(self.learner.function(x))
         else:
             return ioloop.run_in_executor(self.executor, self.learner.function, x)
 
-    def status(self):
+    def status(self) -> str:
         """Return the runner status as a string.
 
         The possible statuses are: running, cancelled, failed, and finished.
@@ -680,14 +717,21 @@ class AsyncRunner(BaseRunner):
         else:
             return "finished"
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancel the runner.
 
         This is equivalent to calling ``runner.task.cancel()``.
         """
         self.task.cancel()
 
-    def live_plot(self, *, plotter=None, update_interval=2, name=None, normalize=True):
+    def live_plot(
+        self,
+        *,
+        plotter: Callable[[BaseLearner], holoviews.Element] | None = None,
+        update_interval: float = 2.0,
+        name: str = None,
+        normalize: bool = True,
+    ) -> holoviews.DynamicMap:
         """Live plotting of the learner's data.
 
         Parameters
@@ -711,10 +755,14 @@ class AsyncRunner(BaseRunner):
             The plot that automatically updates every `update_interval`.
         """
         return live_plot(
-            self, plotter=plotter, update_interval=update_interval, name=name
+            self,
+            plotter=plotter,
+            update_interval=update_interval,
+            name=name,
+            normalize=normalize,
         )
 
-    def live_info(self, *, update_interval=0.1):
+    def live_info(self, *, update_interval: float = 0.1) -> None:
         """Display live information about the runner.
 
         Returns an interactive ipywidget that can be
@@ -722,7 +770,7 @@ class AsyncRunner(BaseRunner):
         """
         return live_info(self, update_interval=update_interval)
 
-    async def _run(self):
+    async def _run(self) -> None:
         first_completed = asyncio.FIRST_COMPLETED
 
         if self._get_max_tasks() < 1:
@@ -740,7 +788,7 @@ class AsyncRunner(BaseRunner):
                 await asyncio.wait(remaining)
             self._cleanup()
 
-    def elapsed_time(self):
+    def elapsed_time(self) -> float:
         """Return the total time elapsed since the runner
         was started."""
         if self.task.done():
@@ -805,7 +853,7 @@ Runner = AsyncRunner
 
 
 def simple(
-    learner,
+    learner: BaseLearner,
     goal: Callable[[BaseLearner], bool] | None = None,
     *,
     loss_goal: float | None = None,
@@ -864,7 +912,10 @@ def simple(
             learner.tell(x, y)
 
 
-def replay_log(learner, log):
+def replay_log(
+    learner: BaseLearner,
+    log: list[tuple[Literal["tell"], Any, Any] | tuple[Literal["ask"], int]],
+) -> None:
     """Apply a sequence of method calls to a learner.
 
     This is useful for debugging runners.
@@ -880,10 +931,56 @@ def replay_log(learner, log):
         getattr(learner, method)(*args)
 
 
+# -- Internal executor-related, things
+
+
+def _ensure_executor(
+    executor: ExecutorTypes | None,
+) -> concurrent.Executor:
+    if executor is None:
+        executor = concurrent.ProcessPoolExecutor()
+
+    if isinstance(executor, concurrent.Executor):
+        return executor
+    elif with_ipyparallel and isinstance(executor, ipyparallel.Client):
+        return executor.executor()
+    elif with_distributed and isinstance(executor, distributed.Client):
+        return executor.get_executor()
+    else:
+        raise TypeError(
+            # TODO: check if this is correct. Isn't MPI,loky supported?
+            "Only a concurrent.futures.Executor, distributed.Client,"
+            " or ipyparallel.Client can be used."
+        )
+
+
+def _get_ncores(
+    ex: (ExecutorTypes),
+) -> int:
+    """Return the maximum  number of cores that an executor can use."""
+    if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
+        return len(ex.view)
+    elif isinstance(
+        ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
+    ):
+        return ex._max_workers  # not public API!
+    elif isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
+        return ex._max_workers  # not public API!
+    elif isinstance(ex, SequentialExecutor):
+        return 1
+    elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
+        return sum(n for n in ex._client.ncores().values())
+    elif with_mpi4py and isinstance(ex, mpi4py.futures.MPIPoolExecutor):
+        ex.bootup()  # wait until all workers are up and running
+        return ex._pool.size  # not public API!
+    else:
+        raise TypeError(f"Cannot get number of cores for {ex.__class__}")
+
+
 # --- Useful runner goals
 
-
-def stop_after(*, seconds=0, minutes=0, hours=0):
+# TODO: deprecate
+def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[BaseLearner], bool]:
     """Stop a runner after a specified time.
 
     For example, to specify a runner that should stop after
@@ -917,76 +1014,9 @@ def stop_after(*, seconds=0, minutes=0, hours=0):
     return lambda _: time.time() > stop_time
 
 
-# -- Internal executor-related, things
-
-
-class SequentialExecutor(concurrent.Executor):
-    """A trivial executor that runs functions synchronously.
-
-    This executor is mainly for testing.
-    """
-
-    def submit(self, fn, *args, **kwargs):
-        fut = concurrent.Future()
-        try:
-            fut.set_result(fn(*args, **kwargs))
-        except Exception as e:
-            fut.set_exception(e)
-        return fut
-
-    def map(self, fn, *iterable, timeout=None, chunksize=1):
-        return map(fn, iterable)
-
-    def shutdown(self, wait=True):
-        pass
-
-
-def _ensure_executor(executor):
-    if executor is None:
-        executor = _default_executor()
-
-    if isinstance(executor, concurrent.Executor):
-        return executor
-    elif with_ipyparallel and isinstance(executor, ipyparallel.Client):
-        return executor.executor()
-    elif with_distributed and isinstance(
-        executor, (distributed.Client, distributed.client.Client)
-    ):
-        return executor.get_executor()
-    else:
-        raise TypeError(
-            "Only a concurrent.futures.Executor, distributed.Client,"
-            " or ipyparallel.Client can be used."
-        )
-
-
-def _get_ncores(ex):
-    """Return the maximum  number of cores that an executor can use."""
-    if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
-        return len(ex.view)
-    elif isinstance(
-        ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
-    ):
-        return ex._max_workers  # not public API!
-    elif isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
-        return ex._max_workers  # not public API!
-    elif isinstance(ex, SequentialExecutor):
-        return 1
-    elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
-        return sum(n for n in ex._client.ncores().values())
-    elif with_mpi4py and isinstance(ex, mpi4py.futures.MPIPoolExecutor):
-        ex.bootup()  # wait until all workers are up and running
-        return ex._pool.size  # not public API!
-    else:
-        raise TypeError(f"Cannot get number of cores for {ex.__class__}")
-
-
 class _TimeGoal:
     def __init__(self, dt: timedelta | datetime | int | float):
-        if not isinstance(dt, (timedelta, datetime)):
-            self.dt = timedelta(seconds=dt)
-        else:
-            self.dt = dt
+        self.dt = dt if isinstance(dt, (timedelta, datetime)) else timedelta(seconds=dt)
         self.start_time = None
 
     def __call__(self, _):
