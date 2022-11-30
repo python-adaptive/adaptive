@@ -1,8 +1,53 @@
 # Changelog
 
+## [v0.15.0](https://github.com/python-adaptive/adaptive/tree/v0.15.0) (2022-11-30)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.14.2...v0.15.0)
+
+**Closed issues:**
+
+- Fix branch name \(master --\> main\) in binder link in readme [\#383](https://github.com/python-adaptive/adaptive/issues/383)
+
+**Merged pull requests:**
+
+- Add support for Python 3.11 and test on it [\#387](https://github.com/python-adaptive/adaptive/pull/387) ([basnijholt](https://github.com/basnijholt))
+- Rename master -\> main [\#384](https://github.com/python-adaptive/adaptive/pull/384) ([basnijholt](https://github.com/basnijholt))
+- Add loss\_goal, npoints\_goal, and an auto\_goal function and use it in the runners [\#382](https://github.com/python-adaptive/adaptive/pull/382) ([basnijholt](https://github.com/basnijholt))
+- Add type-hints to Runner [\#370](https://github.com/python-adaptive/adaptive/pull/370) ([basnijholt](https://github.com/basnijholt))
+- Add docs section about executing coroutines  [\#364](https://github.com/python-adaptive/adaptive/pull/364) ([juandaanieel](https://github.com/juandaanieel))
+
+## [v0.14.2](https://github.com/python-adaptive/adaptive/tree/v0.14.2) (2022-10-14)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.14.1...v0.14.2)
+
+**Closed issues:**
+
+- Rename master branch to main [\#368](https://github.com/python-adaptive/adaptive/issues/368)
+
+**Merged pull requests:**
+
+- Avoid uncecessary iteration in SequenceLearner [\#380](https://github.com/python-adaptive/adaptive/pull/380) ([jbweston](https://github.com/jbweston))
+- Use numbers module from stdlib as type [\#379](https://github.com/python-adaptive/adaptive/pull/379) ([basnijholt](https://github.com/basnijholt))
+- Add type-hints to tests and misc [\#378](https://github.com/python-adaptive/adaptive/pull/378) ([basnijholt](https://github.com/basnijholt))
+- Add type-hints to Learner2D [\#375](https://github.com/python-adaptive/adaptive/pull/375) ([basnijholt](https://github.com/basnijholt))
+- Add type-hints to DataSaver [\#373](https://github.com/python-adaptive/adaptive/pull/373) ([basnijholt](https://github.com/basnijholt))
+- Type hint IntegratorLearner [\#372](https://github.com/python-adaptive/adaptive/pull/372) ([basnijholt](https://github.com/basnijholt))
+- Add type-hints to BalancingLearner [\#371](https://github.com/python-adaptive/adaptive/pull/371) ([basnijholt](https://github.com/basnijholt))
+- Optionally run tests with pandas [\#369](https://github.com/python-adaptive/adaptive/pull/369) ([basnijholt](https://github.com/basnijholt))
+- Typehint SequenceLearner [\#366](https://github.com/python-adaptive/adaptive/pull/366) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.14.1](https://github.com/python-adaptive/adaptive/tree/v0.14.1) (2022-10-11)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.14.0...v0.14.1)
+
+**Merged pull requests:**
+
+- Use typing.TypeAlias [\#367](https://github.com/python-adaptive/adaptive/pull/367) ([basnijholt](https://github.com/basnijholt))
+- Add Learner.new\(\) method that returns an empty copy of the learner [\#365](https://github.com/python-adaptive/adaptive/pull/365) ([basnijholt](https://github.com/basnijholt))
+
 ## [v0.14.0](https://github.com/python-adaptive/adaptive/tree/v0.14.0) (2022-10-05)
 
-[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.14.0...HEAD)
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.13.2...v0.14.0)
 
 **Closed issues:**
 
@@ -10,6 +55,7 @@
 
 **Merged pull requests:**
 
+- Release 0.14 [\#363](https://github.com/python-adaptive/adaptive/pull/363) ([basnijholt](https://github.com/basnijholt))
 - Allow to periodically save with any function [\#362](https://github.com/python-adaptive/adaptive/pull/362) ([basnijholt](https://github.com/basnijholt))
 - Update pre-commit versions [\#359](https://github.com/python-adaptive/adaptive/pull/359) ([basnijholt](https://github.com/basnijholt))
 - Add getting learner's data as pandas.DataFrame; add learner.to\_dataframe method [\#358](https://github.com/python-adaptive/adaptive/pull/358) ([basnijholt](https://github.com/basnijholt))
@@ -152,7 +198,7 @@
 - bump pre-commit filter dependencies [\#293](https://github.com/python-adaptive/adaptive/pull/293) ([basnijholt](https://github.com/basnijholt))
 - fix docs [\#291](https://github.com/python-adaptive/adaptive/pull/291) ([basnijholt](https://github.com/basnijholt))
 - update to miniver 0.7.0 [\#290](https://github.com/python-adaptive/adaptive/pull/290) ([basnijholt](https://github.com/basnijholt))
-- add `runner.live_plot()` in README example [\#288](https://github.com/python-adaptive/adaptive/pull/288) ([basnijholt](https://github.com/basnijholt))
+- add `runner.live\_plot\(\)` in README example [\#288](https://github.com/python-adaptive/adaptive/pull/288) ([basnijholt](https://github.com/basnijholt))
 - Update pre commit [\#287](https://github.com/python-adaptive/adaptive/pull/287) ([basnijholt](https://github.com/basnijholt))
 - Use m2r2 [\#286](https://github.com/python-adaptive/adaptive/pull/286) ([basnijholt](https://github.com/basnijholt))
 - temporarily pin scikit-learn\<=0.23.1 [\#285](https://github.com/python-adaptive/adaptive/pull/285) ([basnijholt](https://github.com/basnijholt))
@@ -196,6 +242,7 @@
 - prevent ImportError due to scikit-optimize and sklearn incompatibility [\#278](https://github.com/python-adaptive/adaptive/pull/278) ([basnijholt](https://github.com/basnijholt))
 
 **Closed issues:**
+
 
 - add minimum number of points parameter to AverageLearner [\#273](https://github.com/python-adaptive/adaptive/issues/273)
 - Release v0.10 [\#258](https://github.com/python-adaptive/adaptive/issues/258)
@@ -386,7 +433,7 @@
 - Gracefully handle exceptions when evaluating the function to be learned [\#125](https://github.com/python-adaptive/adaptive/issues/125)
 - Allow BalancingLearner to return arbitrary number of points from 'choose\_points' [\#124](https://github.com/python-adaptive/adaptive/issues/124)
 - Increase the default refresh rate for 'live\_plot' [\#120](https://github.com/python-adaptive/adaptive/issues/120)
-- remove default number of points to choose in `choose_points` [\#118](https://github.com/python-adaptive/adaptive/issues/118)
+- remove default number of points to choose in `choose\_points` [\#118](https://github.com/python-adaptive/adaptive/issues/118)
 - Consider using Gaussian process optimization as a learner [\#115](https://github.com/python-adaptive/adaptive/issues/115)
 - Make `distributed.Client` work with automatic scaling of the cluster [\#104](https://github.com/python-adaptive/adaptive/issues/104)
 - Improve plotting for learners [\#83](https://github.com/python-adaptive/adaptive/issues/83)
@@ -473,7 +520,7 @@
 - Remove public 'fname' learner attribute [\#17](https://github.com/python-adaptive/adaptive/issues/17)
 - Release v0.7.0 [\#14](https://github.com/python-adaptive/adaptive/issues/14)
 - \(Learner1D\) improve time complexity [\#13](https://github.com/python-adaptive/adaptive/issues/13)
-- Typo in documentation for` adaptive.learner.learner2D.uniform_loss(ip)` [\#12](https://github.com/python-adaptive/adaptive/issues/12)
+- Typo in documentation for` adaptive.learner.learner2D.uniform\_loss\(ip\)` [\#12](https://github.com/python-adaptive/adaptive/issues/12)
 - \(LearnerND\) fix plotting of scaled domains [\#11](https://github.com/python-adaptive/adaptive/issues/11)
 - suggested points lie outside of domain [\#7](https://github.com/python-adaptive/adaptive/issues/7)
 - DEVELOPMENT IS ON GITLAB: https://gitlab.kwant-project.org/qt/adaptive [\#5](https://github.com/python-adaptive/adaptive/issues/5)
