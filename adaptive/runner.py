@@ -182,7 +182,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor: (ExecutorTypes | None) = None,
+        executor: ExecutorTypes | None = None,
         ntasks: int = None,
         log: bool = False,
         shutdown_executor: bool = False,
@@ -934,11 +934,9 @@ def replay_log(
 # -- Internal executor-related, things
 
 
-def _ensure_executor(
-    executor: ExecutorTypes | None,
-) -> concurrent.Executor:
+def _ensure_executor(executor: ExecutorTypes | None) -> concurrent.Executor:
     if executor is None:
-        executor = concurrent.ProcessPoolExecutor()
+        executor = _default_executor()
 
     if isinstance(executor, concurrent.Executor):
         return executor
