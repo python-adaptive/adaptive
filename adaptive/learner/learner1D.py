@@ -862,6 +862,29 @@ class Learner1D(BaseLearner):
         self.losses_combined.update(losses_combined)
 
 
+def all_intervals_between(
+    learner: Learner1D,
+    x_min: float | None = None,
+    x_max: float | None = None,
+    real: bool = True,
+) -> list[list[float]]:
+    """Returns all intervals between the given bounds."""
+    neighbors = learner.neighbors if real else learner.neighbors_combined
+    if x_min is None:
+        x_left = learner.bounds[0]
+    elif x_min in neighbors:
+        x_left = x_min
+    else:
+        _, x_left = learner._find_neighbors(x_min, neighbors)
+    if x_max is None:
+        x_right = learner.bounds[1]
+    elif x_max in neighbors:
+        x_right = x_max
+    else:
+        x_right, _ = learner._find_neighbors(x_max, neighbors)
+    return [ival for x, ival in neighbors.items() if x > x_left and x < x_right]
+
+
 def loss_manager(x_scale: float) -> dict[Interval, float]:
     def sort_key(ival, loss):
         loss, ival = finite_loss(ival, loss, x_scale)
