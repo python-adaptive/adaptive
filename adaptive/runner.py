@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Callable, Union
 
 import loky
+import nest_asyncio
 
 from adaptive import (
     BalancingLearner,
@@ -670,7 +671,15 @@ class AsyncRunner(BaseRunner):
             raise_if_retries_exceeded=raise_if_retries_exceeded,
             allow_running_forever=True,
         )
-        self.ioloop = ioloop or asyncio.get_event_loop()
+        if ioloop is None:
+            try:
+                ioloop = asyncio.get_running_loop()
+                nest_asyncio.apply(ioloop)
+            except RuntimeError:
+                ioloop = asyncio.new_event_loop()
+                asyncio.set_event_loop(ioloop)
+
+        self.ioloop = ioloop
         self.task = None
 
         # When the learned function is 'async def', we run it
@@ -846,6 +855,10 @@ class AsyncRunner(BaseRunner):
 
         self.saving_task = self.ioloop.create_task(_saver())
         return self.saving_task
+
+    def block(self) -> None:
+        """Block until the runner is finished."""
+        self.ioloop.run_until_complete(self.task)
 
 
 # Default runner

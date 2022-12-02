@@ -30,6 +30,7 @@ install_requires = [
     "sortedcontainers >= 2.0",
     "cloudpickle",
     "loky >= 2.9",
+    "nest_asyncio",
 ]
 if sys.version_info < (3, 10):
     install_requires.append("typing_extensions")
