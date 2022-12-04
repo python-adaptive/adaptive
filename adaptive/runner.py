@@ -104,49 +104,48 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     Parameters
     ----------
-    learner : `~adaptive.BaseLearner` instance
-    goal : callable, optional
+    learner
+        The learner that will be used to run.
+    goal
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
-    loss_goal : float, optional
+    loss_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the loss is smaller than this value.
-    npoints_goal : int, optional
+    npoints_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the number of points is larger or
         equal than this value.
-    end_time_goal : datetime, optional
+    end_time_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
-    duration_goal : timedelta or number, optional
+    duration_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
         ``start_time + duration_goal``. ``duration_goal`` can be a number
         indicating the number of seconds.
-    executor : `concurrent.futures.Executor`, `distributed.Client`,\
-               `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
-               `loky.get_reusable_executor`, optional
+    executor
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.ProcessPoolExecutor` on
         Linux, and a `loky.get_reusable_executor` on MacOS and Windows.
-    ntasks : int, optional
+    ntasks
         The number of concurrent function evaluations. Defaults to the number
         of cores available in `executor`.
-    log : bool, default: False
+    log
         If True, record the method calls made to the learner by this runner.
-    shutdown_executor : bool, default: False
+    shutdown_executor
         If True, shutdown the executor when the runner has completed. If
         `executor` is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
-    retries : int, default: 0
+    retries
         Maximum amount of retries of a certain point ``x`` in
         ``learner.function(x)``. After `retries` is reached for ``x``
         the point is present in ``runner.failed``.
-    raise_if_retries_exceeded : bool, default: True
+    raise_if_retries_exceeded
         Raise the error after a point ``x`` failed `retries`.
-    allow_running_forever : bool, default: False
+    allow_running_forever
         Allow the runner to run forever when the goal is None.
 
     Attributes
@@ -391,23 +390,23 @@ class BlockingRunner(BaseRunner):
 
     Parameters
     ----------
-    learner : `~adaptive.BaseLearner` instance
-    goal : callable, optional
+    learner
+    goal
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
-    loss_goal : float, optional
+    loss_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the loss is smaller than this value.
-    npoints_goal : int, optional
+    npoints_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the number of points is larger or
         equal than this value.
-    end_time_goal : datetime, optional
+    end_time_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
-    duration_goal : timedelta or number, optional
+    duration_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
         ``start_time + duration_goal``. ``duration_goal`` can be a number
@@ -418,20 +417,20 @@ class BlockingRunner(BaseRunner):
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.ProcessPoolExecutor` on
         Linux, and a `loky.get_reusable_executor` on MacOS and Windows.
-    ntasks : int, optional
+    ntasks
         The number of concurrent function evaluations. Defaults to the number
         of cores available in `executor`.
-    log : bool, default: False
+    log
         If True, record the method calls made to the learner by this runner.
-    shutdown_executor : bool, default: False
+    shutdown_executor
         If True, shutdown the executor when the runner has completed. If
         `executor` is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
-    retries : int, default: 0
+    retries
         Maximum amount of retries of a certain point ``x`` in
         ``learner.function(x)``. After `retries` is reached for ``x``
         the point is present in ``runner.failed``.
-    raise_if_retries_exceeded : bool, default: True
+    raise_if_retries_exceeded
         Raise the error after a point ``x`` failed `retries`.
 
     Attributes
@@ -471,7 +470,7 @@ class BlockingRunner(BaseRunner):
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor: (ExecutorTypes | None) = None,
+        executor: ExecutorTypes | None = None,
         ntasks: int | None = None,
         log: bool = False,
         shutdown_executor: bool = False,
@@ -536,25 +535,25 @@ class AsyncRunner(BaseRunner):
 
     Parameters
     ----------
-    learner : `~adaptive.BaseLearner` instance
-    goal : callable, optional
+    learner
+    goal
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
         If not provided, the runner will run forever (or stop when no more
         points can be added), or until ``runner.task.cancel()`` is called.
-    loss_goal : float, optional
+    loss_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the loss is smaller than this value.
-    npoints_goal : int, optional
+    npoints_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the number of points is larger or
         equal than this value.
-    end_time_goal : datetime, optional
+    end_time_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
-    duration_goal : timedelta or number, optional
+    duration_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
         ``start_time + duration_goal``. ``duration_goal`` can be a number
@@ -565,25 +564,25 @@ class AsyncRunner(BaseRunner):
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.ProcessPoolExecutor` on
         Linux, and a `loky.get_reusable_executor` on MacOS and Windows.
-    ntasks : int, optional
+    ntasks
         The number of concurrent function evaluations. Defaults to the number
         of cores available in `executor`.
-    log : bool, default: False
+    log
         If True, record the method calls made to the learner by this runner.
-    shutdown_executor : bool, default: False
+    shutdown_executor
         If True, shutdown the executor when the runner has completed. If
         `executor` is not provided then the executor created internally
         by the runner is shut down, regardless of this parameter.
     ioloop : ``asyncio.AbstractEventLoop``, optional
         The ioloop in which to run the learning algorithm. If not provided,
         the default event loop is used.
-    retries : int, default: 0
+    retries
         Maximum amount of retries of a certain point ``x`` in
         ``learner.function(x)``. After `retries` is reached for ``x``
         the point is present in ``runner.failed``.
-    raise_if_retries_exceeded : bool, default: True
+    raise_if_retries_exceeded
         Raise the error after a point ``x`` failed `retries`.
-    allow_running_forever : bool, default: True
+    allow_running_forever
         If True, the runner will run forever if the goal is not provided.
 
     Attributes
@@ -630,7 +629,7 @@ class AsyncRunner(BaseRunner):
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor: (ExecutorTypes | None) = None,
+        executor: ExecutorTypes | None = None,
         ntasks: int | None = None,
         log: bool = False,
         shutdown_executor: bool = False,
@@ -736,22 +735,21 @@ class AsyncRunner(BaseRunner):
 
         Parameters
         ----------
-        runner : `~adaptive.Runner`
-        plotter : function
+        plotter
             A function that takes the learner as a argument and returns a
             holoviews object. By default ``learner.plot()`` will be called.
-        update_interval : int
+        update_interval
             Number of second between the updates of the plot.
-        name : hasable
+        name
             Name for the `live_plot` task in `adaptive.active_plotting_tasks`.
             By default the name is None and if another task with the same name
             already exists that other `live_plot` is canceled.
-        normalize : bool
+        normalize
             Normalize (scale to fit) the frame upon each update.
 
         Returns
         -------
-        dm : `holoviews.core.DynamicMap`
+        dm
             The plot that automatically updates every `update_interval`.
         """
         return live_plot(
@@ -811,12 +809,12 @@ class AsyncRunner(BaseRunner):
 
         Parameters
         ----------
-        save_kwargs : dict
+        save_kwargs
             Key-word arguments for ``learner.save(**save_kwargs)``.
             Only used if ``method=None``.
-        interval : int
+        interval
             Number of seconds between saving the learner.
-        method : callable
+        method
             The method to use for saving the learner. If None, the default
             saves the learner using "pickle" which calls
             ``learner.save(**save_kwargs)``. Otherwise provide a callable
@@ -874,23 +872,23 @@ def simple(
 
     Parameters
     ----------
-    learner : ~`adaptive.BaseLearner` instance
-    goal : callable, optional
+    learner
+    goal
         The end condition for the calculation. This function must take
         the learner as its sole argument, and return True when we should
         stop requesting more points.
-    loss_goal : float, optional
+    loss_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the loss is smaller than this value.
-    npoints_goal : int, optional
+    npoints_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the number of points is larger or
         equal than this value.
-    end_time_goal : datetime, optional
+    end_time_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than this
         value.
-    duration_goal : timedelta or number, optional
+    duration_goal
         Convenience argument, use instead of ``goal``. The end condition for the
         calculation. Stop when the current time is larger or equal than
         ``start_time + duration_goal``. ``duration_goal`` can be a number
@@ -922,9 +920,9 @@ def replay_log(
 
     Parameters
     ----------
-    learner : `~adaptive.BaseLearner` instance
+    learner
         New learner where the log will be applied.
-    log : list
+    log
         contains tuples: ``(method_name, *args)``.
     """
     for method, *args in log:
@@ -978,7 +976,9 @@ def _get_ncores(
 # --- Useful runner goals
 
 # TODO: deprecate
-def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[BaseLearner], bool]:
+def stop_after(
+    *, seconds: float = 0.0, minutes: float = 0.0, hours: float = 0.0
+) -> Callable[[BaseLearner], bool]:
     """Stop a runner after a specified time.
 
     For example, to specify a runner that should stop after
@@ -998,7 +998,7 @@ def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[BaseLearner], bool
 
     Returns
     -------
-    goal : callable
+    goal
         Can be used as the ``goal`` parameter when constructing
         a `Runner`.
 
@@ -1040,13 +1040,13 @@ def auto_goal(
 
     Parameters
     ----------
-    loss : float, optional
+    loss
         Stop when the loss is smaller than this value.
-    npoints : int, optional
+    npoints
         Stop when the number of points is larger or equal than this value.
-    end_time : datetime, optional
+    end_time
         Stop when the current time is larger or equal than this value.
-    duration : timedelta or number, optional
+    duration
         Stop when the current time is larger or equal than
         ``start_time + duration``. ``duration`` can be a number
         indicating the number of seconds.

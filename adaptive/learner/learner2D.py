@@ -5,7 +5,7 @@ import warnings
 from collections import OrderedDict
 from copy import copy
 from math import sqrt
-from typing import Callable, Iterable
+from typing import TYPE_CHECKING, Callable, Iterable
 
 import cloudpickle
 import numpy as np
@@ -21,6 +21,9 @@ from adaptive.utils import (
     cache_latest,
     partial_function_from_dataframe,
 )
+
+if TYPE_CHECKING:
+    import holoviews
 
 try:
     import pandas
@@ -40,11 +43,11 @@ def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
 
     Parameters
     ----------
-    ip : `scipy.interpolate.LinearNDInterpolator` instance
+    ip
 
     Returns
     -------
-    deviations : list
+    deviations
         The deviation per triangle.
     """
     values = ip.values / (ip.values.ptp(axis=0).max() or 1)
@@ -79,11 +82,11 @@ def areas(ip: LinearNDInterpolator) -> np.ndarray:
 
     Parameters
     ----------
-    ip : `scipy.interpolate.LinearNDInterpolator` instance
+    ip
 
     Returns
     -------
-    areas : numpy.ndarray
+    areas
         The area per triangle in ``ip.tri``.
     """
     p = ip.tri.points[ip.tri.simplices]
@@ -99,11 +102,11 @@ def uniform_loss(ip: LinearNDInterpolator) -> np.ndarray:
 
     Parameters
     ----------
-    ip : `scipy.interpolate.LinearNDInterpolator` instance
+    ip
 
     Returns
     -------
-    losses : numpy.ndarray
+    losses
         Loss per triangle in ``ip.tri``.
 
     Examples
@@ -136,7 +139,7 @@ def resolution_loss_function(
 
     Returns
     -------
-    loss_function : callable
+    loss_function
 
     Examples
     --------
@@ -173,11 +176,11 @@ def minimize_triangle_surface_loss(ip: LinearNDInterpolator) -> np.ndarray:
 
     Parameters
     ----------
-    ip : `scipy.interpolate.LinearNDInterpolator` instance
+    ip
 
     Returns
     -------
-    losses : numpy.ndarray
+    losses
         Loss per triangle in ``ip.tri``.
 
     Examples
@@ -217,11 +220,11 @@ def default_loss(ip: LinearNDInterpolator) -> np.ndarray:
 
     Parameters
     ----------
-    ip : `scipy.interpolate.LinearNDInterpolator` instance
+    ip
 
     Returns
     -------
-    losses : numpy.ndarray
+    losses
         Loss per triangle in ``ip.tri``.
     """
     dev = np.sum(deviations(ip), axis=0)
@@ -241,15 +244,15 @@ def choose_point_in_triangle(triangle: np.ndarray, max_badness: int) -> np.ndarr
 
     Parameters
     ----------
-    triangle : numpy.ndarray
+    triangle
         The coordinates of a triangle with shape (3, 2).
-    max_badness : int
+    max_badness
         The badness at which the point is either chosen on a edge or
         in the middle.
 
     Returns
     -------
-    point : numpy.ndarray
+    point
         The x and y coordinate of the suggested new point.
     """
     a, b, c = triangle
@@ -267,17 +270,17 @@ def choose_point_in_triangle(triangle: np.ndarray, max_badness: int) -> np.ndarr
     return point
 
 
-def triangle_loss(ip):
+def triangle_loss(ip: LinearNDInterpolator) -> list[float]:
     r"""Computes the average of the volumes of the simplex combined with each
     neighbouring point.
 
     Parameters
     ----------
-    ip : `scipy.interpolate.LinearNDInterpolator` instance
+    ip
 
     Returns
     -------
-    triangle_loss : list
+    triangle_loss
         The mean volume per triangle.
 
     Notes
@@ -311,13 +314,13 @@ class Learner2D(BaseLearner):
 
     Parameters
     ----------
-    function : callable
+    function
         The function to learn. Must take a tuple of two real
         parameters and return a real number.
-    bounds : list of 2-tuples
+    bounds
         A list ``[(a1, b1), (a2, b2)]`` containing bounds,
         one per dimension.
-    loss_per_triangle : callable, optional
+    loss_per_triangle
         A function that returns the loss for every triangle.
         If not provided, then a default is used, which uses
         the deviation from a linear estimate, as well as
@@ -424,19 +427,19 @@ class Learner2D(BaseLearner):
 
         Parameters
         ----------
-        with_default_function_args : bool, optional
+        with_default_function_args
             Include the ``learner.function``'s default arguments as a
             column, by default True
-        function_prefix : str, optional
+        function_prefix
             Prefix to the ``learner.function``'s default arguments' names,
             by default "function."
-        seed_name : str, optional
+        seed_name
             Name of the seed parameter, by default "seed"
-        x_name : str, optional
+        x_name
             Name of the input x value, by default "x"
-        y_name : str, optional
+        y_name
             Name of the input y value, by default "y"
-        z_name : str, optional
+        z_name
             Name of the output value, by default "z"
 
         Returns
@@ -475,18 +478,18 @@ class Learner2D(BaseLearner):
 
         Parameters
         ----------
-        df : pandas.DataFrame
+        df
             The data to load.
-        with_default_function_args : bool, optional
+        with_default_function_args
             The ``with_default_function_args`` used in ``to_dataframe()``,
             by default True
-        function_prefix : str, optional
+        function_prefix
             The ``function_prefix`` used in ``to_dataframe``, by default "function."
-        x_name : str, optional
+        x_name
             The ``x_name`` used in ``to_dataframe``, by default "x"
-        y_name : str, optional
+        y_name
             The ``y_name`` used in ``to_dataframe``, by default "y"
-        z_name : str, optional
+        z_name
             The ``z_name`` used in ``to_dataframe``, by default "z"
         """
         data = df.set_index([x_name, y_name])[z_name].to_dict()
@@ -538,7 +541,7 @@ class Learner2D(BaseLearner):
 
         Parameters
         ----------
-        n : int, optional
+        n
             Number of points in x and y. If None (default) this number is
             evaluated by looking at the size of the smallest triangle.
 
@@ -611,14 +614,14 @@ class Learner2D(BaseLearner):
 
         Parameters
         ----------
-        scaled : bool
+        scaled
             Use True if all points are inside the
             unit-square [(-0.5, 0.5), (-0.5, 0.5)] or False if
             the data points are inside the ``learner.bounds``.
 
         Returns
         -------
-        interpolator : `scipy.interpolate.LinearNDInterpolator`
+        interpolator
 
         Examples
         --------
@@ -755,7 +758,9 @@ class Learner2D(BaseLearner):
             if p not in self.data:
                 self._stack[p] = np.inf
 
-    def plot(self, n=None, tri_alpha=0):
+    def plot(
+        self, n: int = None, tri_alpha: float = 0
+    ) -> holoviews.Overlay | holoviews.HoloMap:
         r"""Plot the Learner2D's current state.
 
         This plot function interpolates the data on a regular grid.
@@ -764,16 +769,16 @@ class Learner2D(BaseLearner):
 
         Parameters
         ----------
-        n : int
+        n
             Number of points in x and y. If None (default) this number is
             evaluated by looking at the size of the smallest triangle.
-        tri_alpha : float
+        tri_alpha
             The opacity ``(0 <= tri_alpha <= 1)`` of the triangles overlayed
             on top of the image. By default the triangulation is not visible.
 
         Returns
         -------
-        plot : `holoviews.core.Overlay` or `holoviews.core.HoloMap`
+        plot
             A `holoviews.core.Overlay` of
             ``holoviews.Image * holoviews.EdgePaths``. If the
             `learner.function` returns a vector output, a

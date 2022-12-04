@@ -6,7 +6,7 @@ import math
 from copy import copy, deepcopy
 from numbers import Integral as Int
 from numbers import Real
-from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Sequence, Tuple, Union
 
 import cloudpickle
 import numpy as np
@@ -24,11 +24,21 @@ from adaptive.utils import (
     partial_function_from_dataframe,
 )
 
+if TYPE_CHECKING:
+    import holoviews
+
 try:
     from typing import TypeAlias
 except ImportError:
     # Remove this when we drop support for Python 3.9
     from typing_extensions import TypeAlias
+
+try:
+    from typing import Literal
+except ImportError:
+    # Remove this when we drop support for Python 3.7
+    from typing_extensions import Literal
+
 
 try:
     import pandas
@@ -145,7 +155,7 @@ def resolution_loss_function(
 
     Returns
     -------
-    loss_function : callable
+    loss_function
 
     Examples
     --------
@@ -230,12 +240,12 @@ class Learner1D(BaseLearner):
 
     Parameters
     ----------
-    function : callable
+    function
         The function to learn. Must take a single real parameter and
         return a real number or 1D array.
-    bounds : pair of reals
+    bounds
         The bounds of the interval on which to learn 'function'.
-    loss_per_interval: callable, optional
+    loss_per_interval
         A function that returns the loss for a single interval of the domain.
         If not provided, then a default is used, which uses the scaled distance
         in the x-y plane as the loss. See the notes for more details.
@@ -356,15 +366,15 @@ class Learner1D(BaseLearner):
 
         Parameters
         ----------
-        with_default_function_args : bool, optional
+        with_default_function_args
             Include the ``learner.function``'s default arguments as a
             column, by default True
-        function_prefix : str, optional
+        function_prefix
             Prefix to the ``learner.function``'s default arguments' names,
             by default "function."
-        x_name : str, optional
+        x_name
             Name of the input value, by default "x"
-        y_name : str, optional
+        y_name
             Name of the output value, by default "y"
 
         Returns
@@ -403,16 +413,16 @@ class Learner1D(BaseLearner):
 
         Parameters
         ----------
-        df : pandas.DataFrame
+        df
             The data to load.
-        with_default_function_args : bool, optional
+        with_default_function_args
             The ``with_default_function_args`` used in ``to_dataframe()``,
             by default True
-        function_prefix : str, optional
+        function_prefix
             The ``function_prefix`` used in ``to_dataframe``, by default "function."
-        x_name : str, optional
+        x_name
             The ``x_name`` used in ``to_dataframe``, by default "x"
-        y_name : str, optional
+        y_name
             The ``y_name`` used in ``to_dataframe``, by default "y"
         """
         self.tell_many(df[x_name].values, df[y_name].values)
@@ -795,17 +805,19 @@ class Learner1D(BaseLearner):
         loss = mapping[ival]
         return finite_loss(ival, loss, self._scale[0])
 
-    def plot(self, *, scatter_or_line: str = "scatter"):
+    def plot(
+        self, *, scatter_or_line: Literal["scatter", "line"] = "scatter"
+    ) -> holoviews.Overlay:
         """Returns a plot of the evaluated data.
 
         Parameters
         ----------
-        scatter_or_line : str, default: "scatter"
+        scatter_or_line
             Plot as a scatter plot ("scatter") or a line plot ("line").
 
         Returns
         -------
-        plot : `holoviews.Overlay`
+        plot
             Plot of the evaluated data.
         """
         if scatter_or_line not in ("scatter", "line"):
