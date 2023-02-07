@@ -407,7 +407,8 @@ class Learner2D(BaseLearner):
 
     def to_numpy(self):
         """Data as NumPy array of size ``(npoints, 3)`` if ``learner.function`` returns a scalar
-        and ``(npoints, 2+vdim)`` if ``learner.function`` returns a vector of length ``vdim``."""
+        and ``(npoints, 2+vdim)`` if ``learner.function`` returns a vector of length ``vdim``.
+        """
         return np.array(
             [(x, y, *np.atleast_1d(z)) for (x, y), z in sorted(self.data.items())]
         )

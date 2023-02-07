@@ -128,7 +128,6 @@ def _run_on_discontinuity(x_0, bounds):
 
 
 def test_termination_on_discontinuities():
-
     learner = _run_on_discontinuity(0, (-1, 1))
     smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
     assert smallest_interval >= np.finfo(float).eps
