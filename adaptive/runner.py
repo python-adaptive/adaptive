@@ -190,7 +190,6 @@ class BaseRunner(metaclass=abc.ABCMeta):
         raise_if_retries_exceeded: bool = True,
         allow_running_forever: bool = False,
     ):
-
         self.executor = _ensure_executor(executor)
         self.goal = _goal(
             learner,
@@ -638,7 +637,6 @@ class AsyncRunner(BaseRunner):
         retries: int = 0,
         raise_if_retries_exceeded: bool = True,
     ) -> None:
-
         if (
             executor is None
             and _default_executor is concurrent.ProcessPoolExecutor
@@ -976,6 +974,7 @@ def _get_ncores(
 
 
 # --- Useful runner goals
+
 
 # TODO: deprecate
 def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[BaseLearner], bool]:
