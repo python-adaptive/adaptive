@@ -69,7 +69,7 @@ runner.live_info()
 ```
 
 ```{code-cell} ipython3
-runner.live_plot(plotter=lambda l: l.learner.plot(), update_interval=0.1)
+runner.live_plot(plotter=lambda lrn: lrn.learner.plot(), update_interval=0.1)
 ```
 
 Now the `DataSavingLearner` will have an dictionary attribute `extra_data` that has `x` as key and the data that was returned by `learner.function` as values.

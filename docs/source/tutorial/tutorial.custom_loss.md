@@ -96,7 +96,9 @@ learner = adaptive.Learner2D(
 )
 
 # this takes a while, so use the async Runner so we know *something* is happening
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.03 or l.npoints > 1000)
+runner = adaptive.Runner(
+    learner, goal=lambda lrn: lrn.loss() < 0.03 or lrn.npoints > 1000
+)
 ```
 
 ```{code-cell} ipython3
@@ -110,8 +112,10 @@ runner.live_info()
 ```
 
 ```{code-cell} ipython3
-def plotter(l):
-    return l.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale")
+def plotter(lrn):
+    return lrn.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale")
+
+
 runner.live_plot(update_interval=0.2, plotter=plotter)
 ```
 

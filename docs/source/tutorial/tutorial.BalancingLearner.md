@@ -63,6 +63,8 @@ runner.live_info()
 ```{code-cell} ipython3
 def plotter(learner):
     return hv.Overlay([L.plot() for L in learner.learners])
+
+
 runner.live_plot(plotter=plotter, update_interval=0.1)
 ```
 
