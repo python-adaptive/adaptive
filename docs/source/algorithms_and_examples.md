@@ -98,7 +98,7 @@ def plot_loss_interval(learner):
         x, y = [x_0, x_1], [y_0, y_1]
     else:
         x, y = [], []
-    return hv.Scatter((x, y)).opts(style=dict(size=6, color="r"))
+    return hv.Scatter((x, y)).opts(size=6, color="r")
 
 
 def plot(learner, npoints):
@@ -114,7 +114,7 @@ def get_hm(loss_per_interval, N=101):
 plot_homo = get_hm(uniform_loss).relabel("homogeneous sampling")
 plot_adaptive = get_hm(default_loss).relabel("with adaptive")
 layout = plot_homo + plot_adaptive
-layout.opts(plot=dict(toolbar=None))
+layout.opts(toolbar=None)
 ```
 
 ## {class}`adaptive.Learner2D`

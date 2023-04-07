@@ -932,12 +932,9 @@ class LearnerND(BaseLearner):
         else:
             im = hv.Image([], bounds=lbrt)
             tris = hv.EdgePaths([])
-
-        im_opts = {"cmap": "viridis"}
-        tri_opts = {"line_width": 0.5, "alpha": tri_alpha}
-        no_hover = {"plot": {"inspection_policy": None, "tools": []}}
-
-        return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
+        return im.opts(cmap="viridis") * tris.opts(
+            line_width=0.5, alpha=tri_alpha, tools=[]
+        )
 
     def plot_slice(self, cut_mapping, n=None):
         """Plot a 1D or 2D interpolated slice of a N-dimensional function.
@@ -1005,7 +1002,7 @@ class LearnerND(BaseLearner):
             else:
                 im = hv.Image([], bounds=lbrt)
 
-            return im.opts(style={"cmap": "viridis"})
+            return im.opts(cmap="viridis")
         else:
             raise ValueError("Only 1 or 2-dimensional plots can be generated.")
 
@@ -1199,10 +1196,7 @@ class LearnerND(BaseLearner):
 
         vertices, lines = self._get_iso(level, which="line")
         paths = [[vertices[i], vertices[j]] for i, j in lines]
-        contour = hv.Path(paths)
-
-        contour_opts = {"color": "black"}
-        contour = contour.opts(style=contour_opts)
+        contour = hv.Path(paths).opts(color="black")
         return plot * contour
 
     def plot_isosurface(self, level=0.0, hull_opacity=0.2):

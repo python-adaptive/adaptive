@@ -316,7 +316,7 @@ adaptive.runner.replay_log(reconstructed_learner, runner.log)
 ```
 
 ```{code-cell} ipython3
-learner.plot().Scatter.I.opts(style=dict(size=6)) * reconstructed_learner.plot()
+learner.plot().Scatter.I.opts(size=6) * reconstructed_learner.plot()
 ```
 
 ## Adding coroutines
