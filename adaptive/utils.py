@@ -153,7 +153,8 @@ def partial_function_from_dataframe(function, df, function_prefix: str = "functi
             warnings.warn(
                 f"The DataFrame contains a default parameter"
                 f" ({k}={v}) but the function already has a default ({k}={default})."
-                " The DataFrame's value will be used."
+                " The DataFrame's value will be used.",
+                stacklevel=2,
             )
     return functools.partial(function, **kwargs)
 
