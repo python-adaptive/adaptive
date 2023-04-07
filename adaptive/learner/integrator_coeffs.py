@@ -191,4 +191,4 @@ def __getattr__(name):
     try:
         return _coefficients()[name]
     except KeyError:
-        raise AttributeError(f"module {__name__} has no attribute {name}")
+        raise AttributeError(f"module {__name__} has no attribute {name}") from None

@@ -603,6 +603,7 @@ class Learner2D(BaseLearner):
             "`learner.ip()` is deprecated, use `learner.interpolator(scaled=True)`."
             " This will be removed in v1.0.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.interpolator(scaled=True)
 
@@ -682,7 +683,7 @@ class Learner2D(BaseLearner):
 
         points_new = []
         losses_new = []
-        for j, _ in enumerate(losses):
+        for _j, _ in enumerate(losses):
             jsimplex = np.argmax(losses)
             triangle = ip.tri.points[ip.tri.simplices[jsimplex]]
             point_new = choose_point_in_triangle(triangle, max_badness=5)
@@ -690,7 +691,7 @@ class Learner2D(BaseLearner):
 
             # np.clip results in numerical precision problems
             # https://github.com/python-adaptive/adaptive/issues/7
-            clip = lambda x, l, u: max(l, min(u, x))  # noqa: E731
+            clip = lambda x, lo, up: max(lo, min(up, x))  # noqa: E731
             point_new = (
                 clip(point_new[0], *self.bounds[0]),
                 clip(point_new[1], *self.bounds[1]),
@@ -818,9 +819,9 @@ class Learner2D(BaseLearner):
             im = hv.Image([], bounds=lbrt)
             tris = hv.EdgePaths([])
 
-        im_opts = dict(cmap="viridis")
-        tri_opts = dict(line_width=0.5, alpha=tri_alpha)
-        no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
+        im_opts = {"cmap": "viridis"}
+        tri_opts = {"line_width": 0.5, "alpha": tri_alpha}
+        no_hover = {"plot": {"inspection_policy": None, "tools": []}}
 
         return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
 

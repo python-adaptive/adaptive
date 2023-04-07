@@ -307,7 +307,7 @@ class _Interval:
 
 
 def algorithm_4(
-    f: Callable, a: int, b: int, tol: float, N_loops: int = int(1e9)
+    f: Callable, a: int, b: int, tol: float, N_loops: int = int(1e9)  # noqa: B008
 ) -> Tuple[float, float, int, List["_Interval"]]:
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
     algorithm uses Clenshaw-Curtis quadrature rules of increasing
@@ -578,7 +578,7 @@ def test_analytic(n=200):
             if alpha <= -1:
                 false_positives += 1
             else:
-                igral_exact = F(1) - F(0)
+                igral_exact = F(1, alpha, beta) - F(0, alpha, beta)
                 assert alpha < -0.7 or abs(igral - igral_exact) < err
 
     assert false_negatives < 0.05 * n
