@@ -3,6 +3,7 @@ import sys
 
 import holoviews
 import matplotlib.pyplot as plt
+import numpy as np
 import matplotlib.tri as mtri
 from PIL import Image, ImageDraw
 
@@ -31,7 +32,8 @@ def plot_learner_and_save(learner, fname):
     tri = learner.interpolator(scaled=True).tri
     triang = mtri.Triangulation(*tri.points.T, triangles=tri.vertices)
     ax.triplot(triang, c="k", lw=0.8)
-    ax.imshow(learner.plot().Image.I.data, extent=(-0.5, 0.5, -0.5, 0.5))
+    data = learner.interpolated_on_grid()
+    ax.imshow(np.vstack(data), extent=(-0.5, 0.5, -0.5, 0.5))
     ax.set_xticks([])
     ax.set_yticks([])
     plt.savefig(fname, bbox_inches="tight", transparent=True, dpi=300, pad_inches=-0.1)
