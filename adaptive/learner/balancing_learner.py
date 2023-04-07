@@ -105,7 +105,7 @@ class BalancingLearner(BaseLearner):
         # Naively we would make 'function' a method, but this causes problems
         # when using executors from 'concurrent.futures' because we have to
         # pickle the whole learner.
-        self.function = partial(dispatch, [l.function for l in self.learners])  # type: ignore
+        self.function = partial(dispatch, [lrn.function for lrn in self.learners])  # type: ignore
 
         self._ask_cache = {}
         self._loss = {}
@@ -130,25 +130,25 @@ class BalancingLearner(BaseLearner):
     @property
     def data(self) -> dict[tuple[int, Any], Any]:
         data = {}
-        for i, l in enumerate(self.learners):
-            data.update({(i, p): v for p, v in l.data.items()})
+        for i, lrn in enumerate(self.learners):
+            data.update({(i, p): v for p, v in lrn.data.items()})
         return data
 
     @property
     def pending_points(self) -> set[tuple[int, Any]]:
         pending_points = set()
-        for i, l in enumerate(self.learners):
-            pending_points.update({(i, p) for p in l.pending_points})
+        for i, lrn in enumerate(self.learners):
+            pending_points.update({(i, p) for p in lrn.pending_points})
         return pending_points
 
     @property
     def npoints(self) -> int:
-        return sum(l.npoints for l in self.learners)
+        return sum(lrn.npoints for lrn in self.learners)
 
     @property
     def nsamples(self):
         if hasattr(self.learners[0], "nsamples"):
-            return sum(l.nsamples for l in self.learners)
+            return sum(lrn.nsamples for lrn in self.learners)
         else:
             raise AttributeError(
                 f"{type(self.learners[0])} as no attribute called `nsamples`."
@@ -187,7 +187,7 @@ class BalancingLearner(BaseLearner):
         self, n: int
     ) -> tuple[list[tuple[int, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
-        total_points = [l.npoints + len(l.pending_points) for l in self.learners]
+        total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
         for _ in range(n):
             to_select = []
             for index, learner in enumerate(self.learners):
@@ -212,7 +212,7 @@ class BalancingLearner(BaseLearner):
         self, n: int
     ) -> tuple[list[tuple[int, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
-        total_points = [l.npoints + len(l.pending_points) for l in self.learners]
+        total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
         for _ in range(n):
             losses = self._losses(real=False)
             index, _ = max(
@@ -235,7 +235,7 @@ class BalancingLearner(BaseLearner):
         self, n: numbers.Integral
     ) -> tuple[list[tuple[numbers.Integral, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
-        total_points = [l.npoints + len(l.pending_points) for l in self.learners]
+        total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
         for _ in range(n):
             index = np.argmin(total_points)
             # Take the points from the cache
@@ -356,7 +356,9 @@ class BalancingLearner(BaseLearner):
             keys, values_list = cdims
             cdims = [dict(zip(keys, values)) for values in values_list]
 
-        mapping = {tuple(_cdims.values()): l for l, _cdims in zip(self.learners, cdims)}
+        mapping = {
+            tuple(_cdims.values()): lrn for lrn, _cdims in zip(self.learners, cdims)
+        }
 
         d = defaultdict(list)
         for _cdims in cdims:
@@ -526,11 +528,11 @@ class BalancingLearner(BaseLearner):
         >>> learner.save(combo_fname)  # use 'load' in the same way
         """
         if isinstance(fname, Iterable):
-            for l, _fname in zip(self.learners, fname):
-                l.save(_fname, compress=compress)
+            for lrn, _fname in zip(self.learners, fname):
+                lrn.save(_fname, compress=compress)
         else:
-            for l in self.learners:
-                l.save(fname(l), compress=compress)
+            for lrn in self.learners:
+                lrn.save(fname(lrn), compress=compress)
 
     def load(
         self,
@@ -554,18 +556,18 @@ class BalancingLearner(BaseLearner):
         See the example in the `BalancingLearner.save` doc-string.
         """
         if isinstance(fname, Iterable):
-            for l, _fname in zip(self.learners, fname):
-                l.load(_fname, compress=compress)
+            for lrn, _fname in zip(self.learners, fname):
+                lrn.load(_fname, compress=compress)
         else:
-            for l in self.learners:
-                l.load(fname(l), compress=compress)
+            for lrn in self.learners:
+                lrn.load(fname(lrn), compress=compress)
 
     def _get_data(self) -> list[Any]:
-        return [l._get_data() for l in self.learners]
+        return [lrn._get_data() for lrn in self.learners]
 
     def _set_data(self, data: list[Any]):
-        for l, _data in zip(self.learners, data):
-            l._set_data(_data)
+        for lrn, _data in zip(self.learners, data):
+            lrn._set_data(_data)
 
     def __getstate__(self) -> tuple[list[BaseLearner], CDIMS_TYPE, STRATEGY_TYPE]:
         return (

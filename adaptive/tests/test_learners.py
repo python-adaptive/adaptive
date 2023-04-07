@@ -92,9 +92,9 @@ def uniform(a, b):
 def simple_run(learner, n):
     def get_goal(learner):
         if hasattr(learner, "nsamples"):
-            return lambda l: l.nsamples > n
+            return lambda lrn: lrn.nsamples > n
         else:
-            return lambda l: l.npoints > n
+            return lambda lrn: lrn.npoints > n
 
     def goal():
         if isinstance(learner, BalancingLearner):
@@ -504,7 +504,7 @@ def test_learner_performance_is_invariant_under_scaling(
         # Because the LearnerND is slow
         npoints //= 10
 
-    for n in range(npoints):
+    for _n in range(npoints):
         cxs, _ = control.ask(1)
         xs, _ = learner.ask(1)
         control.tell_many(cxs, [control.function(x) for x in cxs])
@@ -540,7 +540,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     # Emulate parallel execution
     stash = []
 
-    for i in range(100):
+    for _i in range(100):
         n = random.randint(1, 10)
         m = random.randint(0, n)
         xs, _ = learner.ask(n, tell_pending=False)
@@ -560,11 +560,11 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
             learner.tell(x, learner.function(x))
 
     if learner_type is AverageLearner1D:
-        nsamples = [l.nsamples for l in learner.learners]
-        assert all(l.nsamples > 5 for l in learner.learners), nsamples
+        nsamples = [lrn.nsamples for lrn in learner.learners]
+        assert all(lrn.nsamples > 5 for lrn in learner.learners), nsamples
     else:
-        npoints = [l.npoints for l in learner.learners]
-        assert all(l.npoints > 5 for l in learner.learners), npoints
+        npoints = [lrn.npoints for lrn in learner.learners]
+        assert all(lrn.npoints > 5 for lrn in learner.learners), npoints
 
 
 @run_with(
@@ -617,8 +617,8 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     control = learner.new()
 
     if learner_type in (Learner1D, AverageLearner1D):
-        for l, c in zip(learner.learners, control.learners):
-            l._recompute_losses_factor = 1
+        for lrn, c in zip(learner.learners, control.learners):
+            lrn._recompute_losses_factor = 1
             c._recompute_losses_factor = 1
 
     simple_run(learner, 100)

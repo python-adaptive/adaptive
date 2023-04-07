@@ -138,7 +138,7 @@ def test_adding_points_and_skip_one_point():
         if x != skip_x:
             learner.tell(x, learner.function(x))
 
-    for i in range(1000):
+    for _i in range(1000):
         xs, _ = learner.ask(1)
         for x in xs:
             if x != skip_x:
@@ -150,7 +150,7 @@ def test_adding_points_and_skip_one_point():
     # Create a learner with the same number of points, which should
     # give an identical igral value.
     learner2 = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
-    for i in range(1017):
+    for _i in range(1017):
         xs, _ = learner2.ask(1)
         for x in xs:
             learner2.tell(x, learner2.function(x))
@@ -190,19 +190,19 @@ def test_tell_in_random_order(first_add_33=False):
 
         # Test whether approximating_intervals gives a complete set of intervals
         for learner in learners:
-            ivals = sorted(learner.approximating_intervals, key=lambda l: l.a)
+            ivals = sorted(learner.approximating_intervals, key=lambda lrn: lrn.a)
             for i in range(len(ivals) - 1):
                 assert ivals[i].b == ivals[i + 1].a, (ivals[i], ivals[i + 1])
 
         # Test if approximating_intervals is the same for random order of adding the point
         ivals = [
             sorted(ival, key=attrgetter("a"))
-            for ival in [l.approximating_intervals for l in learners]
+            for ival in [lrn.approximating_intervals for lrn in learners]
         ]
         assert all(ival.a == other_ival.a for ival, other_ival in zip(*ivals))
 
         # Test if the approximating_intervals are the same
-        ivals = [{(i.a, i.b) for i in l.approximating_intervals} for l in learners]
+        ivals = [{(i.a, i.b) for i in lrn.approximating_intervals} for lrn in learners]
         assert ivals[0] == ivals[1]
 
         # Test whether the igral is identical
@@ -210,7 +210,7 @@ def test_tell_in_random_order(first_add_33=False):
 
         # Compare if the errors are in line with the sequential case
         igral, err, *_ = algorithm_4(f, a, b, tol=tol)
-        assert all((l.err + err >= abs(l.igral - igral)) for l in learners)
+        assert all((lrn.err + err >= abs(lrn.igral - igral)) for lrn in learners)
 
         # Check that the errors are finite
         for learner in learners:
@@ -233,7 +233,7 @@ def test_approximating_intervals():
     for x in xs:
         learner.tell(x, f24(x))
 
-    ivals = sorted(learner.approximating_intervals, key=lambda l: l.a)
+    ivals = sorted(learner.approximating_intervals, key=lambda lrn: lrn.a)
     for i in range(len(ivals) - 1):
         assert ivals[i].b == ivals[i + 1].a, (ivals[i], ivals[i + 1])
 

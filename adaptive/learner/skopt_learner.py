@@ -98,12 +98,12 @@ class SKOptLearner(Optimizer, BaseLearner):
                 xsp = self.space.transform(xs.reshape(-1, 1).tolist())
                 y_pred, sigma = model.predict(xsp, return_std=True)
                 # Plot model prediction for function
-                curve = hv.Curve((xs, y_pred)).opts(style=dict(line_dash="dashed"))
+                curve = hv.Curve((xs, y_pred)).opts(line_dash="dashed")
                 # Plot 95% confidence interval as colored area around points
                 area = hv.Area(
                     (xs, y_pred - 1.96 * sigma, y_pred + 1.96 * sigma),
                     vdims=["y", "y2"],
-                ).opts(style=dict(alpha=0.5, line_alpha=0))
+                ).opts(alpha=0.5, line_alpha=0)
 
             else:
                 area = hv.Area([])
@@ -114,7 +114,7 @@ class SKOptLearner(Optimizer, BaseLearner):
         margin = 0.05 * (bounds[1] - bounds[0])
         plot_bounds = (bounds[0] - margin, bounds[1] + margin)
 
-        return p.redim(x=dict(range=plot_bounds))
+        return p.redim(x={"range": plot_bounds})
 
     def _get_data(self):
         return [x[0] for x in self.Xi], self.yi

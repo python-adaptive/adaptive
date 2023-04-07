@@ -342,7 +342,8 @@ class Learner1D(BaseLearner):
 
     def to_numpy(self):
         """Data as NumPy array of size ``(npoints, 2)`` if ``learner.function`` returns a scalar
-        and ``(npoints, 1+vdim)`` if ``learner.function`` returns a vector of length ``vdim``."""
+        and ``(npoints, 1+vdim)`` if ``learner.function`` returns a vector of length ``vdim``.
+        """
         return np.array([(x, *np.atleast_1d(y)) for x, y in sorted(self.data.items())])
 
     def to_dataframe(
@@ -828,7 +829,7 @@ class Learner1D(BaseLearner):
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
         plot_bounds = (self.bounds[0] - margin, self.bounds[1] + margin)
 
-        return p.redim(x=dict(range=plot_bounds))
+        return p.redim(x={"range": plot_bounds})
 
     def remove_unfinished(self) -> None:
         self.pending_points = set()

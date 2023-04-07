@@ -190,7 +190,6 @@ class BaseRunner(metaclass=abc.ABCMeta):
         raise_if_retries_exceeded: bool = True,
         allow_running_forever: bool = False,
     ):
-
         self.executor = _ensure_executor(executor)
         self.goal = _goal(
             learner,
@@ -638,7 +637,6 @@ class AsyncRunner(BaseRunner):
         retries: int = 0,
         raise_if_retries_exceeded: bool = True,
     ) -> None:
-
         if (
             executor is None
             and _default_executor is concurrent.ProcessPoolExecutor
@@ -646,14 +644,14 @@ class AsyncRunner(BaseRunner):
         ):
             try:
                 pickle.dumps(learner.function)
-            except pickle.PicklingError:
+            except pickle.PicklingError as e:
                 raise ValueError(
                     "`learner.function` cannot be pickled (is it a lamdba function?)"
                     " and therefore does not work with the default executor."
                     " Either make sure the function is pickleble or use an executor"
                     " that might work with 'hard to pickle'-functions"
                     " , e.g. `ipyparallel` with `dill`."
-                )
+                ) from e
 
         super().__init__(
             learner,
@@ -691,7 +689,8 @@ class AsyncRunner(BaseRunner):
                 "The runner has been scheduled, but the asyncio "
                 "event loop is not running! If you are "
                 "in a Jupyter notebook, remember to run "
-                "'adaptive.notebook_extension()'"
+                "'adaptive.notebook_extension()'",
+                stacklevel=2,
             )
 
     def _submit(self, x: Any) -> asyncio.Task | asyncio.Future:
@@ -977,6 +976,7 @@ def _get_ncores(
 
 # --- Useful runner goals
 
+
 # TODO: deprecate
 def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[BaseLearner], bool]:
     """Stop a runner after a specified time.
@@ -1061,13 +1061,13 @@ def auto_goal(
     -------
     Callable[[adaptive.BaseLearner], bool]
     """
-    kw = dict(
-        loss=loss,
-        npoints=npoints,
-        end_time=end_time,
-        duration=duration,
-        allow_running_forever=allow_running_forever,
-    )
+    kw = {
+        "loss": loss,
+        "npoints": npoints,
+        "end_time": end_time,
+        "duration": duration,
+        "allow_running_forever": allow_running_forever,
+    }
     opts = (loss, npoints, end_time, duration)  # all are mutually exclusive
     if sum(v is not None for v in opts) > 1:
         raise ValueError(
@@ -1080,8 +1080,10 @@ def auto_goal(
         # Note that the float loss goal is more efficiently implemented in the
         # BalancingLearner itself. That is why the previous if statement is
         # above this one.
-        goals = [auto_goal(learner=l, **kw) for l in learner.learners]
-        return lambda learner: all(goal(l) for l, goal in zip(learner.learners, goals))
+        goals = [auto_goal(learner=lrn, **kw) for lrn in learner.learners]
+        return lambda learner: all(
+            goal(lrn) for lrn, goal in zip(learner.learners, goals)
+        )
     if npoints is not None:
         return lambda learner: learner.npoints >= npoints
     if end_time is not None:
@@ -1100,7 +1102,9 @@ def auto_goal(
                 "Goal is None which means the learners"
                 " continue forever and this is not allowed."
             )
-        warnings.warn("Goal is None which means the learners continue forever!")
+        warnings.warn(
+            "Goal is None which means the learners continue forever!", stacklevel=2
+        )
         return lambda _: False
     raise ValueError("Cannot determine goal from {goal}.")
 

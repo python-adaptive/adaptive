@@ -94,7 +94,7 @@ dm = dm.redim.values(
 
 # In a notebook one would run `dm` however we want a statically generated
 # html, so we use a HoloMap to display it here
-dynamicmap_to_holomap(dm).options(hv.opts.Path(framewise=True))
+dynamicmap_to_holomap(dm).opts(hv.opts.Path(framewise=True))
 ```
 
 The plots show some wobbles while the original function was smooth, this is a result of the fact that the learner chooses points in 3 dimensions and the simplices are not in the same face as we try to interpolate our lines.

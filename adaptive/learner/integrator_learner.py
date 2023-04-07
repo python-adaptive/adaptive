@@ -471,7 +471,7 @@ class IntegratorLearner(BaseLearner):
             try:
                 self._fill_stack()
             except ValueError:
-                raise RuntimeError("No way to improve the integral estimate.")
+                raise RuntimeError("No way to improve the integral estimate.") from None
             new_points, new_loss_improvements = self.pop_from_stack(n_left)
             points += new_points
             loss_improvements += new_loss_improvements
@@ -513,8 +513,8 @@ class IntegratorLearner(BaseLearner):
         elif ival.depth == 3 or force_split:
             # Always split when depth is maximal or if refining didn't help
             self.ivals.remove(ival)
-            for ival in ival.split():
-                self.add_ival(ival)
+            for iv in ival.split():
+                self.add_ival(iv)
         else:
             self.add_ival(ival.refine())
 
