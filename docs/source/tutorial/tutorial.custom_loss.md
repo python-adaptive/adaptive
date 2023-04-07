@@ -1,14 +1,15 @@
 ---
-kernelspec:
-  name: python3
-  display_name: python3
 jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: '0.13'
-    jupytext_version: 1.13.8
+    format_version: 0.13
+    jupytext_version: 1.14.5
+kernelspec:
+  display_name: python3
+  name: python3
 ---
+
 # Custom adaptive logic for 1D and 2D
 
 ```{note}
@@ -25,7 +26,6 @@ adaptive.notebook_extension()
 
 # Import modules that are used in multiple cells
 import numpy as np
-from functools import partial
 import holoviews as hv
 ```
 
@@ -79,9 +79,6 @@ learner.plot().select(y=(0, 10000))
 ```
 
 ```{code-cell} ipython3
-from adaptive.runner import SequentialExecutor
-
-
 def uniform_sampling_2d(ip):
     from adaptive.learner.learner2D import areas
 
@@ -113,7 +110,8 @@ runner.live_info()
 ```
 
 ```{code-cell} ipython3
-plotter = lambda l: l.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale")
+def plotter(l):
+    return l.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale")
 runner.live_plot(update_interval=0.2, plotter=plotter)
 ```
 

@@ -1,14 +1,15 @@
 ---
-kernelspec:
-  name: python3
-  display_name: python3
 jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: '0.13'
-    jupytext_version: 1.13.8
+    format_version: 0.13
+    jupytext_version: 1.14.5
+kernelspec:
+  display_name: python3
+  name: python3
 ---
+
 # Tutorial {class}`~adaptive.BalancingLearner`
 
 ```{note}
@@ -60,7 +61,8 @@ runner.live_info()
 ```
 
 ```{code-cell} ipython3
-plotter = lambda learner: hv.Overlay([L.plot() for L in learner.learners])
+def plotter(learner):
+    return hv.Overlay([L.plot() for L in learner.learners])
 runner.live_plot(plotter=plotter, update_interval=0.1)
 ```
 
@@ -83,7 +85,7 @@ combos = {
 }
 
 learner = adaptive.BalancingLearner.from_product(
-    jacobi, adaptive.Learner1D, dict(bounds=(0, 1)), combos
+    jacobi, adaptive.Learner1D, {"bounds": (0, 1)}, combos
 )
 
 runner = adaptive.BlockingRunner(learner, loss_goal=0.01)

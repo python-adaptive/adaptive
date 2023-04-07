@@ -1,15 +1,13 @@
 ---
-kernelspec:
-  name: python3
-  display_name: python3
 jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: '0.13'
-    jupytext_version: 1.13.8
-execution:
-  timeout: 300
+    format_version: 0.13
+    jupytext_version: 1.14.5
+kernelspec:
+  display_name: python3
+  name: python3
 ---
 
 ```{include} ../../README.md
@@ -102,7 +100,7 @@ def plot_loss_interval(learner):
 
 
 def plot(learner, npoints):
-    adaptive.runner.simple(learner, npoints_goal= npoints)
+    adaptive.runner.simple(learner, npoints_goal=npoints)
     return (learner.plot() * plot_loss_interval(learner))[:, -1.1:1.1]
 
 
@@ -110,6 +108,7 @@ def get_hm(loss_per_interval, N=101):
     learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=loss_per_interval)
     plots = {n: plot(learner, n) for n in range(N)}
     return hv.HoloMap(plots, kdims=["npoints"])
+
 
 plot_homo = get_hm(uniform_loss).relabel("homogeneous sampling")
 plot_adaptive = get_hm(default_loss).relabel("with adaptive")
@@ -121,7 +120,6 @@ layout.opts(toolbar=None)
 
 ```{code-cell} ipython3
 :tags: [hide-input]
-
 
 def ring(xy):
     import numpy as np
@@ -155,7 +153,6 @@ hv.HoloMap(plots, kdims=["npoints"]).collate()
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-
 def g(n):
     import random
 
@@ -180,7 +177,6 @@ hv.HoloMap(plots, kdims=["npoints"])
 
 ```{code-cell} ipython3
 :tags: [hide-input]
-
 
 def sphere(xyz):
     import numpy as np
