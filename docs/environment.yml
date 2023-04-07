@@ -11,7 +11,7 @@ dependencies:
   - scipy=1.10.1
   - holoviews=1.15.4
   - bokeh=2.4.3
-  - panel=0.14.4
+  - panel=0.13.1  # 0.14.4 gives https://github.com/holoviz/holoviews/issues/4875#issuecomment-1500576623
   - pandas=2.0.0
   - plotly=5.14.1
   - ipywidgets=8.0.6
