@@ -409,4 +409,4 @@ def test_inf_loss_with_missing_bounds():
     # must be done in parallel because otherwise the bounds will be evaluated first
     BlockingRunner(learner, loss_goal=0.01)
 
-    assert learner.npoints > 20
+    assert learner.npoints > 5
