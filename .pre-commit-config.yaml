@@ -23,5 +23,5 @@ repos:
       - id: nbqa-black
         additional_dependencies: [jupytext, black]
       - id: nbqa
-        args: ["ruff", "--fix"]
+        args: ["ruff", "--fix", "--ignore=E402,B018"]
         additional_dependencies: [jupytext, ruff]
