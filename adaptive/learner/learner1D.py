@@ -829,7 +829,7 @@ class Learner1D(BaseLearner):
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
         plot_bounds = (self.bounds[0] - margin, self.bounds[1] + margin)
 
-        return p.redim(x=dict(range=plot_bounds))
+        return p.redim(x={"range": plot_bounds})
 
     def remove_unfinished(self) -> None:
         self.pending_points = set()

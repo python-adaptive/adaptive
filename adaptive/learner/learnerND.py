@@ -329,11 +329,11 @@ class LearnerND(BaseLearner):
         self.bounds = bounds
         if isinstance(bounds, scipy.spatial.ConvexHull):
             hull_points = bounds.points[bounds.vertices]
-            self._bounds_points = sorted(list(map(tuple, hull_points)))
+            self._bounds_points = sorted(map(tuple, hull_points))
             self._bbox = tuple(zip(hull_points.min(axis=0), hull_points.max(axis=0)))
             self._interior = scipy.spatial.Delaunay(self._bounds_points)
         else:
-            self._bounds_points = sorted(list(map(tuple, itertools.product(*bounds))))
+            self._bounds_points = sorted(map(tuple, itertools.product(*bounds)))
             self._bbox = tuple(tuple(map(float, b)) for b in bounds)
             self._interior = None
 
@@ -341,12 +341,12 @@ class LearnerND(BaseLearner):
 
         self.function = func
         self._tri = None
-        self._losses = dict()
+        self._losses = {}
 
-        self._pending_to_simplex = dict()  # vertex → simplex
+        self._pending_to_simplex = {}  # vertex → simplex
 
         # triangulation of the pending points inside a specific simplex
-        self._subtriangulations = dict()  # simplex → triangulation
+        self._subtriangulations = {}  # simplex → triangulation
 
         # scale to unit hypercube
         # for the input
@@ -446,7 +446,7 @@ class LearnerND(BaseLearner):
                 f"point_names ({point_names}) should have the"
                 f" same length as learner.ndims ({self.ndim})"
             )
-        data = list((*x, y) for x, y in self.data.items())
+        data = [(*x, y) for x, y in self.data.items()]
         df = pandas.DataFrame(data, columns=[*point_names, value_name])
         df.attrs["inputs"] = list(point_names)
         df.attrs["output"] = value_name
@@ -865,14 +865,14 @@ class LearnerND(BaseLearner):
     @cache_latest
     def loss(self, real=True):
         # XXX: compute pending loss if real == False
-        losses = self._losses if self.tri is not None else dict()
+        losses = self._losses if self.tri is not None else {}
         return max(losses.values()) if losses else float("inf")
 
     def remove_unfinished(self):
         # XXX: implement this method
         self.pending_points = set()
-        self._subtriangulations = dict()
-        self._pending_to_simplex = dict()
+        self._subtriangulations = {}
+        self._pending_to_simplex = {}
 
     ##########################
     # Plotting related stuff #
@@ -933,9 +933,9 @@ class LearnerND(BaseLearner):
             im = hv.Image([], bounds=lbrt)
             tris = hv.EdgePaths([])
 
-        im_opts = dict(cmap="viridis")
-        tri_opts = dict(line_width=0.5, alpha=tri_alpha)
-        no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
+        im_opts = {"cmap": "viridis"}
+        tri_opts = {"line_width": 0.5, "alpha": tri_alpha}
+        no_hover = {"plot": {"inspection_policy": None, "tools": []}}
 
         return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
 
@@ -973,7 +973,7 @@ class LearnerND(BaseLearner):
             # Plot with 5% margins such that the boundary points are visible
             margin = 0.05 / self._transform[ind, ind]
             plot_bounds = (x.min() - margin, x.max() + margin)
-            return p.redim(x=dict(range=plot_bounds))
+            return p.redim(x={"range": plot_bounds})
 
         elif plot_dim == 2:
             if self.vdim > 1:
@@ -1005,7 +1005,7 @@ class LearnerND(BaseLearner):
             else:
                 im = hv.Image([], bounds=lbrt)
 
-            return im.opts(style=dict(cmap="viridis"))
+            return im.opts(style={"cmap": "viridis"})
         else:
             raise ValueError("Only 1 or 2-dimensional plots can be generated.")
 
@@ -1047,20 +1047,20 @@ class LearnerND(BaseLearner):
                     y=Ye,
                     z=Ze,
                     mode="lines",
-                    line=dict(color="rgb(125,125,125)", width=1),
+                    line={"color": "rgb(125,125,125)", "width": 1},
                     hoverinfo="none",
                 )
             )
 
         Xn, Yn, Zn = zip(*vertices)
         colors = [self.data[p] for p in self.tri.vertices]
-        marker = dict(
-            symbol="circle",
-            size=3,
-            color=colors,
-            colorscale="Viridis",
-            line=dict(color="rgb(50,50,50)", width=0.5),
-        )
+        marker = {
+            "symbol": "circle",
+            "size": 3,
+            "color": colors,
+            "colorscale": "Viridis",
+            "line": {"color": "rgb(50,50,50)", "width": 0.5},
+        }
 
         plots.append(
             plotly.graph_objs.Scatter3d(
@@ -1074,19 +1074,19 @@ class LearnerND(BaseLearner):
             )
         )
 
-        axis = dict(
-            showbackground=False,
-            showline=False,
-            zeroline=False,
-            showgrid=False,
-            showticklabels=False,
-            title="",
-        )
+        axis = {
+            "showbackground": False,
+            "showline": False,
+            "zeroline": False,
+            "showgrid": False,
+            "showticklabels": False,
+            "title": "",
+        }
 
         layout = plotly.graph_objs.Layout(
             showlegend=False,
-            scene=dict(xaxis=axis, yaxis=axis, zaxis=axis),
-            margin=dict(t=100),
+            scene={"xaxis": axis, "yaxis": axis, "zaxis": axis},
+            margin={"t": 100},
             hovermode="closest",
         )
 
@@ -1193,15 +1193,15 @@ class LearnerND(BaseLearner):
             plot = self.plot(n=n, tri_alpha=tri_alpha)
 
         if isinstance(level, Iterable):
-            for l in level:
-                plot = plot * self.plot_isoline(level=l, n=-1)
+            for lvl in level:
+                plot = plot * self.plot_isoline(level=lvl, n=-1)
             return plot
 
         vertices, lines = self._get_iso(level, which="line")
         paths = [[vertices[i], vertices[j]] for i, j in lines]
         contour = hv.Path(paths)
 
-        contour_opts = dict(color="black")
+        contour_opts = {"color": "black"}
         contour = contour.opts(style=contour_opts)
         return plot * contour
 
@@ -1233,7 +1233,13 @@ class LearnerND(BaseLearner):
         )
         isosurface = fig.data[0]
         isosurface.update(
-            lighting=dict(ambient=1, diffuse=1, roughness=1, specular=0, fresnel=0)
+            lighting={
+                "ambient": 1,
+                "diffuse": 1,
+                "roughness": 1,
+                "specular": 0,
+                "fresnel": 0,
+            }
         )
 
         if hull_opacity < 1e-3:
@@ -1269,7 +1275,13 @@ class LearnerND(BaseLearner):
 
         x, y, z = zip(*self._bounds_points)
         i, j, k = hull.simplices.T
-        lighting = dict(ambient=1, diffuse=1, roughness=1, specular=0, fresnel=0)
+        lighting = {
+            "ambient": 1,
+            "diffuse": 1,
+            "roughness": 1,
+            "specular": 0,
+            "fresnel": 0,
+        }
         return plotly.graph_objs.Mesh3d(
             x=x,
             y=y,

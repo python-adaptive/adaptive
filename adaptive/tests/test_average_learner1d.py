@@ -24,8 +24,8 @@ def almost_equal_dicts(a, b):
         else:
             try:
                 np.testing.assert_almost_equal(v1, v2)
-            except TypeError:
-                raise AssertionError(f"{v1} != {v2}")
+            except TypeError as e:
+                raise AssertionError(f"{v1} != {v2}") from e
 
 
 def test_tell_many_at_point():

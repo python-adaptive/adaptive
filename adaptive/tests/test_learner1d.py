@@ -103,7 +103,7 @@ def test_loss_interpolation():
 
     learner.tell(-1, 0)
     learner.tell(1, 0)
-    for i in range(100):
+    for _i in range(100):
         # Add a 100 points with either None or 0
         if random.random() < 0.9:
             learner.tell_pending(random.uniform(-1, 1))
@@ -166,7 +166,7 @@ def test_loss_at_machine_precision_interval_is_zero():
     def f(x):
         return 1 if x == 0 else 0
 
-    def goal(l):
+    def goal(learner):
         return learner.loss() < 0.01 or learner.npoints >= 1000
 
     learner = Learner1D(f, bounds=(-1, 1))
@@ -193,7 +193,7 @@ def test_small_deviations():
     # parallel execution
     stash = []
 
-    for i in range(100):
+    for _i in range(100):
         xs, _ = learner.ask(10)
 
         # Save 5 random points out of `xs` for later
@@ -323,7 +323,7 @@ def test_tell_many():
             learner2.tell(x, max_value)
 
         stash = []
-        for i in range(10):
+        for _i in range(10):
             xs, _ = learner.ask(10)
             for x in xs:
                 learner2.tell_pending(x)
@@ -409,4 +409,4 @@ def test_inf_loss_with_missing_bounds():
     # must be done in parallel because otherwise the bounds will be evaluated first
     BlockingRunner(learner, loss_goal=0.01)
 
-    learner.npoints > 20
+    assert learner.npoints > 20
