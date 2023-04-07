@@ -4,19 +4,16 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.1
+    jupytext_version: 1.14.5
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-execution:
-  timeout: 300
 ---
 
 ```{code-cell} ipython3
 :tags: [remove-input]
 
-import os
 import functools
 import subprocess
 import tempfile
@@ -75,7 +72,7 @@ def remove_rounded_corners(fname):
 
 def learner_till(till, learner, data):
     new_learner = adaptive.Learner2D(None, bounds=learner.bounds)
-    new_learner.data = {k: v for k, v in data[:till]}
+    new_learner.data = dict(data[:till])
     for x, y in learner._bounds_points:
         # always include the bounds
         new_learner.tell((x, y), learner.data[x, y])

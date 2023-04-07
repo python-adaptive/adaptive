@@ -1,14 +1,15 @@
 ---
-kernelspec:
-  name: python3
-  display_name: python3
 jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: '0.13'
-    jupytext_version: 1.13.8
+    format_version: 0.13
+    jupytext_version: 1.14.5
+kernelspec:
+  display_name: python3
+  name: python3
 ---
+
 # Tutorial {class}`~adaptive.IntegratorLearner`
 
 ```{note}
@@ -60,9 +61,7 @@ learner = adaptive.IntegratorLearner(f24, bounds=(0, 3), tol=1e-8)
 # We use a SequentialExecutor, which runs the function to be learned in
 # *this* process only. This means we don't pay
 # the overhead of evaluating the function in another process.
-runner = adaptive.Runner(
-    learner, executor=SequentialExecutor()
-)
+runner = adaptive.Runner(learner, executor=SequentialExecutor())
 ```
 
 ```{code-cell} ipython3

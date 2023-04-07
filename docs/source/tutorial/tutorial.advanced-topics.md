@@ -1,14 +1,15 @@
 ---
-kernelspec:
-  name: python3
-  display_name: python3
 jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: '0.13'
-    jupytext_version: 1.13.8
+    format_version: 0.13
+    jupytext_version: 1.14.5
+kernelspec:
+  display_name: python3
+  name: python3
 ---
+
 # Advanced Topics
 
 ```{note}
@@ -24,7 +25,6 @@ import adaptive
 adaptive.notebook_extension()
 
 import asyncio
-from functools import partial
 import random
 
 offset = random.uniform(-0.5, 0.5)
@@ -92,7 +92,7 @@ def slow_f(x):
 learner = adaptive.Learner1D(slow_f, bounds=[0, 1])
 runner = adaptive.Runner(learner, npoints_goal=100)
 runner.start_periodic_saving(
-    save_kwargs=dict(fname="data/periodic_example.p"), interval=6
+    save_kwargs={"fname": "data/periodic_example.p"}, interval=6
 )
 ```
 
@@ -168,9 +168,7 @@ If you want to enable determinism, want to continue using the non-blocking {clas
 from adaptive.runner import SequentialExecutor
 
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-runner = adaptive.Runner(
-    learner, executor=SequentialExecutor(), loss_goal=0.01
-)
+runner = adaptive.Runner(learner, executor=SequentialExecutor(), loss_goal=0.01)
 ```
 
 ```{code-cell} ipython3
@@ -275,6 +273,7 @@ If the runner stopped due to an exception then asking for the result will raise 
 
 ```{code-cell} ipython3
 :tags: [raises-exception]
+
 runner.task.result()
 ```
 
@@ -380,6 +379,7 @@ a slow part `g` which can be reused by multiple inputs and shared across functio
 ```{code-cell} ipython3
 import time
 
+
 def f(x):
     """
     Integer part of `x` repeats and should be reused
@@ -407,9 +407,10 @@ from dask import delayed
 # Convert g and h to dask.Delayed objects
 g, h = delayed(g), delayed(h)
 
+
 @delayed
 def f(x, y):
-    return (x + y)**2
+    return (x + y) ** 2
 ```
 
 Next we define a computation using coroutines such that it reuses previously submitted tasks.
@@ -420,6 +421,7 @@ from dask.distributed import Client
 client = await Client(asynchronous=True)
 
 g_futures = {}
+
 
 async def f_parallel(x):
     # Get or sumbit the slow function future
