@@ -61,17 +61,17 @@ def balancing_learner(f, learner_type, learner_kwargs):
 
 
 learners_pairs = [
-    (Learner1D, dict(bounds=(-1, 1))),
-    (Learner2D, dict(bounds=((-1, 1), (-1, 1)))),
-    (SequenceLearner, dict(sequence=list(range(100)))),
-    (IntegratorLearner, dict(bounds=(0, 1), tol=1e-3)),
-    (AverageLearner, dict(atol=0.1)),
-    (datasaver, dict(learner_type=Learner1D, learner_kwargs=dict(bounds=(-1, 1)))),
+    (Learner1D, {"bounds": (-1, 1)}),
+    (Learner2D, {"bounds": ((-1, 1), (-1, 1))}),
+    (SequenceLearner, {"sequence": list(range(100))}),
+    (IntegratorLearner, {"bounds": (0, 1), "tol": 1e-3}),
+    (AverageLearner, {"atol": 0.1}),
+    (datasaver, {"learner_type": Learner1D, "learner_kwargs": {"bounds": (-1, 1)}}),
     (
         balancing_learner,
-        dict(learner_type=Learner1D, learner_kwargs=dict(bounds=(-1, 1))),
+        {"learner_type": Learner1D, "learner_kwargs": {"bounds": (-1, 1)}},
     ),
-    (LearnerND, dict(bounds=((-1, 1), (-1, 1), (-1, 1)))),
+    (LearnerND, {"bounds": ((-1, 1), (-1, 1), (-1, 1))}),
 ]
 
 serializers = [(pickle, pickleable_f)]

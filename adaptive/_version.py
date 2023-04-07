@@ -203,4 +203,4 @@ class _sdist(sdist_orig):
         _write_version(os.path.join(base_dir, p, STATIC_VERSION_FILE))
 
 
-cmdclass = dict(sdist=_sdist, build_py=_build_py)
+cmdclass = {"sdist": _sdist, "build_py": _build_py}
