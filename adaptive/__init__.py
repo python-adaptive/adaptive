@@ -1,5 +1,3 @@
-from contextlib import suppress
-
 from adaptive._version import __version__
 from adaptive.learner import (
     AverageLearner,
@@ -46,12 +44,6 @@ __all__ = [
     "BlockingRunner",
     "Runner",
 ]
-
-with suppress(ImportError):
-    # Only available if 'scikit-optimize' is installed
-    from adaptive.learner import SKOptLearner  # noqa: F401
-
-    __all__.append("SKOptLearner")
 
 # to avoid confusion with `notebook_extension` and `__version__`
 del _version  # noqa: F821
