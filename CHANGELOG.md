@@ -1,5 +1,120 @@
 # Changelog
 
+## [v0.15.0](https://github.com/python-adaptive/adaptive/tree/v0.15.0) (2022-11-30)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.14.2...v0.15.0)
+
+**Closed issues:**
+
+- Fix branch name \(master --\> main\) in binder link in readme [\#383](https://github.com/python-adaptive/adaptive/issues/383)
+
+**Merged pull requests:**
+
+- Add support for Python 3.11 and test on it [\#387](https://github.com/python-adaptive/adaptive/pull/387) ([basnijholt](https://github.com/basnijholt))
+- Rename master -\> main [\#384](https://github.com/python-adaptive/adaptive/pull/384) ([basnijholt](https://github.com/basnijholt))
+- Add loss\_goal, npoints\_goal, and an auto\_goal function and use it in the runners [\#382](https://github.com/python-adaptive/adaptive/pull/382) ([basnijholt](https://github.com/basnijholt))
+- Add type-hints to Runner [\#370](https://github.com/python-adaptive/adaptive/pull/370) ([basnijholt](https://github.com/basnijholt))
+- Add docs section about executing coroutines  [\#364](https://github.com/python-adaptive/adaptive/pull/364) ([juandaanieel](https://github.com/juandaanieel))
+
+## [v0.14.2](https://github.com/python-adaptive/adaptive/tree/v0.14.2) (2022-10-14)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.14.1...v0.14.2)
+
+**Closed issues:**
+
+- Rename master branch to main [\#368](https://github.com/python-adaptive/adaptive/issues/368)
+
+**Merged pull requests:**
+
+- Avoid uncecessary iteration in SequenceLearner [\#380](https://github.com/python-adaptive/adaptive/pull/380) ([jbweston](https://github.com/jbweston))
+- Use numbers module from stdlib as type [\#379](https://github.com/python-adaptive/adaptive/pull/379) ([basnijholt](https://github.com/basnijholt))
+- Add type-hints to tests and misc [\#378](https://github.com/python-adaptive/adaptive/pull/378) ([basnijholt](https://github.com/basnijholt))
+- Add type-hints to Learner2D [\#375](https://github.com/python-adaptive/adaptive/pull/375) ([basnijholt](https://github.com/basnijholt))
+- Add type-hints to DataSaver [\#373](https://github.com/python-adaptive/adaptive/pull/373) ([basnijholt](https://github.com/basnijholt))
+- Type hint IntegratorLearner [\#372](https://github.com/python-adaptive/adaptive/pull/372) ([basnijholt](https://github.com/basnijholt))
+- Add type-hints to BalancingLearner [\#371](https://github.com/python-adaptive/adaptive/pull/371) ([basnijholt](https://github.com/basnijholt))
+- Optionally run tests with pandas [\#369](https://github.com/python-adaptive/adaptive/pull/369) ([basnijholt](https://github.com/basnijholt))
+- Typehint SequenceLearner [\#366](https://github.com/python-adaptive/adaptive/pull/366) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.14.1](https://github.com/python-adaptive/adaptive/tree/v0.14.1) (2022-10-11)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.14.0...v0.14.1)
+
+**Merged pull requests:**
+
+- Use typing.TypeAlias [\#367](https://github.com/python-adaptive/adaptive/pull/367) ([basnijholt](https://github.com/basnijholt))
+- Add Learner.new\(\) method that returns an empty copy of the learner [\#365](https://github.com/python-adaptive/adaptive/pull/365) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.14.0](https://github.com/python-adaptive/adaptive/tree/v0.14.0) (2022-10-05)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.13.2...v0.14.0)
+
+**Closed issues:**
+
+- Stop using atomic writes [\#352](https://github.com/python-adaptive/adaptive/issues/352)
+
+**Merged pull requests:**
+
+- Release 0.14 [\#363](https://github.com/python-adaptive/adaptive/pull/363) ([basnijholt](https://github.com/basnijholt))
+- Allow to periodically save with any function [\#362](https://github.com/python-adaptive/adaptive/pull/362) ([basnijholt](https://github.com/basnijholt))
+- Update pre-commit versions [\#359](https://github.com/python-adaptive/adaptive/pull/359) ([basnijholt](https://github.com/basnijholt))
+- Add getting learner's data as pandas.DataFrame; add learner.to\_dataframe method [\#358](https://github.com/python-adaptive/adaptive/pull/358) ([basnijholt](https://github.com/basnijholt))
+- Add transparent logo in WebM format \(for dark mode\) [\#356](https://github.com/python-adaptive/adaptive/pull/356) ([basnijholt](https://github.com/basnijholt))
+- Docs in Markdown with Myst and change tutorials to Jupytext notebooks [\#355](https://github.com/python-adaptive/adaptive/pull/355) ([basnijholt](https://github.com/basnijholt))
+- Remove scipy deprecation warnings [\#354](https://github.com/python-adaptive/adaptive/pull/354) ([eendebakpt](https://github.com/eendebakpt))
+- Replacing atomicwrites with os.write  [\#353](https://github.com/python-adaptive/adaptive/pull/353) ([juandaanieel](https://github.com/juandaanieel))
+- Fix class name issue with modern versions of dask.distributed [\#351](https://github.com/python-adaptive/adaptive/pull/351) ([maiani](https://github.com/maiani))
+
+## [v0.13.2](https://github.com/python-adaptive/adaptive/tree/v0.13.2) (2022-05-31)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.13.1...v0.13.2)
+
+**Closed issues:**
+
+- Incompatibility of adaptive \(asyncio\) with python=3.10 [\#344](https://github.com/python-adaptive/adaptive/issues/344)
+- Question: plot\_trisurf \(matplotlib\) directly from qhull [\#343](https://github.com/python-adaptive/adaptive/issues/343)
+- Allow to choose colormap in learner2D.plot\(\) [\#342](https://github.com/python-adaptive/adaptive/issues/342)
+- Warning when importing adaptive [\#321](https://github.com/python-adaptive/adaptive/issues/321)
+
+**Merged pull requests:**
+
+- Run seperate typeguard job \(because it is much slower\) [\#350](https://github.com/python-adaptive/adaptive/pull/350) ([basnijholt](https://github.com/basnijholt))
+- Skip ipyparallel test on MacOS [\#349](https://github.com/python-adaptive/adaptive/pull/349) ([basnijholt](https://github.com/basnijholt))
+- set loop to None in Python 3.10 [\#348](https://github.com/python-adaptive/adaptive/pull/348) ([basnijholt](https://github.com/basnijholt))
+- Switch from Tox to Nox [\#347](https://github.com/python-adaptive/adaptive/pull/347) ([basnijholt](https://github.com/basnijholt))
+- use 'from \_\_future\_\_ import annotations' [\#346](https://github.com/python-adaptive/adaptive/pull/346) ([basnijholt](https://github.com/basnijholt))
+- Update pre-commit filters versions [\#345](https://github.com/python-adaptive/adaptive/pull/345) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.13.1](https://github.com/python-adaptive/adaptive/tree/v0.13.1) (2021-12-13)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.13.0...v0.13.1)
+
+**Implemented enhancements:**
+
+- Splits up documentations page into "algo+examples" and rest [\#330](https://github.com/python-adaptive/adaptive/pull/330) ([basnijholt](https://github.com/basnijholt))
+
+**Fixed bugs:**
+
+- fix 'asyncio.Task.current\_task' -\> 'asyncio.current\_task' [\#331](https://github.com/python-adaptive/adaptive/pull/331) ([basnijholt](https://github.com/basnijholt))
+
+**Closed issues:**
+
+- Learner1D R -\> R^n - Infinite loop [\#339](https://github.com/python-adaptive/adaptive/issues/339)
+- Wrong sign for right boundary with Sympy [\#338](https://github.com/python-adaptive/adaptive/issues/338)
+
+**Merged pull requests:**
+
+- Fix NaN issue for Learner1D R -\> R^n [\#340](https://github.com/python-adaptive/adaptive/pull/340) ([Davide-sd](https://github.com/Davide-sd))
+- fix tutorial about using loky.get\_reusable\_executor on Windows [\#336](https://github.com/python-adaptive/adaptive/pull/336) ([basnijholt](https://github.com/basnijholt))
+- add a code example to the examples page [\#335](https://github.com/python-adaptive/adaptive/pull/335) ([basnijholt](https://github.com/basnijholt))
+- rename usage\_examples -\> gallery [\#334](https://github.com/python-adaptive/adaptive/pull/334) ([basnijholt](https://github.com/basnijholt))
+- pin scikit-learn to 0.24.2, because of https://github.com/scikit-optimize/scikit-optimize/issues/1059 [\#333](https://github.com/python-adaptive/adaptive/pull/333) ([basnijholt](https://github.com/basnijholt))
+- use jupyter-sphinx instead of custom Sphinx directive [\#332](https://github.com/python-adaptive/adaptive/pull/332) ([basnijholt](https://github.com/basnijholt))
+- Add an animated logo that shows the working of Adaptive [\#329](https://github.com/python-adaptive/adaptive/pull/329) ([basnijholt](https://github.com/basnijholt))
+- Documentation conda environment update to latest versions [\#328](https://github.com/python-adaptive/adaptive/pull/328) ([basnijholt](https://github.com/basnijholt))
+- take out a cut from the 3D sphere, LearnerND example [\#327](https://github.com/python-adaptive/adaptive/pull/327) ([basnijholt](https://github.com/basnijholt))
+- Learner1D: return inf loss when the bounds aren't done [\#271](https://github.com/python-adaptive/adaptive/pull/271) ([basnijholt](https://github.com/basnijholt))
+
 ## [v0.13.0](https://github.com/python-adaptive/adaptive/tree/v0.13.0) (2021-09-10)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.12.2...v0.13.0)
@@ -26,7 +141,6 @@
 - Update doc string for resolution\_loss\_function [\#323](https://github.com/python-adaptive/adaptive/pull/323) ([SultanOrazbayev](https://github.com/SultanOrazbayev))
 - Update Readme to emphasise when adaptive should be used [\#318](https://github.com/python-adaptive/adaptive/pull/318) ([thomasaarholt](https://github.com/thomasaarholt))
 - add to\_numpy methods [\#317](https://github.com/python-adaptive/adaptive/pull/317) ([basnijholt](https://github.com/basnijholt))
-- lazily evaluate the integrator coefficients [\#311](https://github.com/python-adaptive/adaptive/pull/311) ([basnijholt](https://github.com/basnijholt))
 - AverageLearner1D added [\#283](https://github.com/python-adaptive/adaptive/pull/283) ([AlvaroGI](https://github.com/AlvaroGI))
 - Make LearnerND pickleable [\#272](https://github.com/python-adaptive/adaptive/pull/272) ([basnijholt](https://github.com/basnijholt))
 - add a FAQ [\#242](https://github.com/python-adaptive/adaptive/pull/242) ([basnijholt](https://github.com/basnijholt))
@@ -104,6 +218,10 @@
 
 - Release v0.11 [\#277](https://github.com/python-adaptive/adaptive/issues/277)
 
+## [v0.12.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.12.0-dev) (2020-05-20)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.0...v0.12.0-dev)
+
 ## [v0.11.0](https://github.com/python-adaptive/adaptive/tree/v0.11.0) (2020-05-20)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.11.0-dev...v0.11.0)
@@ -125,6 +243,7 @@
 
 **Closed issues:**
 
+
 - add minimum number of points parameter to AverageLearner [\#273](https://github.com/python-adaptive/adaptive/issues/273)
 - Release v0.10 [\#258](https://github.com/python-adaptive/adaptive/issues/258)
 
@@ -132,6 +251,10 @@
 
 - minimally require ipyparallel 6.2.5 [\#270](https://github.com/python-adaptive/adaptive/pull/270) ([basnijholt](https://github.com/basnijholt))
 - fix docs build and pin pyviz\_comms=0.7.2 [\#261](https://github.com/python-adaptive/adaptive/pull/261) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.11.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.11.0-dev) (2020-01-16)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.10.0...v0.11.0-dev)
 
 ## [v0.10.0](https://github.com/python-adaptive/adaptive/tree/v0.10.0) (2020-01-15)
 
@@ -141,6 +264,7 @@
 
 - use tox for testing [\#238](https://github.com/python-adaptive/adaptive/issues/238)
 - Time-based stop [\#184](https://github.com/python-adaptive/adaptive/issues/184)
+- add a FAQ [\#158](https://github.com/python-adaptive/adaptive/issues/158)
 
 **Fixed bugs:**
 
@@ -169,6 +293,10 @@
 - 2D: add interpolated\_on\_grid method [\#216](https://github.com/python-adaptive/adaptive/pull/216) ([basnijholt](https://github.com/basnijholt))
 - add scatter\_or\_line argument to Learner1D.plot [\#215](https://github.com/python-adaptive/adaptive/pull/215) ([basnijholt](https://github.com/basnijholt))
 - WIP: raise an error when using a lambda and default executor [\#210](https://github.com/python-adaptive/adaptive/pull/210) ([basnijholt](https://github.com/basnijholt))
+
+## [v0.10.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.10.0-dev) (2019-10-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.9.0...v0.10.0-dev)
 
 **Closed issues:**
 
@@ -209,6 +337,10 @@
 
 - release v0.8.0 [\#165](https://github.com/python-adaptive/adaptive/issues/165)
 
+## [v0.9.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.9.0-dev) (2019-05-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.8.0...v0.9.0-dev)
+
 ## [v0.8.0](https://github.com/python-adaptive/adaptive/tree/v0.8.0) (2019-05-07)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.6...v0.8.0)
@@ -239,7 +371,6 @@
 - add a gallery page of Adaptive uses in scientific works [\#174](https://github.com/python-adaptive/adaptive/pull/174) ([basnijholt](https://github.com/basnijholt))
 - LearnerND: change the required loss to 1e-3 because the loss definition changed [\#172](https://github.com/python-adaptive/adaptive/pull/172) ([basnijholt](https://github.com/basnijholt))
 - Add logo to the documentation [\#170](https://github.com/python-adaptive/adaptive/pull/170) ([basnijholt](https://github.com/basnijholt))
-- test flat bands in the LearnerND [\#162](https://github.com/python-adaptive/adaptive/pull/162) ([basnijholt](https://github.com/basnijholt))
 - import Iterable and Sized from collections.abc [\#161](https://github.com/python-adaptive/adaptive/pull/161) ([basnijholt](https://github.com/basnijholt))
 - invoke conda directly in CI [\#153](https://github.com/python-adaptive/adaptive/pull/153) ([basnijholt](https://github.com/basnijholt))
 - change urls from GitLab to GitHub [\#146](https://github.com/python-adaptive/adaptive/pull/146) ([basnijholt](https://github.com/basnijholt))
@@ -406,6 +537,10 @@
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.8.0-dev...v0.7.1)
 
+## [v0.8.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.8.0-dev) (2018-12-07)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.0...v0.8.0-dev)
+
 ## [v0.7.0](https://github.com/python-adaptive/adaptive/tree/v0.7.0) (2018-12-07)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.7.0-dev...v0.7.0)
@@ -413,6 +548,10 @@
 **Closed issues:**
 
 - gif in the README [\#1](https://github.com/python-adaptive/adaptive/issues/1)
+
+## [v0.7.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.7.0-dev) (2018-10-09)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.6.0...v0.7.0-dev)
 
 ## [v0.6.0](https://github.com/python-adaptive/adaptive/tree/v0.6.0) (2018-10-01)
 
@@ -430,9 +569,17 @@
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.5.0-dev...v0.4.1)
 
+## [v0.5.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.5.0-dev) (2018-05-24)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.4.0...v0.5.0-dev)
+
 ## [v0.4.0](https://github.com/python-adaptive/adaptive/tree/v0.4.0) (2018-05-24)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.4.0-dev...v0.4.0)
+
+## [v0.4.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.4.0-dev) (2018-04-12)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.3.0...v0.4.0-dev)
 
 ## [v0.3.0](https://github.com/python-adaptive/adaptive/tree/v0.3.0) (2018-03-28)
 
@@ -442,9 +589,17 @@
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.3.0-dev...v0.2.1)
 
+## [v0.3.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.3.0-dev) (2018-02-23)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.2.0...v0.3.0-dev)
+
 ## [v0.2.0](https://github.com/python-adaptive/adaptive/tree/v0.2.0) (2018-02-23)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.2.0-dev...v0.2.0)
+
+## [v0.2.0-dev](https://github.com/python-adaptive/adaptive/tree/v0.2.0-dev) (2018-02-21)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.1.0...v0.2.0-dev)
 
 ## [v0.1.0](https://github.com/python-adaptive/adaptive/tree/v0.1.0) (2018-02-21)
 

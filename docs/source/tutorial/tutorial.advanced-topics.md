@@ -51,7 +51,7 @@ learner = adaptive.Learner1D(f, bounds=(-1, 1))
 control = adaptive.Learner1D(f, bounds=(-1, 1))
 
 # Let's only run the learner
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(learner, loss_goal=0.01)
 ```
 
 ```{code-cell} ipython3
@@ -90,7 +90,7 @@ def slow_f(x):
 
 
 learner = adaptive.Learner1D(slow_f, bounds=[0, 1])
-runner = adaptive.Runner(learner, goal=lambda l: l.npoints > 100)
+runner = adaptive.Runner(learner, npoints_goal=100)
 runner.start_periodic_saving(
     save_kwargs=dict(fname="data/periodic_example.p"), interval=6
 )
@@ -134,7 +134,7 @@ The simplest way to accomplish this is to use {class}`adaptive.BlockingRunner`:
 
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.01)
+adaptive.BlockingRunner(learner, loss_goal=0.01)
 # This will only get run after the runner has finished
 learner.plot()
 ```
@@ -155,7 +155,7 @@ The simplest way is to use {class}`adaptive.runner.simple` to run your learner:
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
 # blocks until completion
-adaptive.runner.simple(learner, goal=lambda l: l.loss() < 0.01)
+adaptive.runner.simple(learner, loss_goal=0.01)
 
 learner.plot()
 ```
@@ -169,7 +169,7 @@ from adaptive.runner import SequentialExecutor
 
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
 runner = adaptive.Runner(
-    learner, executor=SequentialExecutor(), goal=lambda l: l.loss() < 0.01
+    learner, executor=SequentialExecutor(), loss_goal=0.01
 )
 ```
 
@@ -292,7 +292,7 @@ One way to inspect runners is to instantiate one with `log=True`:
 
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01, log=True)
+runner = adaptive.Runner(learner, loss_goal=0.01, log=True)
 ```
 
 ```{code-cell} ipython3
@@ -316,7 +316,7 @@ adaptive.runner.replay_log(reconstructed_learner, runner.log)
 ```
 
 ```{code-cell} ipython3
-learner.plot().Scatter.I.opts(style=dict(size=6)) * reconstructed_learner.plot()
+learner.plot().Scatter.I.opts(size=6) * reconstructed_learner.plot()
 ```
 
 ## Adding coroutines
@@ -351,7 +351,7 @@ async def time(runner):
 ioloop = asyncio.get_event_loop()
 
 learner = adaptive.Learner1D(f, bounds=(-1, 1))
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 0.01)
+runner = adaptive.Runner(learner, loss_goal=0.01)
 
 timer = ioloop.create_task(time(runner))
 ```
@@ -365,6 +365,85 @@ await runner.task  # This is not needed in a notebook environment!
 ```{code-cell} ipython3
 # The result will only be set when the runner is done.
 timer.result()
+```
+
+## Custom parallelization using coroutines
+
+Adaptive by itself does not implement a way of sharing partial results between function executions.
+Instead its implementation of parallel computation using executors is minimal by design.
+The appropriate way to implement custom parallelization is by using coroutines (asynchronous functions).
+
+We illustrate this approach by using `dask.distributed` for parallel computations in part because it supports asynchronous operation out-of-the-box.
+Let us consider a function `f(x)` which is composed by two parts:
+a slow part `g` which can be reused by multiple inputs and shared across function evaluations and a fast part `h` that will be computed for every `x`.
+
+```{code-cell} ipython3
+import time
+
+def f(x):
+    """
+    Integer part of `x` repeats and should be reused
+    Decimal part requires a new computation
+    """
+    return g(int(x)) + h(x % 1)
+
+
+def g(x):
+    """Slow but reusable function"""
+    time.sleep(random.randrange(5))
+    return x**2
+
+
+def h(x):
+    """Fast function"""
+    return x**3
+```
+
+In order to combine reuse of values of `g` with adaptive, we need to convert `f` into a dask graph by using `dask.delayed`.
+
+```{code-cell} ipython3
+from dask import delayed
+
+# Convert g and h to dask.Delayed objects
+g, h = delayed(g), delayed(h)
+
+@delayed
+def f(x, y):
+    return (x + y)**2
+```
+
+Next we define a computation using coroutines such that it reuses previously submitted tasks.
+
+```{code-cell} ipython3
+from dask.distributed import Client
+
+client = await Client(asynchronous=True)
+
+g_futures = {}
+
+async def f_parallel(x):
+    # Get or sumbit the slow function future
+    if (g_future := g_futures.get(int(x))) is None:
+        g_futures[int(x)] = g_future = client.compute(g(int(x)))
+
+    future_f = client.compute(f(g_future, h(x % 1)))
+
+    return await future_f
+```
+
+To run the adaptive evaluation we provide the asynchronous function to the `learner` and run it via `AsyncRunner` without specifying an executor.
+
+```{code-cell} ipython3
+learner = adaptive.Learner1D(f_parallel, bounds=(-3.5, 3.5))
+
+runner = adaptive.AsyncRunner(learner, loss_goal=0.01, ntasks=20)
+```
+
+Finally we await for the runner to finish, and then plot the result.
+
+```{code-cell} ipython3
+await runner.task
+learner.plot()
 ```
 
 ## Using Runners from a script
@@ -383,7 +462,7 @@ def f(x):
 
 learner = adaptive.Learner1D(f, (-1, 1))
 
-adaptive.BlockingRunner(learner, goal=lambda l: l.loss() < 0.1)
+adaptive.BlockingRunner(learner, loss_goal=0.1)
 ```
 
 If you use `asyncio` already in your script and want to integrate `adaptive` into it, then you can use the default {class}`~adaptive.Runner` as you would from a notebook.

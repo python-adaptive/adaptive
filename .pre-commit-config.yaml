@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -8,31 +8,20 @@ repos:
       - id: check-yaml
       - id: debug-statements
       - id: check-ast
-  - repo: https://github.com/ambv/black
-    rev: 22.8.0
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
     hooks:
-      - id: black
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v2.37.3
+      - id: black-jupyter
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.0.261"
     hooks:
-      - id: pyupgrade
-        args: ["--py37-plus"]
-  - repo: https://github.com/timothycrosley/isort
-    rev: 5.10.1
-    hooks:
-      - id: isort
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
-    hooks:
-      - id: flake8
+      - id: ruff
+        args: ["--fix"]
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.5.0
     hooks:
       - id: nbqa-black
         additional_dependencies: [jupytext, black]
-      - id: nbqa-pyupgrade
-        args: ["--py37-plus"]
-        additional_dependencies: [jupytext, pyupgrade]
-      - id: nbqa-isort
-        args: ["--profile=black"]
-        additional_dependencies: [jupytext, isort]
+      - id: nbqa
+        args: ["ruff", "--fix"]
+        additional_dependencies: [jupytext, ruff]

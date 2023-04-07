@@ -47,7 +47,7 @@ learner = adaptive.SKOptLearner(
     acq_func="gp_hedge",
     acq_optimizer="lbfgs",
 )
-runner = adaptive.Runner(learner, ntasks=1, goal=lambda l: l.npoints > 40)
+runner = adaptive.Runner(learner, ntasks=1, npoints_goal=40)
 ```
 
 ```{code-cell} ipython3

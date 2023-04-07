@@ -98,11 +98,11 @@ def plot_loss_interval(learner):
         x, y = [x_0, x_1], [y_0, y_1]
     else:
         x, y = [], []
-    return hv.Scatter((x, y)).opts(style=dict(size=6, color="r"))
+    return hv.Scatter((x, y)).opts(size=6, color="r")
 
 
 def plot(learner, npoints):
-    adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
+    adaptive.runner.simple(learner, npoints_goal= npoints)
     return (learner.plot() * plot_loss_interval(learner))[:, -1.1:1.1]
 
 
@@ -114,7 +114,7 @@ def get_hm(loss_per_interval, N=101):
 plot_homo = get_hm(uniform_loss).relabel("homogeneous sampling")
 plot_adaptive = get_hm(default_loss).relabel("with adaptive")
 layout = plot_homo + plot_adaptive
-layout.opts(plot=dict(toolbar=None))
+layout.opts(toolbar=None)
 ```
 
 ## {class}`adaptive.Learner2D`
@@ -132,7 +132,7 @@ def ring(xy):
 
 
 def plot(learner, npoints):
-    adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
+    adaptive.runner.simple(learner, npoints_goal=npoints)
     learner2 = adaptive.Learner2D(ring, bounds=learner.bounds)
     xs = ys = np.linspace(*learner.bounds[0], int(learner.npoints**0.5))
     xys = list(itertools.product(xs, ys))
@@ -168,7 +168,7 @@ learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
 
 
 def plot(learner, npoints):
-    adaptive.runner.simple(learner, lambda l: l.npoints == npoints)
+    adaptive.runner.simple(learner, npoints_goal=npoints)
     return learner.plot().relabel(f"loss={learner.loss():.2f}")
 
 
@@ -191,7 +191,7 @@ def sphere(xyz):
 
 
 learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
-adaptive.runner.simple(learner, lambda l: l.npoints == 5000)
+adaptive.runner.simple(learner, npoints_goal=5000)
 
 fig = learner.plot_3D(return_fig=True)
 

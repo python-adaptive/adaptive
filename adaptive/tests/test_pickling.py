@@ -61,17 +61,17 @@ def balancing_learner(f, learner_type, learner_kwargs):
 
 
 learners_pairs = [
-    (Learner1D, dict(bounds=(-1, 1))),
-    (Learner2D, dict(bounds=[(-1, 1), (-1, 1)])),
-    (SequenceLearner, dict(sequence=list(range(100)))),
-    (IntegratorLearner, dict(bounds=(0, 1), tol=1e-3)),
-    (AverageLearner, dict(atol=0.1)),
-    (datasaver, dict(learner_type=Learner1D, learner_kwargs=dict(bounds=(-1, 1)))),
+    (Learner1D, {"bounds": (-1, 1)}),
+    (Learner2D, {"bounds": ((-1, 1), (-1, 1))}),
+    (SequenceLearner, {"sequence": list(range(100))}),
+    (IntegratorLearner, {"bounds": (0, 1), "tol": 1e-3}),
+    (AverageLearner, {"atol": 0.1}),
+    (datasaver, {"learner_type": Learner1D, "learner_kwargs": {"bounds": (-1, 1)}}),
     (
         balancing_learner,
-        dict(learner_type=Learner1D, learner_kwargs=dict(bounds=(-1, 1))),
+        {"learner_type": Learner1D, "learner_kwargs": {"bounds": (-1, 1)}},
     ),
-    (LearnerND, dict(bounds=((-1, 1), (-1, 1), (-1, 1)))),
+    (LearnerND, {"bounds": ((-1, 1), (-1, 1), (-1, 1))}),
 ]
 
 serializers = [(pickle, pickleable_f)]
@@ -94,7 +94,7 @@ def test_serialization_for(learner_type, learner_kwargs, serializer, f):
 
     learner = learner_type(f, **learner_kwargs)
 
-    simple(learner, goal_1)
+    simple(learner, goal=goal_1)
     learner_bytes = serializer.dumps(learner)
     loss = learner.loss()
     asked = learner.ask(10)
@@ -113,5 +113,5 @@ def test_serialization_for(learner_type, learner_kwargs, serializer, f):
     # load again to undo the ask
     learner_loaded = serializer.loads(learner_bytes)
 
-    simple(learner_loaded, goal_2)
+    simple(learner_loaded, goal=goal_2)
     assert learner_loaded.npoints == 20

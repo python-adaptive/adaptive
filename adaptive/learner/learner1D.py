@@ -4,6 +4,8 @@ import collections.abc
 import itertools
 import math
 from copy import copy, deepcopy
+from numbers import Integral as Int
+from numbers import Real
 from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 
 import cloudpickle
@@ -15,27 +17,45 @@ from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
 from adaptive.learner.learnerND import volume
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Float, Int, Real
-from adaptive.utils import cache_latest
+from adaptive.types import Float
+from adaptive.utils import (
+    assign_defaults,
+    cache_latest,
+    partial_function_from_dataframe,
+)
+
+try:
+    from typing import TypeAlias
+except ImportError:
+    # Remove this when we drop support for Python 3.9
+    from typing_extensions import TypeAlias
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 # -- types --
 
 # Commonly used types
-Interval = Union[Tuple[float, float], Tuple[float, float, int]]
-NeighborsType = Dict[float, List[Union[float, None]]]
+Interval: TypeAlias = Union[Tuple[float, float], Tuple[float, float, int]]
+NeighborsType: TypeAlias = Dict[float, List[Union[float, None]]]
 
 # Types for loss_per_interval functions
-NoneFloat = Union[Float, None]
-NoneArray = Union[np.ndarray, None]
-XsType0 = Tuple[Float, Float]
-YsType0 = Union[Tuple[Float, Float], Tuple[np.ndarray, np.ndarray]]
-XsType1 = Tuple[NoneFloat, NoneFloat, NoneFloat, NoneFloat]
-YsType1 = Union[
+NoneFloat: TypeAlias = Union[Float, None]
+NoneArray: TypeAlias = Union[np.ndarray, None]
+XsType0: TypeAlias = Tuple[Float, Float]
+YsType0: TypeAlias = Union[Tuple[Float, Float], Tuple[np.ndarray, np.ndarray]]
+XsType1: TypeAlias = Tuple[NoneFloat, NoneFloat, NoneFloat, NoneFloat]
+YsType1: TypeAlias = Union[
     Tuple[NoneFloat, NoneFloat, NoneFloat, NoneFloat],
     Tuple[NoneArray, NoneArray, NoneArray, NoneArray],
 ]
-XsTypeN = Tuple[NoneFloat, ...]
-YsTypeN = Union[Tuple[NoneFloat, ...], Tuple[NoneArray, ...]]
+XsTypeN: TypeAlias = Tuple[NoneFloat, ...]
+YsTypeN: TypeAlias = Union[Tuple[NoneFloat, ...], Tuple[NoneArray, ...]]
 
 
 __all__ = [
@@ -291,10 +311,14 @@ class Learner1D(BaseLearner):
         # The precision in 'x' below which we set losses to 0.
         self._dx_eps = 2 * max(np.abs(bounds)) * np.finfo(float).eps
 
-        self.bounds = list(bounds)
+        self.bounds = tuple(bounds)
         self.__missing_bounds = set(self.bounds)  # cache of missing bounds
 
         self._vdim: int | None = None
+
+    def new(self) -> Learner1D:
+        """Create a copy of `~adaptive.Learner1D` without the data."""
+        return Learner1D(self.function, self.bounds, self.loss_per_interval)
 
     @property
     def vdim(self) -> int:
@@ -318,8 +342,85 @@ class Learner1D(BaseLearner):
 
     def to_numpy(self):
         """Data as NumPy array of size ``(npoints, 2)`` if ``learner.function`` returns a scalar
-        and ``(npoints, 1+vdim)`` if ``learner.function`` returns a vector of length ``vdim``."""
+        and ``(npoints, 1+vdim)`` if ``learner.function`` returns a vector of length ``vdim``.
+        """
         return np.array([(x, *np.atleast_1d(y)) for x, y in sorted(self.data.items())])
+
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        x_name : str, optional
+            Name of the input value, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
+        df = pandas.DataFrame(xs, columns=[x_name])
+        df[y_name] = ys
+        df.attrs["inputs"] = [x_name]
+        df.attrs["output"] = y_name
+        if with_default_function_args:
+            assign_defaults(self.function, df, function_prefix)
+        return df
+
+    def load_dataframe(
+        self,
+        df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+    ):
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The data to load.
+        with_default_function_args : bool, optional
+            The ``with_default_function_args`` used in ``to_dataframe()``,
+            by default True
+        function_prefix : str, optional
+            The ``function_prefix`` used in ``to_dataframe``, by default "function."
+        x_name : str, optional
+            The ``x_name`` used in ``to_dataframe``, by default "x"
+        y_name : str, optional
+            The ``y_name`` used in ``to_dataframe``, by default "y"
+        """
+        self.tell_many(df[x_name].values, df[y_name].values)
+        if with_default_function_args:
+            self.function = partial_function_from_dataframe(
+                self.function, df, function_prefix
+            )
 
     @property
     def npoints(self) -> int:
@@ -521,8 +622,11 @@ class Learner1D(BaseLearner):
 
     def tell_many(
         self,
-        xs: Sequence[Float],
-        ys: (Sequence[Float] | Sequence[Sequence[Float]] | Sequence[np.ndarray]),
+        xs: Sequence[Float] | np.ndarray,
+        ys: Sequence[Float]
+        | Sequence[Sequence[Float]]
+        | Sequence[np.ndarray]
+        | np.ndarray,
         *,
         force: bool = False,
     ) -> None:
@@ -725,7 +829,7 @@ class Learner1D(BaseLearner):
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
         plot_bounds = (self.bounds[0] - margin, self.bounds[1] + margin)
 
-        return p.redim(x=dict(range=plot_bounds))
+        return p.redim(x={"range": plot_bounds})
 
     def remove_unfinished(self) -> None:
         self.pending_points = set()

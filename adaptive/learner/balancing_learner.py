@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import itertools
+import numbers
 from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
 from functools import partial
 from operator import itemgetter
+from typing import Any, Callable, Dict, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -11,10 +15,31 @@ from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest, named_product, restore
 
+try:
+    from typing import Literal, TypeAlias
+except ImportError:
+    from typing_extensions import Literal, TypeAlias
 
-def dispatch(child_functions, arg):
+try:
+    import pandas
+
+    with_pandas = True
+except ModuleNotFoundError:
+    with_pandas = False
+
+
+def dispatch(child_functions: list[Callable], arg: Any) -> Any:
     index, x = arg
     return child_functions[index](x)
+
+
+STRATEGY_TYPE: TypeAlias = Literal["loss_improvements", "loss", "npoints", "cycle"]
+
+CDIMS_TYPE: TypeAlias = Union[
+    Sequence[Dict[str, Any]],
+    Tuple[Sequence[str], Sequence[Tuple[Any, ...]]],
+    None,
+]
 
 
 class BalancingLearner(BaseLearner):
@@ -68,13 +93,19 @@ class BalancingLearner(BaseLearner):
     behave in an undefined way. Change the `strategy` in that case.
     """
 
-    def __init__(self, learners, *, cdims=None, strategy="loss_improvements"):
+    def __init__(
+        self,
+        learners: list[BaseLearner],
+        *,
+        cdims: CDIMS_TYPE = None,
+        strategy: STRATEGY_TYPE = "loss_improvements",
+    ) -> None:
         self.learners = learners
 
         # Naively we would make 'function' a method, but this causes problems
         # when using executors from 'concurrent.futures' because we have to
         # pickle the whole learner.
-        self.function = partial(dispatch, [l.function for l in self.learners])
+        self.function = partial(dispatch, [lrn.function for lrn in self.learners])  # type: ignore
 
         self._ask_cache = {}
         self._loss = {}
@@ -86,37 +117,45 @@ class BalancingLearner(BaseLearner):
                 "A BalacingLearner can handle only one type" " of learners."
             )
 
-        self.strategy = strategy
+        self.strategy: STRATEGY_TYPE = strategy
+
+    def new(self) -> BalancingLearner:
+        """Create a new `BalancingLearner` with the same parameters."""
+        return BalancingLearner(
+            [learner.new() for learner in self.learners],
+            cdims=self._cdims_default,
+            strategy=self.strategy,
+        )
 
     @property
-    def data(self):
+    def data(self) -> dict[tuple[int, Any], Any]:
         data = {}
-        for i, l in enumerate(self.learners):
-            data.update({(i, p): v for p, v in l.data.items()})
+        for i, lrn in enumerate(self.learners):
+            data.update({(i, p): v for p, v in lrn.data.items()})
         return data
 
     @property
-    def pending_points(self):
+    def pending_points(self) -> set[tuple[int, Any]]:
         pending_points = set()
-        for i, l in enumerate(self.learners):
-            pending_points.update({(i, p) for p in l.pending_points})
+        for i, lrn in enumerate(self.learners):
+            pending_points.update({(i, p) for p in lrn.pending_points})
         return pending_points
 
     @property
-    def npoints(self):
-        return sum(l.npoints for l in self.learners)
+    def npoints(self) -> int:
+        return sum(lrn.npoints for lrn in self.learners)
 
     @property
     def nsamples(self):
         if hasattr(self.learners[0], "nsamples"):
-            return sum(l.nsamples for l in self.learners)
+            return sum(lrn.nsamples for lrn in self.learners)
         else:
             raise AttributeError(
                 f"{type(self.learners[0])} as no attribute called `nsamples`."
             )
 
     @property
-    def strategy(self):
+    def strategy(self) -> STRATEGY_TYPE:
         """Can be either 'loss_improvements' (default), 'loss', 'npoints', or
         'cycle'. The points that the `BalancingLearner` choses can be either
         based on: the best 'loss_improvements', the smallest total 'loss' of
@@ -127,7 +166,7 @@ class BalancingLearner(BaseLearner):
         return self._strategy
 
     @strategy.setter
-    def strategy(self, strategy):
+    def strategy(self, strategy: STRATEGY_TYPE) -> None:
         self._strategy = strategy
         if strategy == "loss_improvements":
             self._ask_and_tell = self._ask_and_tell_based_on_loss_improvements
@@ -144,9 +183,11 @@ class BalancingLearner(BaseLearner):
                 ' strategy="npoints", or strategy="cycle" is implemented.'
             )
 
-    def _ask_and_tell_based_on_loss_improvements(self, n):
+    def _ask_and_tell_based_on_loss_improvements(
+        self, n: int
+    ) -> tuple[list[tuple[int, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
-        total_points = [l.npoints + len(l.pending_points) for l in self.learners]
+        total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
         for _ in range(n):
             to_select = []
             for index, learner in enumerate(self.learners):
@@ -167,9 +208,11 @@ class BalancingLearner(BaseLearner):
         points, loss_improvements = map(list, zip(*selected))
         return points, loss_improvements
 
-    def _ask_and_tell_based_on_loss(self, n):
+    def _ask_and_tell_based_on_loss(
+        self, n: int
+    ) -> tuple[list[tuple[int, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
-        total_points = [l.npoints + len(l.pending_points) for l in self.learners]
+        total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
         for _ in range(n):
             losses = self._losses(real=False)
             index, _ = max(
@@ -188,9 +231,11 @@ class BalancingLearner(BaseLearner):
         points, loss_improvements = map(list, zip(*selected))
         return points, loss_improvements
 
-    def _ask_and_tell_based_on_npoints(self, n):
+    def _ask_and_tell_based_on_npoints(
+        self, n: numbers.Integral
+    ) -> tuple[list[tuple[numbers.Integral, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
-        total_points = [l.npoints + len(l.pending_points) for l in self.learners]
+        total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
         for _ in range(n):
             index = np.argmin(total_points)
             # Take the points from the cache
@@ -204,7 +249,9 @@ class BalancingLearner(BaseLearner):
         points, loss_improvements = map(list, zip(*selected))
         return points, loss_improvements
 
-    def _ask_and_tell_based_on_cycle(self, n):
+    def _ask_and_tell_based_on_cycle(
+        self, n: int
+    ) -> tuple[list[tuple[numbers.Integral, Any]], list[float]]:
         points, loss_improvements = [], []
         for _ in range(n):
             index = next(self._cycle)
@@ -215,7 +262,9 @@ class BalancingLearner(BaseLearner):
 
         return points, loss_improvements
 
-    def ask(self, n, tell_pending=True):
+    def ask(
+        self, n: int, tell_pending: bool = True
+    ) -> tuple[list[tuple[numbers.Integral, Any]], list[float]]:
         """Chose points for learners."""
         if n == 0:
             return [], []
@@ -226,20 +275,20 @@ class BalancingLearner(BaseLearner):
         else:
             return self._ask_and_tell(n)
 
-    def tell(self, x, y):
+    def tell(self, x: tuple[numbers.Integral, Any], y: Any) -> None:
         index, x = x
         self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
         self._pending_loss.pop(index, None)
         self.learners[index].tell(x, y)
 
-    def tell_pending(self, x):
+    def tell_pending(self, x: tuple[numbers.Integral, Any]) -> None:
         index, x = x
         self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
         self.learners[index].tell_pending(x)
 
-    def _losses(self, real=True):
+    def _losses(self, real: bool = True) -> list[float]:
         losses = []
         loss_dict = self._loss if real else self._pending_loss
 
@@ -251,11 +300,16 @@ class BalancingLearner(BaseLearner):
         return losses
 
     @cache_latest
-    def loss(self, real=True):
+    def loss(self, real: bool = True) -> float:
         losses = self._losses(real)
         return max(losses)
 
-    def plot(self, cdims=None, plotter=None, dynamic=True):
+    def plot(
+        self,
+        cdims: CDIMS_TYPE = None,
+        plotter: Callable[[BaseLearner], Any] | None = None,
+        dynamic: bool = True,
+    ):
         """Returns a DynamicMap with sliders.
 
         Parameters
@@ -302,7 +356,9 @@ class BalancingLearner(BaseLearner):
             keys, values_list = cdims
             cdims = [dict(zip(keys, values)) for values in values_list]
 
-        mapping = {tuple(_cdims.values()): l for l, _cdims in zip(self.learners, cdims)}
+        mapping = {
+            tuple(_cdims.values()): lrn for lrn, _cdims in zip(self.learners, cdims)
+        }
 
         d = defaultdict(list)
         for _cdims in cdims:
@@ -328,13 +384,19 @@ class BalancingLearner(BaseLearner):
             vals = {d.name: d.values for d in dm.dimensions() if d.values}
             return hv.HoloMap(dm.select(**vals))
 
-    def remove_unfinished(self):
+    def remove_unfinished(self) -> None:
         """Remove uncomputed data from the learners."""
         for learner in self.learners:
             learner.remove_unfinished()
 
     @classmethod
-    def from_product(cls, f, learner_type, learner_kwargs, combos):
+    def from_product(
+        cls,
+        f,
+        learner_type: BaseLearner,
+        learner_kwargs: dict[str, Any],
+        combos: dict[str, Sequence[Any]],
+    ) -> BalancingLearner:
         """Create a `BalancingLearner` with learners of all combinations of
         named variables’ values. The `cdims` will be set correctly, so calling
         `learner.plot` will be a `holoviews.core.HoloMap` with the correct labels.
@@ -381,7 +443,60 @@ class BalancingLearner(BaseLearner):
             learners.append(learner)
         return cls(learners, cdims=arguments)
 
-    def save(self, fname, compress=True):
+    def to_dataframe(self, index_name: str = "learner_index", **kwargs):
+        """Return the data as a concatenated `pandas.DataFrame` from child learners.
+
+        Parameters
+        ----------
+        index_name : str, optional
+            The name of the index column indicating the learner index,
+            by default "learner_index".
+        **kwargs : dict
+            Keyword arguments passed to each ``child_learner.to_dataframe(**kwargs)``.
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        dfs = []
+        for i, learner in enumerate(self.learners):
+            df = learner.to_dataframe(**kwargs)
+            cols = list(df.columns)
+            df[index_name] = i
+            df = df[[index_name] + cols]
+            dfs.append(df)
+        df = pandas.concat(dfs, axis=0, ignore_index=True)
+        return df
+
+    def load_dataframe(
+        self, df: pandas.DataFrame, index_name: str = "learner_index", **kwargs
+    ):
+        """Load the data from a `pandas.DataFrame` into the child learners.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame with the data to load.
+        index_name : str, optional
+            The ``index_name`` used in `to_dataframe`, by default "learner_index".
+        **kwargs : dict
+            Keyword arguments passed to each ``child_learner.load_dataframe(**kwargs)``.
+        """
+        for i, gr in df.groupby(index_name):
+            self.learners[i].load_dataframe(gr, **kwargs)
+
+    def save(
+        self,
+        fname: Callable[[BaseLearner], str] | Sequence[str],
+        compress: bool = True,
+    ) -> None:
         """Save the data of the child learners into pickle files
         in a directory.
 
@@ -413,13 +528,17 @@ class BalancingLearner(BaseLearner):
         >>> learner.save(combo_fname)  # use 'load' in the same way
         """
         if isinstance(fname, Iterable):
-            for l, _fname in zip(self.learners, fname):
-                l.save(_fname, compress=compress)
+            for lrn, _fname in zip(self.learners, fname):
+                lrn.save(_fname, compress=compress)
         else:
-            for l in self.learners:
-                l.save(fname(l), compress=compress)
+            for lrn in self.learners:
+                lrn.save(fname(lrn), compress=compress)
 
-    def load(self, fname, compress=True):
+    def load(
+        self,
+        fname: Callable[[BaseLearner], str] | Sequence[str],
+        compress: bool = True,
+    ) -> None:
         """Load the data of the child learners from pickle files
         in a directory.
 
@@ -437,26 +556,26 @@ class BalancingLearner(BaseLearner):
         See the example in the `BalancingLearner.save` doc-string.
         """
         if isinstance(fname, Iterable):
-            for l, _fname in zip(self.learners, fname):
-                l.load(_fname, compress=compress)
+            for lrn, _fname in zip(self.learners, fname):
+                lrn.load(_fname, compress=compress)
         else:
-            for l in self.learners:
-                l.load(fname(l), compress=compress)
+            for lrn in self.learners:
+                lrn.load(fname(lrn), compress=compress)
 
-    def _get_data(self):
-        return [l._get_data() for l in self.learners]
+    def _get_data(self) -> list[Any]:
+        return [lrn._get_data() for lrn in self.learners]
 
-    def _set_data(self, data):
-        for l, _data in zip(self.learners, data):
-            l._set_data(_data)
+    def _set_data(self, data: list[Any]):
+        for lrn, _data in zip(self.learners, data):
+            lrn._set_data(_data)
 
-    def __getstate__(self):
+    def __getstate__(self) -> tuple[list[BaseLearner], CDIMS_TYPE, STRATEGY_TYPE]:
         return (
             self.learners,
             self._cdims_default,
             self.strategy,
         )
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: tuple[list[BaseLearner], CDIMS_TYPE, STRATEGY_TYPE]):
         learners, cdims, strategy = state
         self.__init__(learners, cdims=cdims, strategy=strategy)

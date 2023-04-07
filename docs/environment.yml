@@ -12,6 +12,7 @@ dependencies:
   - holoviews=1.14.6
   - bokeh=2.4.0
   - panel=0.12.7
+  - pandas=1.4.4
   - plotly=5.3.1
   - ipywidgets=7.6.5
   - myst-nb=0.16.0
@@ -22,3 +23,4 @@ dependencies:
   - loky
   - furo
   - myst-parser
+  - dask

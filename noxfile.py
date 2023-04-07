@@ -1,7 +1,7 @@
 import nox
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10"])
+@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11"])
 @nox.parametrize("all_deps", [True, False])
 def pytest(session, all_deps):
     session.install(".[testing,other]" if all_deps else ".[testing]")
@@ -9,7 +9,7 @@ def pytest(session, all_deps):
     session.run("pytest")
 
 
-@nox.session(python="3.10")
+@nox.session(python="3.11")
 def pytest_typeguard(session):
     session.install(".[testing,other]")
     session.run("coverage", "erase")

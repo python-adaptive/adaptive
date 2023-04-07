@@ -5,6 +5,8 @@ import sys
 from collections import defaultdict
 from copy import deepcopy
 from math import hypot
+from numbers import Integral as Int
+from numbers import Real
 from typing import Callable, DefaultDict, Iterable, List, Sequence, Tuple
 
 import numpy as np
@@ -14,7 +16,15 @@ from sortedcontainers import SortedDict
 
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Real
+from adaptive.utils import assign_defaults, partial_function_from_dataframe
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 Point = Tuple[int, Real]
 Points = List[Point]
@@ -116,6 +126,20 @@ class AverageLearner1D(Learner1D):
         # {xii: error[xii]/min(_distances[xi], _distances[xii], ...}
         self.rescaled_error: dict[Real, float] = decreasing_dict()
 
+    def new(self) -> AverageLearner1D:
+        """Create a copy of `~adaptive.AverageLearner1D` without the data."""
+        return AverageLearner1D(
+            self.function,
+            self.bounds,
+            self.loss_per_interval,
+            self.delta,
+            self.alpha,
+            self.neighbor_sampling,
+            self.min_samples,
+            self.max_samples,
+            self.min_error,
+        )
+
     @property
     def nsamples(self) -> int:
         """Returns the total number of samples"""
@@ -126,6 +150,112 @@ class AverageLearner1D(Learner1D):
         if not self._number_samples:
             return 0
         return min(self._number_samples.values())
+
+    def to_numpy(self, mean: bool = False) -> np.ndarray:
+        if mean:
+            return super().to_numpy()
+        else:
+            return np.array(
+                [
+                    (seed, x, *np.atleast_1d(y))
+                    for x, seed_y in self._data_samples.items()
+                    for seed, y in seed_y.items()
+                ]
+            )
+
+    def to_dataframe(
+        self,
+        mean: bool = False,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        seed_name: str = "seed",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        seed_name : str, optional
+            Name of the ``seed`` parameter, by default "seed"
+        x_name : str, optional
+            Name of the ``x`` parameter, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        if mean:
+            data = sorted(self.data.items())
+            columns = [x_name, y_name]
+        else:
+            data = [
+                (seed, x, y)
+                for x, seed_y in sorted(self._data_samples.items())
+                for seed, y in sorted(seed_y.items())
+            ]
+            columns = [seed_name, x_name, y_name]
+        df = pandas.DataFrame(data, columns=columns)
+        df.attrs["inputs"] = [seed_name, x_name]
+        df.attrs["output"] = y_name
+        if with_default_function_args:
+            assign_defaults(self.function, df, function_prefix)
+        return df
+
+    def load_dataframe(
+        self,
+        df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        seed_name: str = "seed",
+        x_name: str = "x",
+        y_name: str = "y",
+    ):
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The data to load.
+        with_default_function_args : bool, optional
+            The ``with_default_function_args`` used in ``to_dataframe()``,
+            by default True
+        function_prefix : str, optional
+            The ``function_prefix`` used in ``to_dataframe``, by default "function."
+        seed_name : str, optional
+            The ``seed_name`` used in ``to_dataframe``, by default "seed"
+        x_name : str, optional
+            The ``x_name`` used in ``to_dataframe``, by default "x"
+        y_name : str, optional
+            The ``y_name`` used in ``to_dataframe``, by default "y"
+        """
+        # Were using zip instead of df[[seed_name, x_name]].values because that will
+        # make the seeds into floats
+        seed_x = list(zip(df[seed_name].values.tolist(), df[x_name].values.tolist()))
+        self.tell_many(seed_x, df[y_name].values)
+        if with_default_function_args:
+            self.function = partial_function_from_dataframe(
+                self.function, df, function_prefix
+            )
 
     def ask(self, n: int, tell_pending: bool = True) -> tuple[Points, list[float]]:
         """Return 'n' points that are expected to maximally reduce the loss."""
@@ -362,7 +492,9 @@ class AverageLearner1D(Learner1D):
         t_student = scipy.stats.t.ppf(1 - self.alpha, df=n - 1)
         return t_student * (variance_in_mean / n) ** 0.5
 
-    def tell_many(self, xs: Points, ys: Sequence[Real]) -> None:
+    def tell_many(
+        self, xs: Points | np.ndarray, ys: Sequence[Real] | np.ndarray
+    ) -> None:
         # Check that all x are within the bounds
         # TODO: remove this requirement, all other learners add the data
         # but ignore it going forward.
@@ -373,7 +505,7 @@ class AverageLearner1D(Learner1D):
             )
 
         # Create a mapping of points to a list of samples
-        mapping: DefaultDict[Real, DefaultDict[int, Real]] = defaultdict(
+        mapping: DefaultDict[Real, DefaultDict[Int, Real]] = defaultdict(
             lambda: defaultdict(dict)
         )
         for (seed, x), y in zip(xs, ys):
@@ -445,10 +577,10 @@ class AverageLearner1D(Learner1D):
                     self._update_interpolated_loss_in_interval(*interval)
                 self._oldscale = deepcopy(self._scale)
 
-    def _get_data(self) -> dict[Real, Real]:
+    def _get_data(self) -> dict[Real, dict[Int, Real]]:
         return self._data_samples
 
-    def _set_data(self, data: dict[Real, Real]) -> None:
+    def _set_data(self, data: dict[Real, dict[Int, Real]]) -> None:
         if data:
             for x, samples in data.items():
                 self.tell_many_at_point(x, samples)
@@ -480,7 +612,7 @@ class AverageLearner1D(Learner1D):
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
         plot_bounds = (self.bounds[0] - margin, self.bounds[1] + margin)
 
-        return p.redim(x=dict(range=plot_bounds))
+        return p.redim(x={"range": plot_bounds})
 
 
 def decreasing_dict() -> dict:

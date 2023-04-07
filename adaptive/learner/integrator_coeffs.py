@@ -1,4 +1,5 @@
 # Based on an adaptive quadrature algorithm by Pedro Gonnet
+from __future__ import annotations
 
 from collections import defaultdict
 from fractions import Fraction
@@ -8,7 +9,7 @@ import numpy as np
 import scipy.linalg
 
 
-def legendre(n):
+def legendre(n: int) -> list[list[Fraction]]:
     """Return the first n Legendre polynomials.
 
     The polynomials have *standard* normalization, i.e.
@@ -29,7 +30,7 @@ def legendre(n):
     return result
 
 
-def newton(n):
+def newton(n: int) -> np.ndarray:
     """Compute the monomial coefficients of the Newton polynomial over the
     nodes of the n-point Clenshaw-Curtis quadrature rule.
     """
@@ -86,7 +87,7 @@ def newton(n):
     return cf
 
 
-def scalar_product(a, b):
+def scalar_product(a: list[Fraction], b: list[Fraction]) -> Fraction:
     """Compute the polynomial scalar product int_-1^1 dx a(x) b(x).
 
     The args must be sequences of polynomial coefficients.  This
@@ -107,7 +108,7 @@ def scalar_product(a, b):
     return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))
 
 
-def calc_bdef(ns):
+def calc_bdef(ns: tuple[int, int, int, int]) -> list[np.ndarray]:
     """Calculate the decompositions of Newton polynomials (over the nodes
     of the n-point Clenshaw-Curtis quadrature rule) in terms of
     Legandre polynomials.
@@ -133,7 +134,7 @@ def calc_bdef(ns):
     return result
 
 
-def calc_V(x, n):
+def calc_V(x: np.ndarray, n: int) -> np.ndarray:
     V = [np.ones(x.shape), x.copy()]
     for i in range(2, n):
         V.append((2 * i - 1) / i * x * V[-1] - (i - 1) / i * V[-2])
@@ -190,4 +191,4 @@ def __getattr__(name):
     try:
         return _coefficients()[name]
     except KeyError:
-        raise AttributeError(f"module {__name__} has no attribute {name}")
+        raise AttributeError(f"module {__name__} has no attribute {name}") from None

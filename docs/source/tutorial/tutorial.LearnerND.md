@@ -50,7 +50,7 @@ def sphere(xyz):
 
 
 learner = adaptive.LearnerND(sphere, bounds=[(-1, 1), (-1, 1), (-1, 1)])
-runner = adaptive.Runner(learner, goal=lambda l: l.loss() < 1e-3)
+runner = adaptive.Runner(learner, loss_goal=1e-3)
 ```
 
 ```{code-cell} ipython3
@@ -94,7 +94,7 @@ dm = dm.redim.values(
 
 # In a notebook one would run `dm` however we want a statically generated
 # html, so we use a HoloMap to display it here
-dynamicmap_to_holomap(dm).options(hv.opts.Path(framewise=True))
+dynamicmap_to_holomap(dm).opts(hv.opts.Path(framewise=True))
 ```
 
 The plots show some wobbles while the original function was smooth, this is a result of the fact that the learner chooses points in 3 dimensions and the simplices are not in the same face as we try to interpolate our lines.
@@ -123,7 +123,7 @@ b = [(-1, -1, -1), (-1, 1, -1), (-1, -1, 1), (-1, 1, 1), (1, 1, -1), (1, -1, -1)
 hull = scipy.spatial.ConvexHull(b)
 
 learner = adaptive.LearnerND(f, hull)
-adaptive.BlockingRunner(learner, goal=lambda l: l.npoints > 2000)
+adaptive.BlockingRunner(learner, npoints_goal=2000)
 
 learner.plot_isosurface(-0.5)
 ```

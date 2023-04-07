@@ -8,6 +8,7 @@ import os
 import random
 import shutil
 import tempfile
+import time
 
 import flaky
 import numpy as np
@@ -26,6 +27,7 @@ from adaptive.learner import (
     LearnerND,
     SequenceLearner,
 )
+from adaptive.learner.learner1D import with_pandas
 from adaptive.runner import simple
 
 try:
@@ -90,9 +92,9 @@ def uniform(a, b):
 def simple_run(learner, n):
     def get_goal(learner):
         if hasattr(learner, "nsamples"):
-            return lambda l: l.nsamples > n
+            return lambda lrn: lrn.nsamples > n
         else:
-            return lambda l: l.npoints > n
+            return lambda lrn: lrn.npoints > n
 
     def goal():
         if isinstance(learner, BalancingLearner):
@@ -101,7 +103,7 @@ def simple_run(learner, n):
             return get_goal(learner.learner)
         return get_goal(learner)
 
-    simple(learner, goal())
+    simple(learner, goal=goal())
 
 
 # Library of functions and associated learners.
@@ -292,7 +294,7 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
-    control = learner_type(f, **learner_kwargs)
+    control = learner.new()
     if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
@@ -343,7 +345,7 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     # XXX: learner, control and bounds are not defined
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
-    control = learner_type(f, **learner_kwargs)
+    control = learner.new()
 
     if learner_type is Learner2D:
         # If the stack_size is bigger then the number of points added,
@@ -393,7 +395,7 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
     """
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
-    control = learner_type(f, **learner_kwargs)
+    control = learner.new()
 
     if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
@@ -502,7 +504,7 @@ def test_learner_performance_is_invariant_under_scaling(
         # Because the LearnerND is slow
         npoints //= 10
 
-    for n in range(npoints):
+    for _n in range(npoints):
         cxs, _ = control.ask(1)
         xs, _ = learner.ask(1)
         control.tell_many(cxs, [control.function(x) for x in cxs])
@@ -538,7 +540,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     # Emulate parallel execution
     stash = []
 
-    for i in range(100):
+    for _i in range(100):
         n = random.randint(1, 10)
         m = random.randint(0, n)
         xs, _ = learner.ask(n, tell_pending=False)
@@ -558,11 +560,11 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
             learner.tell(x, learner.function(x))
 
     if learner_type is AverageLearner1D:
-        nsamples = [l.nsamples for l in learner.learners]
-        assert all(l.nsamples > 5 for l in learner.learners), nsamples
+        nsamples = [lrn.nsamples for lrn in learner.learners]
+        assert all(lrn.nsamples > 5 for lrn in learner.learners), nsamples
     else:
-        npoints = [l.npoints for l in learner.learners]
-        assert all(l.npoints > 5 for l in learner.learners), npoints
+        npoints = [lrn.npoints for lrn in learner.learners]
+        assert all(lrn.npoints > 5 for lrn in learner.learners), npoints
 
 
 @run_with(
@@ -579,7 +581,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
 def test_saving(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
-    control = learner_type(f, **learner_kwargs)
+    control = learner.new()
     if learner_type in (Learner1D, AverageLearner1D):
         learner._recompute_losses_factor = 1
         control._recompute_losses_factor = 1
@@ -612,11 +614,11 @@ def test_saving(learner_type, f, learner_kwargs):
 def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     f = generate_random_parametrization(f)
     learner = BalancingLearner([learner_type(f, **learner_kwargs)])
-    control = BalancingLearner([learner_type(f, **learner_kwargs)])
+    control = learner.new()
 
     if learner_type in (Learner1D, AverageLearner1D):
-        for l, c in zip(learner.learners, control.learners):
-            l._recompute_losses_factor = 1
+        for lrn, c in zip(learner.learners, control.learners):
+            lrn._recompute_losses_factor = 1
             c._recompute_losses_factor = 1
 
     simple_run(learner, 100)
@@ -652,7 +654,7 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
     g = lambda x: {"y": f(x), "t": random.random()}  # noqa: E731
     arg_picker = operator.itemgetter("y")
     learner = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
-    control = DataSaver(learner_type(g, **learner_kwargs), arg_picker)
+    control = learner.new()
 
     if learner_type in (Learner1D, AverageLearner1D):
         learner.learner._recompute_losses_factor = 1
@@ -694,3 +696,104 @@ def test_learner_subdomain(learner_type, f, learner_kwargs):
     perform 'similarly' to learners defined on that subdomain only."""
     # XXX: not sure how to implement this. How do we measure "performance"?
     raise NotImplementedError()
+
+
+def add_time(f):
+    @ft.wraps(f)
+    def wrapper(*args, **kwargs):
+        t0 = time.time()
+        result = f(*args, **kwargs)
+        return {"result": result, "time": time.time() - t0}
+
+    return wrapper
+
+
+@pytest.mark.skipif(not with_pandas, reason="pandas is not installed")
+@run_with(
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    AverageLearner,
+    AverageLearner1D,
+    SequenceLearner,
+    IntegratorLearner,
+    with_all_loss_functions=False,
+)
+def test_to_dataframe(learner_type, f, learner_kwargs):
+    import pandas
+
+    if learner_type is LearnerND:
+        kw = {"point_names": tuple("xyz")[: len(learner_kwargs["bounds"])]}
+    else:
+        kw = {}
+
+    learner = learner_type(generate_random_parametrization(f), **learner_kwargs)
+
+    # Test empty dataframe
+    df = learner.to_dataframe(**kw)
+    assert len(df) == 0
+    assert "inputs" in df.attrs
+    assert "output" in df.attrs
+
+    # Run the learner
+    simple_run(learner, 100)
+    df = learner.to_dataframe(**kw)
+    assert isinstance(df, pandas.DataFrame)
+    if learner_type is AverageLearner1D:
+        assert len(df) == learner.nsamples
+    else:
+        assert len(df) == learner.npoints
+
+    # Add points from the DataFrame to a new empty learner
+    learner2 = learner.new()
+    learner2.load_dataframe(df, **kw)
+    assert learner2.npoints == learner.npoints
+
+    # Test this for a learner in a BalancingLearner
+    learners = [
+        learner_type(generate_random_parametrization(f), **learner_kwargs)
+        for _ in range(2)
+    ]
+    bal_learner = BalancingLearner(learners)
+    simple_run(bal_learner, 100)
+    df_bal = bal_learner.to_dataframe(**kw)
+    assert isinstance(df_bal, pandas.DataFrame)
+
+    if learner_type is not AverageLearner1D:
+        assert len(df_bal) == bal_learner.npoints
+
+    # Test loading from a DataFrame into the BalancingLearner
+    learners2 = [
+        learner_type(generate_random_parametrization(f), **learner_kwargs)
+        for _ in range(2)
+    ]
+    bal_learner2 = BalancingLearner(learners2)
+    bal_learner2.load_dataframe(df_bal, **kw)
+    assert bal_learner2.npoints == bal_learner.npoints
+
+    if learner_type is SequenceLearner:
+        # We do not test the DataSaver with the SequenceLearner
+        # because the DataSaver is not compatible with the SequenceLearner.
+        return
+
+    # Test with DataSaver
+    learner = learner_type(
+        add_time(generate_random_parametrization(f)), **learner_kwargs
+    )
+    data_saver = DataSaver(learner, operator.itemgetter("result"))
+    df = data_saver.to_dataframe(**kw)  # test if empty dataframe works
+    simple_run(data_saver, 100)
+    df = data_saver.to_dataframe(**kw)
+    if learner_type is AverageLearner1D:
+        assert len(df) == data_saver.nsamples
+    else:
+        assert len(df) == data_saver.npoints
+
+    # Test loading from a DataFrame into a new DataSaver
+    data_saver2 = data_saver.new()
+    data_saver2.load_dataframe(df, **kw)
+    assert data_saver2.extra_data.keys() == data_saver.extra_data.keys()
+    assert all(
+        data_saver2.extra_data[k] == data_saver.extra_data[k]
+        for k in data_saver.extra_data.keys()
+    )

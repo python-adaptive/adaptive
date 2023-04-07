@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from math import sqrt
+from numbers import Integral as Int
+from numbers import Real
 from typing import Callable
 
 import cloudpickle
@@ -8,8 +10,20 @@ import numpy as np
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Float, Real
-from adaptive.utils import cache_latest
+from adaptive.types import Float
+from adaptive.utils import (
+    assign_defaults,
+    cache_latest,
+    partial_function_from_dataframe,
+)
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 
 class AverageLearner(BaseLearner):
@@ -62,6 +76,10 @@ class AverageLearner(BaseLearner):
         self.sum_f: Real = 0.0
         self.sum_f_sq: Real = 0.0
 
+    def new(self) -> AverageLearner:
+        """Create a copy of `~adaptive.AverageLearner` without the data."""
+        return AverageLearner(self.function, self.atol, self.rtol, self.min_npoints)
+
     @property
     def n_requested(self) -> int:
         return self.npoints + len(self.pending_points)
@@ -69,6 +87,80 @@ class AverageLearner(BaseLearner):
     def to_numpy(self):
         """Data as NumPy array of size (npoints, 2) with seeds and values."""
         return np.array(sorted(self.data.items()))
+
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        seed_name: str = "seed",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        seed_name : str, optional
+            Name of the ``seed`` parameter, by default "seed"
+        y_name : str, optional
+            Name of the output value, by default "y"
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        df = pandas.DataFrame(sorted(self.data.items()), columns=[seed_name, y_name])
+        df.attrs["inputs"] = [seed_name]
+        df.attrs["output"] = y_name
+        if with_default_function_args:
+            assign_defaults(self.function, df, function_prefix)
+        return df
+
+    def load_dataframe(
+        self,
+        df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        seed_name: str = "seed",
+        y_name: str = "y",
+    ):
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            The data to load.
+        with_default_function_args : bool, optional
+            The ``with_default_function_args`` used in ``to_dataframe()``,
+            by default True
+        function_prefix : str, optional
+            The ``function_prefix`` used in ``to_dataframe``, by default "function."
+        seed_name : str, optional
+            The ``seed_name`` used in ``to_dataframe``, by default "seed"
+        y_name : str, optional
+            The ``y_name`` used in ``to_dataframe``, by default "y"
+        """
+        self.tell_many(df[seed_name].values, df[y_name].values)
+        if with_default_function_args:
+            self.function = partial_function_from_dataframe(
+                self.function, df, function_prefix
+            )
 
     def ask(self, n: int, tell_pending: bool = True) -> tuple[list[int], list[Float]]:
         points = list(range(self.n_requested, self.n_requested + n))
@@ -87,7 +179,7 @@ class AverageLearner(BaseLearner):
                 self.tell_pending(p)
         return points, loss_improvements
 
-    def tell(self, n: int, value: Real) -> None:
+    def tell(self, n: Int, value: Real) -> None:
         if n in self.data:
             # The point has already been added before.
             return

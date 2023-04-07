@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import datetime
 import importlib
@@ -31,7 +33,9 @@ def notebook_extension(*, _inline_js=True):
             _holoviews_enabled = True
     except ModuleNotFoundError:
         warnings.warn(
-            "holoviews is not installed; plotting is disabled.", RuntimeWarning
+            "holoviews is not installed; plotting is disabled.",
+            RuntimeWarning,
+            stacklevel=2,
         )
 
     # Load ipywidgets
@@ -42,7 +46,9 @@ def notebook_extension(*, _inline_js=True):
             _ipywidgets_enabled = True
     except ModuleNotFoundError:
         warnings.warn(
-            "ipywidgets is not installed; live_info is disabled.", RuntimeWarning
+            "ipywidgets is not installed; live_info is disabled.",
+            RuntimeWarning,
+            stacklevel=2,
         )
 
     # Enable asyncio integration
@@ -55,7 +61,9 @@ def ensure_holoviews():
     try:
         return importlib.import_module("holoviews")
     except ModuleNotFoundError:
-        raise RuntimeError("holoviews is not installed; plotting is disabled.")
+        raise RuntimeError(
+            "holoviews is not installed; plotting is disabled."
+        ) from None
 
 
 def ensure_plotly():
@@ -72,11 +80,11 @@ def ensure_plotly():
             plotly.offline.init_notebook_mode()
             _plotly_enabled = True
         return plotly
-    except ModuleNotFoundError:
-        raise RuntimeError("plotly is not installed; plotting is disabled.")
+    except ModuleNotFoundError as e:
+        raise RuntimeError("plotly is not installed; plotting is disabled.") from e
 
 
-def in_ipynb():
+def in_ipynb() -> bool:
     try:
         # If we are running in IPython, then `get_ipython()` is always a global
         return get_ipython().__class__.__name__ == "ZMQInteractiveShell"
@@ -86,7 +94,7 @@ def in_ipynb():
 
 # Fancy displays in the Jupyter notebook
 
-active_plotting_tasks = dict()
+active_plotting_tasks = {}
 
 
 def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=True):
