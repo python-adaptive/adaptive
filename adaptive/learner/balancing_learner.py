@@ -118,6 +118,7 @@ class BalancingLearner(BaseLearner):
             )
 
         self.strategy: STRATEGY_TYPE = strategy
+        self._check_required_attributes()
 
     def new(self) -> BalancingLearner:
         """Create a new `BalancingLearner` with the same parameters."""

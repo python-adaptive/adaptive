@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import concurrent.futures as concurrent
 import functools
 import gzip
@@ -88,23 +87,6 @@ def copy_docstring_from(other: Callable) -> Callable:
         return method
 
     return decorator
-
-
-class _RequireAttrsABCMeta(abc.ABCMeta):
-    def __call__(self, *args, **kwargs):
-        obj = super().__call__(*args, **kwargs)
-        for name, type_ in obj.__annotations__.items():
-            try:
-                x = getattr(obj, name)
-            except AttributeError:
-                raise AttributeError(
-                    f"Required attribute {name} not set in __init__."
-                ) from None
-            else:
-                if not isinstance(x, type_):
-                    msg = f"The attribute '{name}' should be of type {type_}, not {type(x)}."
-                    raise TypeError(msg)
-        return obj
 
 
 def _default_parameters(function, function_prefix: str = "function."):

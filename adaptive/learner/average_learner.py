@@ -75,6 +75,7 @@ class AverageLearner(BaseLearner):
         self.min_npoints = max(min_npoints, 2)
         self.sum_f: Real = 0.0
         self.sum_f_sq: Real = 0.0
+        self._check_required_attributes()
 
     def new(self) -> AverageLearner:
         """Create a copy of `~adaptive.AverageLearner` without the data."""

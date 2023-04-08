@@ -3,7 +3,7 @@ from contextlib import suppress
 
 import cloudpickle
 
-from adaptive.utils import _RequireAttrsABCMeta, load, save
+from adaptive.utils import load, save
 
 
 def uses_nth_neighbors(n: int):
@@ -60,7 +60,7 @@ def uses_nth_neighbors(n: int):
     return _wrapped
 
 
-class BaseLearner(metaclass=_RequireAttrsABCMeta):
+class BaseLearner:
     """Base class for algorithms for learning a function 'f: X → Y'.
 
     Attributes
@@ -198,3 +198,16 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
 
     def __setstate__(self, state):
         self.__dict__ = cloudpickle.loads(state)
+
+    def _check_required_attributes(self):
+        for name, type_ in self.__annotations__.items():
+            try:
+                x = getattr(self, name)
+            except AttributeError:
+                raise AttributeError(
+                    f"Required attribute {name} not set in __init__."
+                ) from None
+            else:
+                if not isinstance(x, type_):
+                    msg = f"The attribute '{name}' should be of type {type_}, not {type(x)}."
+                    raise TypeError(msg)

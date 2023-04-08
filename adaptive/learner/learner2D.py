@@ -393,6 +393,7 @@ class Learner2D(BaseLearner):
         self._ip = self._ip_combined = None
 
         self.stack_size = 10
+        self._check_required_attributes()
 
     def new(self) -> Learner2D:
         return Learner2D(self.function, self.bounds, self.loss_per_triangle)
