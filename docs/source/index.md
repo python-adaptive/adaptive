@@ -39,6 +39,7 @@ self
 algorithms_and_examples
 docs
 tutorial/tutorial
+benchmarks
 gallery
 reference/adaptive
 CHANGELOG
