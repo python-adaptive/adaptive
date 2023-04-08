@@ -56,7 +56,7 @@ testing = [
     "pytest-randomly",
     "pytest-timeout",
     "pre_commit",
-    "typeguard",
+    "typeguard==4.0.0rc1", # until https://github.com/agronholm/typeguard/issues/330 is fixed
 ]
 
 [project.urls]
