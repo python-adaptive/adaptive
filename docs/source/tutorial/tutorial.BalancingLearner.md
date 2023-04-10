@@ -24,10 +24,11 @@ import adaptive
 
 adaptive.notebook_extension()
 
+import random
+from functools import partial
+
 import holoviews as hv
 import numpy as np
-from functools import partial
-import random
 ```
 
 The balancing learner is a “meta-learner” that takes a list of learners.

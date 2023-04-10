@@ -14,6 +14,7 @@ import traceback
 import warnings
 from contextlib import suppress
 from datetime import datetime, timedelta
+from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, Callable, Union
 
 import loky
@@ -49,35 +50,32 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
-try:
-    import ipyparallel
-    from ipyparallel.client.asyncresult import AsyncResult
 
-    with_ipyparallel = True
-    ExecutorTypes: TypeAlias = Union[
-        ExecutorTypes, ipyparallel.Client, ipyparallel.client.view.ViewExecutor
-    ]
-    FutureTypes: TypeAlias = Union[FutureTypes, AsyncResult]
-except ModuleNotFoundError:
-    with_ipyparallel = False
+with_ipyparallel = find_spec("ipyparallel") is not None
+with_distributed = find_spec("distributed") is not None
+with_mpi4py = find_spec("mpi4py") is not None
 
-try:
-    import distributed
+if TYPE_CHECKING:
+    if with_distributed:
+        import distributed
 
-    with_distributed = True
-    ExecutorTypes: TypeAlias = Union[
-        ExecutorTypes, distributed.Client, distributed.cfexecutor.ClientExecutor
-    ]
-except ModuleNotFoundError:
-    with_distributed = False
+        ExecutorTypes: TypeAlias = Union[
+            ExecutorTypes, distributed.Client, distributed.cfexecutor.ClientExecutor
+        ]
 
-try:
-    import mpi4py.futures
+    if with_mpi4py:
+        import mpi4py.futures
 
-    with_mpi4py = True
-    ExecutorTypes: TypeAlias = Union[ExecutorTypes, mpi4py.futures.MPIPoolExecutor]
-except ModuleNotFoundError:
-    with_mpi4py = False
+        ExecutorTypes: TypeAlias = Union[ExecutorTypes, mpi4py.futures.MPIPoolExecutor]
+
+    if with_ipyparallel:
+        import ipyparallel
+        from ipyparallel.client.asyncresult import AsyncResult
+
+        ExecutorTypes: TypeAlias = Union[
+            ExecutorTypes, ipyparallel.Client, ipyparallel.client.view.ViewExecutor
+        ]
+        FutureTypes: TypeAlias = Union[FutureTypes, AsyncResult]
 
 with suppress(ModuleNotFoundError):
     import uvloop
@@ -934,9 +932,12 @@ def replay_log(
 
 
 def _ensure_executor(executor: ExecutorTypes | None) -> concurrent.Executor:
+    if with_ipyparallel:
+        import ipyparallel
+    if with_distributed:
+        import distributed
     if executor is None:
         executor = _default_executor()
-
     if isinstance(executor, concurrent.Executor):
         return executor
     elif with_ipyparallel and isinstance(executor, ipyparallel.Client):
@@ -955,6 +956,12 @@ def _get_ncores(
     ex: (ExecutorTypes),
 ) -> int:
     """Return the maximum  number of cores that an executor can use."""
+    if with_ipyparallel:
+        import ipyparallel
+    if with_distributed:
+        import distributed
+    if with_mpi4py:
+        import mpi4py.futures
     if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
         return len(ex.view)
     elif isinstance(
