@@ -1,14 +1,15 @@
 ---
-kernelspec:
-  name: python3
-  display_name: python3
 jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: '0.13'
-    jupytext_version: 1.13.8
+    format_version: 0.13
+    jupytext_version: 1.14.5
+kernelspec:
+  display_name: python3
+  name: python3
 ---
+
 # Tutorial {class}`~adaptive.AverageLearner1D`
 
 ```{note}
@@ -23,9 +24,10 @@ import adaptive
 
 adaptive.notebook_extension()
 
+from functools import partial
+
 import holoviews as hv
 import numpy as np
-from functools import partial
 ```
 
 ## General use

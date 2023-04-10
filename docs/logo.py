@@ -3,8 +3,8 @@ import sys
 
 import holoviews
 import matplotlib.pyplot as plt
-import numpy as np
 import matplotlib.tri as mtri
+import numpy as np
 from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.abspath(".."))  # to get adaptive on the path
