@@ -8,7 +8,11 @@ import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
-from adaptive.utils import assign_defaults, partial_function_from_dataframe
+from adaptive.utils import (
+    assign_defaults,
+    cache_latest,
+    partial_function_from_dataframe,
+)
 
 try:
     import pandas
@@ -113,6 +117,7 @@ class SequenceLearner(BaseLearner):
 
         return points, loss_improvements
 
+    @cache_latest
     def loss(self, real: bool = True) -> float:
         if not (self._to_do_indices or self.pending_points):
             return 0.0
