@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from copy import copy
-from numbers import Integral as Int
 from typing import Any, Tuple
 
 import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
+from adaptive.types import Int
 from adaptive.utils import (
     assign_defaults,
     cache_latest,

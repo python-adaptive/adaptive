@@ -1,5 +1,6 @@
 import abc
 from contextlib import suppress
+from typing import Any, Callable
 
 import cloudpickle
 
@@ -84,6 +85,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
     data: dict
     npoints: int
     pending_points: set
+    function: Callable[..., Any]
 
     def tell(self, x, y):
         """Tell the learner about a single value.
@@ -142,11 +144,11 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         """
 
     @abc.abstractmethod
-    def _get_data(self):
+    def _get_data(self) -> Any:
         pass
 
     @abc.abstractmethod
-    def _set_data(self):
+    def _set_data(self, data: Any) -> None:
         pass
 
     @abc.abstractmethod

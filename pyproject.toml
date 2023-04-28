@@ -98,7 +98,7 @@ python_version = "3.7"
 [tool.ruff]
 line-length = 150
 target-version = "py37"
-select = ["B", "C", "E", "F", "W", "T", "B9", "I"]
+select = ["B", "C", "E", "F", "W", "T", "B9", "I", "UP"]
 ignore = [
     "T20",     # flake8-print
     "ANN101",  # Missing type annotation for {name} in method

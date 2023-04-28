@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from math import sqrt
-from numbers import Integral as Int
-from numbers import Real
 from typing import Callable
 
 import cloudpickle
@@ -10,7 +8,7 @@ import numpy as np
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Float
+from adaptive.types import Float, Int, Real
 from adaptive.utils import (
     assign_defaults,
     cache_latest,

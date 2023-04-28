@@ -15,7 +15,7 @@ import warnings
 from contextlib import suppress
 from datetime import datetime, timedelta
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Any, Callable, Union
+from typing import TYPE_CHECKING, Any, Callable, TypeVar, Union
 
 import loky
 
@@ -49,6 +49,9 @@ try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+
+LearnerType = TypeVar("LearnerType", bound=BaseLearner)
 
 
 with_ipyparallel = find_spec("ipyparallel") is not None
@@ -173,15 +176,15 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        learner: BaseLearner,
-        goal: Callable[[BaseLearner], bool] | None = None,
+        learner: LearnerType,
+        goal: Callable[[LearnerType], bool] | None = None,
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
         executor: ExecutorTypes | None = None,
-        ntasks: int = None,
+        ntasks: int | None = None,
         log: bool = False,
         shutdown_executor: bool = False,
         retries: int = 0,
@@ -461,8 +464,8 @@ class BlockingRunner(BaseRunner):
 
     def __init__(
         self,
-        learner: BaseLearner,
-        goal: Callable[[BaseLearner], bool] | None = None,
+        learner: LearnerType,
+        goal: Callable[[LearnerType], bool] | None = None,
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
@@ -620,8 +623,8 @@ class AsyncRunner(BaseRunner):
 
     def __init__(
         self,
-        learner: BaseLearner,
-        goal: Callable[[BaseLearner], bool] | None = None,
+        learner: LearnerType,
+        goal: Callable[[LearnerType], bool] | None = None,
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
@@ -724,7 +727,7 @@ class AsyncRunner(BaseRunner):
     def live_plot(
         self,
         *,
-        plotter: Callable[[BaseLearner], holoviews.Element] | None = None,
+        plotter: Callable[[LearnerType], holoviews.Element] | None = None,
         update_interval: float = 2.0,
         name: str = None,
         normalize: bool = True,
@@ -802,7 +805,7 @@ class AsyncRunner(BaseRunner):
         self,
         save_kwargs: dict[str, Any] | None = None,
         interval: int = 30,
-        method: Callable[[BaseLearner], None] | None = None,
+        method: Callable[[LearnerType], None] | None = None,
     ):
         """Periodically save the learner's data.
 
@@ -850,8 +853,8 @@ Runner = AsyncRunner
 
 
 def simple(
-    learner: BaseLearner,
-    goal: Callable[[BaseLearner], bool] | None = None,
+    learner: LearnerType,
+    goal: Callable[[LearnerType], bool] | None = None,
     *,
     loss_goal: float | None = None,
     npoints_goal: int | None = None,
@@ -910,7 +913,7 @@ def simple(
 
 
 def replay_log(
-    learner: BaseLearner,
+    learner: LearnerType,
     log: list[tuple[Literal["tell"], Any, Any] | tuple[Literal["ask"], int]],
 ) -> None:
     """Apply a sequence of method calls to a learner.
@@ -967,9 +970,9 @@ def _get_ncores(
     elif isinstance(
         ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
     ):
-        return ex._max_workers  # not public API!
+        return ex._max_workers  # type: ignore[union-attr]
     elif isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
-        return ex._max_workers  # not public API!
+        return ex._max_workers  # type: ignore[union-attr]
     elif isinstance(ex, SequentialExecutor):
         return 1
     elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
@@ -985,7 +988,7 @@ def _get_ncores(
 
 
 # TODO: deprecate
-def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[BaseLearner], bool]:
+def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[LearnerType], bool]:
     """Stop a runner after a specified time.
 
     For example, to specify a runner that should stop after
@@ -1042,7 +1045,7 @@ def auto_goal(
     duration: timedelta | int | float | None = None,
     learner: BaseLearner | None = None,
     allow_running_forever: bool = True,
-) -> Callable[[BaseLearner], bool]:
+) -> Callable[[LearnerType], bool]:
     """Extract a goal from the learners.
 
     Parameters
@@ -1092,7 +1095,7 @@ def auto_goal(
             goal(lrn) for lrn, goal in zip(learner.learners, goals)
         )
     if npoints is not None:
-        return lambda learner: learner.npoints >= npoints
+        return lambda learner: learner.npoints >= npoints  # type: ignore[operator]
     if end_time is not None:
         return _TimeGoal(end_time)
     if duration is not None:
@@ -1118,7 +1121,7 @@ def auto_goal(
 
 def _goal(
     learner: BaseLearner | None,
-    goal: Callable[[BaseLearner], bool] | None,
+    goal: Callable[[LearnerType], bool] | None,
     loss_goal: float | None,
     npoints_goal: int | None,
     end_time_goal: datetime | None,

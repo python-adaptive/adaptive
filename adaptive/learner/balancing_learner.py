@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import itertools
-import numbers
 from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
@@ -13,6 +12,7 @@ import numpy as np
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
+from adaptive.types import Int
 from adaptive.utils import cache_latest, named_product, restore
 
 try:
@@ -232,8 +232,8 @@ class BalancingLearner(BaseLearner):
         return points, loss_improvements
 
     def _ask_and_tell_based_on_npoints(
-        self, n: numbers.Integral
-    ) -> tuple[list[tuple[numbers.Integral, Any]], list[float]]:
+        self, n: Int
+    ) -> tuple[list[tuple[Int, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
         total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
         for _ in range(n):
@@ -251,7 +251,7 @@ class BalancingLearner(BaseLearner):
 
     def _ask_and_tell_based_on_cycle(
         self, n: int
-    ) -> tuple[list[tuple[numbers.Integral, Any]], list[float]]:
+    ) -> tuple[list[tuple[Int, Any]], list[float]]:
         points, loss_improvements = [], []
         for _ in range(n):
             index = next(self._cycle)
@@ -264,7 +264,7 @@ class BalancingLearner(BaseLearner):
 
     def ask(
         self, n: int, tell_pending: bool = True
-    ) -> tuple[list[tuple[numbers.Integral, Any]], list[float]]:
+    ) -> tuple[list[tuple[Int, Any]], list[float]]:
         """Chose points for learners."""
         if n == 0:
             return [], []
@@ -275,14 +275,14 @@ class BalancingLearner(BaseLearner):
         else:
             return self._ask_and_tell(n)
 
-    def tell(self, x: tuple[numbers.Integral, Any], y: Any) -> None:
+    def tell(self, x: tuple[Int, Any], y: Any) -> None:
         index, x = x
         self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
         self._pending_loss.pop(index, None)
         self.learners[index].tell(x, y)
 
-    def tell_pending(self, x: tuple[numbers.Integral, Any]) -> None:
+    def tell_pending(self, x: tuple[Int, Any]) -> None:
         index, x = x
         self._ask_cache.pop(index, None)
         self._loss.pop(index, None)

@@ -5,8 +5,6 @@ import sys
 from collections import defaultdict
 from copy import deepcopy
 from math import hypot
-from numbers import Integral as Int
-from numbers import Real
 from typing import Callable, DefaultDict, Iterable, List, Sequence, Tuple
 
 import numpy as np
@@ -16,6 +14,7 @@ from sortedcontainers import SortedDict
 
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
+from adaptive.types import Int, Real
 from adaptive.utils import assign_defaults, partial_function_from_dataframe
 
 try:

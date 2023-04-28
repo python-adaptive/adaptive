@@ -49,7 +49,7 @@ def newton(n: int) -> np.ndarray:
     # monomial x^(n-d).
 
     mod = 2 * (n - 1)
-    terms = defaultdict(int)
+    terms: dict[tuple[int, int], int] = defaultdict(int)
     terms[0, 0] += 1
 
     for i in range(n):
