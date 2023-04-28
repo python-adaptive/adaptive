@@ -1,4 +1,5 @@
 from contextlib import suppress
+from typing import TypeVar
 
 from adaptive.learner.average_learner import AverageLearner
 from adaptive.learner.average_learner1D import AverageLearner1D
@@ -11,6 +12,9 @@ from adaptive.learner.learner2D import Learner2D
 from adaptive.learner.learnerND import LearnerND
 from adaptive.learner.sequence_learner import SequenceLearner
 
+LearnerType = TypeVar("LearnerType", bound=BaseLearner)
+
+
 __all__ = [
     "AverageLearner",
     "BalancingLearner",
@@ -21,6 +25,7 @@ __all__ = [
     "Learner1D",
     "Learner2D",
     "LearnerND",
+    "LearnerType",
     "AverageLearner1D",
     "SequenceLearner",
 ]

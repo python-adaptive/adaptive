@@ -1,5 +1,7 @@
 # This file is part of 'miniver': https://github.com/jbweston/miniver
 #
+from __future__ import annotations
+
 import os
 import subprocess
 from collections import namedtuple

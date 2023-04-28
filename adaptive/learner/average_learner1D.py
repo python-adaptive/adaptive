@@ -491,7 +491,7 @@ class AverageLearner1D(Learner1D):
         t_student = scipy.stats.t.ppf(1 - self.alpha, df=n - 1)
         return t_student * (variance_in_mean / n) ** 0.5
 
-    def tell_many(
+    def tell_many(  # type: ignore[override]
         self, xs: Points | np.ndarray, ys: Sequence[Real] | np.ndarray
     ) -> None:
         # Check that all x are within the bounds
@@ -579,7 +579,7 @@ class AverageLearner1D(Learner1D):
     def _get_data(self) -> dict[Real, dict[Int, Real]]:
         return self._data_samples
 
-    def _set_data(self, data: dict[Real, dict[Int, Real]]) -> None:
+    def _set_data(self, data: dict[Real, dict[Int, Real]]) -> None:  # type: ignore[override]
         if data:
             for x, samples in data.items():
                 self.tell_many_at_point(x, samples)

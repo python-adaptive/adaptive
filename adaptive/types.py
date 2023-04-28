@@ -1,11 +1,11 @@
+import sys
 from typing import Union
 
 import numpy as np
 
-try:
-    from typing import TypeAlias  # type: ignore[attr-defined]
-except ImportError:
-    # Remove this when we drop support for Python 3.9
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
     from typing_extensions import TypeAlias
 
 Float: TypeAlias = Union[float, np.float_]

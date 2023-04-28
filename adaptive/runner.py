@@ -15,17 +15,17 @@ import warnings
 from contextlib import suppress
 from datetime import datetime, timedelta
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Any, Callable, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 import loky
 
 from adaptive import (
     BalancingLearner,
-    BaseLearner,
     DataSaver,
     IntegratorLearner,
     SequenceLearner,
 )
+from adaptive.learner import LearnerType
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 from adaptive.utils import SequentialExecutor
 
@@ -40,18 +40,16 @@ FutureTypes: TypeAlias = Union[concurrent.Future, asyncio.Future, asyncio.Task]
 if TYPE_CHECKING:
     import holoviews
 
-try:
+
+if sys.version_info >= (3, 10):
     from typing import TypeAlias
-except ImportError:
+else:
     from typing_extensions import TypeAlias
 
-try:
+if sys.version_info >= (3, 8):
     from typing import Literal
-except ImportError:
+else:
     from typing_extensions import Literal
-
-
-LearnerType = TypeVar("LearnerType", bound=BaseLearner)
 
 
 with_ipyparallel = find_spec("ipyparallel") is not None
@@ -729,7 +727,7 @@ class AsyncRunner(BaseRunner):
         *,
         plotter: Callable[[LearnerType], holoviews.Element] | None = None,
         update_interval: float = 2.0,
-        name: str = None,
+        name: str | None = None,
         normalize: bool = True,
     ) -> holoviews.DynamicMap:
         """Live plotting of the learner's data.
@@ -905,6 +903,7 @@ def simple(
         duration_goal,
         allow_running_forever=False,
     )
+    assert goal is not None
     while not goal(learner):
         xs, _ = learner.ask(1)
         for x in xs:
@@ -1043,7 +1042,7 @@ def auto_goal(
     npoints: int | None = None,
     end_time: datetime | None = None,
     duration: timedelta | int | float | None = None,
-    learner: BaseLearner | None = None,
+    learner: LearnerType | None = None,
     allow_running_forever: bool = True,
 ) -> Callable[[LearnerType], bool]:
     """Extract a goal from the learners.
@@ -1071,13 +1070,6 @@ def auto_goal(
     -------
     Callable[[adaptive.BaseLearner], bool]
     """
-    kw = {
-        "loss": loss,
-        "npoints": npoints,
-        "end_time": end_time,
-        "duration": duration,
-        "allow_running_forever": allow_running_forever,
-    }
     opts = (loss, npoints, end_time, duration)  # all are mutually exclusive
     if sum(v is not None for v in opts) > 1:
         raise ValueError(
@@ -1090,7 +1082,17 @@ def auto_goal(
         # Note that the float loss goal is more efficiently implemented in the
         # BalancingLearner itself. That is why the previous if statement is
         # above this one.
-        goals = [auto_goal(learner=lrn, **kw) for lrn in learner.learners]
+        goals = [
+            auto_goal(
+                learner=lrn,
+                loss=loss,
+                npoints=npoints,
+                end_time=end_time,
+                duration=duration,
+                allow_running_forever=allow_running_forever,
+            )
+            for lrn in learner.learners
+        ]
         return lambda learner: all(
             goal(lrn) for lrn, goal in zip(learner.learners, goals)
         )
@@ -1101,7 +1103,15 @@ def auto_goal(
     if duration is not None:
         return _TimeGoal(duration)
     if isinstance(learner, DataSaver):
-        return auto_goal(**kw, learner=learner.learner)
+        assert learner is not None
+        return auto_goal(
+            learner=learner.learner,
+            loss=loss,
+            npoints=npoints,
+            end_time=end_time,
+            duration=duration,
+            allow_running_forever=allow_running_forever,
+        )
     if all(v is None for v in opts):
         if isinstance(learner, SequenceLearner):
             return SequenceLearner.done
@@ -1120,7 +1130,7 @@ def auto_goal(
 
 
 def _goal(
-    learner: BaseLearner | None,
+    learner: LearnerType | None,
     goal: Callable[[LearnerType], bool] | None,
     loss_goal: float | None,
     npoints_goal: int | None,

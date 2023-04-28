@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections.abc
 import itertools
 import math
+import sys
 from copy import copy, deepcopy
 from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 
@@ -22,11 +23,11 @@ from adaptive.utils import (
     partial_function_from_dataframe,
 )
 
-try:
+if sys.version_info >= (3, 10):
     from typing import TypeAlias
-except ImportError:
-    # Remove this when we drop support for Python 3.9
+else:
     from typing_extensions import TypeAlias
+
 
 try:
     import pandas

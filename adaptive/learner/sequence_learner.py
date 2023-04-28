@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from copy import copy
 from typing import Any, Tuple
 
@@ -22,11 +23,10 @@ try:
 except ModuleNotFoundError:
     with_pandas = False
 
-try:
+if sys.version_info >= (3, 10):
     from typing import TypeAlias
-except ImportError:
+else:
     from typing_extensions import TypeAlias
-
 
 PointType: TypeAlias = Tuple[Int, Any]
 

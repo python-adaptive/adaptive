@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import sys
 from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
@@ -15,10 +16,15 @@ from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Int
 from adaptive.utils import cache_latest, named_product, restore
 
-try:
-    from typing import Literal, TypeAlias
-except ImportError:
-    from typing_extensions import Literal, TypeAlias
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 try:
     import pandas

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from collections import defaultdict
 from fractions import Fraction
-from typing import Callable, Union
+from typing import Callable
 
 import numpy as np
 from numpy.testing import assert_allclose
 from scipy.linalg import inv, norm
+
+from adaptive.types import Real
 
 eps = np.spacing(1)
 
@@ -229,30 +231,21 @@ class DivergentIntegralError(ValueError):
         super().__init__(msg)
 
 
-Number = Union[int, float]
-
-
 class _Interval:
     __slots__ = ["a", "b", "c", "fx", "igral", "err", "depth", "rdepth", "ndiv", "c00"]
 
-    a: Number
-    b: Number
+    a: Real
+    b: Real
     c: np.ndarray
     fx: np.ndarray
-    igral: Number
-    err: Number
+    igral: Real
+    err: Real
     depth: int
     rdepth: int
     ndiv: int
-    c00: Number
+    c00: Real
 
-    def __init__(self, a: Number, b: Number, depth: int, rdepth: int) -> None:
-        self.a = a
-        self.b = b
-        self.depth = depth
-        self.rdepth = rdepth
-
-    def __init__(self, a: int | float, b: int | float, depth: int, rdepth: int) -> None:
+    def __init__(self, a: Real, b: Real, depth: int, rdepth: int) -> None:
         self.a = a
         self.b = b
         self.depth = depth
