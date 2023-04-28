@@ -25,3 +25,13 @@ repos:
       - id: nbqa
         args: ["ruff", "--fix", "--ignore=E402,B018,F704"]
         additional_dependencies: [jupytext, ruff]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v1.2.0"
+    hooks:
+      - id: mypy
+        exclude: ipynb_filter.py|docs/source/conf.py
+        additional_dependencies:
+          - types-setuptools
+          - types-tqdm
+          # - pandas-stubs
+          - types-psutil
