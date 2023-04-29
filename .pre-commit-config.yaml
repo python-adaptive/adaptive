@@ -30,8 +30,3 @@ repos:
     hooks:
       - id: mypy
         exclude: ipynb_filter.py|docs/source/conf.py
-        additional_dependencies:
-          - types-setuptools
-          - types-tqdm
-          # - pandas-stubs
-          - types-psutil
