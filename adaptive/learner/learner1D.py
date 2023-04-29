@@ -323,6 +323,7 @@ class Learner1D(BaseLearner):
         self.__missing_bounds = set(self.bounds)  # cache of missing bounds
 
         self._vdim: int | None = None
+        self._check_required_attributes()
 
     def new(self) -> Learner1D:
         """Create a copy of `~adaptive.Learner1D` without the data."""

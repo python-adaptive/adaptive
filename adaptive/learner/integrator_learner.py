@@ -390,6 +390,7 @@ class IntegratorLearner(BaseLearner):
         ival = _Interval.make_first(*self.bounds)
         self.add_ival(ival)
         self.first_ival = ival
+        self._check_required_attributes()
 
     def new(self) -> IntegratorLearner:
         """Create a copy of `~adaptive.Learner2D` without the data."""
