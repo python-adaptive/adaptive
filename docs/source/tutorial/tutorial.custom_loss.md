@@ -25,8 +25,8 @@ import adaptive
 adaptive.notebook_extension()
 
 # Import modules that are used in multiple cells
-import numpy as np
 import holoviews as hv
+import numpy as np
 ```
 
 {class}`~adaptive.Learner1D` and {class}`~adaptive.Learner2D` both work on the principle of subdividing their domain into subdomains, and assigning a property to each subdomain, which we call the *loss*.
@@ -137,7 +137,7 @@ def resolution_loss_function(min_distance=0, max_distance=1):
     because the total area is normalized to 1."""
 
     def resolution_loss(ip):
-        from adaptive.learner.learner2D import default_loss, areas
+        from adaptive.learner.learner2D import areas, default_loss
 
         loss = default_loss(ip)
 

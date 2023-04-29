@@ -46,10 +46,12 @@ Click on the *Play* {fa}`play` button or move the sliders.
 :tags: [hide-cell]
 
 import itertools
-import adaptive
-from adaptive.learner.learner1D import uniform_loss, default_loss
+
 import holoviews as hv
 import numpy as np
+
+import adaptive
+from adaptive.learner.learner1D import default_loss, uniform_loss
 
 adaptive.notebook_extension()
 hv.output(holomap="scrubber")

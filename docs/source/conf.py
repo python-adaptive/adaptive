@@ -17,7 +17,7 @@ import adaptive  # noqa: E402, isort:skip
 # -- Project information -----------------------------------------------------
 
 project = "adaptive"
-copyright = "2018-2022, Adaptive Authors"
+copyright = "2018-2023, Adaptive Authors"
 author = "Adaptive Authors"
 
 # The short X.Y version

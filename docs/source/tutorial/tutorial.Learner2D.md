@@ -20,11 +20,12 @@ Download the notebook in order to see the real behaviour. [^download]
 ```{code-cell} ipython3
 :tags: [hide-cell]
 
-import adaptive
+from functools import partial
+
 import holoviews as hv
 import numpy as np
 
-from functools import partial
+import adaptive
 
 adaptive.notebook_extension()
 ```
@@ -33,9 +34,10 @@ Besides 1D functions, we can also learn 2D functions: $f: ℝ^2 → ℝ$.
 
 ```{code-cell} ipython3
 def ring(xy, wait=True):
-    import numpy as np
-    from time import sleep
     from random import random
+    from time import sleep
+
+    import numpy as np
 
     if wait:
         sleep(random() / 10)
