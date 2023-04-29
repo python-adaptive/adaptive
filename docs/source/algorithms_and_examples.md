@@ -89,6 +89,11 @@ runner.live_plot()
 ```{code-cell} ipython3
 :tags: [hide-input]
 
+from bokeh.models import WheelZoomTool
+
+wheel_zoom = WheelZoomTool(zoom_on_axis=False)
+
+
 def f(x, offset=0.07357338543088588):
     a = 0.01
     return x + a**2 / (a**2 + (x - offset) ** 2)
@@ -118,7 +123,7 @@ def get_hm(loss_per_interval, N=101):
 plot_homo = get_hm(uniform_loss).relabel("homogeneous sampling")
 plot_adaptive = get_hm(default_loss).relabel("with adaptive")
 layout = plot_homo + plot_adaptive
-layout.opts(toolbar=None)
+layout.opts(hv.opts.Scatter(active_tools=["box_zoom", wheel_zoom]))
 ```
 
 ## {class}`adaptive.Learner2D`
@@ -153,7 +158,8 @@ def plot_compare(learner, npoints):
 
 learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
 plots = {n: plot_compare(learner, n) for n in range(4, 1010, 20)}
-hv.HoloMap(plots, kdims=["npoints"]).collate()
+plot = hv.HoloMap(plots, kdims=["npoints"]).collate()
+plot.opts(hv.opts.Image(active_tools=[wheel_zoom]))
 ```
 
 ## {class}`adaptive.AverageLearner`
@@ -181,7 +187,8 @@ def plot_avg(learner, npoints):
 
 
 plots = {n: plot_avg(learner, n) for n in range(10, 10000, 200)}
-hv.HoloMap(plots, kdims=["npoints"])
+hm = hv.HoloMap(plots, kdims=["npoints"])
+hm.opts(hv.opts.Histogram(active_tools=[wheel_zoom]))
 ```
 
 ## {class}`adaptive.LearnerND`
