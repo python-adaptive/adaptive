@@ -16,7 +16,7 @@ def pytest_typeguard(session):
     session.run("pytest", "--typeguard-packages=adaptive")
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.11")
 def coverage(session):
     session.install("coverage")
     session.install(".[testing,other]")
