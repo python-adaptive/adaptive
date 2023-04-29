@@ -9,7 +9,7 @@ jupytext:
     format_version: '0.13'
     jupytext_version: 1.13.8
 ---
-# Tutorial Adaptive
+# 🎓 Tutorial Adaptive
 
 [Adaptive](https://github.com/python-adaptive/adaptive)
 is a package for adaptively sampling functions with support for parallel

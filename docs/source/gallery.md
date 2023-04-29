@@ -1,4 +1,4 @@
-# Gallery
+# 🖼️ Gallery
 
 Adaptive has been used in the following scientific publications:
 

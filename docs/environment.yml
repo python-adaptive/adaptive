@@ -24,3 +24,4 @@ dependencies:
   - furo=2023.3.27
   - myst-parser=0.18.1
   - dask=2023.3.2
+  - emoji=2.2.0
