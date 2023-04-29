@@ -401,7 +401,7 @@ class Learner1D(BaseLearner):
         function_prefix: str = "function.",
         x_name: str = "x",
         y_name: str = "y",
-    ):
+    ) -> None:
         """Load data from a `pandas.DataFrame`.
 
         If ``with_default_function_args`` is True, then ``learner.function``'s

@@ -1,10 +1,13 @@
 import abc
 from contextlib import suppress
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import cloudpickle
 
 from adaptive.utils import _RequireAttrsABCMeta, load, save
+
+if TYPE_CHECKING:
+    import pandas
 
 
 def uses_nth_neighbors(n: int):
@@ -194,6 +197,48 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
         with suppress(FileNotFoundError, EOFError):
             data = load(fname, compress)
             self._set_data(data)
+
+    @abc.abstractmethod
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        **kwargs: Any,
+    ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        x_name : str, optional
+            Name of the input value, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
+
+    @abc.abstractmethod
+    def load_dataframe(
+        self,
+        df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        **kwargs: Any,
+    ) -> None:
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+        """
 
     def __getstate__(self):
         return cloudpickle.dumps(self.__dict__)
