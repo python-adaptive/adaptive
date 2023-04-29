@@ -78,7 +78,7 @@ def save(fname: str, data: Any, compress: bool = True) -> bool:
 def load(fname: str, compress: bool = True) -> Any:
     fname = os.path.expanduser(fname)
     _open = gzip.open if compress else open
-    with _open(fname, "rb") as f:
+    with _open(fname, "rb") as f:  # type: ignore[operator]
         return cloudpickle.load(f)
 
 

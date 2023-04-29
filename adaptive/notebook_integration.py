@@ -94,7 +94,7 @@ def in_ipynb() -> bool:
 
 # Fancy displays in the Jupyter notebook
 
-active_plotting_tasks = {}
+active_plotting_tasks: dict[str, asyncio.Task] = {}
 
 
 def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=True):

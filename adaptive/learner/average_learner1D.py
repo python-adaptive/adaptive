@@ -98,7 +98,7 @@ class AverageLearner1D(Learner1D):
         if min_samples > max_samples:
             raise ValueError("max_samples should be larger than min_samples.")
 
-        super().__init__(function, bounds, loss_per_interval)
+        super().__init__(function, bounds, loss_per_interval)  # type: ignore[arg-type]
 
         self.delta = delta
         self.alpha = alpha
@@ -123,7 +123,7 @@ class AverageLearner1D(Learner1D):
         # form {xi: ((xii-xi)^2 + (yii-yi)^2)^0.5, ...}
         self._distances: dict[Real, float] = decreasing_dict()
         # {xii: error[xii]/min(_distances[xi], _distances[xii], ...}
-        self.rescaled_error: dict[Real, float] = decreasing_dict()
+        self.rescaled_error: ItemSortedDict[Real, float] = decreasing_dict()
 
     def new(self) -> AverageLearner1D:
         """Create a copy of `~adaptive.AverageLearner1D` without the data."""
@@ -309,9 +309,9 @@ class AverageLearner1D(Learner1D):
         new point, since in general n << min_samples and this point will need
         to be resampled many more times"""
         points, (loss_improvement,) = self._ask_points_without_adding(1)
-        points = [(seed, x) for seed, x in zip(range(n), n * points)]
+        seed_points = [(seed, x) for seed, x in zip(range(n), n * points)]
         loss_improvements = [loss_improvement / n] * n
-        return points, loss_improvements  # type: ignore[return-value]
+        return seed_points, loss_improvements  # type: ignore[return-value]
 
     def tell_pending(self, seed_x: Point) -> None:  # type: ignore[override]
         _, x = seed_x
@@ -614,7 +614,7 @@ class AverageLearner1D(Learner1D):
         return p.redim(x={"range": plot_bounds})
 
 
-def decreasing_dict() -> dict:
+def decreasing_dict() -> ItemSortedDict:
     """This initialization orders the dictionary from large to small values"""
 
     def sorting_rule(key, value):

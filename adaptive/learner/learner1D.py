@@ -115,8 +115,8 @@ def default_loss(xs: XsType0, ys: YsType0) -> Float:
 @uses_nth_neighbors(0)
 def abs_min_log_loss(xs: XsType0, ys: YsType0) -> Float:
     """Calculate loss of a single interval that prioritizes the absolute minimum."""
-    ys = tuple(np.log(np.abs(y).min()) for y in ys)
-    return default_loss(xs, ys)
+    ys_log: YsType0 = tuple(np.log(np.abs(y).min()) for y in ys)  # type: ignore[assignment]
+    return default_loss(xs, ys_log)
 
 
 @uses_nth_neighbors(1)
@@ -317,7 +317,7 @@ class Learner1D(BaseLearner):
         # The precision in 'x' below which we set losses to 0.
         self._dx_eps = 2 * max(np.abs(bounds)) * np.finfo(float).eps
 
-        self.bounds = tuple(bounds)
+        self.bounds: tuple[Real, Real] = tuple(bounds)
         self.__missing_bounds = set(self.bounds)  # cache of missing bounds
 
         self._vdim: int | None = None
