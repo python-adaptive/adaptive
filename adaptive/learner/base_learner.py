@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Dict, TypeVar
 
 import cloudpickle
 
@@ -66,6 +66,9 @@ def uses_nth_neighbors(n: int):
     return _wrapped
 
 
+DataType = Dict[Any, Any]
+
+
 class BaseLearner(metaclass=_RequireAttrsABCMeta):
     """Base class for algorithms for learning a function 'f: X → Y'.
 
@@ -87,7 +90,7 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
     and returns a holoviews plot.
     """
 
-    data: dict
+    data: DataType
     npoints: int
     pending_points: set
     function: Callable[..., Any]
