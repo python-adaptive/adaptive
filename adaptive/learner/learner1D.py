@@ -5,7 +5,7 @@ import itertools
 import math
 import sys
 from copy import copy, deepcopy
-from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
 import numpy as np
@@ -41,20 +41,27 @@ except ModuleNotFoundError:
 
 # Commonly used types
 Interval: TypeAlias = Union[Tuple[float, float], Tuple[float, float, int]]
-NeighborsType: TypeAlias = Dict[float, List[Union[float, None]]]
+NeighborsType: TypeAlias = Dict[float, List[Optional[float]]]
 
 # Types for loss_per_interval functions
-NoneFloat: TypeAlias = Union[Float, None]
-NoneArray: TypeAlias = Union[np.ndarray, None]
-XsType0: TypeAlias = Tuple[Float, Float]
-YsType0: TypeAlias = Union[Tuple[Float, Float], Tuple[np.ndarray, np.ndarray]]
-XsType1: TypeAlias = Tuple[NoneFloat, NoneFloat, NoneFloat, NoneFloat]
-YsType1: TypeAlias = Union[
-    Tuple[NoneFloat, NoneFloat, NoneFloat, NoneFloat],
-    Tuple[NoneArray, NoneArray, NoneArray, NoneArray],
+XsType0: TypeAlias = Tuple[float, float]
+YsType0: TypeAlias = Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]
+XsType1: TypeAlias = Tuple[
+    Optional[float], Optional[float], Optional[float], Optional[float]
 ]
-XsTypeN: TypeAlias = Tuple[NoneFloat, ...]
-YsTypeN: TypeAlias = Union[Tuple[NoneFloat, ...], Tuple[NoneArray, ...]]
+YsType1: TypeAlias = Union[
+    Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
+    Tuple[
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+    ],
+]
+XsTypeN: TypeAlias = Tuple[Optional[float], ...]
+YsTypeN: TypeAlias = Union[
+    Tuple[Optional[float], ...], Tuple[Optional[np.ndarray], ...]
+]
 
 
 __all__ = [
@@ -119,11 +126,11 @@ def triangle_loss(xs: XsType1, ys: YsType1) -> Float:
     ys = [y for y in ys if y is not None]
 
     if len(xs) == 2:  # we do not have enough points for a triangle
-        return xs[1] - xs[0]
+        return xs[1] - xs[0]  # type: ignore[operator]
 
     N = len(xs) - 2  # number of constructed triangles
     if isinstance(ys[0], collections.abc.Iterable):
-        pts = [(x, *y) for x, y in zip(xs, ys)]
+        pts = [(x, *y) for x, y in zip(xs, ys)]  # type: ignore[misc]
         vol = simplex_volume_in_embedding
     else:
         pts = [(x, y) for x, y in zip(xs, ys)]
@@ -181,7 +188,7 @@ def curvature_loss_function(
 
         triangle_loss_ = triangle_loss(xs, ys)
         default_loss_ = default_loss(xs_middle, ys_middle)
-        dx = xs_middle[1] - xs_middle[0]
+        dx = xs_middle[1] - xs_middle[0]  # type: ignore[operator]
         return (
             area_factor * (triangle_loss_**0.5)
             + euclid_factor * default_loss_
@@ -774,7 +781,9 @@ class Learner1D(BaseLearner):
                 quals[(*xs, n + 1)] = loss_qual * n / (n + 1)
 
         points = list(
-            itertools.chain.from_iterable(linspace(*ival, n) for (*ival, n) in quals)
+            itertools.chain.from_iterable(
+                linspace(x_l, x_r, n) for (x_l, x_r, n) in quals
+            )
         )
 
         loss_improvements = list(

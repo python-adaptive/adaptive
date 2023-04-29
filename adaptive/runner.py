@@ -305,7 +305,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
                 self._tracebacks.pop(pid, None)
                 x = self._id_to_point.pop(pid)
                 if self.do_log:
-                    self.log.append(("tell", x, y))
+                    self.log.append(("tell", x, y))  # type: ignore[union-attr]
                 self.learner.tell(x, y)
 
     def _get_futures(
@@ -317,7 +317,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         n_new_tasks = max(0, self._get_max_tasks() - len(self._pending_tasks))
 
         if self.do_log:
-            self.log.append(("ask", n_new_tasks))
+            self.log.append(("ask", n_new_tasks))  # type: ignore[union-attr]
 
         pids, _ = self._ask(n_new_tasks)
 
@@ -668,7 +668,6 @@ class AsyncRunner(BaseRunner):
             allow_running_forever=True,
         )
         self.ioloop = ioloop or asyncio.get_event_loop()
-        self.task = None
 
         # When the learned function is 'async def', we run it
         # directly on the event loop, and not in the executor.
@@ -1094,7 +1093,7 @@ def auto_goal(
             for lrn in learner.learners
         ]
         return lambda learner: all(
-            goal(lrn) for lrn, goal in zip(learner.learners, goals)
+            goal(lrn) for lrn, goal in zip(learner.learners, goals)  # type: ignore[attr-defined]
         )
     if npoints is not None:
         return lambda learner: learner.npoints >= npoints  # type: ignore[operator]
