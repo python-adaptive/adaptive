@@ -8,12 +8,11 @@ dynamic = ["version"]
 description = "Parallel active learning of mathematical functions"
 maintainers = [{ name = "Adaptive authors" }]
 license = { text = "BSD" }
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: BSD License",
     "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -96,11 +95,11 @@ output = ".coverage.xml"
 
 [tool.mypy]
 ignore_missing_imports = true
-python_version = "3.7"
+python_version = "3.8"
 
 [tool.ruff]
 line-length = 150
-target-version = "py37"
+target-version = "py38"
 select = ["B", "C", "E", "F", "W", "T", "B9", "I", "UP"]
 ignore = [
     "T20",     # flake8-print

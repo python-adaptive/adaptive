@@ -1111,7 +1111,7 @@ class LearnerND(BaseLearner):
         vertices = []  # index -> (x,y,z)
         faces_or_lines = []  # tuple of indices of the corner points
 
-        @functools.lru_cache()
+        @functools.lru_cache
         def _get_vertex_index(a, b):
             vertex_a = self.tri.vertices[a]
             vertex_b = self.tri.vertices[b]
