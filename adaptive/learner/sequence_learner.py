@@ -92,7 +92,6 @@ class SequenceLearner(BaseLearner):
         self.sequence = copy(sequence)
         self.data = SortedDict()
         self.pending_points = set()
-        self._check_required_attributes()
 
     def new(self) -> SequenceLearner:
         """Return a new `~adaptive.SequenceLearner` without the data."""

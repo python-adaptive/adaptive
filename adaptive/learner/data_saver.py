@@ -45,7 +45,6 @@ class DataSaver(BaseLearner):
         self.extra_data: OrderedDict[Any, Any] = OrderedDict()
         self.function = learner.function
         self.arg_picker = arg_picker
-        self._check_required_attributes()
 
     def new(self) -> DataSaver:
         """Return a new `DataSaver` with the same `arg_picker` and `learner`."""

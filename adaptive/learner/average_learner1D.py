@@ -124,7 +124,6 @@ class AverageLearner1D(Learner1D):
         self._distances: dict[Real, float] = decreasing_dict()
         # {xii: error[xii]/min(_distances[xi], _distances[xii], ...}
         self.rescaled_error: ItemSortedDict[Real, float] = decreasing_dict()
-        self._check_required_attributes()
 
     def new(self) -> AverageLearner1D:
         """Create a copy of `~adaptive.AverageLearner1D` without the data."""

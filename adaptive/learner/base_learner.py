@@ -251,18 +251,5 @@ class BaseLearner(abc.ABC):
     def __setstate__(self, state):
         self.__dict__ = cloudpickle.loads(state)
 
-    def _check_required_attributes(self):
-        for name, type_ in self.__annotations__.items():
-            try:
-                x = getattr(self, name)
-            except AttributeError:
-                raise AttributeError(
-                    f"Required attribute {name} not set in __init__."
-                ) from None
-            else:
-                if not isinstance(x, type_):
-                    msg = f"The attribute '{name}' should be of type {type_}, not {type(x)}."
-                    raise TypeError(msg)
-
 
 LearnerType = TypeVar("LearnerType", bound=BaseLearner)
