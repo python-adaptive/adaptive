@@ -5,7 +5,7 @@ import itertools
 import math
 import sys
 from copy import copy, deepcopy
-from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
 import numpy as np
@@ -37,31 +37,32 @@ try:
 except ModuleNotFoundError:
     with_pandas = False
 
-# -- types --
+if TYPE_CHECKING:
+    # -- types --
 
-# Commonly used types
-Interval: TypeAlias = Union[Tuple[float, float], Tuple[float, float, int]]
-NeighborsType: TypeAlias = SortedDict[float, List[Optional[float]]]
+    # Commonly used types
+    Interval: TypeAlias = Union[Tuple[float, float], Tuple[float, float, int]]
+    NeighborsType: TypeAlias = SortedDict[float, List[Optional[float]]]
 
-# Types for loss_per_interval functions
-XsType0: TypeAlias = Tuple[float, float]
-YsType0: TypeAlias = Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]
-XsType1: TypeAlias = Tuple[
-    Optional[float], Optional[float], Optional[float], Optional[float]
-]
-YsType1: TypeAlias = Union[
-    Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
-    Tuple[
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-    ],
-]
-XsTypeN: TypeAlias = Tuple[Optional[float], ...]
-YsTypeN: TypeAlias = Union[
-    Tuple[Optional[float], ...], Tuple[Optional[np.ndarray], ...]
-]
+    # Types for loss_per_interval functions
+    XsType0: TypeAlias = Tuple[float, float]
+    YsType0: TypeAlias = Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]
+    XsType1: TypeAlias = Tuple[
+        Optional[float], Optional[float], Optional[float], Optional[float]
+    ]
+    YsType1: TypeAlias = Union[
+        Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
+        Tuple[
+            Optional[np.ndarray],
+            Optional[np.ndarray],
+            Optional[np.ndarray],
+            Optional[np.ndarray],
+        ],
+    ]
+    XsTypeN: TypeAlias = Tuple[Optional[float], ...]
+    YsTypeN: TypeAlias = Union[
+        Tuple[Optional[float], ...], Tuple[Optional[np.ndarray], ...]
+    ]
 
 
 __all__ = [
