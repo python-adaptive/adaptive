@@ -59,6 +59,9 @@ hv.output(holomap="scrubber")
 
 ## {class}`adaptive.Learner1D`
 
+The `Learner1D` class is designed for adaptively learning 1D functions of the form `f: ℝ → ℝ^N`. It focuses on sampling points where the function is less well understood to improve the overall approximation.
+This learner is well-suited for functions with localized features or varying degrees of complexity across the domain.
+
 Adaptively learning a 1D function (the plot below) and live-plotting the process in a Jupyter notebook is as easy as
 
 ```python
@@ -120,6 +123,9 @@ layout.opts(toolbar=None)
 
 ## {class}`adaptive.Learner2D`
 
+The `Learner2D` class is tailored for adaptively learning 2D functions of the form `f: ℝ^2 → ℝ^N`. Similar to `Learner1D`, it concentrates on sampling points with higher uncertainty to provide a better approximation.
+This learner is ideal for functions with complex features or varying behavior across a 2D domain.
+
 ```{code-cell} ipython3
 :tags: [hide-input]
 
@@ -152,6 +158,9 @@ hv.HoloMap(plots, kdims=["npoints"]).collate()
 
 ## {class}`adaptive.AverageLearner`
 
+The `AverageLearner` class is designed for situations where you want to average the result of a function over multiple evaluations.
+This is particularly useful when working with random variables or stochastic functions, as it helps to estimate the mean value of the function.
+
 ```{code-cell} ipython3
 :tags: [hide-input]
 
@@ -176,6 +185,9 @@ hv.HoloMap(plots, kdims=["npoints"])
 ```
 
 ## {class}`adaptive.LearnerND`
+
+The `LearnerND` class is intended for adaptively learning ND functions of the form `f: ℝ^N → ℝ^M`.
+It extends the adaptive learning capabilities of the 1D and 2D learners to functions with more dimensions, allowing for efficient exploration of complex, high-dimensional spaces.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
