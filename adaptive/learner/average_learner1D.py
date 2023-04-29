@@ -109,7 +109,7 @@ class AverageLearner1D(Learner1D):
 
         # Contains all samples f(x) for each
         # point x in the form {x0: {0: f_0(x0), 1: f_1(x0), ...}, ...}
-        self._data_samples = SortedDict()
+        self._data_samples: SortedDict[float, dict[int, Real]] = SortedDict()
         # Contains the number of samples taken
         # at each point x in the form {x0: n0, x1: n1, ...}
         self._number_samples = SortedDict()
@@ -130,7 +130,7 @@ class AverageLearner1D(Learner1D):
         return AverageLearner1D(
             self.function,
             self.bounds,
-            self.loss_per_interval,
+            self.loss_per_interval,  # type: ignore[arg-type]
             self.delta,
             self.alpha,
             self.neighbor_sampling,
@@ -200,10 +200,10 @@ class AverageLearner1D(Learner1D):
         if not with_pandas:
             raise ImportError("pandas is not installed.")
         if mean:
-            data = sorted(self.data.items())
+            data: list[tuple[Real, Real]] = sorted(self.data.items())
             columns = [x_name, y_name]
         else:
-            data = [
+            data: list[tuple[int, Real, Real]] = [  # type: ignore[no-redef]
                 (seed, x, y)
                 for x, seed_y in sorted(self._data_samples.items())
                 for seed, y in sorted(seed_y.items())
@@ -256,7 +256,7 @@ class AverageLearner1D(Learner1D):
                 self.function, df, function_prefix
             )
 
-    def ask(self, n: int, tell_pending: bool = True) -> tuple[Points, list[float]]:
+    def ask(self, n: int, tell_pending: bool = True) -> tuple[Points, list[float]]:  # type: ignore[override]
         """Return 'n' points that are expected to maximally reduce the loss."""
         # If some point is undersampled, resample it
         if len(self._undersampled_points):

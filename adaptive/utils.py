@@ -10,12 +10,12 @@ import pickle
 import warnings
 from contextlib import contextmanager
 from itertools import product
-from typing import Any, Callable, Iterator, Mapping, Sequence
+from typing import Any, Callable, Iterator, Sequence
 
 import cloudpickle
 
 
-def named_product(**items: Mapping[str, Sequence[Any]]):
+def named_product(**items: Sequence[Any]):
     names = items.keys()
     vals = items.values()
     return [dict(zip(names, res)) for res in product(*vals)]

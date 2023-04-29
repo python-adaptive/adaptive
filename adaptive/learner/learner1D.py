@@ -122,8 +122,8 @@ def abs_min_log_loss(xs: XsType0, ys: YsType0) -> Float:
 @uses_nth_neighbors(1)
 def triangle_loss(xs: XsType1, ys: YsType1) -> Float:
     assert len(xs) == 4
-    xs = [x for x in xs if x is not None]
-    ys = [y for y in ys if y is not None]
+    xs = [x for x in xs if x is not None]  # type: ignore[assignment]
+    ys = [y for y in ys if y is not None]  # type: ignore[assignment]
 
     if len(xs) == 2:  # we do not have enough points for a triangle
         return xs[1] - xs[0]  # type: ignore[operator]
@@ -283,7 +283,9 @@ class Learner1D(BaseLearner):
     ):
         self.function = function  # type: ignore
 
-        if hasattr(loss_per_interval, "nth_neighbors"):
+        if loss_per_interval is not None and hasattr(
+            loss_per_interval, "nth_neighbors"
+        ):
             self.nth_neighbors = loss_per_interval.nth_neighbors
         else:
             self.nth_neighbors = 0
@@ -317,7 +319,7 @@ class Learner1D(BaseLearner):
         # The precision in 'x' below which we set losses to 0.
         self._dx_eps = 2 * max(np.abs(bounds)) * np.finfo(float).eps
 
-        self.bounds: tuple[Real, Real] = tuple(bounds)
+        self.bounds: tuple[float, float] = (float(bounds[0]), float(bounds[1]))
         self.__missing_bounds = set(self.bounds)  # cache of missing bounds
 
         self._vdim: int | None = None
@@ -677,7 +679,7 @@ class Learner1D(BaseLearner):
             self.losses[ival] = self._get_loss_in_interval(*ival)
 
         # List with "real" intervals that have interpolated intervals inside
-        to_interpolate = []
+        to_interpolate: list[tuple[Real, Real]] = []
 
         self.losses_combined = loss_manager(self._scale[0])
         for ival in intervals_combined:
@@ -890,7 +892,7 @@ def finite_loss(ival: Interval, loss: float, x_scale: float) -> tuple[float, Int
         if len(ival) == 3:
             # Used when constructing quals. Last item is
             # the number of points inside the qual.
-            loss /= ival[2]
+            loss /= ival[2]  # type: ignore[misc]
 
     # We round the loss to 12 digits such that losses
     # are equal up to numerical precision will be considered

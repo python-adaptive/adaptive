@@ -376,7 +376,7 @@ class Learner2D(BaseLearner):
         loss_per_triangle: Callable | None = None,
     ) -> None:
         self.ndim = len(bounds)
-        self._vdim = None
+        self._vdim: int | None = None
         self.loss_per_triangle = loss_per_triangle or default_loss
         self.bounds = (
             (float(bounds[0][0]), float(bounds[0][1])),
@@ -536,7 +536,7 @@ class Learner2D(BaseLearner):
         )
 
     def interpolated_on_grid(
-        self, n: int = None
+        self, n: int | None = None
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get the interpolated data on a grid.
 
@@ -657,7 +657,7 @@ class Learner2D(BaseLearner):
         return xmin <= x <= xmax and ymin <= y <= ymax
 
     def tell(self, point: tuple[float, float], value: float | Iterable[float]) -> None:
-        point = tuple(point)
+        point = tuple(point)  # type: ignore[assignment]
         self.data[point] = value
         if not self.inside_bounds(point):
             return
@@ -666,7 +666,7 @@ class Learner2D(BaseLearner):
         self._stack.pop(point, None)
 
     def tell_pending(self, point: tuple[float, float]) -> None:
-        point = tuple(point)
+        point = tuple(point)  # type: ignore[assignment]
         if not self.inside_bounds(point):
             return
         self.pending_points.add(point)

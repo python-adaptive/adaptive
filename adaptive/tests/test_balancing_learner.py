@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from adaptive.learner import BalancingLearner, Learner1D

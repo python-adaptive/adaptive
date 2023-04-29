@@ -7,13 +7,14 @@ from collections.abc import Iterable
 from contextlib import suppress
 from functools import partial
 from operator import itemgetter
-from typing import Any, Callable, Dict, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Sequence, Tuple, Union, cast
 
 import numpy as np
 
+from adaptive.learner import LearnerType
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Int
+from adaptive.types import Int, Real
 from adaptive.utils import cache_latest, named_product, restore
 
 if sys.version_info >= (3, 10):
@@ -114,8 +115,8 @@ class BalancingLearner(BaseLearner):
         self.function = partial(dispatch, [lrn.function for lrn in self.learners])  # type: ignore
 
         self._ask_cache: dict[int, Any] = {}
-        self._loss = {}
-        self._pending_loss = {}
+        self._loss: dict[int, float] = {}
+        self._pending_loss: dict[int, float] = {}
         self._cdims_default = cdims
 
         if len({learner.__class__ for learner in self.learners}) > 1:
@@ -361,7 +362,7 @@ class BalancingLearner(BaseLearner):
             # Normalize the format
             keys, values_list = cdims
             cdims = [dict(zip(keys, values)) for values in values_list]
-
+        cdims = cast(list[dict[str, Real]], cdims)
         mapping = {
             tuple(_cdims.values()): lrn for lrn, _cdims in zip(self.learners, cdims)
         }
@@ -399,7 +400,7 @@ class BalancingLearner(BaseLearner):
     def from_product(
         cls,
         f,
-        learner_type: BaseLearner,
+        learner_type: LearnerType,
         learner_kwargs: dict[str, Any],
         combos: dict[str, Sequence[Any]],
     ) -> BalancingLearner:
@@ -445,7 +446,7 @@ class BalancingLearner(BaseLearner):
         learners = []
         arguments = named_product(**combos)
         for combo in arguments:
-            learner = learner_type(function=partial(f, **combo), **learner_kwargs)
+            learner = learner_type(function=partial(f, **combo), **learner_kwargs)  # type: ignore[operator]
             learners.append(learner)
         return cls(learners, cdims=arguments)
 
@@ -584,4 +585,4 @@ class BalancingLearner(BaseLearner):
 
     def __setstate__(self, state: tuple[list[BaseLearner], CDIMS_TYPE, STRATEGY_TYPE]):
         learners, cdims, strategy = state
-        self.__init__(learners, cdims=cdims, strategy=strategy)
+        self.__init__(learners, cdims=cdims, strategy=strategy)  # type: ignore[misc]
