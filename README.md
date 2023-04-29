@@ -46,6 +46,8 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 
 </details>
 
+<!-- key-features-start -->
+
 ## :star: Key features
 
 - 🎯 **Intelligent Adaptive Sampling**: Adaptive focuses on areas of interest within a function, ensuring better results with fewer evaluations, saving time, and computational resources.
@@ -56,6 +58,8 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 - 🧩 **Seamless Integration**: Adaptive offers a simple and intuitive interface, making it easy to integrate with existing Python projects and workflows.
 - 💾 **Flexible Data Export**: The library provides options to export learned data as NumPy arrays or Pandas DataFrames, ensuring compatibility with various data processing tools.
 - 🌐 **Open-Source and Community-Driven**: Adaptive is an open-source project, encouraging contributions from the community to continuously improve and expand the library's features and capabilities.
+
+<!-- key-features-end -->
 
 ## :rocket: Example usage
 
@@ -93,6 +97,8 @@ If you have Pandas installed, you can also export the data as a DataFrame:
 df = learner.to_dataframe()
 ```
 
+<!-- implemented-algorithms-start -->
+
 ## :test_tube: Implemented Algorithms
 
 The core concept in `adaptive` is the *learner*.
@@ -104,7 +110,7 @@ While `adaptive` provides sensible default choices, the adaptive sampling proces
 
 The following learners are implemented:
 
-<!-- not-in-documentation-start -->
+<!-- implemented-algorithms-list-start -->
 
 - `Learner1D`: for 1D functions `f: ℝ → ℝ^N`,
 - `Learner2D`: for 2D functions `f: ℝ^2 → ℝ^N`,
@@ -126,7 +132,7 @@ In addition to learners, `adaptive` offers primitives for parallel sampling acro
 [ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
-<!-- not-in-documentation-end -->
+<!-- implemented-algorithms-list-end -->
 
 ## :package: Installation
 

@@ -1,6 +1,6 @@
-```{include} ../../README.md
+```{include} README.md
 ---
-start-after: <!-- not-in-documentation-end -->
+start-after: <!-- implemented-algorithms-list-end -->
 end-before: <!-- credits-end -->
 ---
 ```
@@ -8,7 +8,7 @@ end-before: <!-- credits-end -->
 ```{include} ../../AUTHORS.md
 ```
 
-```{include} ../../README.md
+```{include} README.md
 ---
 start-after: <!-- credits-end -->
 end-before: <!-- references-start -->

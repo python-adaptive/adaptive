@@ -10,10 +10,10 @@ kernelspec:
   name: python3
 ---
 
-```{include} ../../README.md
+```{include} README.md
 ---
 start-after: <!-- summary-end -->
-end-before: <!-- not-in-documentation-start -->
+end-before: <!-- implemented-algorithms-list-start -->
 ---
 ```
 
