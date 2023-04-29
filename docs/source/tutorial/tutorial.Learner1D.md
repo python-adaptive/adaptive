@@ -1,14 +1,15 @@
 ---
-kernelspec:
-  name: python3
-  display_name: python3
 jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: '0.13'
-    jupytext_version: 1.13.8
+    format_version: 0.13
+    jupytext_version: 1.14.5
+kernelspec:
+  display_name: python3
+  name: python3
 ---
+
 (TutorialLearner1D)=
 # Tutorial {class}`~adaptive.Learner1D`
 
@@ -24,9 +25,10 @@ import adaptive
 
 adaptive.notebook_extension()
 
-import numpy as np
-from functools import partial
 import random
+from functools import partial
+
+import numpy as np
 ```
 
 ## scalar output: `f:ℝ → ℝ`
@@ -40,8 +42,8 @@ offset = random.uniform(-0.5, 0.5)
 
 
 def f(x, offset=offset, wait=True):
-    from time import sleep
     from random import random
+    from time import sleep
 
     a = 0.01
     if wait:
@@ -112,6 +114,8 @@ random.seed(0)
 offsets = [random.uniform(-0.8, 0.8) for _ in range(3)]
 
 # sharp peaks at random locations in the domain
+
+
 def f_levels(x, offsets=offsets):
     a = 0.01
     return np.array(
@@ -124,7 +128,9 @@ The `Learner1D` can be used for such functions:
 
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(f_levels, bounds=(-1, 1))
-runner = adaptive.Runner(learner, loss_goal=0.01)  # continue until `learner.loss()<=0.01`
+runner = adaptive.Runner(
+    learner, loss_goal=0.01
+)  # continue until `learner.loss()<=0.01`
 ```
 
 ```{code-cell} ipython3
@@ -150,8 +156,8 @@ To do this, you need to tell the learner to look at the curvature by specifying 
 ```{code-cell} ipython3
 from adaptive.learner.learner1D import (
     curvature_loss_function,
-    uniform_loss,
     default_loss,
+    uniform_loss,
 )
 
 curvature_loss = curvature_loss_function()
@@ -211,12 +217,14 @@ learner.to_numpy()
 ```
 
 If Pandas is installed (optional dependency), you can also run
+
 ```{code-cell} ipython3
 df = learner.to_dataframe()
 df
 ```
 
 and load that data into a new learner with
+
 ```{code-cell} ipython3
 new_learner = adaptive.Learner1D(learner.function, (-1, 1))  # create an empty learner
 new_learner.load_dataframe(df)  # load the pandas.DataFrame's data

@@ -1,9 +1,78 @@
 [build-system]
-requires = [
-    "setuptools >= 35.0.2",
-    "setuptools_scm >= 2.0.0, <3"
-]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools ~= 65.0.0", "versioningit ~= 2.0.1", "wheel"]
+
+[project]
+name = "adaptive"
+dynamic = ["version"]
+description = "Parallel active learning of mathematical functions"
+maintainers = [{ name = "Adaptive authors" }]
+license = { text = "BSD" }
+requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: BSD License",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "scipy",
+    "sortedcollections >= 1.1",
+    "sortedcontainers >= 2.0",
+    "cloudpickle",
+    "loky >= 2.9",
+    "typing_extensions; python_version < '3.10'",
+]
+
+[project.optional-dependencies]
+other = [
+    "ipython; python_version > '3.8'",
+    "ipython<8.13; python_version <= '3.8'", # because https://github.com/ipython/ipython/issues/14053
+    "dill",
+    "distributed",
+    "ipyparallel>=6.2.5",                    # because of https://github.com/ipython/ipyparallel/issues/404
+    "scikit-optimize>=0.8.1",                # because of https://github.com/scikit-optimize/scikit-optimize/issues/931
+    "scikit-learn",
+    "wexpect; os_name == 'nt'",
+    "pexpect; os_name != 'nt'",
+]
+notebook = [
+    "ipython; python_version > '3.8'",
+    "ipython<8.13; python_version <= '3.8'", # because https://github.com/ipython/ipython/issues/14053
+    "ipykernel>=4.8.0",                      # because https://github.com/ipython/ipykernel/issues/274 and https://github.com/ipython/ipykernel/issues/263
+    "jupyter_client>=5.2.2",                 # because https://github.com/jupyter/jupyter_client/pull/314
+    "holoviews>=1.9.1",
+    "ipywidgets",
+    "bokeh",
+    "pandas",
+    "matplotlib",
+    "plotly",
+]
+testing = [
+    "flaky",
+    "pytest",
+    "pytest-cov",
+    "pytest-randomly",
+    "pytest-timeout",
+    "pre_commit",
+    "typeguard",
+]
+
+[project.urls]
+homepage = "https://adaptive.readthedocs.io/"
+documentation = "https://adaptive.readthedocs.io/"
+repository = "https://github.com/python-adaptive/adaptive"
+
+[project.readme]
+content-type = "text/markdown"
+file = "README.md"
+
+[tool.setuptools.packages.find]
+include = ["adaptive.*", "adaptive"]
 
 [tool.pytest.ini_options]
 testpaths = ["adaptive"]
@@ -11,10 +80,7 @@ addopts = "--durations=5 --cov --cov-append --cov-fail-under=70 -vvv --cov-repor
 norecursedirs = ["docs"]
 
 [tool.coverage.paths]
-source = [
-  "adaptive",
-  ".nox/py*/lib/python*/site-packages",
-]
+source = ["adaptive", ".nox/py*/lib/python*/site-packages"]
 
 [tool.coverage.run]
 branch = true
@@ -28,8 +94,29 @@ precision = 2
 [tool.coverage.xml]
 output = ".coverage.xml"
 
-[tool.isort]
-profile = "black"
-
 [tool.mypy]
 ignore_missing_imports = true
+python_version = "3.7"
+
+[tool.ruff]
+line-length = 150
+target-version = "py37"
+select = ["B", "C", "E", "F", "W", "T", "B9", "I", "UP"]
+ignore = [
+    "T20",     # flake8-print
+    "ANN101",  # Missing type annotation for {name} in method
+    "S101",    # Use of assert detected
+    "PD901",   # df is a bad variable name. Be kinder to your future self.
+    "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed in {name}
+    "D402",    # First line should not be the function's signature
+    "PLW0603", # Using the global statement to update `X` is discouraged
+    "D401",    # First line of docstring should be in imperative mood
+]
+
+[tool.ruff.per-file-ignores]
+"tests/*" = ["SLF001"]
+"ci/*" = ["INP001"]
+"tests/test_examples.py" = ["E501"]
+
+[tool.ruff.mccabe]
+max-complexity = 18

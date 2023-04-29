@@ -376,9 +376,12 @@ class Learner2D(BaseLearner):
         loss_per_triangle: Callable | None = None,
     ) -> None:
         self.ndim = len(bounds)
-        self._vdim = None
+        self._vdim: int | None = None
         self.loss_per_triangle = loss_per_triangle or default_loss
-        self.bounds = tuple((float(a), float(b)) for a, b in bounds)
+        self.bounds = (
+            (float(bounds[0][0]), float(bounds[0][1])),
+            (float(bounds[1][0]), float(bounds[1][1])),
+        )
         self.data = OrderedDict()
         self._stack = OrderedDict()
         self.pending_points = set()
@@ -413,7 +416,7 @@ class Learner2D(BaseLearner):
             [(x, y, *np.atleast_1d(z)) for (x, y), z in sorted(self.data.items())]
         )
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -459,7 +462,7 @@ class Learner2D(BaseLearner):
             assign_defaults(self.function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
@@ -506,7 +509,7 @@ class Learner2D(BaseLearner):
         return points * self.xy_scale + self.xy_mean
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         """Number of evaluated points."""
         return len(self.data)
 
@@ -533,7 +536,7 @@ class Learner2D(BaseLearner):
         )
 
     def interpolated_on_grid(
-        self, n: int = None
+        self, n: int | None = None
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get the interpolated data on a grid.
 
@@ -603,6 +606,7 @@ class Learner2D(BaseLearner):
             "`learner.ip()` is deprecated, use `learner.interpolator(scaled=True)`."
             " This will be removed in v1.0.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.interpolator(scaled=True)
 
@@ -653,7 +657,7 @@ class Learner2D(BaseLearner):
         return xmin <= x <= xmax and ymin <= y <= ymax
 
     def tell(self, point: tuple[float, float], value: float | Iterable[float]) -> None:
-        point = tuple(point)
+        point = tuple(point)  # type: ignore[assignment]
         self.data[point] = value
         if not self.inside_bounds(point):
             return
@@ -662,7 +666,7 @@ class Learner2D(BaseLearner):
         self._stack.pop(point, None)
 
     def tell_pending(self, point: tuple[float, float]) -> None:
-        point = tuple(point)
+        point = tuple(point)  # type: ignore[assignment]
         if not self.inside_bounds(point):
             return
         self.pending_points.add(point)
@@ -682,7 +686,7 @@ class Learner2D(BaseLearner):
 
         points_new = []
         losses_new = []
-        for j, _ in enumerate(losses):
+        for _j, _ in enumerate(losses):
             jsimplex = np.argmax(losses)
             triangle = ip.tri.points[ip.tri.simplices[jsimplex]]
             point_new = choose_point_in_triangle(triangle, max_badness=5)
@@ -690,7 +694,7 @@ class Learner2D(BaseLearner):
 
             # np.clip results in numerical precision problems
             # https://github.com/python-adaptive/adaptive/issues/7
-            clip = lambda x, l, u: max(l, min(u, x))  # noqa: E731
+            clip = lambda x, lo, up: max(lo, min(up, x))  # noqa: E731
             point_new = (
                 clip(point_new[0], *self.bounds[0]),
                 clip(point_new[1], *self.bounds[1]),
@@ -817,12 +821,9 @@ class Learner2D(BaseLearner):
         else:
             im = hv.Image([], bounds=lbrt)
             tris = hv.EdgePaths([])
-
-        im_opts = dict(cmap="viridis")
-        tri_opts = dict(line_width=0.5, alpha=tri_alpha)
-        no_hover = dict(plot=dict(inspection_policy=None, tools=[]))
-
-        return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
+        return im.opts(cmap="viridis") * tris.opts(
+            line_width=0.5, alpha=tri_alpha, tools=[]
+        )
 
     def _get_data(self) -> dict[tuple[float, float], Float | np.ndarray]:
         return self.data

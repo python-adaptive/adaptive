@@ -143,7 +143,7 @@ class _Interval:
         self.b = b
         self.depth = depth
         self.rdepth = rdepth
-        self.done_leaves: set[_Interval] = set()
+        self.done_leaves: set[_Interval] | None = set()
         self.depth_complete: int | None = None
         self.removed = False
         if TYPE_CHECKING:
@@ -233,6 +233,7 @@ class _Interval:
         return c_diff
 
     def calc_ndiv(self) -> None:
+        assert self.parent is not None
         div = self.parent.c00 and self.c00 / self.parent.c00 > 2
         self.ndiv += int(div)
 
@@ -282,7 +283,7 @@ class _Interval:
         else:
             # Split
             self.c00 = self.c[0]
-
+            assert self.parent is not None
             if self.parent.depth_complete is not None:
                 c_old = (
                     self.T[:, : coeff.ns[self.parent.depth_complete]] @ self.parent.c
@@ -310,7 +311,7 @@ class _Interval:
                     child for child in ival.children if child.done_leaves is not None
                 ]
 
-                if not all(len(child.done_leaves) for child in unused_children):
+                if not all(len(child.done_leaves) for child in unused_children):  # type: ignore[arg-type]
                     break
 
                 if ival.done_leaves is None:
@@ -396,6 +397,7 @@ class IntegratorLearner(BaseLearner):
 
     @property
     def approximating_intervals(self) -> set[_Interval]:
+        assert self.first_ival.done_leaves is not None
         return self.first_ival.done_leaves
 
     def tell(self, point: float, value: float) -> None:
@@ -471,7 +473,7 @@ class IntegratorLearner(BaseLearner):
             try:
                 self._fill_stack()
             except ValueError:
-                raise RuntimeError("No way to improve the integral estimate.")
+                raise RuntimeError("No way to improve the integral estimate.") from None
             new_points, new_loss_improvements = self.pop_from_stack(n_left)
             points += new_points
             loss_improvements += new_loss_improvements
@@ -513,8 +515,8 @@ class IntegratorLearner(BaseLearner):
         elif ival.depth == 3 or force_split:
             # Always split when depth is maximal or if refining didn't help
             self.ivals.remove(ival)
-            for ival in ival.split():
-                self.add_ival(ival)
+            for iv in ival.split():
+                self.add_ival(iv)
         else:
             self.add_ival(ival.refine())
 
@@ -526,7 +528,7 @@ class IntegratorLearner(BaseLearner):
         return self._stack
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         """Number of evaluated points."""
         return len(self.data)
 
@@ -571,7 +573,7 @@ class IntegratorLearner(BaseLearner):
         """Data as NumPy array of size (npoints, 2)."""
         return np.array(sorted(self.data.items()))
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -588,8 +590,6 @@ class IntegratorLearner(BaseLearner):
         function_prefix : str, optional
             Prefix to the ``learner.function``'s default arguments' names,
             by default "function."
-        seed_name : str, optional
-            Name of the seed parameter, by default "seed"
         x_name : str, optional
             Name of the input value, by default "x"
         y_name : str, optional
@@ -612,6 +612,35 @@ class IntegratorLearner(BaseLearner):
         if with_default_function_args:
             assign_defaults(self.function, df, function_prefix)
         return df
+
+    def load_dataframe(  # type: ignore[override]
+        self,
+        df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> None:
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        x_name : str, optional
+            Name of the input value, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+        """
+        raise NotImplementedError
 
     def _get_data(self):
         # Change the defaultdict of SortedSets to a normal dict of sets.

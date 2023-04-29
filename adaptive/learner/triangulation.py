@@ -16,9 +16,9 @@ from numpy import (
     ones,
     square,
     subtract,
+    zeros,
 )
 from numpy import sum as np_sum
-from numpy import zeros
 from numpy.linalg import det as ndet
 from numpy.linalg import matrix_rank, norm, slogdet, solve
 

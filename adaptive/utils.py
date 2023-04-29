@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import concurrent.futures as concurrent
 import functools
 import gzip
@@ -8,21 +7,21 @@ import inspect
 import os
 import pickle
 import warnings
-from contextlib import _GeneratorContextManager, contextmanager
+from contextlib import contextmanager
 from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Iterator, Sequence
 
 import cloudpickle
 
 
-def named_product(**items: Mapping[str, Sequence[Any]]):
+def named_product(**items: Sequence[Any]):
     names = items.keys()
     vals = items.values()
     return [dict(zip(names, res)) for res in product(*vals)]
 
 
 @contextmanager
-def restore(*learners) -> _GeneratorContextManager:
+def restore(*learners) -> Iterator[None]:
     states = [learner.__getstate__() for learner in learners]
     try:
         yield
@@ -78,7 +77,7 @@ def save(fname: str, data: Any, compress: bool = True) -> bool:
 def load(fname: str, compress: bool = True) -> Any:
     fname = os.path.expanduser(fname)
     _open = gzip.open if compress else open
-    with _open(fname, "rb") as f:
+    with _open(fname, "rb") as f:  # type: ignore[operator]
         return cloudpickle.load(f)
 
 
@@ -88,23 +87,6 @@ def copy_docstring_from(other: Callable) -> Callable:
         return method
 
     return decorator
-
-
-class _RequireAttrsABCMeta(abc.ABCMeta):
-    def __call__(self, *args, **kwargs):
-        obj = super().__call__(*args, **kwargs)
-        for name, type_ in obj.__annotations__.items():
-            try:
-                x = getattr(obj, name)
-            except AttributeError:
-                raise AttributeError(
-                    f"Required attribute {name} not set in __init__."
-                ) from None
-            else:
-                if not isinstance(x, type_):
-                    msg = f"The attribute '{name}' should be of type {type_}, not {type(x)}."
-                    raise TypeError(msg)
-        return obj
 
 
 def _default_parameters(function, function_prefix: str = "function."):
@@ -153,7 +135,8 @@ def partial_function_from_dataframe(function, df, function_prefix: str = "functi
             warnings.warn(
                 f"The DataFrame contains a default parameter"
                 f" ({k}={v}) but the function already has a default ({k}={default})."
-                " The DataFrame's value will be used."
+                " The DataFrame's value will be used.",
+                stacklevel=2,
             )
     return functools.partial(function, **kwargs)
 

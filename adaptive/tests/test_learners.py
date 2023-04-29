@@ -34,7 +34,7 @@ try:
     from adaptive.learner.skopt_learner import SKOptLearner
 except (ModuleNotFoundError, ImportError):
     # XXX: catch the ImportError because of https://github.com/scikit-optimize/scikit-optimize/issues/902
-    SKOptLearner = None
+    SKOptLearner = None  # type: ignore[assignment,misc]
 
 
 LOSS_FUNCTIONS = {
@@ -92,9 +92,9 @@ def uniform(a, b):
 def simple_run(learner, n):
     def get_goal(learner):
         if hasattr(learner, "nsamples"):
-            return lambda l: l.nsamples > n
+            return lambda lrn: lrn.nsamples > n
         else:
-            return lambda l: l.npoints > n
+            return lambda lrn: lrn.npoints > n
 
     def goal():
         if isinstance(learner, BalancingLearner):
@@ -132,13 +132,13 @@ def maybe_skip(learner):
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
-def quadratic(x, m: uniform(1, 4), b: uniform(0, 1)):
+def quadratic(x, m: uniform(1, 4), b: uniform(0, 1)):  # type: ignore[valid-type]
     return m * x**2 + b
 
 
 @learn_with(Learner1D, bounds=(-1, 1))
 @learn_with(SequenceLearner, sequence=np.linspace(-1, 1, 201))
-def linear_with_peak(x, d: uniform(-1, 1)):
+def linear_with_peak(x, d: uniform(-1, 1)):  # type: ignore[valid-type]
     a = 0.01
     return x + a**2 / (a**2 + (x - d) ** 2)
 
@@ -146,7 +146,7 @@ def linear_with_peak(x, d: uniform(-1, 1)):
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
 @learn_with(Learner2D, bounds=((-1, 1), (-1, 1)))
 @learn_with(SequenceLearner, sequence=np.random.rand(1000, 2))
-def ring_of_fire(xy, d: uniform(0.2, 1)):
+def ring_of_fire(xy, d: uniform(0.2, 1)):  # type: ignore[valid-type]
     a = 0.2
     x, y = xy
     return x + math.exp(-((x**2 + y**2 - d**2) ** 2) / a**4)
@@ -154,7 +154,7 @@ def ring_of_fire(xy, d: uniform(0.2, 1)):
 
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1), (-1, 1)))
 @learn_with(SequenceLearner, sequence=np.random.rand(1000, 3))
-def sphere_of_fire(xyz, d: uniform(0.2, 0.5)):
+def sphere_of_fire(xyz, d: uniform(0.2, 0.5)):  # type: ignore[valid-type]
     a = 0.2
     x, y, z = xyz
     return x + math.exp(-((x**2 + y**2 + z**2 - d**2) ** 2) / a**4) + z**2
@@ -162,16 +162,16 @@ def sphere_of_fire(xyz, d: uniform(0.2, 0.5)):
 
 @learn_with(SequenceLearner, sequence=range(1000))
 @learn_with(AverageLearner, rtol=1)
-def gaussian(n):
+def gaussian(n):  # type: ignore[valid-type]
     return random.gauss(1, 1)
 
 
 @learn_with(AverageLearner1D, bounds=(-2, 2))
-def noisy_peak(
+def noisy_peak(  # type: ignore[valid-type]
     seed_x,
-    sigma: uniform(1.5, 2.5),
-    peak_width: uniform(0.04, 0.06),
-    offset: uniform(-0.6, -0.3),
+    sigma: uniform(1.5, 2.5),  # type: ignore[valid-type]
+    peak_width: uniform(0.04, 0.06),  # type: ignore[valid-type]
+    offset: uniform(-0.6, -0.3),  # type: ignore[valid-type]
 ):
     seed, x = seed_x
     y = x**3 - x + 3 * peak_width**2 / (peak_width**2 + (x - offset) ** 2)
@@ -504,7 +504,7 @@ def test_learner_performance_is_invariant_under_scaling(
         # Because the LearnerND is slow
         npoints //= 10
 
-    for n in range(npoints):
+    for _n in range(npoints):
         cxs, _ = control.ask(1)
         xs, _ = learner.ask(1)
         control.tell_many(cxs, [control.function(x) for x in cxs])
@@ -540,7 +540,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     # Emulate parallel execution
     stash = []
 
-    for i in range(100):
+    for _i in range(100):
         n = random.randint(1, 10)
         m = random.randint(0, n)
         xs, _ = learner.ask(n, tell_pending=False)
@@ -560,11 +560,11 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
             learner.tell(x, learner.function(x))
 
     if learner_type is AverageLearner1D:
-        nsamples = [l.nsamples for l in learner.learners]
-        assert all(l.nsamples > 5 for l in learner.learners), nsamples
+        nsamples = [lrn.nsamples for lrn in learner.learners]
+        assert all(lrn.nsamples > 5 for lrn in learner.learners), nsamples
     else:
-        npoints = [l.npoints for l in learner.learners]
-        assert all(l.npoints > 5 for l in learner.learners), npoints
+        npoints = [lrn.npoints for lrn in learner.learners]
+        assert all(lrn.npoints > 5 for lrn in learner.learners), npoints
 
 
 @run_with(
@@ -617,8 +617,8 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     control = learner.new()
 
     if learner_type in (Learner1D, AverageLearner1D):
-        for l, c in zip(learner.learners, control.learners):
-            l._recompute_losses_factor = 1
+        for lrn, c in zip(learner.learners, control.learners):
+            lrn._recompute_losses_factor = 1
             c._recompute_losses_factor = 1
 
     simple_run(learner, 100)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from adaptive.learner import BalancingLearner, Learner1D
@@ -54,7 +56,7 @@ def test_ask_0(strategy):
     [
         ("loss", "loss_goal", 0.1),
         ("loss_improvements", "loss_goal", 0.1),
-        ("npoints", "goal", lambda bl: all(l.npoints > 10 for l in bl.learners)),
+        ("npoints", "goal", lambda bl: all(lrn.npoints > 10 for lrn in bl.learners)),
         ("cycle", "loss_goal", 0.1),
     ],
 )

@@ -1,18 +1,21 @@
 # Copyright 2010 Pedro Gonnet
 # Copyright 2017 Christoph Groth
+from __future__ import annotations
 
 from collections import defaultdict
 from fractions import Fraction
-from typing import Callable, List, Tuple, Union
+from typing import Callable
 
 import numpy as np
 from numpy.testing import assert_allclose
 from scipy.linalg import inv, norm
 
+from adaptive.types import Real
+
 eps = np.spacing(1)
 
 
-def legendre(n: int) -> List[List[Fraction]]:
+def legendre(n: int) -> list[list[Fraction]]:
     """Return the first n Legendre polynomials.
 
     The polynomials have *standard* normalization, i.e.
@@ -52,7 +55,7 @@ def newton(n: int) -> np.ndarray:
     # monomial x^(n-d).
 
     mod = 2 * (n - 1)
-    terms = defaultdict(int)
+    terms: dict[tuple[int, int], int] = defaultdict(int)
     terms[0, 0] += 1
 
     for i in range(n):
@@ -90,7 +93,7 @@ def newton(n: int) -> np.ndarray:
     return cf
 
 
-def scalar_product(a: List[Fraction], b: List[Fraction]) -> Fraction:
+def scalar_product(a: list[Fraction], b: list[Fraction]) -> Fraction:
     """Compute the polynomial scalar product int_-1^1 dx a(x) b(x).
 
     The args must be sequences of polynomial coefficients.  This
@@ -108,10 +111,10 @@ def scalar_product(a: List[Fraction], b: List[Fraction]) -> Fraction:
             c[i + j] += a[j] * bi
 
     # Calculate the definite integral from -1 to 1.
-    return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))
+    return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))  # type: ignore[return-value]
 
 
-def calc_bdef(ns: Tuple[int, int, int, int]) -> List[np.ndarray]:
+def calc_bdef(ns: tuple[int, int, int, int]) -> list[np.ndarray]:
     """Calculate the decompositions of Newton polynomials (over the nodes
     of the n-point Clenshaw-Curtis quadrature rule) in terms of
     Legandre polynomials.
@@ -184,7 +187,7 @@ alpha = np.sqrt((k + 1) ** 2 / (2 * k + 1) / (2 * k + 3))
 gamma = np.concatenate([[0, 0], np.sqrt(k[2:] ** 2 / (4 * k[2:] ** 2 - 1))])
 
 
-def _downdate(c: np.ndarray, nans: List[int], depth: int) -> None:
+def _downdate(c: np.ndarray, nans: list[int], depth: int) -> None:
     # This is algorithm 5 from the thesis of Pedro Gonnet.
     b = b_def[depth].copy()
     m = n[depth] - 1
@@ -201,7 +204,7 @@ def _downdate(c: np.ndarray, nans: List[int], depth: int) -> None:
         m -= 1
 
 
-def _zero_nans(fx: np.ndarray) -> List[int]:
+def _zero_nans(fx: np.ndarray) -> list[int]:
     nans = []
     for i in range(len(fx)):
         if not np.isfinite(fx[i]):
@@ -231,9 +234,18 @@ class DivergentIntegralError(ValueError):
 class _Interval:
     __slots__ = ["a", "b", "c", "fx", "igral", "err", "depth", "rdepth", "ndiv", "c00"]
 
-    def __init__(
-        self, a: Union[int, float], b: Union[int, float], depth: int, rdepth: int
-    ) -> None:
+    a: Real
+    b: Real
+    c: np.ndarray
+    fx: np.ndarray
+    igral: Real
+    err: Real
+    depth: int
+    rdepth: int
+    ndiv: int
+    c00: Real
+
+    def __init__(self, a: Real, b: Real, depth: int, rdepth: int) -> None:
         self.a = a
         self.b = b
         self.depth = depth
@@ -247,7 +259,7 @@ class _Interval:
     @classmethod
     def make_first(
         cls, f: Callable, a: int, b: int, depth: int = 2
-    ) -> Tuple["_Interval", int]:
+    ) -> tuple[_Interval, int]:
         ival = _Interval(a, b, depth, 1)
         fx = f(ival.points())
         ival.c = _calc_coeffs(fx, depth)
@@ -269,7 +281,7 @@ class _Interval:
 
     def split(
         self, f: Callable
-    ) -> Union[Tuple[Tuple[float, float, float], int], Tuple[List["_Interval"], int]]:
+    ) -> tuple[tuple[float, float, float], int] | tuple[list[_Interval], int]:
         m = (self.a + self.b) / 2
         f_center = self.fx[(len(self.fx) - 1) // 2]
 
@@ -287,14 +299,14 @@ class _Interval:
             ival.calc_igral_and_err(T[:, : self.c.shape[0]] @ self.c)
 
             ival.c00 = ival.c[0]
-            ival.ndiv = self.ndiv + (self.c00 and ival.c00 / self.c00 > 2)
+            ival.ndiv = self.ndiv + (self.c00 and ival.c00 / self.c00 > 2)  # type: ignore[assignment]
             if ival.ndiv > ndiv_max and 2 * ival.ndiv > ival.rdepth:
                 # Signal a divergent integral.
                 return (ival.a, ival.b, ival.b - ival.a), nr_points
 
         return ivals, nr_points
 
-    def refine(self, f: Callable) -> Tuple[np.ndarray, bool, int]:
+    def refine(self, f: Callable) -> tuple[np.ndarray, bool, int]:
         """Increase degree of interval."""
         self.depth = depth = self.depth + 1
         points = self.points()
@@ -307,8 +319,8 @@ class _Interval:
 
 
 def algorithm_4(
-    f: Callable, a: int, b: int, tol: float, N_loops: int = int(1e9)
-) -> Tuple[float, float, int, List["_Interval"]]:
+    f: Callable, a: int, b: int, tol: float, N_loops: int = int(1e9)  # noqa: B008
+) -> tuple[float, float, int, list[_Interval]]:
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
     algorithm uses Clenshaw-Curtis quadrature rules of increasing
     degree in each interval and bisects the interval if either the
@@ -340,9 +352,9 @@ def algorithm_4(
     ival, nr_points = _Interval.make_first(f, a, b)
 
     ivals = [ival]
-    igral_excess = 0
-    err_excess = 0
-    i_max = 0
+    igral_excess: float = 0
+    err_excess: float = 0
+    i_max: int = 0
 
     for _ in range(N_loops):
         if ivals[i_max].depth == 3:
@@ -415,7 +427,7 @@ def algorithm_4(
 # ############### Tests ################
 
 
-def f0(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def f0(x: float | np.ndarray) -> float | np.ndarray:
     return x * np.sin(1 / x) * np.sqrt(abs(1 - x))
 
 
@@ -423,20 +435,18 @@ def f7(x):
     return x**-0.5
 
 
-def f24(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def f24(x: float | np.ndarray) -> float | np.ndarray:
     return np.floor(np.exp(x))
 
 
-def f21(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def f21(x: float | np.ndarray) -> float | np.ndarray:
     y = 0
     for i in range(1, 4):
         y += 1 / np.cosh(20**i * (x - 2 * i / 10))
     return y
 
 
-def f63(
-    x: Union[float, np.ndarray], alpha: float, beta: float
-) -> Union[float, np.ndarray]:
+def f63(x: float | np.ndarray, alpha: float, beta: float) -> float | np.ndarray:
     return abs(x - beta) ** alpha
 
 
@@ -444,7 +454,7 @@ def F63(x, alpha, beta):
     return (x - beta) * abs(x - beta) ** alpha / (alpha + 1)
 
 
-def fdiv(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def fdiv(x: float | np.ndarray) -> float | np.ndarray:
     return abs(x - 0.987654321) ** -1.1
 
 
@@ -578,7 +588,7 @@ def test_analytic(n=200):
             if alpha <= -1:
                 false_positives += 1
             else:
-                igral_exact = F(1) - F(0)
+                igral_exact = F(1, alpha, beta) - F(0, alpha, beta)
                 assert alpha < -0.7 or abs(igral - igral_exact) < err
 
     assert false_negatives < 0.05 * n

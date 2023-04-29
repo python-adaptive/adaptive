@@ -1,15 +1,13 @@
 ---
-kernelspec:
-  name: python3
-  display_name: python3
 jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: '0.13'
-    jupytext_version: 1.13.8
-execution:
-  timeout: 300
+    format_version: 0.13
+    jupytext_version: 1.14.5
+kernelspec:
+  display_name: python3
+  name: python3
 ---
 
 ```{include} ../../README.md
@@ -48,10 +46,12 @@ Click on the *Play* {fa}`play` button or move the sliders.
 :tags: [hide-cell]
 
 import itertools
-import adaptive
-from adaptive.learner.learner1D import uniform_loss, default_loss
+
 import holoviews as hv
 import numpy as np
+
+import adaptive
+from adaptive.learner.learner1D import default_loss, uniform_loss
 
 adaptive.notebook_extension()
 hv.output(holomap="scrubber")
@@ -98,30 +98,30 @@ def plot_loss_interval(learner):
         x, y = [x_0, x_1], [y_0, y_1]
     else:
         x, y = [], []
-    return hv.Scatter((x, y)).opts(style=dict(size=6, color="r"))
+    return hv.Scatter((x, y)).opts(size=6, color="r")
 
 
-def plot(learner, npoints):
-    adaptive.runner.simple(learner, npoints_goal= npoints)
+def plot_interval(learner, npoints):
+    adaptive.runner.simple(learner, npoints_goal=npoints)
     return (learner.plot() * plot_loss_interval(learner))[:, -1.1:1.1]
 
 
 def get_hm(loss_per_interval, N=101):
     learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=loss_per_interval)
-    plots = {n: plot(learner, n) for n in range(N)}
+    plots = {n: plot_interval(learner, n) for n in range(N)}
     return hv.HoloMap(plots, kdims=["npoints"])
+
 
 plot_homo = get_hm(uniform_loss).relabel("homogeneous sampling")
 plot_adaptive = get_hm(default_loss).relabel("with adaptive")
 layout = plot_homo + plot_adaptive
-layout.opts(plot=dict(toolbar=None))
+layout.opts(toolbar=None)
 ```
 
 ## {class}`adaptive.Learner2D`
 
 ```{code-cell} ipython3
 :tags: [hide-input]
-
 
 def ring(xy):
     import numpy as np
@@ -131,7 +131,7 @@ def ring(xy):
     return x + np.exp(-((x**2 + y**2 - 0.75**2) ** 2) / a**4)
 
 
-def plot(learner, npoints):
+def plot_compare(learner, npoints):
     adaptive.runner.simple(learner, npoints_goal=npoints)
     learner2 = adaptive.Learner2D(ring, bounds=learner.bounds)
     xs = ys = np.linspace(*learner.bounds[0], int(learner.npoints**0.5))
@@ -146,7 +146,7 @@ def plot(learner, npoints):
 
 
 learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
-plots = {n: plot(learner, n) for n in range(4, 1010, 20)}
+plots = {n: plot_compare(learner, n) for n in range(4, 1010, 20)}
 hv.HoloMap(plots, kdims=["npoints"]).collate()
 ```
 
@@ -154,7 +154,6 @@ hv.HoloMap(plots, kdims=["npoints"]).collate()
 
 ```{code-cell} ipython3
 :tags: [hide-input]
-
 
 def g(n):
     import random
@@ -167,12 +166,12 @@ def g(n):
 learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
 
 
-def plot(learner, npoints):
+def plot_avg(learner, npoints):
     adaptive.runner.simple(learner, npoints_goal=npoints)
     return learner.plot().relabel(f"loss={learner.loss():.2f}")
 
 
-plots = {n: plot(learner, n) for n in range(10, 10000, 200)}
+plots = {n: plot_avg(learner, n) for n in range(10, 10000, 200)}
 hv.HoloMap(plots, kdims=["npoints"])
 ```
 
@@ -180,7 +179,6 @@ hv.HoloMap(plots, kdims=["npoints"])
 
 ```{code-cell} ipython3
 :tags: [hide-input]
-
 
 def sphere(xyz):
     import numpy as np

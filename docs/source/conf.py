@@ -17,7 +17,7 @@ import adaptive  # noqa: E402, isort:skip
 # -- Project information -----------------------------------------------------
 
 project = "adaptive"
-copyright = "2018-2022, Adaptive Authors"
+copyright = "2018-2023, Adaptive Authors"
 author = "Adaptive Authors"
 
 # The short X.Y version
@@ -76,7 +76,7 @@ html_logo = "_static/logo_docs.png"
 # myst-nb configuration
 nb_execution_mode = "cache"
 nb_execution_timeout = 180
-nb_execution_fail_on_error = True
+nb_execution_raise_on_error = True
 
 
 def setup(app):
