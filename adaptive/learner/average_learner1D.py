@@ -162,7 +162,7 @@ class AverageLearner1D(Learner1D):
                 ]
             )
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         mean: bool = False,
         with_default_function_args: bool = True,
@@ -216,7 +216,7 @@ class AverageLearner1D(Learner1D):
             assign_defaults(self.function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
@@ -311,16 +311,16 @@ class AverageLearner1D(Learner1D):
         points, (loss_improvement,) = self._ask_points_without_adding(1)
         points = [(seed, x) for seed, x in zip(range(n), n * points)]
         loss_improvements = [loss_improvement / n] * n
-        return points, loss_improvements
+        return points, loss_improvements  # type: ignore[return-value]
 
-    def tell_pending(self, seed_x: Point) -> None:
+    def tell_pending(self, seed_x: Point) -> None:  # type: ignore[override]
         _, x = seed_x
         self.pending_points.add(seed_x)
         if x not in self.data:
             self._update_neighbors(x, self.neighbors_combined)
             self._update_losses(x, real=False)
 
-    def tell(self, seed_x: Point, y: Real) -> None:
+    def tell(self, seed_x: Point, y: Real) -> None:  # type: ignore[override]
         seed, x = seed_x
         if y is None:
             raise TypeError(
@@ -576,7 +576,7 @@ class AverageLearner1D(Learner1D):
                     self._update_interpolated_loss_in_interval(*interval)
                 self._oldscale = deepcopy(self._scale)
 
-    def _get_data(self) -> dict[Real, dict[Int, Real]]:
+    def _get_data(self) -> dict[Real, dict[Int, Real]]:  # type: ignore[override]
         return self._data_samples
 
     def _set_data(self, data: dict[Real, dict[Int, Real]]) -> None:  # type: ignore[override]

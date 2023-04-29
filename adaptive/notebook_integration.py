@@ -87,7 +87,7 @@ def ensure_plotly():
 def in_ipynb() -> bool:
     try:
         # If we are running in IPython, then `get_ipython()` is always a global
-        return get_ipython().__class__.__name__ == "ZMQInteractiveShell"
+        return get_ipython().__class__.__name__ == "ZMQInteractiveShell"  # type: ignore[name-defined]
     except NameError:
         return False
 

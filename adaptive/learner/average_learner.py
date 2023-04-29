@@ -86,7 +86,7 @@ class AverageLearner(BaseLearner):
         """Data as NumPy array of size (npoints, 2) with seeds and values."""
         return np.array(sorted(self.data.items()))
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -126,7 +126,7 @@ class AverageLearner(BaseLearner):
             assign_defaults(self.function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,

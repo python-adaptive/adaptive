@@ -113,7 +113,7 @@ class BalancingLearner(BaseLearner):
         # pickle the whole learner.
         self.function = partial(dispatch, [lrn.function for lrn in self.learners])  # type: ignore
 
-        self._ask_cache = {}
+        self._ask_cache: dict[int, Any] = {}
         self._loss = {}
         self._pending_loss = {}
         self._cdims_default = cdims
@@ -449,7 +449,7 @@ class BalancingLearner(BaseLearner):
             learners.append(learner)
         return cls(learners, cdims=arguments)
 
-    def to_dataframe(self, index_name: str = "learner_index", **kwargs):
+    def to_dataframe(self, index_name: str = "learner_index", **kwargs):  # type: ignore[override]
         """Return the data as a concatenated `pandas.DataFrame` from child learners.
 
         Parameters
@@ -481,7 +481,7 @@ class BalancingLearner(BaseLearner):
         df = pandas.concat(dfs, axis=0, ignore_index=True)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self, df: pandas.DataFrame, index_name: str = "learner_index", **kwargs
     ):
         """Load the data from a `pandas.DataFrame` into the child learners.

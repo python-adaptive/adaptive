@@ -5,7 +5,7 @@ import itertools
 import math
 import sys
 from copy import copy, deepcopy
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
 import numpy as np
@@ -41,7 +41,7 @@ except ModuleNotFoundError:
 
 # Commonly used types
 Interval: TypeAlias = Union[Tuple[float, float], Tuple[float, float, int]]
-NeighborsType: TypeAlias = Dict[float, List[Optional[float]]]
+NeighborsType: TypeAlias = SortedDict[float, List[Optional[float]]]
 
 # Types for loss_per_interval functions
 XsType0: TypeAlias = Tuple[float, float]
@@ -352,7 +352,7 @@ class Learner1D(BaseLearner):
         """
         return np.array([(x, *np.atleast_1d(y)) for x, y in sorted(self.data.items())])
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -394,7 +394,7 @@ class Learner1D(BaseLearner):
             assign_defaults(self.function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
@@ -871,7 +871,7 @@ class Learner1D(BaseLearner):
         self.losses_combined.update(losses_combined)
 
 
-def loss_manager(x_scale: float) -> dict[Interval, float]:
+def loss_manager(x_scale: float) -> ItemSortedDict[Interval, float]:
     def sort_key(ival, loss):
         loss, ival = finite_loss(ival, loss, x_scale)
         return -loss, ival

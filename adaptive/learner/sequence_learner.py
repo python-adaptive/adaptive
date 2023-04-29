@@ -101,7 +101,7 @@ class SequenceLearner(BaseLearner):
         self, n: int, tell_pending: bool = True
     ) -> tuple[list[PointType], list[float]]:
         indices = []
-        points = []
+        points: list[PointType] = []
         loss_improvements = []
         for index in self._to_do_indices:
             if len(points) >= n:
@@ -151,10 +151,10 @@ class SequenceLearner(BaseLearner):
         return list(self.data.values())
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         return len(self.data)
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -201,7 +201,7 @@ class SequenceLearner(BaseLearner):
             assign_defaults(self._original_function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
