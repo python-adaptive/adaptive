@@ -134,21 +134,21 @@ class BalancingLearner(BaseLearner):
         )
 
     @property
-    def data(self) -> dict[tuple[int, Any], Any]:
+    def data(self) -> dict[tuple[int, Any], Any]:  # type: ignore[override]
         data = {}
         for i, lrn in enumerate(self.learners):
             data.update({(i, p): v for p, v in lrn.data.items()})
         return data
 
     @property
-    def pending_points(self) -> set[tuple[int, Any]]:
+    def pending_points(self) -> set[tuple[int, Any]]:  # type: ignore[override]
         pending_points = set()
         for i, lrn in enumerate(self.learners):
             pending_points.update({(i, p) for p in lrn.pending_points})
         return pending_points
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         return sum(lrn.npoints for lrn in self.learners)
 
     @property

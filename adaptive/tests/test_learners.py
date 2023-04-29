@@ -34,7 +34,7 @@ try:
     from adaptive.learner.skopt_learner import SKOptLearner
 except (ModuleNotFoundError, ImportError):
     # XXX: catch the ImportError because of https://github.com/scikit-optimize/scikit-optimize/issues/902
-    SKOptLearner = None
+    SKOptLearner = None  # type: ignore[assignment,misc]
 
 
 LOSS_FUNCTIONS = {

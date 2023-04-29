@@ -429,7 +429,7 @@ class Learner1D(BaseLearner):
             )
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         """Number of evaluated points."""
         return len(self.data)
 

@@ -506,7 +506,7 @@ class Learner2D(BaseLearner):
         return points * self.xy_scale + self.xy_mean
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         """Number of evaluated points."""
         return len(self.data)
 
