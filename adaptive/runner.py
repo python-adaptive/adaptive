@@ -15,7 +15,7 @@ import warnings
 from contextlib import suppress
 from datetime import datetime, timedelta
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Any, Callable, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 import loky
 
@@ -57,26 +57,33 @@ with_distributed = find_spec("distributed") is not None
 with_mpi4py = find_spec("mpi4py") is not None
 
 if TYPE_CHECKING:
+    ExecutorTypes = Optional[()]
+    FutureTypes = Optional[()]
+
     if with_distributed:
         import distributed
 
-        ExecutorTypes: TypeAlias = Union[
-            ExecutorTypes, distributed.Client, distributed.cfexecutor.ClientExecutor
+        ExecutorTypes = Optional[
+            Union[
+                ExecutorTypes, distributed.Client, distributed.cfexecutor.ClientExecutor
+            ]
         ]
 
     if with_mpi4py:
         import mpi4py.futures
 
-        ExecutorTypes: TypeAlias = Union[ExecutorTypes, mpi4py.futures.MPIPoolExecutor]
+        ExecutorTypes = Optional[Union[ExecutorTypes, mpi4py.futures.MPIPoolExecutor]]
 
     if with_ipyparallel:
         import ipyparallel
         from ipyparallel.client.asyncresult import AsyncResult
 
-        ExecutorTypes: TypeAlias = Union[
-            ExecutorTypes, ipyparallel.Client, ipyparallel.client.view.ViewExecutor
+        ExecutorTypes = Optional[
+            Union[
+                ExecutorTypes, ipyparallel.Client, ipyparallel.client.view.ViewExecutor
+            ]
         ]
-        FutureTypes: TypeAlias = Union[FutureTypes, AsyncResult]
+        FutureTypes = Optional[Union[FutureTypes, AsyncResult]]
 
 with suppress(ModuleNotFoundError):
     import uvloop
@@ -85,9 +92,8 @@ with suppress(ModuleNotFoundError):
 
 
 # -- Runner definitions
-
 if platform.system() == "Linux":
-    _default_executor = concurrent.ProcessPoolExecutor
+    _default_executor = concurrent.ProcessPoolExecutor  # type: ignore[misc]
 else:
     # On Windows and MacOS functions, the __main__ module must be
     # importable by worker subprocesses. This means that
@@ -95,7 +101,7 @@ else:
     # On Linux the whole process is forked, so the issue does not appear.
     # See https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor
     # and https://github.com/python-adaptive/adaptive/issues/301
-    _default_executor = loky.get_reusable_executor
+    _default_executor = loky.get_reusable_executor  # type: ignore[misc]
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
@@ -223,7 +229,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         self._tracebacks: dict[int, str] = {}
 
         self._id_to_point: dict[int, Any] = {}
-        self._next_id: Callable[[], int] = functools.partial(
+        self._next_id: Callable[[], int] = functools.partial(  # type: ignore[assignment]
             next, itertools.count()
         )  # some unique id to be associated with each point
 
@@ -777,7 +783,7 @@ class AsyncRunner(BaseRunner):
             while not self.goal(self.learner):
                 futures = self._get_futures()
                 kw = {"loop": self.ioloop} if sys.version_info[:2] < (3, 10) else {}
-                done, _ = await asyncio.wait(futures, return_when=first_completed, **kw)
+                done, _ = await asyncio.wait(futures, return_when=first_completed, **kw)  # type: ignore[arg-type]
                 self._process_futures(done)
         finally:
             remaining = self._remove_unfinished()
@@ -1113,9 +1119,9 @@ def auto_goal(
         )
     if all(v is None for v in opts):
         if isinstance(learner, SequenceLearner):
-            return SequenceLearner.done
+            return SequenceLearner.done  # type: ignore[return-value]
         if isinstance(learner, IntegratorLearner):
-            return IntegratorLearner.done
+            return IntegratorLearner.done  # type: ignore[return-value]
         if not allow_running_forever:
             raise ValueError(
                 "Goal is None which means the learners"
@@ -1134,7 +1140,7 @@ def _goal(
     loss_goal: float | None,
     npoints_goal: int | None,
     end_time_goal: datetime | None,
-    duration_goal: timedelta | None,
+    duration_goal: timedelta | int | float | None,
     allow_running_forever: bool,
 ):
     if callable(goal):
