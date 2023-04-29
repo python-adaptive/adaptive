@@ -1,7 +1,7 @@
 ```{include} README.md
 ---
-start-after: <!-- implemented-algorithms-list-end -->
-end-before: <!-- credits-end -->
+start-after: <!-- rest-start -->
+end-before: <!-- rest-end -->
 ---
 ```
 
@@ -10,7 +10,6 @@ end-before: <!-- credits-end -->
 
 ```{include} README.md
 ---
-start-after: <!-- credits-end -->
-end-before: <!-- references-start -->
+start-after: <!-- rest-end -->
 ---
 ```

@@ -110,7 +110,7 @@ While `adaptive` provides sensible default choices, the adaptive sampling proces
 
 The following learners are implemented:
 
-<!-- implemented-algorithms-list-start -->
+<!-- implemented-algorithms-end -->
 
 - `Learner1D`: for 1D functions `f: ℝ → ℝ^N`,
 - `Learner2D`: for 2D functions `f: ℝ^2 → ℝ^N`,
@@ -132,7 +132,7 @@ In addition to learners, `adaptive` offers primitives for parallel sampling acro
 [ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
-<!-- implemented-algorithms-list-end -->
+<!-- rest -->
 
 ## :package: Installation
 
@@ -213,11 +213,7 @@ We would like to give credits to the following people:
 - Pedro Gonnet for his implementation of [CQUAD](https://www.gnu.org/software/gsl/manual/html_node/CQUAD-doubly_002dadaptive-integration.html), “Algorithm 4” as described in “Increasing the Reliability of Adaptive Quadrature Using Explicit Interpolants”, P. Gonnet, ACM Transactions on Mathematical Software, 37 (3), art. no. 26, 2010.
 - Pauli Virtanen for his `AdaptiveTriSampling` script (no longer available online since SciPy Central went down) which served as inspiration for the `adaptive.Learner2D`.
 
-<!-- credits-end -->
+<!-- rest-end -->
 
 For general discussion, we have a [Gitter chat channel](https://gitter.im/python-adaptive/adaptive).
 If you find any bugs or have any feature suggestions please file a GitHub [issue](https://github.com/python-adaptive/adaptive/issues/new) or submit a [pull request](https://github.com/python-adaptive/adaptive/pulls).
-
-<!-- references-start -->
-
-<!-- references-end -->

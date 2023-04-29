@@ -12,8 +12,8 @@ kernelspec:
 
 ```{include} README.md
 ---
-start-after: <!-- summary-end -->
-end-before: <!-- implemented-algorithms-list-start -->
+start-after: <!-- implemented-algorithms-start -->
+end-before: <!-- implemented-algorithms-end -->
 ---
 ```
 

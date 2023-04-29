@@ -15,8 +15,6 @@ end-before: <!-- summary-end -->
 ---
 ```
 
-## Key features
-
 ```{include} README.md
 ---
 start-after: <!-- key-features-start -->
@@ -26,13 +24,6 @@ end-before: <!-- key-features-end -->
 
 ```{tip}
 Start with the {ref}`1D function learning tutorial<TutorialLearner1D>`.
-```
-
-```{include} README.md
----
-start-after: <!-- references-start -->
-end-before: <!-- references-end -->
----
 ```
 
 ```{toctree}
