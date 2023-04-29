@@ -49,7 +49,7 @@ def newton(n: int) -> np.ndarray:
     # monomial x^(n-d).
 
     mod = 2 * (n - 1)
-    terms = defaultdict(int)
+    terms: dict[tuple[int, int], int] = defaultdict(int)
     terms[0, 0] += 1
 
     for i in range(n):
@@ -105,7 +105,7 @@ def scalar_product(a: list[Fraction], b: list[Fraction]) -> Fraction:
             c[i + j] += a[j] * bi
 
     # Calculate the definite integral from -1 to 1.
-    return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))
+    return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))  # type: ignore[return-value]
 
 
 def calc_bdef(ns: tuple[int, int, int, int]) -> list[np.ndarray]:

@@ -15,17 +15,17 @@ import warnings
 from contextlib import suppress
 from datetime import datetime, timedelta
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Any, Callable, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 import loky
 
 from adaptive import (
     BalancingLearner,
-    BaseLearner,
     DataSaver,
     IntegratorLearner,
     SequenceLearner,
 )
+from adaptive.learner.base_learner import LearnerType
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 from adaptive.utils import SequentialExecutor
 
@@ -40,14 +40,15 @@ FutureTypes: TypeAlias = Union[concurrent.Future, asyncio.Future, asyncio.Task]
 if TYPE_CHECKING:
     import holoviews
 
-try:
+
+if sys.version_info >= (3, 10):
     from typing import TypeAlias
-except ImportError:
+else:
     from typing_extensions import TypeAlias
 
-try:
+if sys.version_info >= (3, 8):
     from typing import Literal
-except ImportError:
+else:
     from typing_extensions import Literal
 
 
@@ -56,26 +57,33 @@ with_distributed = find_spec("distributed") is not None
 with_mpi4py = find_spec("mpi4py") is not None
 
 if TYPE_CHECKING:
+    ExecutorTypes = Optional[()]
+    FutureTypes = Optional[()]
+
     if with_distributed:
         import distributed
 
-        ExecutorTypes: TypeAlias = Union[
-            ExecutorTypes, distributed.Client, distributed.cfexecutor.ClientExecutor
+        ExecutorTypes = Optional[
+            Union[
+                ExecutorTypes, distributed.Client, distributed.cfexecutor.ClientExecutor
+            ]
         ]
 
     if with_mpi4py:
         import mpi4py.futures
 
-        ExecutorTypes: TypeAlias = Union[ExecutorTypes, mpi4py.futures.MPIPoolExecutor]
+        ExecutorTypes = Optional[Union[ExecutorTypes, mpi4py.futures.MPIPoolExecutor]]
 
     if with_ipyparallel:
         import ipyparallel
         from ipyparallel.client.asyncresult import AsyncResult
 
-        ExecutorTypes: TypeAlias = Union[
-            ExecutorTypes, ipyparallel.Client, ipyparallel.client.view.ViewExecutor
+        ExecutorTypes = Optional[
+            Union[
+                ExecutorTypes, ipyparallel.Client, ipyparallel.client.view.ViewExecutor
+            ]
         ]
-        FutureTypes: TypeAlias = Union[FutureTypes, AsyncResult]
+        FutureTypes = Optional[Union[FutureTypes, AsyncResult]]
 
 with suppress(ModuleNotFoundError):
     import uvloop
@@ -84,9 +92,8 @@ with suppress(ModuleNotFoundError):
 
 
 # -- Runner definitions
-
 if platform.system() == "Linux":
-    _default_executor = concurrent.ProcessPoolExecutor
+    _default_executor = concurrent.ProcessPoolExecutor  # type: ignore[misc]
 else:
     # On Windows and MacOS functions, the __main__ module must be
     # importable by worker subprocesses. This means that
@@ -94,7 +101,7 @@ else:
     # On Linux the whole process is forked, so the issue does not appear.
     # See https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor
     # and https://github.com/python-adaptive/adaptive/issues/301
-    _default_executor = loky.get_reusable_executor
+    _default_executor = loky.get_reusable_executor  # type: ignore[misc]
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
@@ -173,15 +180,15 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        learner: BaseLearner,
-        goal: Callable[[BaseLearner], bool] | None = None,
+        learner: LearnerType,
+        goal: Callable[[LearnerType], bool] | None = None,
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
         executor: ExecutorTypes | None = None,
-        ntasks: int = None,
+        ntasks: int | None = None,
         log: bool = False,
         shutdown_executor: bool = False,
         retries: int = 0,
@@ -222,7 +229,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         self._tracebacks: dict[int, str] = {}
 
         self._id_to_point: dict[int, Any] = {}
-        self._next_id: Callable[[], int] = functools.partial(
+        self._next_id: Callable[[], int] = functools.partial(  # type: ignore[assignment]
             next, itertools.count()
         )  # some unique id to be associated with each point
 
@@ -304,7 +311,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
                 self._tracebacks.pop(pid, None)
                 x = self._id_to_point.pop(pid)
                 if self.do_log:
-                    self.log.append(("tell", x, y))
+                    self.log.append(("tell", x, y))  # type: ignore[union-attr]
                 self.learner.tell(x, y)
 
     def _get_futures(
@@ -316,7 +323,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         n_new_tasks = max(0, self._get_max_tasks() - len(self._pending_tasks))
 
         if self.do_log:
-            self.log.append(("ask", n_new_tasks))
+            self.log.append(("ask", n_new_tasks))  # type: ignore[union-attr]
 
         pids, _ = self._ask(n_new_tasks)
 
@@ -461,8 +468,8 @@ class BlockingRunner(BaseRunner):
 
     def __init__(
         self,
-        learner: BaseLearner,
-        goal: Callable[[BaseLearner], bool] | None = None,
+        learner: LearnerType,
+        goal: Callable[[LearnerType], bool] | None = None,
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
@@ -620,8 +627,8 @@ class AsyncRunner(BaseRunner):
 
     def __init__(
         self,
-        learner: BaseLearner,
-        goal: Callable[[BaseLearner], bool] | None = None,
+        learner: LearnerType,
+        goal: Callable[[LearnerType], bool] | None = None,
         *,
         loss_goal: float | None = None,
         npoints_goal: int | None = None,
@@ -667,7 +674,6 @@ class AsyncRunner(BaseRunner):
             allow_running_forever=True,
         )
         self.ioloop = ioloop or asyncio.get_event_loop()
-        self.task = None
 
         # When the learned function is 'async def', we run it
         # directly on the event loop, and not in the executor.
@@ -724,9 +730,9 @@ class AsyncRunner(BaseRunner):
     def live_plot(
         self,
         *,
-        plotter: Callable[[BaseLearner], holoviews.Element] | None = None,
+        plotter: Callable[[LearnerType], holoviews.Element] | None = None,
         update_interval: float = 2.0,
-        name: str = None,
+        name: str | None = None,
         normalize: bool = True,
     ) -> holoviews.DynamicMap:
         """Live plotting of the learner's data.
@@ -777,7 +783,7 @@ class AsyncRunner(BaseRunner):
             while not self.goal(self.learner):
                 futures = self._get_futures()
                 kw = {"loop": self.ioloop} if sys.version_info[:2] < (3, 10) else {}
-                done, _ = await asyncio.wait(futures, return_when=first_completed, **kw)
+                done, _ = await asyncio.wait(futures, return_when=first_completed, **kw)  # type: ignore[arg-type]
                 self._process_futures(done)
         finally:
             remaining = self._remove_unfinished()
@@ -802,7 +808,7 @@ class AsyncRunner(BaseRunner):
         self,
         save_kwargs: dict[str, Any] | None = None,
         interval: int = 30,
-        method: Callable[[BaseLearner], None] | None = None,
+        method: Callable[[LearnerType], None] | None = None,
     ):
         """Periodically save the learner's data.
 
@@ -850,8 +856,8 @@ Runner = AsyncRunner
 
 
 def simple(
-    learner: BaseLearner,
-    goal: Callable[[BaseLearner], bool] | None = None,
+    learner: LearnerType,
+    goal: Callable[[LearnerType], bool] | None = None,
     *,
     loss_goal: float | None = None,
     npoints_goal: int | None = None,
@@ -902,6 +908,7 @@ def simple(
         duration_goal,
         allow_running_forever=False,
     )
+    assert goal is not None
     while not goal(learner):
         xs, _ = learner.ask(1)
         for x in xs:
@@ -910,7 +917,7 @@ def simple(
 
 
 def replay_log(
-    learner: BaseLearner,
+    learner: LearnerType,
     log: list[tuple[Literal["tell"], Any, Any] | tuple[Literal["ask"], int]],
 ) -> None:
     """Apply a sequence of method calls to a learner.
@@ -967,9 +974,9 @@ def _get_ncores(
     elif isinstance(
         ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
     ):
-        return ex._max_workers  # not public API!
+        return ex._max_workers  # type: ignore[union-attr]
     elif isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
-        return ex._max_workers  # not public API!
+        return ex._max_workers  # type: ignore[union-attr]
     elif isinstance(ex, SequentialExecutor):
         return 1
     elif with_distributed and isinstance(ex, distributed.cfexecutor.ClientExecutor):
@@ -985,7 +992,7 @@ def _get_ncores(
 
 
 # TODO: deprecate
-def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[BaseLearner], bool]:
+def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[LearnerType], bool]:
     """Stop a runner after a specified time.
 
     For example, to specify a runner that should stop after
@@ -1040,9 +1047,9 @@ def auto_goal(
     npoints: int | None = None,
     end_time: datetime | None = None,
     duration: timedelta | int | float | None = None,
-    learner: BaseLearner | None = None,
+    learner: LearnerType | None = None,
     allow_running_forever: bool = True,
-) -> Callable[[BaseLearner], bool]:
+) -> Callable[[LearnerType], bool]:
     """Extract a goal from the learners.
 
     Parameters
@@ -1068,13 +1075,6 @@ def auto_goal(
     -------
     Callable[[adaptive.BaseLearner], bool]
     """
-    kw = {
-        "loss": loss,
-        "npoints": npoints,
-        "end_time": end_time,
-        "duration": duration,
-        "allow_running_forever": allow_running_forever,
-    }
     opts = (loss, npoints, end_time, duration)  # all are mutually exclusive
     if sum(v is not None for v in opts) > 1:
         raise ValueError(
@@ -1087,23 +1087,41 @@ def auto_goal(
         # Note that the float loss goal is more efficiently implemented in the
         # BalancingLearner itself. That is why the previous if statement is
         # above this one.
-        goals = [auto_goal(learner=lrn, **kw) for lrn in learner.learners]
+        goals = [
+            auto_goal(
+                learner=lrn,
+                loss=loss,
+                npoints=npoints,
+                end_time=end_time,
+                duration=duration,
+                allow_running_forever=allow_running_forever,
+            )
+            for lrn in learner.learners
+        ]
         return lambda learner: all(
-            goal(lrn) for lrn, goal in zip(learner.learners, goals)
+            goal(lrn) for lrn, goal in zip(learner.learners, goals)  # type: ignore[attr-defined]
         )
     if npoints is not None:
-        return lambda learner: learner.npoints >= npoints
+        return lambda learner: learner.npoints >= npoints  # type: ignore[operator]
     if end_time is not None:
         return _TimeGoal(end_time)
     if duration is not None:
         return _TimeGoal(duration)
     if isinstance(learner, DataSaver):
-        return auto_goal(**kw, learner=learner.learner)
+        assert learner is not None
+        return auto_goal(
+            learner=learner.learner,
+            loss=loss,
+            npoints=npoints,
+            end_time=end_time,
+            duration=duration,
+            allow_running_forever=allow_running_forever,
+        )
     if all(v is None for v in opts):
         if isinstance(learner, SequenceLearner):
-            return SequenceLearner.done
+            return SequenceLearner.done  # type: ignore[return-value]
         if isinstance(learner, IntegratorLearner):
-            return IntegratorLearner.done
+            return IntegratorLearner.done  # type: ignore[return-value]
         if not allow_running_forever:
             raise ValueError(
                 "Goal is None which means the learners"
@@ -1117,12 +1135,12 @@ def auto_goal(
 
 
 def _goal(
-    learner: BaseLearner | None,
-    goal: Callable[[BaseLearner], bool] | None,
+    learner: LearnerType | None,
+    goal: Callable[[LearnerType], bool] | None,
     loss_goal: float | None,
     npoints_goal: int | None,
     end_time_goal: datetime | None,
-    duration_goal: timedelta | None,
+    duration_goal: timedelta | int | float | None,
     allow_running_forever: bool,
 ):
     if callable(goal):

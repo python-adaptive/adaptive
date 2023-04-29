@@ -3,10 +3,9 @@ from __future__ import annotations
 import collections.abc
 import itertools
 import math
+import sys
 from copy import copy, deepcopy
-from numbers import Integral as Int
-from numbers import Real
-from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
 import numpy as np
@@ -17,18 +16,18 @@ from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
 from adaptive.learner.learnerND import volume
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Float
+from adaptive.types import Float, Int, Real
 from adaptive.utils import (
     assign_defaults,
     cache_latest,
     partial_function_from_dataframe,
 )
 
-try:
+if sys.version_info >= (3, 10):
     from typing import TypeAlias
-except ImportError:
-    # Remove this when we drop support for Python 3.9
+else:
     from typing_extensions import TypeAlias
+
 
 try:
     import pandas
@@ -38,24 +37,32 @@ try:
 except ModuleNotFoundError:
     with_pandas = False
 
-# -- types --
+if TYPE_CHECKING:
+    # -- types --
 
-# Commonly used types
-Interval: TypeAlias = Union[Tuple[float, float], Tuple[float, float, int]]
-NeighborsType: TypeAlias = Dict[float, List[Union[float, None]]]
+    # Commonly used types
+    Interval: TypeAlias = Union[Tuple[float, float], Tuple[float, float, int]]
+    NeighborsType: TypeAlias = SortedDict[float, List[Optional[float]]]
 
-# Types for loss_per_interval functions
-NoneFloat: TypeAlias = Union[Float, None]
-NoneArray: TypeAlias = Union[np.ndarray, None]
-XsType0: TypeAlias = Tuple[Float, Float]
-YsType0: TypeAlias = Union[Tuple[Float, Float], Tuple[np.ndarray, np.ndarray]]
-XsType1: TypeAlias = Tuple[NoneFloat, NoneFloat, NoneFloat, NoneFloat]
-YsType1: TypeAlias = Union[
-    Tuple[NoneFloat, NoneFloat, NoneFloat, NoneFloat],
-    Tuple[NoneArray, NoneArray, NoneArray, NoneArray],
-]
-XsTypeN: TypeAlias = Tuple[NoneFloat, ...]
-YsTypeN: TypeAlias = Union[Tuple[NoneFloat, ...], Tuple[NoneArray, ...]]
+    # Types for loss_per_interval functions
+    XsType0: TypeAlias = Tuple[float, float]
+    YsType0: TypeAlias = Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]
+    XsType1: TypeAlias = Tuple[
+        Optional[float], Optional[float], Optional[float], Optional[float]
+    ]
+    YsType1: TypeAlias = Union[
+        Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
+        Tuple[
+            Optional[np.ndarray],
+            Optional[np.ndarray],
+            Optional[np.ndarray],
+            Optional[np.ndarray],
+        ],
+    ]
+    XsTypeN: TypeAlias = Tuple[Optional[float], ...]
+    YsTypeN: TypeAlias = Union[
+        Tuple[Optional[float], ...], Tuple[Optional[np.ndarray], ...]
+    ]
 
 
 __all__ = [
@@ -109,22 +116,22 @@ def default_loss(xs: XsType0, ys: YsType0) -> Float:
 @uses_nth_neighbors(0)
 def abs_min_log_loss(xs: XsType0, ys: YsType0) -> Float:
     """Calculate loss of a single interval that prioritizes the absolute minimum."""
-    ys = tuple(np.log(np.abs(y).min()) for y in ys)
-    return default_loss(xs, ys)
+    ys_log: YsType0 = tuple(np.log(np.abs(y).min()) for y in ys)  # type: ignore[assignment]
+    return default_loss(xs, ys_log)
 
 
 @uses_nth_neighbors(1)
 def triangle_loss(xs: XsType1, ys: YsType1) -> Float:
     assert len(xs) == 4
-    xs = [x for x in xs if x is not None]
-    ys = [y for y in ys if y is not None]
+    xs = [x for x in xs if x is not None]  # type: ignore[assignment]
+    ys = [y for y in ys if y is not None]  # type: ignore[assignment]
 
     if len(xs) == 2:  # we do not have enough points for a triangle
-        return xs[1] - xs[0]
+        return xs[1] - xs[0]  # type: ignore[operator]
 
     N = len(xs) - 2  # number of constructed triangles
     if isinstance(ys[0], collections.abc.Iterable):
-        pts = [(x, *y) for x, y in zip(xs, ys)]
+        pts = [(x, *y) for x, y in zip(xs, ys)]  # type: ignore[misc]
         vol = simplex_volume_in_embedding
     else:
         pts = [(x, y) for x, y in zip(xs, ys)]
@@ -182,7 +189,7 @@ def curvature_loss_function(
 
         triangle_loss_ = triangle_loss(xs, ys)
         default_loss_ = default_loss(xs_middle, ys_middle)
-        dx = xs_middle[1] - xs_middle[0]
+        dx = xs_middle[1] - xs_middle[0]  # type: ignore[operator]
         return (
             area_factor * (triangle_loss_**0.5)
             + euclid_factor * default_loss_
@@ -277,7 +284,9 @@ class Learner1D(BaseLearner):
     ):
         self.function = function  # type: ignore
 
-        if hasattr(loss_per_interval, "nth_neighbors"):
+        if loss_per_interval is not None and hasattr(
+            loss_per_interval, "nth_neighbors"
+        ):
             self.nth_neighbors = loss_per_interval.nth_neighbors
         else:
             self.nth_neighbors = 0
@@ -311,7 +320,7 @@ class Learner1D(BaseLearner):
         # The precision in 'x' below which we set losses to 0.
         self._dx_eps = 2 * max(np.abs(bounds)) * np.finfo(float).eps
 
-        self.bounds = tuple(bounds)
+        self.bounds: tuple[float, float] = (float(bounds[0]), float(bounds[1]))
         self.__missing_bounds = set(self.bounds)  # cache of missing bounds
 
         self._vdim: int | None = None
@@ -346,7 +355,7 @@ class Learner1D(BaseLearner):
         """
         return np.array([(x, *np.atleast_1d(y)) for x, y in sorted(self.data.items())])
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -388,14 +397,14 @@ class Learner1D(BaseLearner):
             assign_defaults(self.function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         x_name: str = "x",
         y_name: str = "y",
-    ):
+    ) -> None:
         """Load data from a `pandas.DataFrame`.
 
         If ``with_default_function_args`` is True, then ``learner.function``'s
@@ -423,7 +432,7 @@ class Learner1D(BaseLearner):
             )
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         """Number of evaluated points."""
         return len(self.data)
 
@@ -671,7 +680,7 @@ class Learner1D(BaseLearner):
             self.losses[ival] = self._get_loss_in_interval(*ival)
 
         # List with "real" intervals that have interpolated intervals inside
-        to_interpolate = []
+        to_interpolate: list[tuple[Real, Real]] = []
 
         self.losses_combined = loss_manager(self._scale[0])
         for ival in intervals_combined:
@@ -775,7 +784,9 @@ class Learner1D(BaseLearner):
                 quals[(*xs, n + 1)] = loss_qual * n / (n + 1)
 
         points = list(
-            itertools.chain.from_iterable(linspace(*ival, n) for (*ival, n) in quals)
+            itertools.chain.from_iterable(
+                linspace(x_l, x_r, n) for (x_l, x_r, n) in quals
+            )
         )
 
         loss_improvements = list(
@@ -863,7 +874,7 @@ class Learner1D(BaseLearner):
         self.losses_combined.update(losses_combined)
 
 
-def loss_manager(x_scale: float) -> dict[Interval, float]:
+def loss_manager(x_scale: float) -> ItemSortedDict[Interval, float]:
     def sort_key(ival, loss):
         loss, ival = finite_loss(ival, loss, x_scale)
         return -loss, ival
@@ -882,7 +893,7 @@ def finite_loss(ival: Interval, loss: float, x_scale: float) -> tuple[float, Int
         if len(ival) == 3:
             # Used when constructing quals. Last item is
             # the number of points inside the qual.
-            loss /= ival[2]
+            loss /= ival[2]  # type: ignore[misc]
 
     # We round the loss to 12 digits such that losses
     # are equal up to numerical precision will be considered
