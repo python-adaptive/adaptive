@@ -378,7 +378,10 @@ class Learner2D(BaseLearner):
         self.ndim = len(bounds)
         self._vdim = None
         self.loss_per_triangle = loss_per_triangle or default_loss
-        self.bounds = tuple((float(a), float(b)) for a, b in bounds)
+        self.bounds = (
+            (float(bounds[0][0]), float(bounds[0][1])),
+            (float(bounds[1][0]), float(bounds[1][1])),
+        )
         self.data = OrderedDict()
         self._stack = OrderedDict()
         self.pending_points = set()
