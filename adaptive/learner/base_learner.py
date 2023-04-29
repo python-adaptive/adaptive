@@ -60,7 +60,7 @@ def uses_nth_neighbors(n: int):
     return _wrapped
 
 
-class BaseLearner:
+class BaseLearner(abc.ABC):
     """Base class for algorithms for learning a function 'f: X → Y'.
 
     Attributes
