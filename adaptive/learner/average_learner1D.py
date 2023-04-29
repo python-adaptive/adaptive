@@ -3,9 +3,10 @@ from __future__ import annotations
 import math
 import sys
 from collections import defaultdict
+from collections.abc import Iterable, Sequence
 from copy import deepcopy
 from math import hypot
-from typing import Callable, DefaultDict, Iterable, List, Sequence, Tuple
+from typing import Callable
 
 import numpy as np
 import scipy.stats
@@ -25,8 +26,8 @@ try:
 except ModuleNotFoundError:
     with_pandas = False
 
-Point = Tuple[int, Real]
-Points = List[Point]
+Point = tuple[int, Real]
+Points = list[Point]
 
 __all__: list[str] = ["AverageLearner1D"]
 
@@ -504,7 +505,7 @@ class AverageLearner1D(Learner1D):
             )
 
         # Create a mapping of points to a list of samples
-        mapping: DefaultDict[Real, DefaultDict[Int, Real]] = defaultdict(
+        mapping: defaultdict[Real, defaultdict[Int, Real]] = defaultdict(
             lambda: defaultdict(dict)
         )
         for (seed, x), y in zip(xs, ys):

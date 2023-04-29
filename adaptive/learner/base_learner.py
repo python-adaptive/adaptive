@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Callable, Dict, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 import cloudpickle
 
@@ -66,7 +66,7 @@ def uses_nth_neighbors(n: int):
     return _wrapped
 
 
-DataType = Dict[Any, Any]
+DataType = dict[Any, Any]
 
 
 class BaseLearner(abc.ABC):

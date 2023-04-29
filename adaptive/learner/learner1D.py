@@ -4,8 +4,9 @@ import collections.abc
 import itertools
 import math
 import sys
+from collections.abc import Sequence
 from copy import copy, deepcopy
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 import cloudpickle
 import numpy as np
@@ -41,27 +42,27 @@ if TYPE_CHECKING:
     # -- types --
 
     # Commonly used types
-    Interval: TypeAlias = Union[Tuple[float, float], Tuple[float, float, int]]
-    NeighborsType: TypeAlias = SortedDict[float, List[Optional[float]]]
+    Interval: TypeAlias = Union[tuple[float, float], tuple[float, float, int]]
+    NeighborsType: TypeAlias = SortedDict[float, list[Optional[float]]]
 
     # Types for loss_per_interval functions
-    XsType0: TypeAlias = Tuple[float, float]
-    YsType0: TypeAlias = Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]
-    XsType1: TypeAlias = Tuple[
+    XsType0: TypeAlias = tuple[float, float]
+    YsType0: TypeAlias = Union[tuple[float, float], tuple[np.ndarray, np.ndarray]]
+    XsType1: TypeAlias = tuple[
         Optional[float], Optional[float], Optional[float], Optional[float]
     ]
     YsType1: TypeAlias = Union[
-        Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
-        Tuple[
+        tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
+        tuple[
             Optional[np.ndarray],
             Optional[np.ndarray],
             Optional[np.ndarray],
             Optional[np.ndarray],
         ],
     ]
-    XsTypeN: TypeAlias = Tuple[Optional[float], ...]
+    XsTypeN: TypeAlias = tuple[Optional[float], ...]
     YsTypeN: TypeAlias = Union[
-        Tuple[Optional[float], ...], Tuple[Optional[np.ndarray], ...]
+        tuple[Optional[float], ...], tuple[Optional[np.ndarray], ...]
     ]
 
 
