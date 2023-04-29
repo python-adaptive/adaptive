@@ -1,4 +1,6 @@
-```{include} README.md
+# ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) *Adaptive*: Parallel Active Learning of Mathematical Functions
+
+```{include} ../README.md
 ---
 start-after: <!-- badges-start -->
 end-before: <!-- badges-end -->
@@ -8,14 +10,14 @@ end-before: <!-- badges-end -->
 ```{include} logo.md
 ```
 
-```{include} README.md
+```{include} ../README.md
 ---
 start-after: <!-- summary-start -->
 end-before: <!-- summary-end -->
 ---
 ```
 
-```{include} README.md
+```{include} ../README.md
 ---
 start-after: <!-- key-features-start -->
 end-before: <!-- key-features-end -->

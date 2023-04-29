@@ -1,6 +1,6 @@
-<!-- badges-start -->
 
 # ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) *Adaptive*: Parallel Active Learning of Mathematical Functions :brain::1234:
+<!-- badges-start -->
 
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb)
 [![Conda](https://img.shields.io/badge/install%20with-conda-green.svg)](https://anaconda.org/conda-forge/adaptive)
@@ -132,7 +132,7 @@ In addition to learners, `adaptive` offers primitives for parallel sampling acro
 [ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
-<!-- rest -->
+<!-- rest-start -->
 
 ## :package: Installation
 

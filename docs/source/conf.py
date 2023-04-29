@@ -97,7 +97,7 @@ def replace_named_emojis(input_file: Path, output_file: Path) -> None:
 
 # Call the function to replace emojis in the README.md file
 input_file = package_path / "README.md"
-output_file = docs_path / "source" / "README.md"
+output_file = docs_path / "README.md"
 replace_named_emojis(input_file, output_file)
 
 

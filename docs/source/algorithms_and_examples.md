@@ -10,7 +10,7 @@ kernelspec:
   name: python3
 ---
 
-```{include} README.md
+```{include} ../README.md
 ---
 start-after: <!-- implemented-algorithms-start -->
 end-before: <!-- implemented-algorithms-end -->
@@ -37,7 +37,7 @@ In addition to the learners, `adaptive` also provides primitives for running the
 [ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
-# Examples
+# 💡 Examples
 
 Here are some examples of how Adaptive samples vs. homogeneous sampling.
 Click on the *Play* {fa}`play` button or move the sliders.

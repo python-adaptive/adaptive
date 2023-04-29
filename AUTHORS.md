@@ -1,4 +1,4 @@
-## Authors
+## 👥 Authors
 
 The current maintainers of Adaptive are:
 
