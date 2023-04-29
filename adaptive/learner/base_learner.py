@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 import cloudpickle
 
@@ -247,3 +247,6 @@ class BaseLearner(metaclass=_RequireAttrsABCMeta):
 
     def __setstate__(self, state):
         self.__dict__ = cloudpickle.loads(state)
+
+
+LearnerType = TypeVar("LearnerType", bound=BaseLearner)

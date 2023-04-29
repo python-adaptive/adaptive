@@ -4,8 +4,7 @@ import functools
 from collections import OrderedDict
 from typing import Any, Callable
 
-from adaptive.learner import LearnerType
-from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.base_learner import BaseLearner, LearnerType
 from adaptive.utils import copy_docstring_from
 
 try:

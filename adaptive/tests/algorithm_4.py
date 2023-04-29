@@ -111,7 +111,7 @@ def scalar_product(a: list[Fraction], b: list[Fraction]) -> Fraction:
             c[i + j] += a[j] * bi
 
     # Calculate the definite integral from -1 to 1.
-    return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))
+    return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))  # type: ignore[return-value]
 
 
 def calc_bdef(ns: tuple[int, int, int, int]) -> list[np.ndarray]:
@@ -299,7 +299,7 @@ class _Interval:
             ival.calc_igral_and_err(T[:, : self.c.shape[0]] @ self.c)
 
             ival.c00 = ival.c[0]
-            ival.ndiv = self.ndiv + (self.c00 and ival.c00 / self.c00 > 2)
+            ival.ndiv = self.ndiv + (self.c00 and ival.c00 / self.c00 > 2)  # type: ignore[assignment]
             if ival.ndiv > ndiv_max and 2 * ival.ndiv > ival.rdepth:
                 # Signal a divergent integral.
                 return (ival.a, ival.b, ival.b - ival.a), nr_points
@@ -352,9 +352,9 @@ def algorithm_4(
     ival, nr_points = _Interval.make_first(f, a, b)
 
     ivals = [ival]
-    igral_excess = 0
-    err_excess = 0
-    i_max = 0
+    igral_excess: float = 0
+    err_excess: float = 0
+    i_max: int = 0
 
     for _ in range(N_loops):
         if ivals[i_max].depth == 3:

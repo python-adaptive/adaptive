@@ -11,8 +11,7 @@ from typing import Any, Callable, Dict, Sequence, Tuple, Union, cast
 
 import numpy as np
 
-from adaptive.learner import LearnerType
-from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.base_learner import BaseLearner, LearnerType
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Int, Real
 from adaptive.utils import cache_latest, named_product, restore

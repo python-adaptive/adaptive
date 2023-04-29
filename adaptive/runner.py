@@ -25,7 +25,7 @@ from adaptive import (
     IntegratorLearner,
     SequenceLearner,
 )
-from adaptive.learner import LearnerType
+from adaptive.learner.base_learner import LearnerType
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 from adaptive.utils import SequentialExecutor
 
