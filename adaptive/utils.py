@@ -7,21 +7,21 @@ import inspect
 import os
 import pickle
 import warnings
-from contextlib import _GeneratorContextManager, contextmanager
+from contextlib import contextmanager
 from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Iterator, Sequence
 
 import cloudpickle
 
 
-def named_product(**items: Mapping[str, Sequence[Any]]):
+def named_product(**items: Sequence[Any]):
     names = items.keys()
     vals = items.values()
     return [dict(zip(names, res)) for res in product(*vals)]
 
 
 @contextmanager
-def restore(*learners) -> _GeneratorContextManager:
+def restore(*learners) -> Iterator[None]:
     states = [learner.__getstate__() for learner in learners]
     try:
         yield
@@ -77,7 +77,7 @@ def save(fname: str, data: Any, compress: bool = True) -> bool:
 def load(fname: str, compress: bool = True) -> Any:
     fname = os.path.expanduser(fname)
     _open = gzip.open if compress else open
-    with _open(fname, "rb") as f:
+    with _open(fname, "rb") as f:  # type: ignore[operator]
         return cloudpickle.load(f)
 
 

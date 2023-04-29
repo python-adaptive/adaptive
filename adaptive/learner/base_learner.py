@@ -1,9 +1,15 @@
+from __future__ import annotations
+
 import abc
 from contextlib import suppress
+from typing import TYPE_CHECKING, Any, Callable, Dict, TypeVar
 
 import cloudpickle
 
 from adaptive.utils import load, save
+
+if TYPE_CHECKING:
+    import pandas
 
 
 def uses_nth_neighbors(n: int):
@@ -60,6 +66,9 @@ def uses_nth_neighbors(n: int):
     return _wrapped
 
 
+DataType = Dict[Any, Any]
+
+
 class BaseLearner(abc.ABC):
     """Base class for algorithms for learning a function 'f: X → Y'.
 
@@ -81,9 +90,10 @@ class BaseLearner(abc.ABC):
     and returns a holoviews plot.
     """
 
-    data: dict
+    data: DataType
     npoints: int
     pending_points: set
+    function: Callable[..., Any]
 
     def tell(self, x, y):
         """Tell the learner about a single value.
@@ -142,11 +152,11 @@ class BaseLearner(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_data(self):
+    def _get_data(self) -> Any:
         pass
 
     @abc.abstractmethod
-    def _set_data(self):
+    def _set_data(self, data: Any) -> None:
         pass
 
     @abc.abstractmethod
@@ -193,21 +203,53 @@ class BaseLearner(abc.ABC):
             data = load(fname, compress)
             self._set_data(data)
 
+    @abc.abstractmethod
+    def to_dataframe(
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        **kwargs: Any,
+    ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        x_name : str, optional
+            Name of the input value, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
+
+    @abc.abstractmethod
+    def load_dataframe(
+        self,
+        df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        **kwargs: Any,
+    ) -> None:
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+        """
+
     def __getstate__(self):
         return cloudpickle.dumps(self.__dict__)
 
     def __setstate__(self, state):
         self.__dict__ = cloudpickle.loads(state)
 
-    def _check_required_attributes(self):
-        for name, type_ in self.__annotations__.items():
-            try:
-                x = getattr(self, name)
-            except AttributeError:
-                raise AttributeError(
-                    f"Required attribute {name} not set in __init__."
-                ) from None
-            else:
-                if not isinstance(x, type_):
-                    msg = f"The attribute '{name}' should be of type {type_}, not {type(x)}."
-                    raise TypeError(msg)
+
+LearnerType = TypeVar("LearnerType", bound=BaseLearner)

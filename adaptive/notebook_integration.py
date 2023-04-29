@@ -87,14 +87,14 @@ def ensure_plotly():
 def in_ipynb() -> bool:
     try:
         # If we are running in IPython, then `get_ipython()` is always a global
-        return get_ipython().__class__.__name__ == "ZMQInteractiveShell"
+        return get_ipython().__class__.__name__ == "ZMQInteractiveShell"  # type: ignore[name-defined]
     except NameError:
         return False
 
 
 # Fancy displays in the Jupyter notebook
 
-active_plotting_tasks = {}
+active_plotting_tasks: dict[str, asyncio.Task] = {}
 
 
 def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=True):

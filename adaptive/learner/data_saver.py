@@ -4,7 +4,7 @@ import functools
 from collections import OrderedDict
 from typing import Any, Callable
 
-from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.base_learner import BaseLearner, LearnerType
 from adaptive.utils import copy_docstring_from
 
 try:
@@ -40,12 +40,11 @@ class DataSaver(BaseLearner):
     >>> learner = DataSaver(_learner, arg_picker=itemgetter('y'))
     """
 
-    def __init__(self, learner: BaseLearner, arg_picker: Callable) -> None:
+    def __init__(self, learner: LearnerType, arg_picker: Callable) -> None:
         self.learner = learner
-        self.extra_data = OrderedDict()
+        self.extra_data: OrderedDict[Any, Any] = OrderedDict()
         self.function = learner.function
         self.arg_picker = arg_picker
-        self._check_required_attributes()
 
     def new(self) -> DataSaver:
         """Return a new `DataSaver` with the same `arg_picker` and `learner`."""
@@ -76,8 +75,12 @@ class DataSaver(BaseLearner):
     def tell_pending(self, x: Any) -> None:
         self.learner.tell_pending(x)
 
-    def to_dataframe(
-        self, extra_data_name: str = "extra_data", **kwargs: Any
+    def to_dataframe(  # type: ignore[override]
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        extra_data_name: str = "extra_data",
+        **kwargs: Any,
     ) -> pandas.DataFrame:
         """Return the data as a concatenated `pandas.DataFrame` from child learners.
 
@@ -99,18 +102,24 @@ class DataSaver(BaseLearner):
         """
         if not with_pandas:
             raise ImportError("pandas is not installed.")
-        df = self.learner.to_dataframe(**kwargs)
+        df = self.learner.to_dataframe(
+            with_default_function_args=with_default_function_args,
+            function_prefix=function_prefix,
+            **kwargs,
+        )
 
         df[extra_data_name] = [
             self.extra_data[_to_key(x)] for _, x in df[df.attrs["inputs"]].iterrows()
         ]
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
         extra_data_name: str = "extra_data",
-        input_names: tuple[str] = (),
+        input_names: tuple[str, ...] = (),
         **kwargs,
     ) -> None:
         """Load the data from a `pandas.DataFrame` into the learner.
@@ -130,32 +139,37 @@ class DataSaver(BaseLearner):
         **kwargs : dict
             Keyword arguments passed to each ``child_learner.load_dataframe(**kwargs)``.
         """
-        self.learner.load_dataframe(df, **kwargs)
+        self.learner.load_dataframe(
+            df,
+            with_default_function_args=with_default_function_args,
+            function_prefix=function_prefix,
+            **kwargs,
+        )
         keys = df.attrs.get("inputs", list(input_names))
         for _, x in df[keys + [extra_data_name]].iterrows():
             key = _to_key(x[:-1])
             self.extra_data[key] = x[-1]
 
-    def _get_data(self) -> tuple[Any, OrderedDict]:
+    def _get_data(self) -> tuple[Any, OrderedDict[Any, Any]]:
         return self.learner._get_data(), self.extra_data
 
     def _set_data(
         self,
-        data: tuple[Any, OrderedDict],
+        data: tuple[Any, OrderedDict[Any, Any]],
     ) -> None:
         learner_data, self.extra_data = data
         self.learner._set_data(learner_data)
 
-    def __getstate__(self) -> tuple[BaseLearner, Callable, OrderedDict]:
+    def __getstate__(self) -> tuple[LearnerType, Callable, OrderedDict]:
         return (
             self.learner,
             self.arg_picker,
             self.extra_data,
         )
 
-    def __setstate__(self, state: tuple[BaseLearner, Callable, OrderedDict]) -> None:
+    def __setstate__(self, state: tuple[LearnerType, Callable, OrderedDict]) -> None:
         learner, arg_picker, extra_data = state
-        self.__init__(learner, arg_picker)
+        self.__init__(learner, arg_picker)  # type: ignore[misc]
         self.extra_data = extra_data
 
     @copy_docstring_from(BaseLearner.save)

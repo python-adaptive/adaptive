@@ -1,4 +1,5 @@
 from itertools import chain
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -8,6 +9,9 @@ from adaptive.tests.test_learners import (
     noisy_peak,
     simple_run,
 )
+
+if TYPE_CHECKING:
+    pass
 
 
 def almost_equal_dicts(a, b):

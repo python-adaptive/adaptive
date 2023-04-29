@@ -78,7 +78,7 @@ import itertools
 # Create a learner and add data on homogeneous grid, so that we can plot it
 learner2 = adaptive.Learner2D(ring, bounds=learner.bounds)
 n = int(learner.npoints**0.5)
-xs, ys = [np.linspace(*bounds, n) for bounds in learner.bounds]
+xs, ys = (np.linspace(*bounds, n) for bounds in learner.bounds)
 xys = list(itertools.product(xs, ys))
 learner2.tell_many(xys, map(partial(ring, wait=False), xys))
 

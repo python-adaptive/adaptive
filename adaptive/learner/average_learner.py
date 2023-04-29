@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from math import sqrt
-from numbers import Integral as Int
-from numbers import Real
 from typing import Callable
 
 import cloudpickle
@@ -10,7 +8,7 @@ import numpy as np
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Float
+from adaptive.types import Float, Int, Real
 from adaptive.utils import (
     assign_defaults,
     cache_latest,
@@ -75,7 +73,6 @@ class AverageLearner(BaseLearner):
         self.min_npoints = max(min_npoints, 2)
         self.sum_f: Real = 0.0
         self.sum_f_sq: Real = 0.0
-        self._check_required_attributes()
 
     def new(self) -> AverageLearner:
         """Create a copy of `~adaptive.AverageLearner` without the data."""
@@ -89,7 +86,7 @@ class AverageLearner(BaseLearner):
         """Data as NumPy array of size (npoints, 2) with seeds and values."""
         return np.array(sorted(self.data.items()))
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -129,7 +126,7 @@ class AverageLearner(BaseLearner):
             assign_defaults(self.function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,

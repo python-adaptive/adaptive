@@ -1,24 +1,30 @@
 from __future__ import annotations
 
 import itertools
-import numbers
+import sys
 from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
 from functools import partial
 from operator import itemgetter
-from typing import Any, Callable, Dict, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Sequence, Tuple, Union, cast
 
 import numpy as np
 
-from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.base_learner import BaseLearner, LearnerType
 from adaptive.notebook_integration import ensure_holoviews
+from adaptive.types import Int, Real
 from adaptive.utils import cache_latest, named_product, restore
 
-try:
-    from typing import Literal, TypeAlias
-except ImportError:
-    from typing_extensions import Literal, TypeAlias
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 try:
     import pandas
@@ -107,9 +113,9 @@ class BalancingLearner(BaseLearner):
         # pickle the whole learner.
         self.function = partial(dispatch, [lrn.function for lrn in self.learners])  # type: ignore
 
-        self._ask_cache = {}
-        self._loss = {}
-        self._pending_loss = {}
+        self._ask_cache: dict[int, Any] = {}
+        self._loss: dict[int, float] = {}
+        self._pending_loss: dict[int, float] = {}
         self._cdims_default = cdims
 
         if len({learner.__class__ for learner in self.learners}) > 1:
@@ -118,7 +124,6 @@ class BalancingLearner(BaseLearner):
             )
 
         self.strategy: STRATEGY_TYPE = strategy
-        self._check_required_attributes()
 
     def new(self) -> BalancingLearner:
         """Create a new `BalancingLearner` with the same parameters."""
@@ -129,21 +134,21 @@ class BalancingLearner(BaseLearner):
         )
 
     @property
-    def data(self) -> dict[tuple[int, Any], Any]:
+    def data(self) -> dict[tuple[int, Any], Any]:  # type: ignore[override]
         data = {}
         for i, lrn in enumerate(self.learners):
             data.update({(i, p): v for p, v in lrn.data.items()})
         return data
 
     @property
-    def pending_points(self) -> set[tuple[int, Any]]:
+    def pending_points(self) -> set[tuple[int, Any]]:  # type: ignore[override]
         pending_points = set()
         for i, lrn in enumerate(self.learners):
             pending_points.update({(i, p) for p in lrn.pending_points})
         return pending_points
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         return sum(lrn.npoints for lrn in self.learners)
 
     @property
@@ -233,8 +238,8 @@ class BalancingLearner(BaseLearner):
         return points, loss_improvements
 
     def _ask_and_tell_based_on_npoints(
-        self, n: numbers.Integral
-    ) -> tuple[list[tuple[numbers.Integral, Any]], list[float]]:
+        self, n: Int
+    ) -> tuple[list[tuple[Int, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
         total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
         for _ in range(n):
@@ -252,7 +257,7 @@ class BalancingLearner(BaseLearner):
 
     def _ask_and_tell_based_on_cycle(
         self, n: int
-    ) -> tuple[list[tuple[numbers.Integral, Any]], list[float]]:
+    ) -> tuple[list[tuple[Int, Any]], list[float]]:
         points, loss_improvements = [], []
         for _ in range(n):
             index = next(self._cycle)
@@ -265,7 +270,7 @@ class BalancingLearner(BaseLearner):
 
     def ask(
         self, n: int, tell_pending: bool = True
-    ) -> tuple[list[tuple[numbers.Integral, Any]], list[float]]:
+    ) -> tuple[list[tuple[Int, Any]], list[float]]:
         """Chose points for learners."""
         if n == 0:
             return [], []
@@ -276,14 +281,14 @@ class BalancingLearner(BaseLearner):
         else:
             return self._ask_and_tell(n)
 
-    def tell(self, x: tuple[numbers.Integral, Any], y: Any) -> None:
+    def tell(self, x: tuple[Int, Any], y: Any) -> None:
         index, x = x
         self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
         self._pending_loss.pop(index, None)
         self.learners[index].tell(x, y)
 
-    def tell_pending(self, x: tuple[numbers.Integral, Any]) -> None:
+    def tell_pending(self, x: tuple[Int, Any]) -> None:
         index, x = x
         self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
@@ -356,7 +361,7 @@ class BalancingLearner(BaseLearner):
             # Normalize the format
             keys, values_list = cdims
             cdims = [dict(zip(keys, values)) for values in values_list]
-
+        cdims = cast(list[dict[str, Real]], cdims)
         mapping = {
             tuple(_cdims.values()): lrn for lrn, _cdims in zip(self.learners, cdims)
         }
@@ -394,7 +399,7 @@ class BalancingLearner(BaseLearner):
     def from_product(
         cls,
         f,
-        learner_type: BaseLearner,
+        learner_type: LearnerType,
         learner_kwargs: dict[str, Any],
         combos: dict[str, Sequence[Any]],
     ) -> BalancingLearner:
@@ -440,11 +445,11 @@ class BalancingLearner(BaseLearner):
         learners = []
         arguments = named_product(**combos)
         for combo in arguments:
-            learner = learner_type(function=partial(f, **combo), **learner_kwargs)
+            learner = learner_type(function=partial(f, **combo), **learner_kwargs)  # type: ignore[operator]
             learners.append(learner)
         return cls(learners, cdims=arguments)
 
-    def to_dataframe(self, index_name: str = "learner_index", **kwargs):
+    def to_dataframe(self, index_name: str = "learner_index", **kwargs):  # type: ignore[override]
         """Return the data as a concatenated `pandas.DataFrame` from child learners.
 
         Parameters
@@ -476,7 +481,7 @@ class BalancingLearner(BaseLearner):
         df = pandas.concat(dfs, axis=0, ignore_index=True)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self, df: pandas.DataFrame, index_name: str = "learner_index", **kwargs
     ):
         """Load the data from a `pandas.DataFrame` into the child learners.
@@ -579,4 +584,4 @@ class BalancingLearner(BaseLearner):
 
     def __setstate__(self, state: tuple[list[BaseLearner], CDIMS_TYPE, STRATEGY_TYPE]):
         learners, cdims, strategy = state
-        self.__init__(learners, cdims=cdims, strategy=strategy)
+        self.__init__(learners, cdims=cdims, strategy=strategy)  # type: ignore[misc]
