@@ -59,11 +59,12 @@ from __future__ import annotations
 
 import itertools
 
-import numpy as np
-import adaptive
 import holoviews as hv
+import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
+
+import adaptive
 
 adaptive.notebook_extension()
 
@@ -79,7 +80,7 @@ def homogeneous_learner(learner):
     else:
         homo_learner = adaptive.Learner2D(learner.function, bounds=learner.bounds)
         n = int(learner.npoints**0.5)
-        xs, ys = [np.linspace(*bounds, n) for bounds in learner.bounds]
+        xs, ys = (np.linspace(*bounds, n) for bounds in learner.bounds)
         xys = list(itertools.product(xs, ys))
         zs = map(homo_learner.function, xys)
         homo_learner.tell_many(xys, zs)
