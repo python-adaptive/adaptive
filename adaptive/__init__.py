@@ -53,6 +53,5 @@ with suppress(ImportError):
 
     __all__.append("SKOptLearner")
 
-# to avoid confusion with `notebook_extension` and `__version__`
-del _version  # type: ignore[name-defined] # noqa: F821
+# to avoid confusion with `notebook_extension`
 del notebook_integration  # type: ignore[name-defined] # noqa: F821
