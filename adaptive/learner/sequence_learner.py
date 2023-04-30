@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from copy import copy
-from typing import Any, Tuple
+from typing import Any
 
 import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
@@ -28,7 +28,7 @@ if sys.version_info >= (3, 10):
 else:
     from typing_extensions import TypeAlias
 
-PointType: TypeAlias = Tuple[Int, Any]
+PointType: TypeAlias = tuple[Int, Any]
 
 
 class _IgnoreFirstArgument:

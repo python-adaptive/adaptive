@@ -7,9 +7,10 @@ import inspect
 import os
 import pickle
 import warnings
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from itertools import product
-from typing import Any, Callable, Iterator, Sequence
+from typing import Any, Callable
 
 import cloudpickle
 
@@ -147,7 +148,7 @@ class SequentialExecutor(concurrent.Executor):
     This executor is mainly for testing.
     """
 
-    def submit(self, fn: Callable, *args, **kwargs) -> concurrent.Future:
+    def submit(self, fn: Callable, *args, **kwargs) -> concurrent.Future:  # type: ignore[override]
         fut: concurrent.Future = concurrent.Future()
         try:
             fut.set_result(fn(*args, **kwargs))
