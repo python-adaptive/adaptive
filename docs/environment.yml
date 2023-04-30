@@ -25,3 +25,4 @@ dependencies:
   - myst-parser=0.18.1
   - dask=2023.3.2
   - emoji=2.2.0
+  - versioningit=2.2.0
