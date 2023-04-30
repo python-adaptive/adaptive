@@ -8,13 +8,11 @@ dynamic = ["version"]
 description = "Parallel active learning of mathematical functions"
 maintainers = [{ name = "Adaptive authors" }]
 license = { text = "BSD" }
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: BSD License",
     "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -32,16 +30,16 @@ dependencies = [
 other = [
     "dill",
     "distributed",
-    "ipyparallel>=6.2.5",       # because of https://github.com/ipython/ipyparallel/issues/404
-    "scikit-optimize>=0.8.1",   # because of https://github.com/scikit-optimize/scikit-optimize/issues/931
+    "ipyparallel>=6.2.5",                    # because of https://github.com/ipython/ipyparallel/issues/404
+    "scikit-optimize>=0.8.1",                # because of https://github.com/scikit-optimize/scikit-optimize/issues/931
     "scikit-learn",
     "wexpect; os_name == 'nt'",
     "pexpect; os_name != 'nt'",
 ]
 notebook = [
     "ipython",
-    "ipykernel>=4.8.0",      # because https://github.com/ipython/ipykernel/issues/274 and https://github.com/ipython/ipykernel/issues/263
-    "jupyter_client>=5.2.2", # because https://github.com/jupyter/jupyter_client/pull/314
+    "ipykernel>=4.8.0",                      # because https://github.com/ipython/ipykernel/issues/274 and https://github.com/ipython/ipykernel/issues/263
+    "jupyter_client>=5.2.2",                 # because https://github.com/jupyter/jupyter_client/pull/314
     "holoviews>=1.9.1",
     "ipywidgets",
     "bokeh",
@@ -93,12 +91,12 @@ output = ".coverage.xml"
 
 [tool.mypy]
 ignore_missing_imports = true
-python_version = "3.7"
+python_version = "3.9"
 
 [tool.ruff]
 line-length = 150
-target-version = "py37"
-select = ["B", "C", "E", "F", "W", "T", "B9"]
+target-version = "py39"
+select = ["B", "C", "E", "F", "W", "T", "B9", "I", "UP"]
 ignore = [
     "T20",     # flake8-print
     "ANN101",  # Missing type annotation for {name} in method

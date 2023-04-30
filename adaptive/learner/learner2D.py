@@ -3,9 +3,10 @@ from __future__ import annotations
 import itertools
 import warnings
 from collections import OrderedDict
+from collections.abc import Iterable
 from copy import copy
 from math import sqrt
-from typing import Callable, Iterable
+from typing import Callable
 
 import cloudpickle
 import numpy as np
@@ -376,9 +377,12 @@ class Learner2D(BaseLearner):
         loss_per_triangle: Callable | None = None,
     ) -> None:
         self.ndim = len(bounds)
-        self._vdim = None
+        self._vdim: int | None = None
         self.loss_per_triangle = loss_per_triangle or default_loss
-        self.bounds = tuple((float(a), float(b)) for a, b in bounds)
+        self.bounds = (
+            (float(bounds[0][0]), float(bounds[0][1])),
+            (float(bounds[1][0]), float(bounds[1][1])),
+        )
         self.data = OrderedDict()
         self._stack = OrderedDict()
         self.pending_points = set()
@@ -413,7 +417,7 @@ class Learner2D(BaseLearner):
             [(x, y, *np.atleast_1d(z)) for (x, y), z in sorted(self.data.items())]
         )
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -459,7 +463,7 @@ class Learner2D(BaseLearner):
             assign_defaults(self.function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
@@ -506,7 +510,7 @@ class Learner2D(BaseLearner):
         return points * self.xy_scale + self.xy_mean
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         """Number of evaluated points."""
         return len(self.data)
 
@@ -533,7 +537,7 @@ class Learner2D(BaseLearner):
         )
 
     def interpolated_on_grid(
-        self, n: int = None
+        self, n: int | None = None
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get the interpolated data on a grid.
 
@@ -654,7 +658,7 @@ class Learner2D(BaseLearner):
         return xmin <= x <= xmax and ymin <= y <= ymax
 
     def tell(self, point: tuple[float, float], value: float | Iterable[float]) -> None:
-        point = tuple(point)
+        point = tuple(point)  # type: ignore[assignment]
         self.data[point] = value
         if not self.inside_bounds(point):
             return
@@ -663,7 +667,7 @@ class Learner2D(BaseLearner):
         self._stack.pop(point, None)
 
     def tell_pending(self, point: tuple[float, float]) -> None:
-        point = tuple(point)
+        point = tuple(point)  # type: ignore[assignment]
         if not self.inside_bounds(point):
             return
         self.pending_points.add(point)

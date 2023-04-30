@@ -25,9 +25,10 @@ import adaptive
 
 adaptive.notebook_extension()
 
-import numpy as np
-from functools import partial
 import random
+from functools import partial
+
+import numpy as np
 ```
 
 ## scalar output: `f:ℝ → ℝ`
@@ -41,8 +42,8 @@ offset = random.uniform(-0.5, 0.5)
 
 
 def f(x, offset=offset, wait=True):
-    from time import sleep
     from random import random
+    from time import sleep
 
     a = 0.01
     if wait:
@@ -155,8 +156,8 @@ To do this, you need to tell the learner to look at the curvature by specifying 
 ```{code-cell} ipython3
 from adaptive.learner.learner1D import (
     curvature_loss_function,
-    uniform_loss,
     default_loss,
+    uniform_loss,
 )
 
 curvature_loss = curvature_loss_function()

@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+import sys
 from copy import copy
-from numbers import Integral as Int
-from typing import Any, Tuple
+from typing import Any
 
 import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
-from adaptive.utils import assign_defaults, partial_function_from_dataframe
+from adaptive.types import Int
+from adaptive.utils import (
+    assign_defaults,
+    cache_latest,
+    partial_function_from_dataframe,
+)
 
 try:
     import pandas
@@ -18,13 +23,12 @@ try:
 except ModuleNotFoundError:
     with_pandas = False
 
-try:
+if sys.version_info >= (3, 10):
     from typing import TypeAlias
-except ImportError:
+else:
     from typing_extensions import TypeAlias
 
-
-PointType: TypeAlias = Tuple[Int, Any]
+PointType: TypeAlias = tuple[Int, Any]
 
 
 class _IgnoreFirstArgument:
@@ -97,7 +101,7 @@ class SequenceLearner(BaseLearner):
         self, n: int, tell_pending: bool = True
     ) -> tuple[list[PointType], list[float]]:
         indices = []
-        points = []
+        points: list[PointType] = []
         loss_improvements = []
         for index in self._to_do_indices:
             if len(points) >= n:
@@ -113,6 +117,7 @@ class SequenceLearner(BaseLearner):
 
         return points, loss_improvements
 
+    @cache_latest
     def loss(self, real: bool = True) -> float:
         if not (self._to_do_indices or self.pending_points):
             return 0.0
@@ -146,10 +151,10 @@ class SequenceLearner(BaseLearner):
         return list(self.data.values())
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         return len(self.data)
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -196,7 +201,7 @@ class SequenceLearner(BaseLearner):
             assign_defaults(self._original_function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
