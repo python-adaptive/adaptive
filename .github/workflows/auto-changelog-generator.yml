@@ -29,6 +29,8 @@ jobs:
       - name: Commit updated CHANGELOG.md
         id: commit
         run: |
+          git fetch origin ${{ github.head_ref }}
+          git merge origin/${{ github.head_ref }}
           git add CHANGELOG.md
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
