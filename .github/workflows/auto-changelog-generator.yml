@@ -26,10 +26,23 @@ jobs:
             --token ${{ secrets.GITHUB_TOKEN }} \
             --output CHANGELOG.md
 
-      - name: Commit and push changes
+      - name: Commit updated CHANGELOG.md
+        id: commit
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
           git add CHANGELOG.md
-          git commit -m "Update CHANGELOG.md" || true
-          git push
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No changes in CHANGELOG.md, skipping commit."
+            echo "commit_status=skipped" >> $GITHUB_ENV
+          else
+            git commit -m "Update CHANGELOG.md"
+            echo "commit_status=committed" >> $GITHUB_ENV
+          fi
+
+      - name: Push changes
+        if: env.commit_status == 'committed'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
