@@ -377,9 +377,6 @@ We illustrate this approach by using `dask.distributed` for parallel computation
 We will focus on a function `f(x)` that consists of two distinct components: a slow part `g` that can be reused across multiple inputs and shared among various function evaluations, and a fast part `h` that is calculated for each `x` value.
 
 ```{code-cell} ipython3
-import time
-
-
 def f(x):  # example function without caching
     """
     Integer part of `x` repeats and should be reused
@@ -390,7 +387,9 @@ def f(x):  # example function without caching
 
 def g(x):
     """Slow but reusable function"""
-    time.sleep(random.randrange(5))
+    from time import sleep
+
+    sleep(random.randrange(5))
     return x**2
 
 
@@ -404,8 +403,6 @@ def h(x):
 To simplify the process of using coroutines and caching with dask and Adaptive, we provide the {func}`adaptive.utils.daskify` decorator. This decorator can be used to parallelize functions with caching as well as functions without caching, making it a powerful tool for custom parallelization in Adaptive.
 
 ```{code-cell} ipython3
-import time
-
 from dask.distributed import Client
 
 import adaptive
@@ -414,21 +411,21 @@ client = await Client(asynchronous=True)
 
 
 # The g function has caching enabled
-g = adaptive.utils.daskify(client, cache=True)(g)
+g_dask = adaptive.utils.daskify(client, cache=True)(g)
 
 # Can be used like a decorator too:
 # >>> @adaptive.utils.daskify(client, cache=True)
 # ... def g(x): ...
 
 # The h function does not use caching
-h = adaptive.utils.daskify(client)(h)
+h_dask = adaptive.utils.daskify(client)(h)
 
 # Now we need to rewrite `f(x)` to use `g` and `h` as coroutines
 
 
 async def f_parallel(x):
-    g_result = await g(int(x))
-    h_result = await h(x % 1)
+    g_result = await g_dask(int(x))
+    h_result = await h_dask(x % 1)
     return (g_result + h_result) ** 2
 
 
