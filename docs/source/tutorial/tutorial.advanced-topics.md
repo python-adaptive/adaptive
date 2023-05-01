@@ -441,7 +441,7 @@ await runner.task
 learner.plot()
 ```
 
-## Step-by-step explanation of custom parallelization
+### Step-by-step explanation of custom parallelization
 
 Now let's dive into a detailed explanation of the process to understand how the {func}`adaptive.utils.daskify` decorator works.
 
