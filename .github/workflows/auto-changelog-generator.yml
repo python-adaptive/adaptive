@@ -12,6 +12,8 @@ jobs:
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
 
       - name: Install github-changelog-generator
         run: gem install github_changelog_generator
