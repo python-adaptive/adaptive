@@ -9,7 +9,7 @@ kernelspec:
   display_name: python3
   name: python3
 ---
-
+(TutorialAdvancedTopics)=
 # Advanced Topics
 
 ```{note}
@@ -365,7 +365,7 @@ await runner.task  # This is not needed in a notebook environment!
 # The result will only be set when the runner is done.
 timer.result()
 ```
-
+(CustomParallelization)=
 ## Custom parallelization using coroutines
 
 Adaptive by itself does not implement a way of sharing partial results between function executions.
