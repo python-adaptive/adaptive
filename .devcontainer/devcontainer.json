@@ -1,18 +1,44 @@
 {
   "name": "Adaptive",
-  "image": "mcr.microsoft.com/devcontainers/miniconda:3",
-  "settings": {
-    "terminal.integrated.shell.linux": "/bin/bash"
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
   },
-  "extensions": [
-    "ms-python.python",
-    "ms-python.vscode-pylance",
-    "ms-toolsai.jupyter",
-    "charliermarsh.ruff",
-    "eamodio.gitlens",
-    "GitHub.copilot",
-    "ms-vscode-remote.vscode-remote-extensionpack",
-    "oderwat.indent-rainbow"
-  ],
-  "postCreateCommand": "cd ${containerWorkspaceFolder} && pip install -e .[other,notebook,testing] && pip install ruff pre-commit && pre-commit install"
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": "true",
+      "username": "vscode",
+      "userUid": "1000",
+      "userGid": "1000",
+      "upgradePackages": "true"
+    },
+    "ghcr.io/devcontainers/features/python:1": "none",
+    "ghcr.io/devcontainers/features/node:1": "none",
+    "ghcr.io/devcontainers/features/git:1": {
+        "version": "latest",
+        "ppa": "false"
+    },
+    "ghcr.io/devcontainers-contrib/features/pipx-package:1": {},
+    "ghcr.io/devcontainers-contrib/features/black:2": {},
+    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "charliermarsh.ruff",
+        "eamodio.gitlens",
+        "GitHub.copilot",
+        "ms-vscode-remote.vscode-remote-extensionpack",
+        "oderwat.indent-rainbow"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      }
+    }
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "pipx install ruff && pip install -e ".[other,notebook,testing]" && pre-commit install"
 }
