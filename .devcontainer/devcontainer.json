@@ -1,18 +1,18 @@
 {
   "name": "Adaptive",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
+	"image": "mcr.microsoft.com/devcontainers/python:0-3.11",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": "true",
+      "configureZshAsDefaultShell": "true",
       "username": "vscode",
       "userUid": "1000",
       "userGid": "1000",
       "upgradePackages": "true"
     },
-    "ghcr.io/devcontainers/features/python:1": "none",
+    "ghcr.io/devcontainers/features/python:1": {
+      "installTools": true,
+			"installJupyterlab": true
+    },
     "ghcr.io/devcontainers/features/node:1": "none",
     "ghcr.io/devcontainers/features/git:1": {
         "version": "latest",
@@ -35,10 +35,9 @@
         "oderwat.indent-rainbow"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python"
+        "python.defaultInterpreterPath": "/usr/local/python/current/bin/python"
       }
     }
   },
-  "remoteUser": "vscode",
-  "postCreateCommand": "pipx install ruff && pip install -e ".[other,notebook,testing]" && pre-commit install"
+  "postCreateCommand": "pipx install ruff && pip install -e '.[other,notebook,testing]' && pre-commit install"
 }
