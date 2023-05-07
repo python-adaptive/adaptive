@@ -1,0 +1,22 @@
+{
+  "name": "Python (Miniconda)",
+  "image": "mcr.microsoft.com/devcontainers/miniconda:3",
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "extensions": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
+    "eamodio.gitlens",
+    "GitHub.copilot",
+    "ms-toolsai.jupyter",
+    "ms-vscode-remote.vscode-remote-extensionpack",
+    "oderwat.indent-rainbow",
+    "GitHub.vscode-pull-request-github"
+  ],
+  "forwardPorts": [
+    5000
+  ],
+  "postCreateCommand": "cd ${containerWorkspaceFolder} && pip install -e .[other,notebook,testing] && pip install ruff pre-commit && pre-commit install"
+}
