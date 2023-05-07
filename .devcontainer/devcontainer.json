@@ -1,5 +1,5 @@
 {
-  "name": "Python (Miniconda)",
+  "name": "Adaptive",
   "image": "mcr.microsoft.com/devcontainers/miniconda:3",
   "settings": {
     "terminal.integrated.shell.linux": "/bin/bash"
