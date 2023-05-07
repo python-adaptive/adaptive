@@ -31,10 +31,7 @@
         "GitHub.copilot",
         "ms-vscode-remote.vscode-remote-extensionpack",
         "oderwat.indent-rainbow"
-      ],
-      "settings": {
-        "python.defaultInterpreterPath": "/usr/local/python/current/bin/python"
-      }
+      ]
     }
   },
   "postCreateCommand": "pipx install ruff && pip install -e '.[other,notebook,testing]' && pre-commit install"
