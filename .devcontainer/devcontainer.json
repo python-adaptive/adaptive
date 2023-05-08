@@ -1,6 +1,9 @@
 {
   "name": "Adaptive",
-  "image": "mcr.microsoft.com/devcontainers/python:0-3.11",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "configureZshAsDefaultShell": "true",
@@ -20,6 +23,5 @@
         "oderwat.indent-rainbow"
       ]
     }
-  },
-  "postCreateCommand": "pipx install ruff black pre-commit && pip install -e '.[other,notebook,testing]' && pre-commit install"
+  }
 }
