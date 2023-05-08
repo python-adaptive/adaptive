@@ -11,7 +11,7 @@ COPY . /workspace
 WORKDIR /workspace
 
 # Install the project's dependencies
-RUN pip install -e ".[other,notebook,testing]"
+RUN pip install -e ".[other,notebook,testing,dev]"
 
 # Install pre-commit hooks
 RUN pre-commit install

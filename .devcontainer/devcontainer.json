@@ -17,9 +17,6 @@
         "ms-python.vscode-pylance",
         "ms-toolsai.jupyter",
         "charliermarsh.ruff",
-        "eamodio.gitlens",
-        "GitHub.copilot",
-        "ms-vscode-remote.vscode-remote-extensionpack",
         "oderwat.indent-rainbow"
       ]
     }
