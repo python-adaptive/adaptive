@@ -1,6 +1,9 @@
 import asyncio
 
+import pytest
+
 from adaptive import Runner, SequenceLearner
+from adaptive.learner.learner1D import with_pandas
 from adaptive.runner import SequentialExecutor, simple
 
 offset = 0.0123
@@ -31,6 +34,7 @@ def test_fail_with_sequence_of_unhashable():
     assert runner.status() == "finished"
 
 
+@pytest.mark.skipif(not with_pandas, reason="pandas is not installed")
 def test_save_load_dataframe():
     learner = SequenceLearner(peak, sequence=range(10, 30, 1))
     simple(learner, npoints_goal=10)
