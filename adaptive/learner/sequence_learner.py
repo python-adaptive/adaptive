@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from copy import copy
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
@@ -14,6 +14,10 @@ from adaptive.utils import (
     cache_latest,
     partial_function_from_dataframe,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from typing import Callable
 
 try:
     import pandas
@@ -82,12 +86,17 @@ class SequenceLearner(BaseLearner):
     the added benefit of having results in the local kernel already.
     """
 
-    def __init__(self, function, sequence):
+    def __init__(
+        self,
+        function: Callable[[Any], Any],
+        sequence: Sequence[Any],
+    ):
         self._original_function = function
         self.function = _IgnoreFirstArgument(function)
         # prefer range(len(...)) over enumerate to avoid slowdowns
         # when passing lazy sequences
-        self._to_do_indices = SortedSet(range(len(sequence)))
+        indices = range(len(sequence))
+        self._to_do_indices = SortedSet(indices)
         self._ntotal = len(sequence)
         self.sequence = copy(sequence)
         self.data = SortedDict()
@@ -258,7 +267,7 @@ class SequenceLearner(BaseLearner):
         ys = df[y_name].values
 
         if full_sequence:
-            evaluated_indices = [i for i, y in enumerate(ys) if y != pd.NA]
+            evaluated_indices = [i for i, y in enumerate(ys) if y is not pd.NA]
             xs = xs[evaluated_indices]
             ys = ys[evaluated_indices]
             indices = indices[evaluated_indices]
