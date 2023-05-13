@@ -1,8 +1,8 @@
 name: Generate Changelog
 
 on:
-  push:
-    branches: [main]
+  # Manual trigger only
+  workflow_dispatch:
 
 jobs:
   generate-changelog:
