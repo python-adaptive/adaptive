@@ -1,8 +1,11 @@
 name: Generate Changelog
 
+# on:
+#   # Manual trigger only
+#   workflow_dispatch:
+
 on:
-  # Manual trigger only
-  workflow_dispatch:
+  - push
 
 jobs:
   generate-changelog:
@@ -16,7 +19,7 @@ jobs:
       - name: Force-checkout latest commit on branch
         run: |
           git fetch
-          git reset --hard origin/${{ github.head_ref }}
+          git reset --hard "${GITHUB_REF/refs\/heads\//}"
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
