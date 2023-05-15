@@ -13,6 +13,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Force-checkout latest commit on branch
+        run: |
+          git fetch
+          git reset --hard origin/${{ github.head_ref }}
+
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
