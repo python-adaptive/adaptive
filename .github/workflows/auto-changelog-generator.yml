@@ -3,6 +3,10 @@ name: Generate Changelog
 on:
   # Manual trigger only
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch name'
+        required: true
 
 jobs:
   generate-changelog:
@@ -12,11 +16,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-
-      - name: Force-checkout latest commit on branch
-        run: |
-          git fetch
-          git reset --hard origin/${{ github.head_ref }}
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -56,4 +55,4 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.head_ref }}
+          branch: ${{ github.event.inputs.branch }}
