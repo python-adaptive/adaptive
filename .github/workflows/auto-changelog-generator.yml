@@ -5,9 +5,8 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch name' # The description of the input.
-        required: true # If the input is required or not.
-
+        description: 'Branch name'
+        required: true
 
 jobs:
   generate-changelog:
@@ -18,11 +17,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # - name: Force-checkout latest commit on branch
-      #   run: |
-      #     git fetch
-      #     git reset --hard "${GITHUB_REF/refs\/heads\//}"
-
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -31,18 +25,17 @@ jobs:
       - name: Install github-changelog-generator
         run: gem install github_changelog_generator
 
-      # - name: Generate Changelog
-      #   run: |
-      #     github_changelog_generator \
-      #       -u ${{ github.repository_owner }} \
-      #       -p ${{ github.event.repository.name }} \
-      #       --token ${{ secrets.GITHUB_TOKEN }} \
-      #       --output CHANGELOG.md
+      - name: Generate Changelog
+        run: |
+          github_changelog_generator \
+            -u ${{ github.repository_owner }} \
+            -p ${{ github.event.repository.name }} \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --output CHANGELOG.md
 
       - name: Commit updated CHANGELOG.md
         id: commit
         run: |
-          echo "test" >> CHANGELOG.md
           git add CHANGELOG.md
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
