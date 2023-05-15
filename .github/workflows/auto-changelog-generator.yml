@@ -48,6 +48,9 @@ jobs:
             echo "commit_status=committed" >> $GITHUB_ENV
           fi
 
+      - name: Echo CHANGELOG.md
+        run: cat CHANGELOG.md
+
       - name: Push changes
         if: env.commit_status == 'committed'
         uses: ad-m/github-push-action@master
