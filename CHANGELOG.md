@@ -1,6 +1,44 @@
 # 🗞️ Changelog
 
-## Unreleased
+## [v1.0.0](https://github.com/python-adaptive/adaptive/tree/v1.0.0)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.15.0...v1.0.0)
+
+**Closed issues:**
+
+- No module named 'typing\_extensions'" [\#394](https://github.com/python-adaptive/adaptive/issues/394)
+- Documentation: use cases of coroutine by Learner and Runner not properly explained [\#360](https://github.com/python-adaptive/adaptive/issues/360)
+
+**Merged pull requests:**
+
+- \[pre-commit.ci\] pre-commit autoupdate [\#426](https://github.com/python-adaptive/adaptive/pull/426) ([pre-commit-ci[bot]](https://github.com/apps/pre-commit-ci))
+- Allow storing the full sequence in SequenceLearner.to\_dataframe [\#425](https://github.com/python-adaptive/adaptive/pull/425) ([basnijholt](https://github.com/basnijholt))
+- \[pre-commit.ci\] pre-commit autoupdate [\#423](https://github.com/python-adaptive/adaptive/pull/423) ([pre-commit-ci[bot]](https://github.com/apps/pre-commit-ci))
+- Add github-changelog-generator CI workflow [\#421](https://github.com/python-adaptive/adaptive/pull/421) ([basnijholt](https://github.com/basnijholt))
+- Use versioningit to work with pyproject.toml and remove setup.py [\#420](https://github.com/python-adaptive/adaptive/pull/420) ([basnijholt](https://github.com/basnijholt))
+- Update Python version requirement to 3.9 in accordance with NEP 29 [\#418](https://github.com/python-adaptive/adaptive/pull/418) ([basnijholt](https://github.com/basnijholt))
+- Update GitHub Actions CI [\#416](https://github.com/python-adaptive/adaptive/pull/416) ([basnijholt](https://github.com/basnijholt))
+- Disable typeguard CI pipeline [\#415](https://github.com/python-adaptive/adaptive/pull/415) ([basnijholt](https://github.com/basnijholt))
+- Add mypy to pre-commit and fix all current typing issues [\#414](https://github.com/python-adaptive/adaptive/pull/414) ([basnijholt](https://github.com/basnijholt))
+- \[pre-commit.ci\] pre-commit autoupdate [\#413](https://github.com/python-adaptive/adaptive/pull/413) ([pre-commit-ci[bot]](https://github.com/apps/pre-commit-ci))
+- Use codecov/codecov-action instead of removed codecov package [\#412](https://github.com/python-adaptive/adaptive/pull/412) ([basnijholt](https://github.com/basnijholt))
+- Cache the loss of a SequenceLearner [\#411](https://github.com/python-adaptive/adaptive/pull/411) ([basnijholt](https://github.com/basnijholt))
+- Only really import packages when needed [\#410](https://github.com/python-adaptive/adaptive/pull/410) ([basnijholt](https://github.com/basnijholt))
+- Remove \_RequireAttrsABCMeta metaclass and replace with simple check [\#409](https://github.com/python-adaptive/adaptive/pull/409) ([basnijholt](https://github.com/basnijholt))
+- Use the build module [\#407](https://github.com/python-adaptive/adaptive/pull/407) ([basnijholt](https://github.com/basnijholt))
+- Avoid asyncio.coroutine error in Readthedocs.org builds [\#406](https://github.com/python-adaptive/adaptive/pull/406) ([basnijholt](https://github.com/basnijholt))
+- Bump scikit-optimize in environment.yml [\#403](https://github.com/python-adaptive/adaptive/pull/403) ([basnijholt](https://github.com/basnijholt))
+- Replace isort, flake8, and pyupgrade by ruff [\#402](https://github.com/python-adaptive/adaptive/pull/402) ([basnijholt](https://github.com/basnijholt))
+- Move to pyproject.toml based install [\#401](https://github.com/python-adaptive/adaptive/pull/401) ([basnijholt](https://github.com/basnijholt))
+- Rewrite parts of README, reorder sections, and add features section [\#400](https://github.com/python-adaptive/adaptive/pull/400) ([basnijholt](https://github.com/basnijholt))
+- \[pre-commit.ci\] pre-commit autoupdate [\#398](https://github.com/python-adaptive/adaptive/pull/398) ([pre-commit-ci[bot]](https://github.com/apps/pre-commit-ci))
+- \[pre-commit.ci\] pre-commit autoupdate [\#397](https://github.com/python-adaptive/adaptive/pull/397) ([pre-commit-ci[bot]](https://github.com/apps/pre-commit-ci))
+- Use nb\_execution\_raise\_on\_error Sphinx myst-nb option [\#396](https://github.com/python-adaptive/adaptive/pull/396) ([basnijholt](https://github.com/basnijholt))
+- \[pre-commit.ci\] pre-commit autoupdate [\#395](https://github.com/python-adaptive/adaptive/pull/395) ([pre-commit-ci[bot]](https://github.com/apps/pre-commit-ci))
+- \[pre-commit.ci\] pre-commit autoupdate [\#393](https://github.com/python-adaptive/adaptive/pull/393) ([pre-commit-ci[bot]](https://github.com/apps/pre-commit-ci))
+- \[pre-commit.ci\] pre-commit autoupdate [\#392](https://github.com/python-adaptive/adaptive/pull/392) ([pre-commit-ci[bot]](https://github.com/apps/pre-commit-ci))
+- Add nbQA for notebook and docs linting [\#361](https://github.com/python-adaptive/adaptive/pull/361) ([basnijholt](https://github.com/basnijholt))
+- Fix HoloViews opts deprecation warnings [\#357](https://github.com/python-adaptive/adaptive/pull/357) ([basnijholt](https://github.com/basnijholt))
 
 ## [v0.15.0](https://github.com/python-adaptive/adaptive/tree/v0.15.0) (2022-11-30)
 
