@@ -140,6 +140,11 @@ It is worth mentioning that there are specialized tools and libraries designed e
 
 In summary, while it is possible to use Adaptive for hyperparameter tuning, it may not be the most efficient or optimal choice for high-dimensional and complex optimization problems. Specialized hyperparameter optimization libraries might offer better performance in such cases.
 
+## What types of functions can be used with Adaptive?
+
+Adaptive can handle a wide range of functions, including deterministic, stochastic, and noisy functions. It can work with scalar-valued or vector-valued functions, as well as functions that return multiple values per input point. The Adaptive library is designed to be flexible and can be applied to various problem domains.
+
+
 % I get "``concurrent.futures.process.BrokenProcessPool``: A process in the process pool was terminated abruptly while the future was running or pending." what does it mean?
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
