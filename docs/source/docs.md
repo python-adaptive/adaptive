@@ -1,16 +1,15 @@
-```{include} ../../README.md
+```{include} ../README.md
 ---
-start-after: <!-- not-in-documentation-end -->
-end-before: <!-- credits-end -->
+start-after: <!-- rest-start -->
+end-before: <!-- rest-end -->
 ---
 ```
 
 ```{include} ../../AUTHORS.md
 ```
 
-```{include} ../../README.md
+```{include} ../README.md
 ---
-start-after: <!-- credits-end -->
-end-before: <!-- references-start -->
+start-after: <!-- rest-end -->
 ---
 ```

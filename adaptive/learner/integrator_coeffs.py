@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from fractions import Fraction
-from functools import lru_cache
+from functools import cache
 
 import numpy as np
 import scipy.linalg
@@ -143,7 +143,7 @@ def calc_V(x: np.ndarray, n: int) -> np.ndarray:
     return np.array(V).T
 
 
-@lru_cache(maxsize=None)
+@cache
 def _coefficients():
     """Compute the coefficients on demand, in order to avoid doing linear algebra on import."""
     eps = np.spacing(1)

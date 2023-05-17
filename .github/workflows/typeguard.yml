@@ -1,15 +1,16 @@
 name: typeguard
 
-on:
-  - push
+# TODO: enable this once typeguard=4 is released and issues are fixed.
+# on:
+#   - push
 
 jobs:
   typeguard:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: "3.11"
     - name: Install dependencies

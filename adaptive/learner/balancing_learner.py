@@ -3,11 +3,11 @@ from __future__ import annotations
 import itertools
 import sys
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from contextlib import suppress
 from functools import partial
 from operator import itemgetter
-from typing import Any, Callable, Dict, Sequence, Tuple, Union, cast
+from typing import Any, Callable, Union, cast
 
 import numpy as np
 
@@ -21,10 +21,7 @@ if sys.version_info >= (3, 10):
 else:
     from typing_extensions import TypeAlias
 
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
+from typing import Literal
 
 try:
     import pandas
@@ -42,8 +39,8 @@ def dispatch(child_functions: list[Callable], arg: Any) -> Any:
 STRATEGY_TYPE: TypeAlias = Literal["loss_improvements", "loss", "npoints", "cycle"]
 
 CDIMS_TYPE: TypeAlias = Union[
-    Sequence[Dict[str, Any]],
-    Tuple[Sequence[str], Sequence[Tuple[Any, ...]]],
+    Sequence[dict[str, Any]],
+    tuple[Sequence[str], Sequence[tuple[Any, ...]]],
     None,
 ]
 
