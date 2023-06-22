@@ -9,7 +9,7 @@ kernelspec:
   display_name: python3
   name: python3
 ---
-
+(TutorialAdvancedTopics)=
 # Advanced Topics
 
 ```{note}
@@ -365,22 +365,19 @@ await runner.task  # This is not needed in a notebook environment!
 # The result will only be set when the runner is done.
 timer.result()
 ```
-
+(CustomParallelization)=
 ## Custom parallelization using coroutines
 
 Adaptive by itself does not implement a way of sharing partial results between function executions.
 Instead its implementation of parallel computation using executors is minimal by design.
 The appropriate way to implement custom parallelization is by using coroutines (asynchronous functions).
 
+
 We illustrate this approach by using `dask.distributed` for parallel computations in part because it supports asynchronous operation out-of-the-box.
-Let us consider a function `f(x)` which is composed by two parts:
-a slow part `g` which can be reused by multiple inputs and shared across function evaluations and a fast part `h` that will be computed for every `x`.
+We will focus on a function `f(x)` that consists of two distinct components: a slow part `g` that can be reused across multiple inputs and shared among various function evaluations, and a fast part `h` that is calculated for each `x` value.
 
 ```{code-cell} ipython3
-import time
-
-
-def f(x):
+def f(x):  # example function without caching
     """
     Integer part of `x` repeats and should be reused
     Decimal part requires a new computation
@@ -390,7 +387,9 @@ def f(x):
 
 def g(x):
     """Slow but reusable function"""
-    time.sleep(random.randrange(5))
+    from time import sleep
+
+    sleep(random.randrange(5))
     return x**2
 
 
@@ -399,12 +398,59 @@ def h(x):
     return x**3
 ```
 
+### Using `adaptive.utils.daskify`
+
+To simplify the process of using coroutines and caching with dask and Adaptive, we provide the {func}`adaptive.utils.daskify` decorator. This decorator can be used to parallelize functions with caching as well as functions without caching, making it a powerful tool for custom parallelization in Adaptive.
+
+```{code-cell} ipython3
+from dask.distributed import Client
+
+import adaptive
+
+client = await Client(asynchronous=True)
+
+
+# The g function has caching enabled
+g_dask = adaptive.utils.daskify(client, cache=True)(g)
+
+# Can be used like a decorator too:
+# >>> @adaptive.utils.daskify(client, cache=True)
+# ... def g(x): ...
+
+# The h function does not use caching
+h_dask = adaptive.utils.daskify(client)(h)
+
+# Now we need to rewrite `f(x)` to use `g` and `h` as coroutines
+
+
+async def f_parallel(x):
+    g_result = await g_dask(int(x))
+    h_result = await h_dask(x % 1)
+    return (g_result + h_result) ** 2
+
+
+learner = adaptive.Learner1D(f_parallel, bounds=(-3.5, 3.5))
+runner = adaptive.AsyncRunner(learner, loss_goal=0.01, ntasks=20)
+runner.live_info()
+```
+
+Finally, we wait for the runner to finish, and then plot the result.
+
+```{code-cell} ipython3
+await runner.task
+learner.plot()
+```
+
+### Step-by-step explanation of custom parallelization
+
+Now let's dive into a detailed explanation of the process to understand how the {func}`adaptive.utils.daskify` decorator works.
+
 In order to combine reuse of values of `g` with adaptive, we need to convert `f` into a dask graph by using `dask.delayed`.
 
 ```{code-cell} ipython3
 from dask import delayed
 
-# Convert g and h to dask.Delayed objects
+# Convert g and h to dask.Delayed objects, such that they run in the Client
 g, h = delayed(g), delayed(h)
 
 
@@ -441,7 +487,7 @@ learner = adaptive.Learner1D(f_parallel, bounds=(-3.5, 3.5))
 runner = adaptive.AsyncRunner(learner, loss_goal=0.01, ntasks=20)
 ```
 
-Finally we await for the runner to finish, and then plot the result.
+Finally we wait for the runner to finish, and then plot the result.
 
 ```{code-cell} ipython3
 await runner.task

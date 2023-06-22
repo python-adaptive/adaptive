@@ -57,6 +57,8 @@ runner.live_info()
 runner.live_plot(update_interval=0.1)
 ```
 
+Also check out the {ref}`Custom parallelization<CustomParallelization>` section in the {ref}`advanced topics tutorial<TutorialAdvancedTopics>` for more control over caching and parallelization.
+
 ## `mpi4py.futures.MPIPoolExecutor`
 
 This makes sense if you want to run a `Learner` on a cluster non-interactively using a job script.
