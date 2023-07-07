@@ -53,7 +53,7 @@ LOSS_FUNCTIONS = {
             adaptive.learner.learner2D.uniform_loss,
             adaptive.learner.learner2D.minimize_triangle_surface_loss,
             adaptive.learner.learner2D.resolution_loss_function(),
-            adaptive.learner.learner2D.thresholded_loss_function(),
+            adaptive.learner.learner2D.thresholded_loss_function(upper_threshold=0.5),
         ),
     ),
     LearnerND: (
