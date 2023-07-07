@@ -231,7 +231,7 @@ def default_loss(ip: LinearNDInterpolator) -> np.ndarray:
     return losses
 
 
-def thresholded_loss_factory(
+def thresholded_loss_function(
     lower_threshold: float | None = None,
     upper_threshold: float | None = None,
     priority_factor: float = 0.1,
