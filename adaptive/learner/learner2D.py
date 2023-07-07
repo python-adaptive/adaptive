@@ -276,12 +276,12 @@ def thresholded_loss_factory(
             simplices = ip.tri.simplices
             values = ip.values[simplices]
             if lower_threshold is not None:
-                mask_lower = (values < lower_threshold).all(axis=1).all(axis=-1)
+                mask_lower = (values < lower_threshold).all(axis=(1, -1))
                 if mask_lower.any():
                     losses[mask_lower] *= priority_factor
 
             if upper_threshold is not None:
-                mask_upper = (values > upper_threshold).all(axis=1).all(axis=-1)
+                mask_upper = (values > upper_threshold).all(axis=(1, -1))
                 if mask_upper.any():
                     losses[mask_upper] *= priority_factor
 
