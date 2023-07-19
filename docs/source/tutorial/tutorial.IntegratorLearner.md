@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.14.7
 kernelspec:
   display_name: python3
   name: python3
@@ -86,9 +86,7 @@ if not runner.task.done():
 
 ```{code-cell} ipython3
 print(
-    "The integral value is {} with the corresponding error of {}".format(
-        learner.igral, learner.err
-    )
+    f"The integral value is {learner.igral} with the corresponding error of {learner.err}"
 )
 learner.plot()
 ```

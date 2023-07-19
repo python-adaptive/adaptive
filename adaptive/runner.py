@@ -839,7 +839,8 @@ class AsyncRunner(BaseRunner):
         async def _saver():
             while self.status() == "running":
                 method(self.learner)
-                await asyncio.sleep(interval)
+                # No asyncio.shield needed, as 'wait' does not cancel any tasks.
+                await asyncio.wait([self.task], timeout=interval)
             method(self.learner)  # one last time
 
         self.saving_task = self.ioloop.create_task(_saver())
