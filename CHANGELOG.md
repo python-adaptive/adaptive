@@ -1,5 +1,21 @@
 # 🗞️ Changelog
 
+## [v1.1.0](https://github.com/python-adaptive/adaptive/tree/v1.1.0)
+
+[Full Changelog](https://github.com/python-adaptive/adaptive/compare/v1.0.0...v1.1.0)
+
+**Closed issues:**
+
+- Target function returns NaN [\#435](https://github.com/python-adaptive/adaptive/issues/435)
+- large delay when using start_periodic_saving [\#439](https://github.com/python-adaptive/adaptive/issues/439)
+
+**Merged pull requests:**
+
+- Ensure periodic saving fires immediately after runner task is finished [\#440](https://github.com/python-adaptive/adaptive/pull/440) ([jbweston](https://github.com/jbweston))
+- Add Learner2D loss function 'thresholded_loss_factory' [\#437](https://github.com/python-adaptive/adaptive/pull/437) ([basnijholt](https://github.com/basnijholt))
+- \[pre-commit.ci\] pre-commit autoupdate [\#433](https://github.com/python-adaptive/adaptive/pull/433) ([pre-commit-ci[bot]](https://github.com/apps/pre-commit-ci))
+- \[pre-commit.ci\] pre-commit autoupdate [\#431](https://github.com/python-adaptive/adaptive/pull/431) ([pre-commit-ci[bot]](https://github.com/apps/pre-commit-ci))
+
 ## [v1.0.0](https://github.com/python-adaptive/adaptive/tree/v1.0.0)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v0.15.0...v1.0.0)
