@@ -769,13 +769,13 @@ class AsyncRunner(BaseRunner):
         return live_info(self, update_interval=update_interval)
 
     def live_info_terminal(
-        self, *, update_interval: float = 0.5, update_same_line: bool = True
+        self, *, update_interval: float = 0.5, overwrite_previous: bool = True
     ) -> asyncio.Task:
         async def _update(runner: AsyncRunner) -> None:
             try:
                 while not runner.task.done():
-                    # Clear the terminal
-                    if update_same_line:
+                    if overwrite_previous:
+                        # Clear the terminal
                         print("\033[H\033[J", end="")
                     print(_info_text(runner, separator="\t"))
                     await asyncio.sleep(update_interval)
