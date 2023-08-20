@@ -771,6 +771,38 @@ class AsyncRunner(BaseRunner):
     def live_info_terminal(
         self, *, update_interval: float = 0.5, overwrite_previous: bool = True
     ) -> asyncio.Task:
+        """
+        Display live information about the runner in the terminal.
+
+        This function provides a live update of the runner's status in the terminal.
+        The update can either overwrite the previous status or be printed on a new line.
+
+        Parameters
+        ----------
+        update_interval : float, optional
+            The time interval (in seconds) at which the runner's status is updated in the terminal.
+            Default is 0.5 seconds.
+        overwrite_previous : bool, optional
+            If True, each update will overwrite the previous status in the terminal.
+            If False, each update will be printed on a new line.
+            Default is True.
+
+        Returns
+        -------
+        asyncio.Task
+            The asynchronous task responsible for updating the runner's status in the terminal.
+
+        Examples
+        --------
+        >>> runner = AsyncRunner(...)
+        >>> runner.live_info_terminal(update_interval=1.0, overwrite_previous=False)
+
+        Notes
+        -----
+        This function uses ANSI escape sequences to control the terminal's cursor position.
+        It might not work as expected on all terminal emulators.
+        """
+
         async def _update(runner: AsyncRunner) -> None:
             try:
                 while not runner.task.done():
