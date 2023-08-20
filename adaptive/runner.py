@@ -768,14 +768,16 @@ class AsyncRunner(BaseRunner):
         """
         return live_info(self, update_interval=update_interval)
 
-    def live_info_terminal(self, *, update_interval: float = 0.5) -> asyncio.Task:
+    def live_info_terminal(
+        self, *, update_interval: float = 0.5, update_same_line: bool = True
+    ) -> asyncio.Task:
         async def _update(runner: AsyncRunner) -> None:
             try:
                 while not runner.task.done():
                     # Clear the terminal
-                    # print("\033[H\033[J", end="")
-                    print("\033[H", end="")
-                    print(_info_text(runner, separator="\t\t"))
+                    if update_same_line:
+                        print("\033[H\033[J", end="")
+                    print(_info_text(runner, separator="\t"))
                     await asyncio.sleep(update_interval)
 
             except asyncio.CancelledError:
@@ -879,6 +881,7 @@ def _info_text(runner, separator: str = "\n"):
         overhead_color = "\033[31m"  # Red
 
     info = [
+        ("time", str(datetime.now())),
         ("status", f"{color_map[status]}{status}\033[0m"),
         ("elapsed time", str(timedelta(seconds=runner.elapsed_time()))),
         ("overhead", f"{overhead_color}{overhead:.2f}%\033[0m"),
@@ -895,7 +898,7 @@ def _info_text(runner, separator: str = "\n"):
 
     width = 30
     formatted_info = [f"{k}: {v}".ljust(width) for i, (k, v) in enumerate(info)]
-    return "\t".join(formatted_info)
+    return separator.join(formatted_info)
 
 
 # Default runner
