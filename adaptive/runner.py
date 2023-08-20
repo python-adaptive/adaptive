@@ -768,6 +768,21 @@ class AsyncRunner(BaseRunner):
         """
         return live_info(self, update_interval=update_interval)
 
+    def live_info_terminal(self, *, update_interval: float = 0.5) -> asyncio.Task:
+        async def _update(runner: AsyncRunner) -> None:
+            try:
+                while not runner.task.done():
+                    # Clear the terminal
+                    # print("\033[H\033[J", end="")
+                    print("\033[H", end="")
+                    print(_info_text(runner, separator="\t\t"))
+                    await asyncio.sleep(update_interval)
+
+            except asyncio.CancelledError:
+                print("Live info display cancelled.")
+
+        return self.ioloop.create_task(_update(self))
+
     async def _run(self) -> None:
         first_completed = asyncio.FIRST_COMPLETED
 
@@ -845,6 +860,42 @@ class AsyncRunner(BaseRunner):
 
         self.saving_task = self.ioloop.create_task(_saver())
         return self.saving_task
+
+
+def _info_text(runner, separator: str = "\n"):
+    status = runner.status()
+
+    color_map = {
+        "cancelled": "\033[33m",  # Yellow
+        "failed": "\033[31m",  # Red
+        "running": "\033[34m",  # Blue
+        "finished": "\033[32m",  # Green
+    }
+
+    overhead = runner.overhead()
+    if overhead < 50:
+        overhead_color = "\033[32m"  # Green
+    else:
+        overhead_color = "\033[31m"  # Red
+
+    info = [
+        ("status", f"{color_map[status]}{status}\033[0m"),
+        ("elapsed time", str(timedelta(seconds=runner.elapsed_time()))),
+        ("overhead", f"{overhead_color}{overhead:.2f}%\033[0m"),
+    ]
+
+    with suppress(Exception):
+        info.append(("# of points", runner.learner.npoints))
+
+    with suppress(Exception):
+        info.append(("# of samples", runner.learner.nsamples))
+
+    with suppress(Exception):
+        info.append(("latest loss", f'{runner.learner._cache["loss"]:.3f}'))
+
+    width = 30
+    formatted_info = [f"{k}: {v}".ljust(width) for i, (k, v) in enumerate(info)]
+    return "\t".join(formatted_info)
 
 
 # Default runner
