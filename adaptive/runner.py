@@ -788,8 +788,8 @@ class AsyncRunner(BaseRunner):
         Parameters
         ----------
         update_interval : float, optional
-            The time interval (in seconds) at which the runner's status is updated in the terminal.
-            Default is 0.5 seconds.
+            The time interval (in seconds) at which the runner's status is updated
+            in the terminal. Default is 0.5 seconds.
         overwrite_previous : bool, optional
             If True, each update will overwrite the previous status in the terminal.
             If False, each update will be printed on a new line.
@@ -798,7 +798,8 @@ class AsyncRunner(BaseRunner):
         Returns
         -------
         asyncio.Task
-            The asynchronous task responsible for updating the runner's status in the terminal.
+            The asynchronous task responsible for updating the runner's status in
+            the terminal.
 
         Examples
         --------
@@ -807,8 +808,8 @@ class AsyncRunner(BaseRunner):
 
         Notes
         -----
-        This function uses ANSI escape sequences to control the terminal's cursor position.
-        It might not work as expected on all terminal emulators.
+        This function uses ANSI escape sequences to control the terminal's cursor
+        position. It might not work as expected on all terminal emulators.
         """
 
         async def _update(runner: AsyncRunner) -> None:
@@ -1189,7 +1190,8 @@ def auto_goal(
             for lrn in learner.learners
         ]
         return lambda learner: all(
-            goal(lrn) for lrn, goal in zip(learner.learners, goals)  # type: ignore[attr-defined]
+            goal(lrn)
+            for lrn, goal in zip(learner.learners, goals)  # type: ignore[attr-defined]
         )
     if npoints is not None:
         return lambda learner: learner.npoints >= npoints  # type: ignore[operator]

@@ -319,7 +319,11 @@ class _Interval:
 
 
 def algorithm_4(
-    f: Callable, a: int, b: int, tol: float, N_loops: int = int(1e9)  # noqa: B008
+    f: Callable,
+    a: int,
+    b: int,
+    tol: float,
+    N_loops: int = int(1e9),  # noqa: B008
 ) -> tuple[float, float, int, list[_Interval]]:
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
     algorithm uses Clenshaw-Curtis quadrature rules of increasing

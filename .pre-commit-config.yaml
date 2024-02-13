@@ -8,15 +8,12 @@ repos:
       - id: check-yaml
       - id: debug-statements
       - id: check-ast
-  - repo: https://github.com/psf/black
-    rev: 24.2.0
-    hooks:
-      - id: black-jupyter
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: "v0.2.1"
     hooks:
       - id: ruff
         args: ["--fix"]
+      - id: ruff-format
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.7.1
     hooks:

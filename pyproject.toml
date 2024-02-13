@@ -95,7 +95,7 @@ ignore_missing_imports = true
 python_version = "3.9"
 
 [tool.ruff]
-line-length = 150
+line-length = 88
 target-version = "py39"
 
 [tool.ruff.lint]
@@ -109,12 +109,13 @@ ignore = [
     "D402",    # First line should not be the function's signature
     "PLW0603", # Using the global statement to update `X` is discouraged
     "D401",    # First line of docstring should be in imperative mood
+    "E501",    # Line too long
 ]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 18
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["SLF001"]
 "ci/*" = ["INP001"]
 "tests/test_examples.py" = ["E501"]
