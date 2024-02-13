@@ -726,7 +726,7 @@ class AsyncRunner(BaseRunner):
         if in_ipynb():
             raise RuntimeError(
                 "Cannot block the event loop when running in a Jupyter notebook."
-            " Use `await runner.task` instead."
+                " Use `await runner.task` instead."
             )
         self.ioloop.run_until_complete(self.task)
 
