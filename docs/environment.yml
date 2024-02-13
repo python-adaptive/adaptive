@@ -9,9 +9,9 @@ dependencies:
   - scikit-optimize=0.9.0
   - scikit-learn=1.2.2
   - scipy=1.10.1
-  - holoviews=1.15.4
-  - bokeh=2.4.3
-  - panel=0.14.4
+  - holoviews=1.18.3
+  - bokeh=3.3.4
+  - panel=1.3.8
   - pandas=2.0.0
   - plotly=5.14.1
   - ipywidgets=8.0.6
@@ -23,6 +23,8 @@ dependencies:
   - loky=3.3.0
   - furo=2023.3.27
   - myst-parser=0.18.1
-  - dask=2023.3.2
+  - dask=2024.2.0
   - emoji=2.2.0
   - versioningit=2.2.0
+  - distributed=2024.2.0
+  - param=2.0.2
