@@ -470,7 +470,7 @@ class BlockingRunner(BaseRunner):
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor: (ExecutorTypes | None) = None,
+        executor: ExecutorTypes | None = None,
         ntasks: int | None = None,
         log: bool = False,
         shutdown_executor: bool = False,
@@ -629,7 +629,7 @@ class AsyncRunner(BaseRunner):
         npoints_goal: int | None = None,
         end_time_goal: datetime | None = None,
         duration_goal: timedelta | int | float | None = None,
-        executor: (ExecutorTypes | None) = None,
+        executor: ExecutorTypes | None = None,
         ntasks: int | None = None,
         log: bool = False,
         shutdown_executor: bool = False,
@@ -956,7 +956,7 @@ def _ensure_executor(executor: ExecutorTypes | None) -> concurrent.Executor:
 
 
 def _get_ncores(
-    ex: (ExecutorTypes),
+    ex: ExecutorTypes,
 ) -> int:
     """Return the maximum  number of cores that an executor can use."""
     if with_ipyparallel:

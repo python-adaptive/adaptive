@@ -79,8 +79,9 @@ class AverageLearner1D(Learner1D):
         self,
         function: Callable[[tuple[int, Real]], Real],
         bounds: tuple[Real, Real],
-        loss_per_interval: None
-        | (Callable[[Sequence[Real], Sequence[Real]], float]) = None,
+        loss_per_interval: None | (
+            Callable[[Sequence[Real], Sequence[Real]], float]
+        ) = None,
         delta: float = 0.2,
         alpha: float = 0.005,
         neighbor_sampling: float = 0.3,
