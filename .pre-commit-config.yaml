@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -9,16 +9,16 @@ repos:
       - id: debug-statements
       - id: check-ast
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 24.2.0
     hooks:
       - id: black-jupyter
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.269"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.2.1"
     hooks:
       - id: ruff
         args: ["--fix"]
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.7.0
+    rev: 1.7.1
     hooks:
       - id: nbqa-black
         additional_dependencies: [jupytext, black]
@@ -26,7 +26,7 @@ repos:
         args: ["ruff", "--fix", "--ignore=E402,B018,F704"]
         additional_dependencies: [jupytext, ruff]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.3.0"
+    rev: "v1.8.0"
     hooks:
       - id: mypy
         exclude: ipynb_filter.py|docs/source/conf.py

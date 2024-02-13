@@ -71,7 +71,6 @@ class DivergentIntegralError(ValueError):
 
 
 class _Interval:
-
     """
     Attributes
     ----------

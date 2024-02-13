@@ -987,9 +987,11 @@ class LearnerND(BaseLearner):
             xs = ys = np.linspace(0, 1, n)
             xys = [xs[:, None], ys[None, :]]
             values = [
-                cut_mapping[i]
-                if i in cut_mapping
-                else xys.pop(0) * (b[1] - b[0]) + b[0]
+                (
+                    cut_mapping[i]
+                    if i in cut_mapping
+                    else xys.pop(0) * (b[1] - b[0]) + b[0]
+                )
                 for i, b in enumerate(self._bbox)
             ]
 
