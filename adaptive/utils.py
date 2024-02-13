@@ -160,7 +160,7 @@ class SequentialExecutor(concurrent.Executor):
             fut.set_exception(e)
         return fut
 
-    def map(self, fn, *iterable, timeout=None, chunksize=1):
+    def map(self, fn, *iterable, timeout=None, chunksize=1):  # noqa: A003
         return map(fn, iterable)
 
     def shutdown(self, wait=True):
