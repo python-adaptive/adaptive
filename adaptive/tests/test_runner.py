@@ -1,4 +1,3 @@
-import asyncio
 import platform
 import sys
 import time
@@ -34,7 +33,7 @@ def blocking_runner(learner, **kw):
 
 def async_runner(learner, **kw):
     runner = AsyncRunner(learner, executor=SequentialExecutor(), **kw)
-    asyncio.get_event_loop().run_until_complete(runner.task)
+    runner.block_until_done()
 
 
 runners = [simple, blocking_runner, async_runner]
@@ -71,7 +70,7 @@ def test_aync_def_function():
 
     learner = Learner1D(f, (-1, 1))
     runner = AsyncRunner(learner, npoints_goal=10)
-    asyncio.get_event_loop().run_until_complete(runner.task)
+    runner.block_until_done()
 
 
 # --- Test with different executors
@@ -158,7 +157,7 @@ def test_loky_executor(loky_executor):
 def test_default_executor():
     learner = Learner1D(linear, (-1, 1))
     runner = AsyncRunner(learner, npoints_goal=10)
-    asyncio.get_event_loop().run_until_complete(runner.task)
+    runner.block_until_done()
 
 
 def test_auto_goal():

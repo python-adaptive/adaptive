@@ -7,12 +7,16 @@ import inspect
 import os
 import pickle
 import warnings
-from collections.abc import Iterator, Sequence
+from collections.abc import Awaitable, Iterator, Sequence
 from contextlib import contextmanager
+from functools import wraps
 from itertools import product
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 import cloudpickle
+
+if TYPE_CHECKING:
+    from dask.distributed import Client as AsyncDaskClient
 
 
 def named_product(**items: Sequence[Any]):
@@ -161,3 +165,43 @@ class SequentialExecutor(concurrent.Executor):
 
     def shutdown(self, wait=True):
         pass
+
+
+def _cache_key(args: tuple[Any], kwargs: dict[str, Any]) -> str:
+    arg_strings = [str(a) for a in args]
+    kwarg_strings = [f"{k}={v}" for k, v in sorted(kwargs.items())]
+    return "_".join(arg_strings + kwarg_strings)
+
+
+T = TypeVar("T")
+
+
+def daskify(
+    client: AsyncDaskClient, cache: bool = False
+) -> Callable[[Callable[..., T]], Callable[..., Awaitable[T]]]:
+    from dask import delayed
+
+    def _daskify(func: Callable[..., T]) -> Callable[..., Awaitable[T]]:
+        if cache:
+            func.cache = {}  # type: ignore[attr-defined]
+
+        delayed_func = delayed(func)
+
+        @wraps(func)
+        async def wrapper(*args: Any, **kwargs: Any) -> T:
+            if cache:
+                key = _cache_key(args, kwargs)  # type: ignore[arg-type]
+                future = func.cache.get(key)  # type: ignore[attr-defined]
+
+                if future is None:
+                    future = client.compute(delayed_func(*args, **kwargs))
+                    func.cache[key] = future  # type: ignore[attr-defined]
+            else:
+                future = client.compute(delayed_func(*args, **kwargs))
+
+            result = await future
+            return result
+
+        return wrapper
+
+    return _daskify
