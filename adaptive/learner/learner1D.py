@@ -135,7 +135,7 @@ def triangle_loss(xs: XsType1, ys: YsType1) -> Float:
         pts = [(x, *y) for x, y in zip(xs, ys)]  # type: ignore[misc]
         vol = simplex_volume_in_embedding
     else:
-        pts = [(x, y) for x, y in zip(xs, ys)]
+        pts = list(zip(xs, ys))
         vol = volume
     return sum(vol(pts[i : i + 3]) for i in range(N)) / N
 

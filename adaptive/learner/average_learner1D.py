@@ -311,7 +311,7 @@ class AverageLearner1D(Learner1D):
         new point, since in general n << min_samples and this point will need
         to be resampled many more times"""
         points, (loss_improvement,) = self._ask_points_without_adding(1)
-        seed_points = [(seed, x) for seed, x in zip(range(n), n * points)]
+        seed_points = list(zip(range(n), n * points))
         loss_improvements = [loss_improvement / n] * n
         return seed_points, loss_improvements  # type: ignore[return-value]
 
