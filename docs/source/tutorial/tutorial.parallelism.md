@@ -89,7 +89,7 @@ if __name__ == "__main__":
     runner.start_periodic_saving(dict(fname=fname), interval=600)
 
     # block until runner goal reached
-    runner.ioloop.run_until_complete(runner.task)
+    runner.block_until_done()
 
     # save one final time before exiting
     learner.save(fname)

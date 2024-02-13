@@ -722,6 +722,14 @@ class AsyncRunner(BaseRunner):
         """
         self.task.cancel()
 
+    def block_until_done(self) -> None:
+        if in_ipynb():
+            raise RuntimeError(
+                "Cannot block the event loop when running in a Jupyter notebook."
+                " Use `await runner.task` instead."
+            )
+        self.ioloop.run_until_complete(self.task)
+
     def live_plot(
         self,
         *,
