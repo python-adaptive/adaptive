@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from dask.distributed import Client as AsyncDaskClient
 
 
-def named_product(**items: Sequence[Any]):
+def named_product(**items: Sequence[Any]) -> list[dict[str, Any]]:
     names = items.keys()
     vals = items.values()
     return [dict(zip(names, res)) for res in product(*vals)]
