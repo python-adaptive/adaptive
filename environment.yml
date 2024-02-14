@@ -4,7 +4,7 @@ channels:
 - conda-forge
 
 dependencies:
-  - python=3.9
+  - python=3.11
   - sortedcontainers
   - sortedcollections
   - scipy
@@ -17,5 +17,5 @@ dependencies:
   - jupyter_client>=5.2.2
   - ipywidgets
   - scikit-optimize>=0.8.1
-  - scikit-learn<=0.24.2  # https://github.com/scikit-optimize/scikit-optimize/issues/1059
+  - scikit-learn
   - plotly
