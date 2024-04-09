@@ -1,4 +1,4 @@
-# -- Path setup --------------------------------------------------------------
+# -- Path setup --------------------------------------------------------------  # noqa: INP001, D100
 
 import os
 import sys
@@ -21,12 +21,11 @@ import adaptive  # noqa: E402, isort:skip
 # -- Project information -----------------------------------------------------
 
 project = "adaptive"
-copyright = "2018-2023, Adaptive Authors"
+copyright = "2018-2023, Adaptive Authors"  # noqa: A001
 author = "Adaptive Authors"
 
 # The short X.Y version
 version = ".".join(adaptive.__version__.split(".")[:3])
-version = version
 # The full version, including alpha/beta/rc tags
 release = version
 
@@ -101,5 +100,5 @@ output_file = docs_path / "README.md"
 replace_named_emojis(input_file, output_file)
 
 
-def setup(app) -> None:
+def setup(app) -> None:  # noqa: ANN001, D103
     app.add_css_file("custom.css")  # For the `live_info` widget

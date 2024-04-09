@@ -31,16 +31,16 @@ dependencies = [
 other = [
     "dill",
     "distributed",
-    "ipyparallel>=6.2.5",                    # because of https://github.com/ipython/ipyparallel/issues/404
-    "scikit-optimize>=0.8.1",                # because of https://github.com/scikit-optimize/scikit-optimize/issues/931
+    "ipyparallel>=6.2.5",       # because of https://github.com/ipython/ipyparallel/issues/404
+    "scikit-optimize>=0.8.1",   # because of https://github.com/scikit-optimize/scikit-optimize/issues/931
     "scikit-learn",
     "wexpect; os_name == 'nt'",
     "pexpect; os_name != 'nt'",
 ]
 notebook = [
     "ipython",
-    "ipykernel>=4.8.0",                      # because https://github.com/ipython/ipykernel/issues/274 and https://github.com/ipython/ipykernel/issues/263
-    "jupyter_client>=5.2.2",                 # because https://github.com/jupyter/jupyter_client/pull/314
+    "ipykernel>=4.8.0",      # because https://github.com/ipython/ipykernel/issues/274 and https://github.com/ipython/ipykernel/issues/263
+    "jupyter_client>=5.2.2", # because https://github.com/jupyter/jupyter_client/pull/314
     "holoviews>=1.9.1",
     "ipywidgets",
     "bokeh",
@@ -57,9 +57,7 @@ testing = [
     "pre_commit",
     "typeguard",
 ]
-all = [
-    "adaptive[notebook,testing,other]",
-]
+all = ["adaptive[notebook,testing,other]"]
 
 [project.urls]
 homepage = "https://adaptive.readthedocs.io/"
@@ -102,7 +100,6 @@ line-length = 88
 target-version = "py39"
 
 [tool.ruff.lint]
-select = ["ALL"]
 ignore = [
     "T20",     # flake8-print
     "ANN101",  # Missing type annotation for {name} in method
@@ -113,13 +110,21 @@ ignore = [
     "PLW0603", # Using the global statement to update `X` is discouraged
     "D401",    # First line of docstring should be in imperative mood
     "E501",    # Line too long
+    "TD002",   # Missing author in TODO
+    "TD003",   # Missing issue link on the line following this TODO
+    "FIX002",  # Line contains TODO, consider resolving the issue
+    "FBT001",  # Boolean-typed positional argument in function definition
 ]
+select = ["ALL"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 18
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["SLF001", "PLR2004"]
+"tests/*" = [
+    "SLF001",
+    "PLR2004", # Magic value used in comparison
+]
 "ci/*" = ["INP001"]
 "tests/test_examples.py" = ["E501"]
 
