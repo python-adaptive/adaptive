@@ -25,7 +25,6 @@ def uses_nth_neighbors(n: int):
 
     Examples
     --------
-
     The next function is a part of the `curvature_loss_function` function.
 
     >>> @uses_nth_neighbors(1)
@@ -57,6 +56,7 @@ def uses_nth_neighbors(n: int):
     ...         return loss * 100
     ...
     ...     return loss
+
     """
 
     def _wrapped(loss_per_interval):
@@ -88,6 +88,7 @@ class BaseLearner(abc.ABC):
     -----
     Subclasses may define a ``plot`` method that takes no parameters
     and returns a holoviews plot.
+
     """
 
     data: DataType
@@ -102,6 +103,7 @@ class BaseLearner(abc.ABC):
         ----------
         x : A value from the function domain
         y : A value from the function image
+
         """
         self.tell_many([x], [y])
 
@@ -112,6 +114,7 @@ class BaseLearner(abc.ABC):
         ----------
         xs : Iterable of values from the function domain
         ys : Iterable of values from the function image
+
         """
         for x, y in zip(xs, ys):
             self.tell(x, y)
@@ -119,14 +122,15 @@ class BaseLearner(abc.ABC):
     @abc.abstractmethod
     def tell_pending(self, x):
         """Tell the learner that 'x' has been requested such
-        that it's not suggested again."""
+        that it's not suggested again.
+        """
 
     @abc.abstractmethod
     def remove_unfinished(self):
         """Remove uncomputed data from the learner."""
 
     @abc.abstractmethod
-    def loss(self, real=True):
+    def loss(self, real: bool = True):
         """Return the loss for the current state of the learner.
 
         Parameters
@@ -135,6 +139,7 @@ class BaseLearner(abc.ABC):
             If False, return the "expected" loss, i.e. the
             loss including the as-yet unevaluated points
             (possibly by interpolation).
+
         """
 
     @abc.abstractmethod
@@ -149,6 +154,7 @@ class BaseLearner(abc.ABC):
             If True, add the chosen points to this learner's
             `pending_points`. Set this to False if you do not
             want to modify the state of the learner.
+
         """
 
     @abc.abstractmethod
@@ -162,7 +168,6 @@ class BaseLearner(abc.ABC):
     @abc.abstractmethod
     def new(self):
         """Return a new learner with the same function and parameters."""
-        pass
 
     def copy_from(self, other):
         """Copy over the data from another learner.
@@ -171,6 +176,7 @@ class BaseLearner(abc.ABC):
         ----------
         other : BaseLearner object
             The learner from which the data is copied.
+
         """
         self._set_data(other._get_data())
 
@@ -184,6 +190,7 @@ class BaseLearner(abc.ABC):
         compress : bool, default True
             Compress the data upon saving using 'gzip'. When saving
             using compression, one must load it with compression too.
+
         """
         data = self._get_data()
         save(fname, data, compress)
@@ -198,6 +205,7 @@ class BaseLearner(abc.ABC):
         compress : bool, default True
             If the data is compressed when saved, one must load it
             with compression too.
+
         """
         with suppress(FileNotFoundError, EOFError):
             data = load(fname, compress)
@@ -228,6 +236,7 @@ class BaseLearner(abc.ABC):
         Returns
         -------
         pandas.DataFrame
+
         """
 
     @abc.abstractmethod

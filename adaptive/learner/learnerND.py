@@ -62,8 +62,7 @@ def orientation(simplex):
 
 
 def uniform_loss(simplex, values, value_scale):
-    """
-    Uniform loss.
+    """Uniform loss.
 
     Parameters
     ----------
@@ -77,13 +76,13 @@ def uniform_loss(simplex, values, value_scale):
     Returns
     -------
     loss : float
+
     """
     return volume(simplex)
 
 
 def std_loss(simplex, values, value_scale):
-    """
-    Computes the loss of the simplex based on the standard deviation.
+    """Computes the loss of the simplex based on the standard deviation.
 
     Parameters
     ----------
@@ -97,8 +96,8 @@ def std_loss(simplex, values, value_scale):
     Returns
     -------
     loss : float
-    """
 
+    """
     r = np.linalg.norm(np.std(values, axis=0))
     vol = volume(simplex)
 
@@ -108,8 +107,7 @@ def std_loss(simplex, values, value_scale):
 
 
 def default_loss(simplex, values, value_scale):
-    """
-    Computes the average of the volumes of the simplex.
+    """Computes the average of the volumes of the simplex.
 
     Parameters
     ----------
@@ -123,6 +121,7 @@ def default_loss(simplex, values, value_scale):
     Returns
     -------
     loss : float
+
     """
     if isinstance(values[0], Iterable):
         pts = [(*x, *y) for x, y in zip(simplex, values)]
@@ -133,8 +132,7 @@ def default_loss(simplex, values, value_scale):
 
 @uses_nth_neighbors(1)
 def triangle_loss(simplex, values, value_scale, neighbors, neighbor_values):
-    """
-    Computes the average of the volumes of the simplex combined with each
+    """Computes the average of the volumes of the simplex combined with each
     neighbouring point.
 
     Parameters
@@ -154,8 +152,8 @@ def triangle_loss(simplex, values, value_scale, neighbors, neighbor_values):
     Returns
     -------
     loss : float
-    """
 
+    """
     neighbors = [n for n in neighbors if n is not None]
     neighbor_values = [v for v in neighbor_values if v is not None]
     if len(neighbors) == 0:
@@ -165,7 +163,7 @@ def triangle_loss(simplex, values, value_scale, neighbors, neighbor_values):
     n = [(*x, *to_list(y)) for x, y in zip(neighbors, neighbor_values)]
 
     return sum(simplex_volume_in_embedding([*s, neighbor]) for neighbor in n) / len(
-        neighbors
+        neighbors,
     )
 
 
@@ -192,12 +190,17 @@ def curvature_loss_function(exploration=0.05):
         Returns
         -------
         loss : float
+
         """
         dim = len(simplex[0])  # the number of coordinates
         loss_input_volume = volume(simplex)
 
         loss_curvature = triangle_loss(
-            simplex, values, value_scale, neighbors, neighbor_values
+            simplex,
+            values,
+            value_scale,
+            neighbors,
+            neighbor_values,
         )
         return (
             loss_curvature + exploration * loss_input_volume ** ((2 + dim) / dim)
@@ -225,8 +228,8 @@ def choose_point_in_simplex(simplex, transform=None):
     -------
     point : numpy array of length N
         The coordinates of the suggested new point.
-    """
 
+    """
     if transform is not None:
         simplex = np.dot(simplex, transform)
 
@@ -305,6 +308,7 @@ class LearnerND(BaseLearner):
     that you will compute in the future, it will subtriangulate a real simplex
     with the pending points inside it and distribute the loss among it's
     children based on volume.
+
     """
 
     def __init__(self, func, bounds, loss_per_simplex=None):
@@ -317,7 +321,7 @@ class LearnerND(BaseLearner):
                     "The provided loss function wants "
                     "next-nearest neighboring simplices for the loss computation, "
                     "this feature is not yet implemented, either use "
-                    "nth_neightbors = 0 or 1"
+                    "nth_neightbors = 0 or 1",
                 )
             self.nth_neighbors = self.loss_per_simplex.nth_neighbors
         else:
@@ -404,7 +408,8 @@ class LearnerND(BaseLearner):
     def to_numpy(self):
         """Data as NumPy array of size ``(npoints, dim+vdim)``, where ``dim`` is the
         size of the input dimension and ``vdim`` is the length of the return value
-        of ``learner.function``."""
+        of ``learner.function``.
+        """
         return np.array([(*p, *np.atleast_1d(v)) for p, v in sorted(self.data.items())])
 
     def to_dataframe(  # type: ignore[override]
@@ -438,13 +443,14 @@ class LearnerND(BaseLearner):
         ------
         ImportError
             If `pandas` is not installed.
+
         """
         if not with_pandas:
             raise ImportError("pandas is not installed.")
         if len(point_names) != self.ndim:
             raise ValueError(
                 f"point_names ({point_names}) should have the"
-                f" same length as learner.ndims ({self.ndim})"
+                f" same length as learner.ndims ({self.ndim})",
             )
         data = [(*x, y) for x, y in self.data.items()]
         df = pandas.DataFrame(data, columns=[*point_names, value_name])
@@ -481,11 +487,14 @@ class LearnerND(BaseLearner):
             The ``point_names`` used in ``to_dataframe``, by default ("x", "y", "z")
         value_name : str, optional
             The ``value_name`` used in ``to_dataframe``, by default "value"
+
         """
         self.tell_many(df[list(point_names)].values, df[value_name].values)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
-                self.function, df, function_prefix
+                self.function,
+                df,
+                function_prefix,
             )
 
     @property
@@ -494,14 +503,16 @@ class LearnerND(BaseLearner):
 
     def _ip(self):
         """A `scipy.interpolate.LinearNDInterpolator` instance
-        containing the learner's data."""
+        containing the learner's data.
+        """
         # XXX: take our own triangulation into account when generating the _ip
         return interpolate.LinearNDInterpolator(self.points, self.values)
 
     @property
     def tri(self):
         """An `adaptive.learner.triangulation.Triangulation` instance
-        with all the points of the learner."""
+        with all the points of the learner.
+        """
         if self._tri is not None:
             return self._tri
 
@@ -530,7 +541,7 @@ class LearnerND(BaseLearner):
         point = tuple(point)
 
         if point in self.data:
-            return  # we already know about the point
+            return None  # we already know about the point
 
         if value is None:
             return self.tell_pending(point)
@@ -540,7 +551,7 @@ class LearnerND(BaseLearner):
         self.data[point] = value
 
         if not self.inside_bounds(point):
-            return
+            return None
 
         self._update_range(value)
         if tri is not None:
@@ -672,7 +683,7 @@ class LearnerND(BaseLearner):
         assert self.tri is not None
         raise AssertionError(
             "Could not find a simplex to subdivide. Yet there should always"
-            "  be a simplex available if LearnerND.tri() is not None."
+            "  be a simplex available if LearnerND.tri() is not None.",
         )
 
     def _ask_best_point(self):
@@ -726,7 +737,7 @@ class LearnerND(BaseLearner):
         if self.nth_neighbors == 0:
             # compute the loss on the scaled simplex
             return float(
-                self.loss_per_simplex(vertices, values, self._output_multiplier)
+                self.loss_per_simplex(vertices, values, self._output_multiplier),
             )
 
         # We do need the neighbors
@@ -750,7 +761,7 @@ class LearnerND(BaseLearner):
                 self._output_multiplier,
                 neighbor_points,
                 neighbor_values,
-            )
+            ),
         )
 
     def _update_losses(self, to_delete: set, to_add: set):
@@ -778,7 +789,8 @@ class LearnerND(BaseLearner):
                 continue
 
             self._update_subsimplex_losses(
-                simplex, self._subtriangulations[simplex].simplices
+                simplex,
+                self._subtriangulations[simplex].simplices,
             )
 
         if self.nth_neighbors:
@@ -796,7 +808,8 @@ class LearnerND(BaseLearner):
                     continue
 
                 self._update_subsimplex_losses(
-                    simplex, self._subtriangulations[simplex].simplices
+                    simplex,
+                    self._subtriangulations[simplex].simplices,
                 )
 
     def _recompute_all_losses(self):
@@ -819,7 +832,8 @@ class LearnerND(BaseLearner):
                 continue
 
             self._update_subsimplex_losses(
-                simplex, self._subtriangulations[simplex].simplices
+                simplex,
+                self._subtriangulations[simplex].simplices,
             )
 
     @property
@@ -863,7 +877,7 @@ class LearnerND(BaseLearner):
         return False
 
     @cache_latest
-    def loss(self, real=True):
+    def loss(self, real: bool = True):
         # XXX: compute pending loss if real == False
         losses = self._losses if self.tri is not None else {}
         return max(losses.values()) if losses else float("inf")
@@ -887,16 +901,18 @@ class LearnerND(BaseLearner):
             the number of boxes in the interpolation grid along each axis
         tri_alpha : float (0 to 1)
             Opacity of triangulation lines
+
         """
         hv = ensure_holoviews()
         if self.vdim > 1:
             raise NotImplementedError(
-                "holoviews currently does not support", "3D surface plots in bokeh."
+                "holoviews currently does not support",
+                "3D surface plots in bokeh.",
             )
         if self.ndim != 2:
             raise NotImplementedError(
                 "Only 2D plots are implemented: You can "
-                "plot a 2D slice with 'plot_slice'."
+                "plot a 2D slice with 'plot_slice'.",
             )
         x, y = self._bbox
         lbrt = x[0], y[0], x[1], y[1]
@@ -905,7 +921,7 @@ class LearnerND(BaseLearner):
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                scale_factor = np.product(np.diag(self._transform))
+                scale_factor = np.prod(np.diag(self._transform))
                 a_sq = np.sqrt(np.min(self.tri.volumes()) * scale_factor)
                 n = max(10, int(0.658 / a_sq))
 
@@ -918,7 +934,7 @@ class LearnerND(BaseLearner):
 
             if tri_alpha:
                 points = np.array(
-                    [self.tri.get_vertices(s) for s in self.tri.simplices]
+                    [self.tri.get_vertices(s) for s in self.tri.simplices],
                 )
                 points = np.pad(
                     points[:, [0, 1, 2, 0], :],
@@ -933,7 +949,9 @@ class LearnerND(BaseLearner):
             im = hv.Image([], bounds=lbrt)
             tris = hv.EdgePaths([])
         return im.opts(cmap="viridis") * tris.opts(
-            line_width=0.5, alpha=tri_alpha, tools=[]
+            line_width=0.5,
+            alpha=tri_alpha,
+            tools=[],
         )
 
     def plot_slice(self, cut_mapping, n=None):
@@ -947,6 +965,7 @@ class LearnerND(BaseLearner):
             dimension 0 ('x') to value 1.
         n : int
             the number of boxes in the interpolation grid along each axis
+
         """
         hv = ensure_holoviews()
         plot_dim = self.ndim - len(cut_mapping)
@@ -955,7 +974,7 @@ class LearnerND(BaseLearner):
                 return hv.Scatter([]) * hv.Path([])
             elif self.vdim > 1:
                 raise NotImplementedError(
-                    "multidimensional output not yet supported by `plot_slice`"
+                    "multidimensional output not yet supported by `plot_slice`",
                 )
             n = n or 201
             values = [
@@ -975,12 +994,12 @@ class LearnerND(BaseLearner):
         elif plot_dim == 2:
             if self.vdim > 1:
                 raise NotImplementedError(
-                    "holoviews currently does not support 3D surface plots in bokeh."
+                    "holoviews currently does not support 3D surface plots in bokeh.",
                 )
             if n is None:
                 # Calculate how many grid points are needed.
                 # factor from A=√3/4 * a² (equilateral triangle)
-                scale_factor = np.product(np.diag(self._transform))
+                scale_factor = np.prod(np.diag(self._transform))
                 a_sq = np.sqrt(np.min(self.tri.volumes()) * scale_factor)
                 n = max(10, int(0.658 / a_sq))
 
@@ -1026,6 +1045,7 @@ class LearnerND(BaseLearner):
         -------
         plot : `plotly.offline.iplot` object
             The 3D plot of ``learner.data``.
+
         """
         plotly = ensure_plotly()
 
@@ -1048,7 +1068,7 @@ class LearnerND(BaseLearner):
                     mode="lines",
                     line={"color": "rgb(125,125,125)", "width": 1},
                     hoverinfo="none",
-                )
+                ),
             )
 
         Xn, Yn, Zn = zip(*vertices)
@@ -1070,7 +1090,7 @@ class LearnerND(BaseLearner):
                 name="actors",
                 marker=marker,
                 hoverinfo="text",
-            )
+            ),
         )
 
         axis = {
@@ -1098,14 +1118,14 @@ class LearnerND(BaseLearner):
             if self.ndim != 3 or self.vdim != 1:
                 raise Exception(
                     "Isosurface plotting is only supported"
-                    " for a 3D input and 1D output"
+                    " for a 3D input and 1D output",
                 )
             get_surface = True
             get_line = False
         elif which == "line":
             if self.ndim != 2 or self.vdim != 1:
                 raise Exception(
-                    "Isoline plotting is only supported for a 2D input and 1D output"
+                    "Isoline plotting is only supported for a 2D input and 1D output",
                 )
             get_surface = False
             get_line = True
@@ -1159,7 +1179,7 @@ class LearnerND(BaseLearner):
             raise ValueError(
                 f"Could not draw isosurface for level={level}, as"
                 " this value is not inside the function range. Please choose"
-                f" a level strictly inside interval ({r_min}, {r_max})"
+                f" a level strictly inside interval ({r_min}, {r_max})",
             )
 
         return vertices, faces_or_lines
@@ -1184,6 +1204,7 @@ class LearnerND(BaseLearner):
         `holoviews.core.Overlay`
             The plot of the isoline(s). This overlays a `plot` with a
             `holoviews.element.Path`.
+
         """
         hv = ensure_holoviews()
         if n == -1:
@@ -1218,6 +1239,7 @@ class LearnerND(BaseLearner):
         -------
         plot : `plotly.offline.iplot` object
             The plot object of the isosurface.
+
         """
         plotly = ensure_plotly()
 
@@ -1225,7 +1247,12 @@ class LearnerND(BaseLearner):
         x, y, z = zip(*vertices)
 
         fig = plotly.figure_factory.create_trisurf(
-            x=x, y=y, z=z, plot_edges=False, simplices=faces, title="Isosurface"
+            x=x,
+            y=y,
+            z=z,
+            plot_edges=False,
+            simplices=faces,
+            title="Isosurface",
         )
         isosurface = fig.data[0]
         isosurface.update(
@@ -1235,7 +1262,7 @@ class LearnerND(BaseLearner):
                 "roughness": 1,
                 "specular": 0,
                 "fresnel": 0,
-            }
+            },
         )
 
         if hull_opacity < 1e-3:

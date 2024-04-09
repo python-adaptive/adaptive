@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools ~= 65.0.0", "versioningit ~= 2.2.0", "wheel"]
+requires = ["setuptools >= 65.0.0", "versioningit >= 2.2.0", "wheel"]
 
 [project]
 name = "adaptive"
@@ -57,6 +57,9 @@ testing = [
     "pre_commit",
     "typeguard",
 ]
+all = [
+    "adaptive[notebook,testing,other]",
+]
 
 [project.urls]
 homepage = "https://adaptive.readthedocs.io/"
@@ -99,7 +102,7 @@ line-length = 88
 target-version = "py39"
 
 [tool.ruff.lint]
-select = ["B", "C", "E", "F", "W", "T", "B9", "I", "UP"]
+select = ["ALL"]
 ignore = [
     "T20",     # flake8-print
     "ANN101",  # Missing type annotation for {name} in method

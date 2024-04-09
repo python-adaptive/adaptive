@@ -71,8 +71,7 @@ class DivergentIntegralError(ValueError):
 
 
 class _Interval:
-    """
-    Attributes
+    """Attributes
     ----------
     (a, b) : (float, float)
         The left and right boundary of the interval.
@@ -114,6 +113,7 @@ class _Interval:
     refinement_complete : depth, optional
         If true, all the function values in the interval are known at `depth`.
         By default the depth is the depth of the interval.
+
     """
 
     __slots__ = [
@@ -210,7 +210,8 @@ class _Interval:
         """Sets the error of an interval using a heuristic (half the error of
         the parent) when the actual error cannot be calculated due to its
         parents not being finished yet. This error is propagated down to its
-        children."""
+        children.
+        """
         self.err = value
         for child in self.children:
             if child.depth_complete or (
@@ -253,7 +254,8 @@ class _Interval:
 
     def complete_process(self, depth: int) -> tuple[bool, bool] | tuple[bool, np.bool_]:
         """Calculate the integral contribution and error from this interval,
-        and update the done leaves of all ancestor intervals."""
+        and update the done leaves of all ancestor intervals.
+        """
         assert self.depth_complete is None or self.depth_complete == depth - 1
         self.depth_complete = depth
 
@@ -341,8 +343,7 @@ class _Interval:
 
 class IntegratorLearner(BaseLearner):
     def __init__(self, function: Callable, bounds: tuple[int, int], tol: float) -> None:
-        """
-        Parameters
+        """Parameters
         ----------
         function : callable: X → Y
             The function to learn.
@@ -373,6 +374,7 @@ class IntegratorLearner(BaseLearner):
             Returns whether the `tol` has been reached.
         plot : hv.Scatter
             Plots all the points that are evaluated.
+
         """
         self.function = function  # type: ignore
         self.bounds = bounds
@@ -383,7 +385,7 @@ class IntegratorLearner(BaseLearner):
         self.pending_points = set()
         self._stack: list[float] = []
         self.x_mapping: dict[float, SortedSet] = defaultdict(
-            lambda: SortedSet([], key=attrgetter("rdepth"))
+            lambda: SortedSet([], key=attrgetter("rdepth")),
         )
         self.ivals: set[_Interval] = set()
         ival = _Interval.make_first(*self.bounds)
@@ -557,7 +559,7 @@ class IntegratorLearner(BaseLearner):
         )
 
     @cache_latest
-    def loss(self, real=True):
+    def loss(self, real: bool = True):
         return abs(abs(self.igral) * self.tol - self.err)
 
     def plot(self):
@@ -602,6 +604,7 @@ class IntegratorLearner(BaseLearner):
         ------
         ImportError
             If `pandas` is not installed.
+
         """
         if not with_pandas:
             raise ImportError("pandas is not installed.")
@@ -638,6 +641,7 @@ class IntegratorLearner(BaseLearner):
             Name of the input value, by default "x"
         y_name : str, optional
             Name of the output value, by default "y"
+
         """
         raise NotImplementedError
 

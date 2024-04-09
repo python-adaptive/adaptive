@@ -27,6 +27,7 @@ class SKOptLearner(Optimizer, BaseLearner):
         The function to learn.
     **kwargs :
         Arguments to pass to ``skopt.Optimizer``.
+
     """
 
     def __init__(self, function, **kwargs):
@@ -59,7 +60,7 @@ class SKOptLearner(Optimizer, BaseLearner):
         pass
 
     @cache_latest
-    def loss(self, real=True):
+    def loss(self, real: bool = True):
         if not self.models:
             return np.inf
         else:
@@ -73,7 +74,7 @@ class SKOptLearner(Optimizer, BaseLearner):
         if not tell_pending:
             raise NotImplementedError(
                 "Asking points is an irreversible "
-                "action, so use `ask(n, tell_pending=True`."
+                "action, so use `ask(n, tell_pending=True`.",
             )
         points = super().ask(n)
         # TODO: Choose a better estimate for the loss improvement.
@@ -154,6 +155,7 @@ class SKOptLearner(Optimizer, BaseLearner):
         ------
         ImportError
             If `pandas` is not installed.
+
         """
         raise NotImplementedError
 
@@ -181,5 +183,6 @@ class SKOptLearner(Optimizer, BaseLearner):
         function_prefix : str, optional
             The ``function_prefix`` used in ``to_dataframe``, by default "function."
         TODO
+
         """
         raise NotImplementedError
