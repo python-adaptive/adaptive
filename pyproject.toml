@@ -119,7 +119,7 @@ ignore = [
 max-complexity = 18
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["SLF001"]
+"tests/*" = ["SLF001", "PLR2004"]
 "ci/*" = ["INP001"]
 "tests/test_examples.py" = ["E501"]
 

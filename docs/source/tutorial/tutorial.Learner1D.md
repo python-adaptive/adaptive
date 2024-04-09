@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: python3
   name: python3
@@ -92,7 +92,7 @@ We can now compare the adaptive sampling to a homogeneous sampling with the same
 ```{code-cell} ipython3
 if not runner.task.done():
     raise RuntimeError(
-        "Wait for the runner to finish before executing the cells below!"
+        "Wait for the runner to finish before executing the cells below!",
     )
 ```
 
@@ -119,7 +119,7 @@ offsets = [random.uniform(-0.8, 0.8) for _ in range(3)]
 def f_levels(x, offsets=offsets):
     a = 0.01
     return np.array(
-        [offset + x + a**2 / (a**2 + (x - offset) ** 2) for offset in offsets]
+        [offset + x + a**2 / (a**2 + (x - offset) ** 2) for offset in offsets],
     )
 ```
 
@@ -129,7 +129,8 @@ The `Learner1D` can be used for such functions:
 ```{code-cell} ipython3
 learner = adaptive.Learner1D(f_levels, bounds=(-1, 1))
 runner = adaptive.Runner(
-    learner, loss_goal=0.01
+    learner,
+    loss_goal=0.01,
 )  # continue until `learner.loss()<=0.01`
 ```
 

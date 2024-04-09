@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: adaptive
   language: python
@@ -138,7 +138,7 @@ def run_and_plot(learner, **goal):
     bms[learner.function.__name__] = bm
     display(pd.DataFrame([bm]))  # noqa: F821
     return plot(learner, homo_learner).relabel(
-        f"{learner.function.__name__} function with {learner.npoints} points"
+        f"{learner.function.__name__} function with {learner.npoints} points",
     )
 
 
@@ -207,7 +207,7 @@ Nonetheless, the algorithm still focuses on areas of the function that have more
 ```{code-cell} ipython3
 def gaussian(x, mu=0, sigma=0.5):
     return (1 / np.sqrt(2 * np.pi * sigma**2)) * np.exp(
-        -((x - mu) ** 2) / (2 * sigma**2)
+        -((x - mu) ** 2) / (2 * sigma**2),
     )
 
 
@@ -359,7 +359,7 @@ def gaussian_surface(xy, mu=(0, 0), sigma=(1, 1)):
     mu_x, mu_y = mu
     sigma_x, sigma_y = sigma
     return (1 / (2 * np.pi * sigma_x * sigma_y)) * np.exp(
-        -((x - mu_x) ** 2 / (2 * sigma_x**2) + (y - mu_y) ** 2 / (2 * sigma_y**2))
+        -((x - mu_x) ** 2 / (2 * sigma_x**2) + (y - mu_y) ** 2 / (2 * sigma_y**2)),
     )
 
 
@@ -380,7 +380,8 @@ def sinusoidal_surface(xy, amplitude=1, frequency=(0.3, 3)):
 
 
 learner = adaptive.Learner2D(
-    sinusoidal_surface, bounds=[(-2 * np.pi, 2 * np.pi), (-2 * np.pi, 2 * np.pi)]
+    sinusoidal_surface,
+    bounds=[(-2 * np.pi, 2 * np.pi), (-2 * np.pi, 2 * np.pi)],
 )
 run_and_plot(learner, loss_goal=0.01)
 ```

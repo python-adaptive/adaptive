@@ -4,11 +4,12 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: python3
   name: python3
 ---
+
 (TutorialAdvancedTopics)=
 # Advanced Topics
 
@@ -92,7 +93,8 @@ def slow_f(x):
 learner = adaptive.Learner1D(slow_f, bounds=[0, 1])
 runner = adaptive.Runner(learner, npoints_goal=100)
 runner.start_periodic_saving(
-    save_kwargs={"fname": "data/periodic_example.p"}, interval=6
+    save_kwargs={"fname": "data/periodic_example.p"},
+    interval=6,
 )
 ```
 
@@ -241,7 +243,7 @@ def will_raise(x):
 
 learner = adaptive.Learner1D(will_raise, (-1, 1))
 runner = adaptive.Runner(
-    learner
+    learner,
 )  # without 'goal' the runner will run forever unless cancelled
 ```
 
@@ -365,6 +367,7 @@ await runner.task  # This is not needed in a notebook environment!
 # The result will only be set when the runner is done.
 timer.result()
 ```
+
 (CustomParallelization)=
 ## Custom parallelization using coroutines
 
@@ -378,8 +381,7 @@ We will focus on a function `f(x)` that consists of two distinct components: a s
 
 ```{code-cell} ipython3
 def f(x):  # example function without caching
-    """
-    Integer part of `x` repeats and should be reused
+    """Integer part of `x` repeats and should be reused
     Decimal part requires a new computation
     """
     return g(int(x)) + h(x % 1)

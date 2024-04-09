@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: python3
   name: python3
@@ -88,7 +88,9 @@ def plot_cut(x1, x2, directions, learner=learner):
 
 dm = hv.DynamicMap(plot_cut, kdims=["v1", "v2", "directions"])
 dm = dm.redim.values(
-    v1=np.linspace(-1, 1, 6), v2=np.linspace(-1, 1, 6), directions=["xy", "xz", "yz"]
+    v1=np.linspace(-1, 1, 6),
+    v2=np.linspace(-1, 1, 6),
+    directions=["xy", "xz", "yz"],
 )
 
 # In a notebook one would run `dm` however we want a statically generated

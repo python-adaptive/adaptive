@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: python3
   name: python3
@@ -217,7 +217,10 @@ scatter = fig.data[0]
 coords_col = [
     (x, y, z, color)
     for x, y, z, color in zip(
-        scatter["x"], scatter["y"], scatter["z"], scatter.marker["color"]
+        scatter["x"],
+        scatter["y"],
+        scatter["z"],
+        scatter.marker["color"],
     )
     if not (x > 0 and y > 0)
 ]

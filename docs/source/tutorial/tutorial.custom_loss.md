@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: python3
   name: python3
@@ -72,7 +72,9 @@ def f_divergent_1d(x):
 
 
 learner = adaptive.Learner1D(
-    f_divergent_1d, (-1, 1), loss_per_interval=uniform_sampling_1d
+    f_divergent_1d,
+    (-1, 1),
+    loss_per_interval=uniform_sampling_1d,
 )
 runner = adaptive.BlockingRunner(learner, loss_goal=0.01)
 learner.plot().select(y=(0, 10000))
@@ -92,12 +94,15 @@ def f_divergent_2d(xy):
 
 
 learner = adaptive.Learner2D(
-    f_divergent_2d, [(-1, 1), (-1, 1)], loss_per_triangle=uniform_sampling_2d
+    f_divergent_2d,
+    [(-1, 1), (-1, 1)],
+    loss_per_triangle=uniform_sampling_2d,
 )
 
 # this takes a while, so use the async Runner so we know *something* is happening
 runner = adaptive.Runner(
-    learner, goal=lambda lrn: lrn.loss() < 0.03 or lrn.npoints > 1000
+    learner,
+    goal=lambda lrn: lrn.loss() < 0.03 or lrn.npoints > 1000,
 )
 ```
 
@@ -134,7 +139,8 @@ After all subdomains are appropriately small it will prioritise places where the
 ```{code-cell} ipython3
 def resolution_loss_function(min_distance=0, max_distance=1):
     """min_distance and max_distance should be in between 0 and 1
-    because the total area is normalized to 1."""
+    because the total area is normalized to 1.
+    """
 
     def resolution_loss(ip):
         from adaptive.learner.learner2D import areas, default_loss
@@ -143,10 +149,10 @@ def resolution_loss_function(min_distance=0, max_distance=1):
 
         A = areas(ip)
         # Setting areas with a small area to zero such that they won't be chosen again
-        loss[A < min_distance**2] = 0
+        loss[min_distance**2 > A] = 0
 
         # Setting triangles that have a size larger than max_distance to infinite loss
-        loss[A > max_distance**2] = np.inf
+        loss[max_distance**2 < A] = np.inf
 
         return loss
 
@@ -158,7 +164,8 @@ loss = resolution_loss_function(min_distance=0.01)
 learner = adaptive.Learner2D(f_divergent_2d, [(-1, 1), (-1, 1)], loss_per_triangle=loss)
 runner = adaptive.BlockingRunner(learner, loss_goal=0.02)
 learner.plot(tri_alpha=0.3).relabel("1 / (x^2 + y^2) in log scale").opts(
-    hv.opts.EdgePaths(color="w"), hv.opts.Image(logz=True, colorbar=True)
+    hv.opts.EdgePaths(color="w"),
+    hv.opts.Image(logz=True, colorbar=True),
 )
 ```
 

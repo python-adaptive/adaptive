@@ -8,7 +8,7 @@ if sys.version_info >= (3, 10):
 else:
     from typing_extensions import TypeAlias
 
-Float: TypeAlias = Union[float, np.float_]
+Float: TypeAlias = Union[float, np.float64]
 Bool: TypeAlias = Union[bool, np.bool_]
 Int: TypeAlias = Union[int, np.int_]
 Real: TypeAlias = Union[Float, Int]

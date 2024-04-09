@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.7
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: python3
   name: python3
@@ -80,13 +80,13 @@ runner is done.
 ```{code-cell} ipython3
 if not runner.task.done():
     raise RuntimeError(
-        "Wait for the runner to finish before executing the cells below!"
+        "Wait for the runner to finish before executing the cells below!",
     )
 ```
 
 ```{code-cell} ipython3
 print(
-    f"The integral value is {learner.igral} with the corresponding error of {learner.err}"
+    f"The integral value is {learner.igral} with the corresponding error of {learner.err}",
 )
 learner.plot()
 ```
