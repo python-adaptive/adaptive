@@ -7,7 +7,6 @@ import inspect
 import os
 import pickle
 import warnings
-from collections.abc import Awaitable, Iterator, Sequence
 from contextlib import contextmanager
 from functools import wraps
 from itertools import product
@@ -16,6 +15,8 @@ from typing import TYPE_CHECKING, Any, Callable, TypeVar
 import cloudpickle
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Iterator, Sequence
+
     from dask.distributed import Client as AsyncDaskClient
 
 
@@ -37,7 +38,8 @@ def restore(*learners) -> Iterator[None]:
 
 def cache_latest(f: Callable) -> Callable:
     """Cache the latest return value of the function and add it
-    as 'self._cache[f.__name__]'."""
+    as 'self._cache[f.__name__]'.
+    """
 
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
@@ -96,15 +98,14 @@ def copy_docstring_from(other: Callable) -> Callable:
 
 def _default_parameters(function, function_prefix: str = "function."):
     sig = inspect.signature(function)
-    defaults = {
+    return {
         f"{function_prefix}{k}": v.default
         for i, (k, v) in enumerate(sig.parameters.items())
         if v.default != inspect._empty and i >= 1
     }
-    return defaults
 
 
-def assign_defaults(function, df, function_prefix: str = "function."):
+def assign_defaults(function, df, function_prefix: str = "function.") -> None:
     defaults = _default_parameters(function, function_prefix)
     for k, v in defaults.items():
         df[k] = len(df) * [v]
@@ -112,9 +113,12 @@ def assign_defaults(function, df, function_prefix: str = "function."):
 
 def partial_function_from_dataframe(function, df, function_prefix: str = "function."):
     if function_prefix == "":
-        raise ValueError(
+        msg = (
             "The function_prefix cannot be an empty string because"
             " it is used to distinguish between function and learner parameters."
+        )
+        raise ValueError(
+            msg,
         )
     kwargs = {}
     for col in df.columns:
@@ -123,7 +127,8 @@ def partial_function_from_dataframe(function, df, function_prefix: str = "functi
             vs = df[col]
             v, *rest = vs.unique()
             if rest:
-                raise ValueError(f"The column '{col}' can only have one value.")
+                msg = f"The column '{col}' can only have one value."
+                raise ValueError(msg)
             kwargs[k] = v
     if not kwargs:
         return function
@@ -131,12 +136,15 @@ def partial_function_from_dataframe(function, df, function_prefix: str = "functi
     sig = inspect.signature(function)
     for k, v in kwargs.items():
         if k not in sig.parameters:
-            raise ValueError(
+            msg = (
                 f"The DataFrame contains a default parameter"
                 f" ({k}={v}) but the function does not have that parameter."
             )
+            raise ValueError(
+                msg,
+            )
         default = sig.parameters[k].default
-        if default != inspect._empty and kwargs[k] != default:
+        if default not in (inspect._empty, kwargs[k]):
             warnings.warn(
                 f"The DataFrame contains a default parameter"
                 f" ({k}={v}) but the function already has a default ({k}={default})."
@@ -163,7 +171,7 @@ class SequentialExecutor(concurrent.Executor):
     def map(self, fn, *iterable, timeout=None, chunksize=1):
         return map(fn, iterable)
 
-    def shutdown(self, wait=True):
+    def shutdown(self, wait=True) -> None:
         pass
 
 
@@ -177,7 +185,8 @@ T = TypeVar("T")
 
 
 def daskify(
-    client: AsyncDaskClient, cache: bool = False
+    client: AsyncDaskClient,
+    cache: bool = False,
 ) -> Callable[[Callable[..., T]], Callable[..., Awaitable[T]]]:
     from dask import delayed
 
@@ -199,8 +208,7 @@ def daskify(
             else:
                 future = client.compute(delayed_func(*args, **kwargs))
 
-            result = await future
-            return result
+            return await future
 
         return wrapper
 

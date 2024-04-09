@@ -9,7 +9,7 @@ import cloudpickle
 from adaptive.utils import load, save
 
 if TYPE_CHECKING:
-    import pandas
+    import pandas as pd
 
 
 def uses_nth_neighbors(n: int):
@@ -96,7 +96,7 @@ class BaseLearner(abc.ABC):
     pending_points: set
     function: Callable[..., Any]
 
-    def tell(self, x, y):
+    def tell(self, x, y) -> None:
         """Tell the learner about a single value.
 
         Parameters
@@ -107,7 +107,7 @@ class BaseLearner(abc.ABC):
         """
         self.tell_many([x], [y])
 
-    def tell_many(self, xs, ys):
+    def tell_many(self, xs, ys) -> None:
         """Tell the learner about some values.
 
         Parameters
@@ -169,7 +169,7 @@ class BaseLearner(abc.ABC):
     def new(self):
         """Return a new learner with the same function and parameters."""
 
-    def copy_from(self, other):
+    def copy_from(self, other) -> None:
         """Copy over the data from another learner.
 
         Parameters
@@ -180,7 +180,7 @@ class BaseLearner(abc.ABC):
         """
         self._set_data(other._get_data())
 
-    def save(self, fname, compress=True):
+    def save(self, fname, compress=True) -> None:
         """Save the data of the learner into a pickle file.
 
         Parameters
@@ -195,7 +195,7 @@ class BaseLearner(abc.ABC):
         data = self._get_data()
         save(fname, data, compress)
 
-    def load(self, fname, compress=True):
+    def load(self, fname, compress=True) -> None:
         """Load the data of a learner from a pickle file.
 
         Parameters
@@ -217,7 +217,7 @@ class BaseLearner(abc.ABC):
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         **kwargs: Any,
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
         Parameters
@@ -242,7 +242,7 @@ class BaseLearner(abc.ABC):
     @abc.abstractmethod
     def load_dataframe(
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         **kwargs: Any,

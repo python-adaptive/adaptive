@@ -25,7 +25,6 @@ from adaptive import (
     IntegratorLearner,
     SequenceLearner,
 )
-from adaptive.learner.base_learner import LearnerType
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 from adaptive.utils import SequentialExecutor
 
@@ -38,7 +37,9 @@ ExecutorTypes: TypeAlias = Union[
 FutureTypes: TypeAlias = Union[concurrent.Future, asyncio.Future, asyncio.Task]
 
 if TYPE_CHECKING:
-    import holoviews
+    import holoviews as hv
+
+    from adaptive.learner.base_learner import LearnerType
 
 
 if sys.version_info >= (3, 10):
@@ -60,7 +61,9 @@ if TYPE_CHECKING:
 
         ExecutorTypes = Optional[
             Union[
-                ExecutorTypes, distributed.Client, distributed.cfexecutor.ClientExecutor
+                ExecutorTypes,
+                distributed.Client,
+                distributed.cfexecutor.ClientExecutor,
             ]
         ]
 
@@ -75,7 +78,9 @@ if TYPE_CHECKING:
 
         ExecutorTypes = Optional[
             Union[
-                ExecutorTypes, ipyparallel.Client, ipyparallel.client.view.ViewExecutor
+                ExecutorTypes,
+                ipyparallel.Client,
+                ipyparallel.client.view.ViewExecutor,
             ]
         ]
         FutureTypes = Optional[Union[FutureTypes, AsyncResult]]
@@ -189,7 +194,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         retries: int = 0,
         raise_if_retries_exceeded: bool = True,
         allow_running_forever: bool = False,
-    ):
+    ) -> None:
         self.executor = _ensure_executor(executor)
         self.goal = _goal(
             learner,
@@ -225,7 +230,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
         self._id_to_point: dict[int, Any] = {}
         self._next_id: Callable[[], int] = functools.partial(  # type: ignore[assignment]
-            next, itertools.count()
+            next,
+            itertools.count(),
         )  # some unique id to be associated with each point
 
     def _get_max_tasks(self) -> int:
@@ -234,10 +240,13 @@ class BaseRunner(metaclass=abc.ABCMeta):
     def _do_raise(self, e: Exception, pid: int) -> None:
         tb = self._tracebacks[pid]
         x = self._id_to_point[pid]
-        raise RuntimeError(
+        msg = (
             "An error occured while evaluating "
             f'"learner.function({x})". '
             f"See the traceback for details.:\n\n{tb}"
+        )
+        raise RuntimeError(
+            msg,
         ) from e
 
     @property
@@ -247,7 +256,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
     def _ask(self, n: int) -> tuple[list[int], list[float]]:
         pending_ids = self._pending_tasks.values()
         # using generator here because we only need until `n`
-        pids_gen = (pid for pid in self._to_retry.keys() if pid not in pending_ids)
+        pids_gen = (pid for pid in self._to_retry if pid not in pending_ids)
         pids = list(itertools.islice(pids_gen, n))
 
         loss_improvements = len(pids) * [float("inf")]
@@ -275,6 +284,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
         Adaptive whenever executing the function takes longer than 100 ms.
         This of course depends on the type of executor and the type of learner
         but is a rough rule of thumb.
+
         """
         t_function = self._elapsed_function_time
         if t_function == 0:
@@ -330,8 +340,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
             self._pending_tasks[fut] = pid
 
         # Collect and results and add them to the learner
-        futures = list(self._pending_tasks.keys())
-        return futures
+        return list(self._pending_tasks.keys())
 
     def _remove_unfinished(self) -> list[FutureTypes]:
         # remove points with 'None' values from the learner
@@ -478,7 +487,8 @@ class BlockingRunner(BaseRunner):
         raise_if_retries_exceeded: bool = True,
     ) -> None:
         if inspect.iscoroutinefunction(learner.function):
-            raise ValueError("Coroutine functions can only be used with 'AsyncRunner'.")
+            msg = "Coroutine functions can only be used with 'AsyncRunner'."
+            raise ValueError(msg)
         super().__init__(
             learner,
             goal=goal,
@@ -503,7 +513,8 @@ class BlockingRunner(BaseRunner):
         first_completed = concurrent.FIRST_COMPLETED
 
         if self._get_max_tasks() < 1:
-            raise RuntimeError("Executor has no workers")
+            msg = "Executor has no workers"
+            raise RuntimeError(msg)
 
         try:
             while not self.goal(self.learner):
@@ -522,7 +533,8 @@ class BlockingRunner(BaseRunner):
 
     def elapsed_time(self) -> float:
         """Return the total time elapsed since the runner
-        was started."""
+        was started.
+        """
         if self.end_time is None:
             # This shouldn't happen if the BlockingRunner
             # correctly finished.
@@ -618,6 +630,7 @@ class AsyncRunner(BaseRunner):
     This runner can be used when an async function (defined with
     ``async def``) has to be learned. In this case the function will be
     run directly on the event loop (and not in the executor).
+
     """
 
     def __init__(
@@ -645,12 +658,15 @@ class AsyncRunner(BaseRunner):
             try:
                 pickle.dumps(learner.function)
             except pickle.PicklingError as e:
-                raise ValueError(
+                msg = (
                     "`learner.function` cannot be pickled (is it a lamdba function?)"
                     " and therefore does not work with the default executor."
                     " Either make sure the function is pickleble or use an executor"
                     " that might work with 'hard to pickle'-functions"
                     " , e.g. `ipyparallel` with `dill`."
+                )
+                raise ValueError(
+                    msg,
                 ) from e
 
         super().__init__(
@@ -676,8 +692,9 @@ class AsyncRunner(BaseRunner):
         # the user can have more fine-grained control over the parallelism.
         if inspect.iscoroutinefunction(learner.function):
             if executor:  # user-provided argument
+                msg = "Cannot use an executor when learning an async function."
                 raise RuntimeError(
-                    "Cannot use an executor when learning an async function."
+                    msg,
                 )
             self.executor.shutdown()  # Make sure we don't shoot ourselves later
 
@@ -724,20 +741,23 @@ class AsyncRunner(BaseRunner):
 
     def block_until_done(self) -> None:
         if in_ipynb():
-            raise RuntimeError(
+            msg = (
                 "Cannot block the event loop when running in a Jupyter notebook."
                 " Use `await runner.task` instead."
+            )
+            raise RuntimeError(
+                msg,
             )
         self.ioloop.run_until_complete(self.task)
 
     def live_plot(
         self,
         *,
-        plotter: Callable[[LearnerType], holoviews.Element] | None = None,
+        plotter: Callable[[LearnerType], hv.Element] | None = None,
         update_interval: float = 2.0,
         name: str | None = None,
         normalize: bool = True,
-    ) -> holoviews.DynamicMap:
+    ) -> hv.DynamicMap:
         """Live plotting of the learner's data.
 
         Parameters
@@ -759,6 +779,7 @@ class AsyncRunner(BaseRunner):
         -------
         dm : `holoviews.core.DynamicMap`
             The plot that automatically updates every `update_interval`.
+
         """
         return live_plot(
             self,
@@ -777,10 +798,12 @@ class AsyncRunner(BaseRunner):
         return live_info(self, update_interval=update_interval)
 
     def live_info_terminal(
-        self, *, update_interval: float = 0.5, overwrite_previous: bool = True
+        self,
+        *,
+        update_interval: float = 0.5,
+        overwrite_previous: bool = True,
     ) -> asyncio.Task:
-        """
-        Display live information about the runner in the terminal.
+        """Display live information about the runner in the terminal.
 
         This function provides a live update of the runner's status in the terminal.
         The update can either overwrite the previous status or be printed on a new line.
@@ -810,6 +833,7 @@ class AsyncRunner(BaseRunner):
         -----
         This function uses ANSI escape sequences to control the terminal's cursor
         position. It might not work as expected on all terminal emulators.
+
         """
 
         async def _update(runner: AsyncRunner) -> None:
@@ -830,7 +854,8 @@ class AsyncRunner(BaseRunner):
         first_completed = asyncio.FIRST_COMPLETED
 
         if self._get_max_tasks() < 1:
-            raise RuntimeError("Executor has no workers")
+            msg = "Executor has no workers"
+            raise RuntimeError(msg)
 
         try:
             while not self.goal(self.learner):
@@ -846,7 +871,8 @@ class AsyncRunner(BaseRunner):
 
     def elapsed_time(self) -> float:
         """Return the total time elapsed since the runner
-        was started."""
+        was started.
+        """
         if self.task.done():
             end_time = self.end_time
             if end_time is None:
@@ -884,17 +910,19 @@ class AsyncRunner(BaseRunner):
         >>> runner.start_periodic_saving(
         ...     save_kwargs=dict(fname='data/test.pickle'),
         ...     interval=600)
+
         """
 
-        def default_save(learner):
+        def default_save(learner) -> None:
             learner.save(**save_kwargs)
 
         if method is None:
             method = default_save
             if save_kwargs is None:
-                raise ValueError("Must provide `save_kwargs` if method=None.")
+                msg = "Must provide `save_kwargs` if method=None."
+                raise ValueError(msg)
 
-        async def _saver():
+        async def _saver() -> None:
             while self.status() == "running":
                 method(self.learner)
                 # No asyncio.shield needed, as 'wait' does not cancel any tasks.
@@ -954,7 +982,7 @@ def simple(
     npoints_goal: int | None = None,
     end_time_goal: datetime | None = None,
     duration_goal: timedelta | int | float | None = None,
-):
+) -> None:
     """Run the learner until the goal is reached.
 
     Requests a single point from the learner, evaluates
@@ -989,6 +1017,7 @@ def simple(
         calculation. Stop when the current time is larger or equal than
         ``start_time + duration_goal``. ``duration_goal`` can be a number
         indicating the number of seconds.
+
     """
     goal = _goal(
         learner,
@@ -1021,6 +1050,7 @@ def replay_log(
         New learner where the log will be applied.
     log : list
         contains tuples: ``(method_name, *args)``.
+
     """
     for method, *args in log:
         getattr(learner, method)(*args)
@@ -1043,10 +1073,13 @@ def _ensure_executor(executor: ExecutorTypes | None) -> concurrent.Executor:
     elif with_distributed and isinstance(executor, distributed.Client):
         return executor.get_executor()
     else:
-        raise TypeError(
-            # TODO: check if this is correct. Isn't MPI,loky supported?
+        msg = (
             "Only a concurrent.futures.Executor, distributed.Client,"
             " or ipyparallel.Client can be used."
+        )
+        raise TypeError(
+            # TODO: check if this is correct. Isn't MPI,loky supported?
+            msg,
         )
 
 
@@ -1063,10 +1096,13 @@ def _get_ncores(
     if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
         return len(ex.view)
     elif isinstance(
-        ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
+        ex,
+        (
+            concurrent.ProcessPoolExecutor,
+            concurrent.ThreadPoolExecutor,
+            loky.reusable_executor._ReusablePoolExecutor,
+        ),
     ):
-        return ex._max_workers  # type: ignore[union-attr]
-    elif isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
         return ex._max_workers  # type: ignore[union-attr]
     elif isinstance(ex, SequentialExecutor):
         return 1
@@ -1076,7 +1112,8 @@ def _get_ncores(
         ex.bootup()  # wait until all workers are up and running
         return ex._pool.size  # not public API!
     else:
-        raise TypeError(f"Cannot get number of cores for {ex.__class__}")
+        msg = f"Cannot get number of cores for {ex.__class__}"
+        raise TypeError(msg)
 
 
 # --- Useful runner goals
@@ -1112,13 +1149,14 @@ def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[LearnerType], bool
     The duration specified is only a *lower bound* on the time that the
     runner will run for, because the runner only checks its goal when
     it adds points to its learner
+
     """
     stop_time = time.time() + seconds + 60 * minutes + 3600 * hours
     return lambda _: time.time() > stop_time
 
 
 class _TimeGoal:
-    def __init__(self, dt: timedelta | datetime | int | float):
+    def __init__(self, dt: timedelta | datetime | int | float) -> None:
         self.dt = dt if isinstance(dt, (timedelta, datetime)) else timedelta(seconds=dt)
         self.start_time = None
 
@@ -1129,7 +1167,8 @@ class _TimeGoal:
             return datetime.now() - self.start_time > self.dt
         if isinstance(self.dt, datetime):
             return datetime.now() > self.dt
-        raise TypeError(f"`dt={self.dt}` is not a datetime, timedelta, or number.")
+        msg = f"`dt={self.dt}` is not a datetime, timedelta, or number."
+        raise TypeError(msg)
 
 
 def auto_goal(
@@ -1165,11 +1204,13 @@ def auto_goal(
     Returns
     -------
     Callable[[adaptive.BaseLearner], bool]
+
     """
     opts = (loss, npoints, end_time, duration)  # all are mutually exclusive
     if sum(v is not None for v in opts) > 1:
+        msg = "Only one of loss, npoints, end_time, duration can be specified."
         raise ValueError(
-            "Only one of loss, npoints, end_time, duration can be specified."
+            msg,
         )
 
     if loss is not None:
@@ -1215,15 +1256,20 @@ def auto_goal(
         if isinstance(learner, IntegratorLearner):
             return IntegratorLearner.done  # type: ignore[return-value]
         if not allow_running_forever:
-            raise ValueError(
+            msg = (
                 "Goal is None which means the learners"
                 " continue forever and this is not allowed."
             )
+            raise ValueError(
+                msg,
+            )
         warnings.warn(
-            "Goal is None which means the learners continue forever!", stacklevel=2
+            "Goal is None which means the learners continue forever!",
+            stacklevel=2,
         )
         return lambda _: False
-    raise ValueError("Cannot determine goal from {goal}.")
+    msg = "Cannot determine goal from {goal}."
+    raise ValueError(msg)
 
 
 def _goal(
@@ -1244,9 +1290,12 @@ def _goal(
         or end_time_goal is not None
         or duration_goal is not None
     ):
-        raise ValueError(
+        msg = (
             "Either goal, loss_goal, npoints_goal, end_time_goal or"
             " duration_goal can be specified, not multiple."
+        )
+        raise ValueError(
+            msg,
         )
     return auto_goal(
         learner=learner,

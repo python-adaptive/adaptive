@@ -15,7 +15,7 @@ from nbconvert.preprocessors import Preprocessor
 class RemoveMetadata(Preprocessor):
     def preprocess(self, nb, resources):
         nb.metadata = {
-            "language_info": {"name": "python", "pygments_lexer": "ipython3"}
+            "language_info": {"name": "python", "pygments_lexer": "ipython3"},
         }
         return nb, resources
 

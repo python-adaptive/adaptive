@@ -63,36 +63,42 @@ def same_ivals(f, a, b, tol):
 
     # This will only show up if the test fails, anyway
     print(
-        "igral difference", learner.igral - igral, "err difference", learner.err - err
+        "igral difference",
+        learner.igral - igral,
+        "err difference",
+        learner.err - err,
     )
 
     return equal_ivals(learner.ivals, ivals, verbose=True)
 
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
-@pytest.mark.xfail
-def test_that_gives_same_intervals_as_reference_implementation():
+@pytest.mark.xfail()
+def test_that_gives_same_intervals_as_reference_implementation() -> None:
     for i, args in enumerate(
-        [[f0, 0, 3, 1e-5], [f7, 0, 1, 1e-6], [f21, 0, 1, 1e-3], [f24, 0, 3, 1e-3]]
+        [[f0, 0, 3, 1e-5], [f7, 0, 1, 1e-6], [f21, 0, 1, 1e-3], [f24, 0, 3, 1e-3]],
     ):
         assert same_ivals(*args), f"Function {i}"
 
 
-@pytest.mark.xfail
-def test_machine_precision():
+@pytest.mark.xfail()
+def test_machine_precision() -> None:
     f, a, b, tol = [partial(f63, alpha=0.987654321, beta=0.45), 0, 1, 1e-10]
     igral, err, n, ivals = algorithm_4(f, a, b, tol)
 
     learner = run_integrator_learner(f, a, b, tol, n)
 
     print(
-        "igral difference", learner.igral - igral, "err difference", learner.err - err
+        "igral difference",
+        learner.igral - igral,
+        "err difference",
+        learner.err - err,
     )
 
     assert equal_ivals(learner.ivals, ivals, verbose=True)
 
 
-def test_machine_precision2():
+def test_machine_precision2() -> None:
     f, a, b, tol = [partial(f63, alpha=0.987654321, beta=0.45), 0, 1, 1e-10]
     igral, err, n, ivals = algorithm_4(f, a, b, tol)
 
@@ -102,7 +108,7 @@ def test_machine_precision2():
     np.testing.assert_almost_equal(err, learner.err)
 
 
-def test_divergence():
+def test_divergence() -> None:
     """This function should raise a DivergentIntegralError."""
     f, a, b, tol = fdiv, 0, 1, 1e-6
     with pytest.raises(A4DivergentIntegralError) as e:
@@ -114,7 +120,7 @@ def test_divergence():
         run_integrator_learner(f, a, b, tol, n)
 
 
-def test_choosing_and_adding_points_one_by_one():
+def test_choosing_and_adding_points_one_by_one() -> None:
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
     for _ in range(1000):
         xs, _ = learner.ask(1)
@@ -122,14 +128,14 @@ def test_choosing_and_adding_points_one_by_one():
             learner.tell(x, learner.function(x))
 
 
-def test_choosing_and_adding_multiple_points_at_once():
+def test_choosing_and_adding_multiple_points_at_once() -> None:
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
     xs, _ = learner.ask(100)
     for x in xs:
         learner.tell(x, learner.function(x))
 
 
-def test_adding_points_and_skip_one_point():
+def test_adding_points_and_skip_one_point() -> None:
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
     xs, _ = learner.ask(17)
     skip_x = xs[1]
@@ -159,8 +165,8 @@ def test_adding_points_and_skip_one_point():
 
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
-@pytest.mark.xfail
-def test_tell_in_random_order(first_add_33=False):
+@pytest.mark.xfail()
+def test_tell_in_random_order(first_add_33=False) -> None:
     import random
     from operator import attrgetter
 
@@ -218,12 +224,12 @@ def test_tell_in_random_order(first_add_33=False):
 
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
-@pytest.mark.xfail
-def test_tell_in_random_order_first_add_33():
+@pytest.mark.xfail()
+def test_tell_in_random_order_first_add_33() -> None:
     test_tell_in_random_order(first_add_33=True)
 
 
-def test_approximating_intervals():
+def test_approximating_intervals() -> None:
     import random
 
     learner = IntegratorLearner(f24, bounds=(0, 3), tol=1e-10)
@@ -239,8 +245,8 @@ def test_approximating_intervals():
 
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/96)
-@pytest.mark.xfail
-def test_removed_choose_mutiple_points_at_once():
+@pytest.mark.xfail()
+def test_removed_choose_mutiple_points_at_once() -> None:
     """Given that a high-precision interval that was split into 2 low-precision ones,
     we should use the high-precision interval.
     """
@@ -249,10 +255,10 @@ def test_removed_choose_mutiple_points_at_once():
     xs, _ = learner.ask(n)
     for x in xs:
         learner.tell(x, learner.function(x))
-    assert list(learner.approximating_intervals)[0] == learner.first_ival
+    assert next(iter(learner.approximating_intervals)) == learner.first_ival
 
 
-def test_removed_ask_one_by_one():
+def test_removed_ask_one_by_one() -> None:
     with pytest.raises(RuntimeError):
         # This test should raise because integrating np.exp should be done
         # after the 33th point

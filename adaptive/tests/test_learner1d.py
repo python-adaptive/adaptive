@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import random
 import time
-from typing import TYPE_CHECKING
 
 import flaky
 import numpy as np
@@ -10,9 +9,6 @@ import numpy as np
 from adaptive.learner import Learner1D
 from adaptive.learner.learner1D import curvature_loss_function
 from adaptive.runner import BlockingRunner, simple
-
-if TYPE_CHECKING:
-    pass
 
 
 def flat_middle(x):
@@ -24,7 +20,7 @@ def flat_middle(x):
     return np.interp(x, xs, ys)
 
 
-def test_pending_loss_intervals():
+def test_pending_loss_intervals() -> None:
     # https://github.com/python-adaptive/adaptive/issues/40
     learner = Learner1D(lambda x: x, (0, 4))
 
@@ -38,7 +34,7 @@ def test_pending_loss_intervals():
     assert set(learner.losses_combined.keys()) == {(0, 1), (1, 2), (2, 3.5), (3.5, 4.0)}
 
 
-def test_loss_interpolation_for_unasked_point():
+def test_loss_interpolation_for_unasked_point() -> None:
     # https://github.com/python-adaptive/adaptive/issues/40
     learner = Learner1D(lambda x: x, (0, 4))
 
@@ -70,7 +66,7 @@ def test_loss_interpolation_for_unasked_point():
     }
 
 
-def test_first_iteration():
+def test_first_iteration() -> None:
     """Edge cases where we ask for a few points at the start."""
     learner = Learner1D(lambda x: None, (-1, 1))
     points, loss_improvements = learner.ask(2)
@@ -82,7 +78,8 @@ def test_first_iteration():
 
     learner = Learner1D(lambda x: None, (-1, 1))
     points, loss_improvements = learner.ask(1)
-    assert len(points) == 1 and points[0] in learner.bounds
+    assert len(points) == 1
+    assert points[0] in learner.bounds
     rest = {-1, 0, 1} - set(points)
     points, loss_improvements = learner.ask(2)
     assert set(points) == set(rest)
@@ -104,7 +101,7 @@ def test_first_iteration():
     assert points == [1]
 
 
-def test_loss_interpolation():
+def test_loss_interpolation() -> None:
     learner = Learner1D(lambda _: 0, bounds=(-1, 1))
 
     learner.tell(-1, 0)
@@ -122,7 +119,7 @@ def test_loss_interpolation():
 
 
 def _run_on_discontinuity(x_0, bounds):
-    def f(x):
+    def f(x) -> int:
         return -1 if x < x_0 else +1
 
     learner = Learner1D(f, bounds)
@@ -133,21 +130,21 @@ def _run_on_discontinuity(x_0, bounds):
     return learner
 
 
-def test_termination_on_discontinuities():
+def test_termination_on_discontinuities() -> None:
     learner = _run_on_discontinuity(0, (-1, 1))
-    smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
+    smallest_interval = min(abs(a - b) for a, b in learner.losses)
     assert smallest_interval >= np.finfo(float).eps
 
     learner = _run_on_discontinuity(1, (-2, 2))
-    smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
+    smallest_interval = min(abs(a - b) for a, b in learner.losses)
     assert smallest_interval >= np.finfo(float).eps
 
     learner = _run_on_discontinuity(0.5e3, (-1e3, 1e3))
-    smallest_interval = min(abs(a - b) for a, b in learner.losses.keys())
+    smallest_interval = min(abs(a - b) for a, b in learner.losses)
     assert smallest_interval >= 0.5e3 * np.finfo(float).eps
 
 
-def test_order_adding_points():
+def test_order_adding_points() -> None:
     # and https://github.com/python-adaptive/adaptive/issues/41
     learner = Learner1D(lambda x: x, (0, 1))
     learner.tell_many([1, 0, 0.5], [0, 0, 0])
@@ -156,7 +153,7 @@ def test_order_adding_points():
     learner.ask(1)
 
 
-def test_adding_existing_point_passes_silently():
+def test_adding_existing_point_passes_silently() -> None:
     # See https://github.com/python-adaptive/adaptive/issues/42
     learner = Learner1D(lambda x: x, (0, 4))
     learner.tell(0, 0)
@@ -165,11 +162,12 @@ def test_adding_existing_point_passes_silently():
     learner.tell(1, 100)
 
 
-def test_loss_at_machine_precision_interval_is_zero():
+def test_loss_at_machine_precision_interval_is_zero() -> None:
     """The loss of an interval smaller than _dx_eps
-    should be set to zero."""
+    should be set to zero.
+    """
 
-    def f(x):
+    def f(x) -> int:
         return 1 if x == 0 else 0
 
     def goal(learner):
@@ -186,11 +184,11 @@ def small_deviations(x):
     return 0 if x <= 1 else 1 + 10 ** (-random.randint(12, 14))
 
 
-def test_small_deviations():
+def test_small_deviations() -> None:
     """This tests whether the Learner1D can handle small deviations.
     See https://gitlab.kwant-project.org/qt/adaptive/merge_requests/73 and
-    https://github.com/python-adaptive/adaptive/issues/78."""
-
+    https://github.com/python-adaptive/adaptive/issues/78.
+    """
     eps = 5e-14
     learner = Learner1D(small_deviations, bounds=(1 - eps, 1 + eps))
 
@@ -221,8 +219,8 @@ def test_small_deviations():
             break
 
 
-def test_uniform_sampling1D_v2():
-    def check(known, expect):
+def test_uniform_sampling1D_v2() -> None:
+    def check(known, expect) -> None:
         def f(x):
             return x
 
@@ -243,7 +241,7 @@ def test_uniform_sampling1D_v2():
     check([-1, -0.5], {-0.75, 0.25, 1})
 
 
-def test_add_data_unordered():
+def test_add_data_unordered() -> None:
     # see https://github.com/python-adaptive/adaptive/issues/44
     learner = Learner1D(lambda x: x, bounds=(-1, 1))
     xs = [-1, 1, 0]
@@ -255,7 +253,7 @@ def test_add_data_unordered():
     learner.ask(3)
 
 
-def test_ask_does_not_return_known_points_when_returning_bounds():
+def test_ask_does_not_return_known_points_when_returning_bounds() -> None:
     learner = Learner1D(lambda x: None, (-1, 1))
     learner.tell(0, 0)
     points, _ = learner.ask(3)
@@ -263,7 +261,7 @@ def test_ask_does_not_return_known_points_when_returning_bounds():
 
 
 @flaky.flaky(max_runs=3)
-def test_tell_many():
+def test_tell_many() -> None:
     def f(x, offset=0.123214):
         a = 0.01
         return (
@@ -279,7 +277,7 @@ def test_tell_many():
         y = x + a**2 / (a**2 + (x - offset) ** 2)
         return [y, 0.5 * y, y**2]
 
-    def assert_equal_dicts(d1, d2):
+    def assert_equal_dicts(d1, d2) -> None:
         xs1, ys1 = zip(*sorted(d1.items()))
         xs2, ys2 = zip(*sorted(d2.items()))
         ys1 = np.array(ys1, dtype=np.float64)
@@ -287,14 +285,15 @@ def test_tell_many():
         np.testing.assert_almost_equal(xs1, xs2)
         np.testing.assert_almost_equal(ys1, ys2)
 
-    def test_equal(l1, l2):
+    def test_equal(l1, l2) -> None:
         assert_equal_dicts(l1.neighbors, l2.neighbors)
         assert_equal_dicts(l1.neighbors_combined, l2.neighbors_combined)
         assert_equal_dicts(l1.data, l2.data)
         assert_equal_dicts(l2.losses, l1.losses)
         assert_equal_dicts(l2.losses_combined, l1.losses_combined)
         np.testing.assert_almost_equal(
-            sorted(l1.pending_points), sorted(l2.pending_points)
+            sorted(l1.pending_points),
+            sorted(l2.pending_points),
         )
         np.testing.assert_almost_equal(l1._bbox[1], l1._bbox[1])
         assert l1._scale == l2._scale
@@ -320,7 +319,7 @@ def test_tell_many():
 
     # Test non-determinism. We keep a list of points that will be
     # evaluated later to emulate parallel execution.
-    def _random_run(learner, learner2, scale_doubling=True):
+    def _random_run(learner, learner2, scale_doubling=True) -> None:
         if not scale_doubling:
             # Make the scale huge to no get a scale doubling
             x = 1e-6
@@ -372,7 +371,7 @@ def test_tell_many():
     test_equal(learner, learner2)
 
 
-def test_curvature_loss():
+def test_curvature_loss() -> None:
     def f(x):
         return np.tanh(20 * x)
 
@@ -383,7 +382,7 @@ def test_curvature_loss():
     assert learner.npoints >= 100
 
 
-def test_curvature_loss_vectors():
+def test_curvature_loss_vectors() -> None:
     def f(x):
         return np.tanh(20 * x), np.tanh(20 * (x - 0.4))
 
@@ -394,19 +393,19 @@ def test_curvature_loss_vectors():
     assert learner.npoints >= 100
 
 
-def test_NaN_loss():
+def test_NaN_loss() -> None:
     # see https://github.com/python-adaptive/adaptive/issues/145
     def f(x):
         a = 0.01
         if random.random() < 0.2:
-            return np.NaN
+            return np.nan
         return x + a**2 / (a**2 + x**2)
 
     learner = Learner1D(f, bounds=(-1, 1))
     simple(learner, npoints_goal=100)
 
 
-def test_inf_loss_with_missing_bounds():
+def test_inf_loss_with_missing_bounds() -> None:
     learner = Learner1D(
         flat_middle,
         bounds=(0, 1e-7),

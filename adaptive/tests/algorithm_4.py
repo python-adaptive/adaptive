@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from collections import defaultdict
 from fractions import Fraction
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import numpy as np
 from numpy.testing import assert_allclose
 from scipy.linalg import inv, norm
 
-from adaptive.types import Real
+if TYPE_CHECKING:
+    from adaptive.types import Real
 
 eps = np.spacing(1)
 
@@ -80,7 +81,8 @@ def newton(n: int) -> np.ndarray:
     c = (n + 1) * [0]
     for (d, a), m in terms.items():
         if m and a != 0:
-            raise ValueError("Newton polynomial cannot be represented exactly.")
+            msg = "Newton polynomial cannot be represented exactly."
+            raise ValueError(msg)
         c[n - d] += m
         # The check could be removed and the above line replaced by
         # the following, but then the result would be no longer exact.
@@ -258,7 +260,11 @@ class _Interval:
 
     @classmethod
     def make_first(
-        cls, f: Callable, a: int, b: int, depth: int = 2
+        cls,
+        f: Callable,
+        a: int,
+        b: int,
+        depth: int = 2,
     ) -> tuple[_Interval, int]:
         ival = _Interval(a, b, depth, 1)
         fx = f(ival.points())
@@ -280,7 +286,8 @@ class _Interval:
         return c_diff
 
     def split(
-        self, f: Callable
+        self,
+        f: Callable,
     ) -> tuple[tuple[float, float, float], int] | tuple[list[_Interval], int]:
         m = (self.a + self.b) / 2
         f_center = self.fx[(len(self.fx) - 1) // 2]
@@ -323,7 +330,7 @@ def algorithm_4(
     a: int,
     b: int,
     tol: float,
-    N_loops: int = int(1e9),  # noqa: B008
+    N_loops: int = int(1e9),
 ) -> tuple[float, float, int, list[_Interval]]:
     """ALGORITHM_4 evaluates an integral using adaptive quadrature. The
     algorithm uses Clenshaw-Curtis quadrature rules of increasing
@@ -352,7 +359,6 @@ def algorithm_4(
         Using Explicit Interpolants", P. Gonnet, ACM Transactions on
         Mathematical Software, 37 (3), art. no. 26, 2008.
     """
-
     ival, nr_points = _Interval.make_first(f, a, b)
 
     ivals = [ival]
@@ -385,9 +391,12 @@ def algorithm_4(
             result, nr_points_inc = ivals[i_max].split(f)
             nr_points += nr_points_inc
             if isinstance(result, tuple):
-                raise DivergentIntegralError(
+                msg = (
                     "Possibly divergent integral in the interval"
-                    " [{}, {}]! (h={})".format(*result),
+                    " [{}, {}]! (h={})".format(*result)
+                )
+                raise DivergentIntegralError(
+                    msg,
                     ivals[i_max].igral * np.inf,
                     None,
                     nr_points,
@@ -469,7 +478,7 @@ def f_one_with_nan(x):
     return result
 
 
-def test_legendre():
+def test_legendre() -> None:
     legs = legendre(11)
     comparisons = [
         (legs[0], [1], 1),
@@ -481,7 +490,7 @@ def test_legendre():
             assert c * div == d
 
 
-def test_scalar_product(n=33):
+def test_scalar_product(n=33) -> None:
     legs = legendre(n)
     selection = [0, 5, 7, n - 1]
     for i in selection:
@@ -502,11 +511,11 @@ def simple_newton(n):
     ]
 
 
-def test_newton():
+def test_newton() -> None:
     assert_allclose(newton(9), simple_newton(9), atol=1e-15)
 
 
-def test_b_def(depth=1):
+def test_b_def(depth=1) -> None:
     legs = [np.array(leg, float) for leg in legendre(n[depth] + 1)]
     result = np.zeros(len(legs[-1]))
     for factor, leg in zip(b_def[depth], legs):
@@ -515,7 +524,7 @@ def test_b_def(depth=1):
     assert_allclose(result, newton(n[depth]), rtol=1e-15)
 
 
-def test_downdate(depth=3):
+def test_downdate(depth=3) -> None:
     fx = np.abs(xi[depth])
     fx[1::2] = np.nan
     c_downdated = _calc_coeffs(fx, depth)
@@ -527,7 +536,7 @@ def test_downdate(depth=3):
     assert_allclose(c_downdated[: len(c)], c, rtol=0, atol=1e-9)
 
 
-def test_integration():
+def test_integration() -> None:
     old_settings = np.seterr(all="ignore")
 
     igral, err, nr_points = algorithm_4(f0, 0, 3, 1e-5)
@@ -565,7 +574,7 @@ def test_integration():
     np.seterr(**old_settings)
 
 
-def test_analytic(n=200):
+def test_analytic(n=200) -> None:
     def f(x):
         return f63(x, alpha, beta)
 

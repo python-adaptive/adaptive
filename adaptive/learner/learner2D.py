@@ -3,28 +3,32 @@ from __future__ import annotations
 import itertools
 import warnings
 from collections import OrderedDict
-from collections.abc import Iterable
 from copy import copy
 from math import sqrt
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import cloudpickle
 import numpy as np
 from scipy import interpolate
-from scipy.interpolate.interpnd import LinearNDInterpolator
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Bool, Float, Real
 from adaptive.utils import (
     assign_defaults,
     cache_latest,
     partial_function_from_dataframe,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from scipy.interpolate.interpnd import LinearNDInterpolator
+
+    from adaptive.types import Bool, Float, Real
+
 try:
-    import pandas
+    import pandas as pd
 
     with_pandas = True
 
@@ -47,10 +51,13 @@ def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
     -------
     deviations : list
         The deviation per triangle.
+
     """
     values = ip.values / (ip.values.ptp(axis=0).max() or 1)
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
-        ip.tri, values, tol=1e-6
+        ip.tri,
+        values,
+        tol=1e-6,
     )
 
     simplices = ip.tri.simplices
@@ -68,8 +75,7 @@ def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
         return dev
 
     n_levels = vs.shape[2]
-    devs = [deviation(p, vs[:, :, i], gs[:, :, i]) for i in range(n_levels)]
-    return devs
+    return [deviation(p, vs[:, :, i], gs[:, :, i]) for i in range(n_levels)]
 
 
 def areas(ip: LinearNDInterpolator) -> np.ndarray:
@@ -86,11 +92,11 @@ def areas(ip: LinearNDInterpolator) -> np.ndarray:
     -------
     areas : numpy.ndarray
         The area per triangle in ``ip.tri``.
+
     """
     p = ip.tri.points[ip.tri.simplices]
     q = p[:, :-1, :] - p[:, -1, None, :]
-    areas = abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0]) / 2
-    return areas
+    return abs(q[:, 0, 0] * q[:, 1, 1] - q[:, 0, 1] * q[:, 1, 0]) / 2
 
 
 def uniform_loss(ip: LinearNDInterpolator) -> np.ndarray:
@@ -120,12 +126,14 @@ def uniform_loss(ip: LinearNDInterpolator) -> np.ndarray:
     ...     loss_per_triangle=uniform_loss,
     ... )
     >>>
+
     """
     return np.sqrt(areas(ip))
 
 
 def resolution_loss_function(
-    min_distance: float = 0, max_distance: float = 1
+    min_distance: float = 0,
+    max_distance: float = 1,
 ) -> Callable[[LinearNDInterpolator], np.ndarray]:
     """Loss function that is similar to the `default_loss` function, but you
     can set the maximimum and minimum size of a triangle.
@@ -147,6 +155,7 @@ def resolution_loss_function(
     >>>
     >>> loss = resolution_loss_function(min_distance=0.01, max_distance=1)
     >>> learner = adaptive.Learner2D(f, bounds=[(-1, -1), (1, 1)], loss_per_triangle=loss)
+
     """
 
     def resolution_loss(ip):
@@ -154,11 +163,11 @@ def resolution_loss_function(
 
         A = areas(ip)
         # Setting areas with a small area to zero such that they won't be chosen again
-        loss[A < min_distance**2] = 0
+        loss[min_distance**2 > A] = 0
 
         # Setting triangles that have a size larger than max_distance to infinite loss
         # such that these triangles will be picked
-        loss[A > max_distance**2] = np.inf
+        loss[max_distance**2 < A] = np.inf
 
         return loss
 
@@ -191,6 +200,7 @@ def minimize_triangle_surface_loss(ip: LinearNDInterpolator) -> np.ndarray:
     >>> learner = adaptive.Learner2D(f, bounds=[(-1, -1), (1, 1)],
     ...     loss_per_triangle=minimize_triangle_surface_loss)
     >>>
+
     """
     tri = ip.tri
     points = tri.points[tri.simplices]
@@ -224,11 +234,11 @@ def default_loss(ip: LinearNDInterpolator) -> np.ndarray:
     -------
     losses : numpy.ndarray
         Loss per triangle in ``ip.tri``.
+
     """
     dev = np.sum(deviations(ip), axis=0)
     A = areas(ip)
-    losses = dev * np.sqrt(A) + 0.3 * A
-    return losses
+    return dev * np.sqrt(A) + 0.3 * A
 
 
 def thresholded_loss_function(
@@ -236,8 +246,7 @@ def thresholded_loss_function(
     upper_threshold: float | None = None,
     priority_factor: float = 0.1,
 ) -> Callable[[LinearNDInterpolator], np.ndarray]:
-    """
-    Factory function to create a custom loss function that deprioritizes
+    """Factory function to create a custom loss function that deprioritizes
     values above an upper threshold and below a lower threshold.
 
     Parameters
@@ -256,6 +265,7 @@ def thresholded_loss_function(
     -------
     custom_loss : Callable[[LinearNDInterpolator], np.ndarray]
         A custom loss function that can be used with Learner2D.
+
     """
 
     def custom_loss(ip: LinearNDInterpolator) -> np.ndarray:
@@ -269,6 +279,7 @@ def thresholded_loss_function(
         -------
         losses : numpy.ndarray
             Loss per triangle in ``ip.tri``.
+
         """
         losses = default_loss(ip)
 
@@ -311,6 +322,7 @@ def choose_point_in_triangle(triangle: np.ndarray, max_badness: int) -> np.ndarr
     -------
     point : numpy.ndarray
         The x and y coordinate of the suggested new point.
+
     """
     a, b, c = triangle
     area = 0.5 * np.cross(b - a, c - a)
@@ -345,6 +357,7 @@ def triangle_loss(ip):
     This loss function is *extremely* slow. It is here because it gives the
     same result as the `adaptive.LearnerND`\s
     `~adaptive.learner.learnerND.triangle_loss`.
+
     """
     tri = ip.tri
 
@@ -355,7 +368,8 @@ def triangle_loss(ip):
         return np.concatenate((tri.points[c], ip.values[c]), axis=-1)
 
     simplices = np.concatenate(
-        [tri.points[tri.simplices], ip.values[tri.simplices]], axis=-1
+        [tri.points[tri.simplices], ip.values[tri.simplices]],
+        axis=-1,
     )
     neighbors = [get_neighbors(i, ip) for i in range(len(tri.simplices))]
 
@@ -427,6 +441,7 @@ class Learner2D(BaseLearner):
     `~adaptive.learner.learner2D.deviations` to calculate the
     areas and deviations from a linear interpolation
     over each triangle.
+
     """
 
     def __init__(
@@ -473,7 +488,7 @@ class Learner2D(BaseLearner):
         and ``(npoints, 2+vdim)`` if ``learner.function`` returns a vector of length ``vdim``.
         """
         return np.array(
-            [(x, y, *np.atleast_1d(z)) for (x, y), z in sorted(self.data.items())]
+            [(x, y, *np.atleast_1d(z)) for (x, y), z in sorted(self.data.items())],
         )
 
     def to_dataframe(  # type: ignore[override]
@@ -483,7 +498,7 @@ class Learner2D(BaseLearner):
         x_name: str = "x",
         y_name: str = "y",
         z_name: str = "z",
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
         Parameters
@@ -511,11 +526,13 @@ class Learner2D(BaseLearner):
         ------
         ImportError
             If `pandas` is not installed.
+
         """
         if not with_pandas:
-            raise ImportError("pandas is not installed.")
+            msg = "pandas is not installed."
+            raise ImportError(msg)
         data = sorted((x, y, z) for (x, y), z in self.data.items())
-        df = pandas.DataFrame(data, columns=[x_name, y_name, z_name])
+        df = pd.DataFrame(data, columns=[x_name, y_name, z_name])
         df.attrs["inputs"] = [x_name, y_name]
         df.attrs["output"] = z_name
         if with_default_function_args:
@@ -524,13 +541,13 @@ class Learner2D(BaseLearner):
 
     def load_dataframe(  # type: ignore[override]
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         x_name: str = "x",
         y_name: str = "y",
         z_name: str = "z",
-    ):
+    ) -> None:
         """Load data from a `pandas.DataFrame`.
 
         If ``with_default_function_args`` is True, then ``learner.function``'s
@@ -552,12 +569,15 @@ class Learner2D(BaseLearner):
             The ``y_name`` used in ``to_dataframe``, by default "y"
         z_name : str, optional
             The ``z_name`` used in ``to_dataframe``, by default "z"
+
         """
         data = df.set_index([x_name, y_name])[z_name].to_dict()
         self._set_data(data)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
-                self.function, df, function_prefix
+                self.function,
+                df,
+                function_prefix,
             )
 
     def _scale(self, points: list[tuple[float, float]] | np.ndarray) -> np.ndarray:
@@ -596,7 +616,8 @@ class Learner2D(BaseLearner):
         )
 
     def interpolated_on_grid(
-        self, n: int | None = None
+        self,
+        n: int | None = None,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get the interpolated data on a grid.
 
@@ -611,6 +632,7 @@ class Learner2D(BaseLearner):
         xs : 1D numpy.ndarray
         ys : 1D numpy.ndarray
         interpolated_on_grid : 2D numpy.ndarray
+
         """
         ip = self.interpolator(scaled=True)
         if n is None:
@@ -661,7 +683,7 @@ class Learner2D(BaseLearner):
         return points_combined, values_combined
 
     def ip(self) -> LinearNDInterpolator:
-        """Deprecated, use `self.interpolator(scaled=True)`"""
+        """Deprecated, use `self.interpolator(scaled=True)`."""
         warnings.warn(
             "`learner.ip()` is deprecated, use `learner.interpolator(scaled=True)`."
             " This will be removed in v1.0.",
@@ -690,6 +712,7 @@ class Learner2D(BaseLearner):
         >>> xs, ys = [np.linspace(*b, num=100) for b in learner.bounds]
         >>> ip = learner.interpolator()
         >>> zs = ip(xs[:, None], ys[None, :])
+
         """
         if scaled:
             if self._ip is None:
@@ -704,7 +727,8 @@ class Learner2D(BaseLearner):
     def _interpolator_combined(self) -> LinearNDInterpolator:
         """A `scipy.interpolate.LinearNDInterpolator` instance
         containing the learner's data *and* interpolated data of
-        the `pending_points`."""
+        the `pending_points`.
+        """
         if self._ip_combined is None:
             points, values = self._data_combined()
             points = self._scale(points)
@@ -734,10 +758,12 @@ class Learner2D(BaseLearner):
         self._stack.pop(point, None)
 
     def _fill_stack(
-        self, stack_till: int = 1
+        self,
+        stack_till: int = 1,
     ) -> tuple[list[tuple[float, float]], list[float]]:
         if len(self.data) + len(self.pending_points) < self.ndim + 1:
-            raise ValueError("too few points...")
+            msg = "too few points..."
+            raise ValueError(msg)
 
         # Interpolate
         ip = self._interpolator_combined()
@@ -775,7 +801,9 @@ class Learner2D(BaseLearner):
         return points_new, losses_new
 
     def ask(
-        self, n: int, tell_pending: bool = True
+        self,
+        n: int,
+        tell_pending: bool = True,
     ) -> tuple[list[tuple[float, float] | np.ndarray], list[float]]:
         # Even if tell_pending is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
@@ -790,7 +818,7 @@ class Learner2D(BaseLearner):
             # than the number of triangles between the points. Therefore
             # it could fill up till a length smaller than `stack_till`.
             new_points, new_loss_improvements = self._fill_stack(
-                stack_till=max(n_left, self.stack_size)
+                stack_till=max(n_left, self.stack_size),
             )
             for p in new_points[:n_left]:
                 self.tell_pending(p)
@@ -849,6 +877,7 @@ class Learner2D(BaseLearner):
         -----
         The plot object that is returned if ``learner.function`` returns a
         vector *cannot* be used with the live_plotting functionality.
+
         """
         hv = ensure_holoviews()
         x, y = self.bounds
@@ -882,7 +911,9 @@ class Learner2D(BaseLearner):
             im = hv.Image([], bounds=lbrt)
             tris = hv.EdgePaths([])
         return im.opts(cmap="viridis") * tris.opts(
-            line_width=0.5, alpha=tri_alpha, tools=[]
+            line_width=0.5,
+            alpha=tri_alpha,
+            tools=[],
         )
 
     def _get_data(self) -> dict[tuple[float, float], Float | np.ndarray]:

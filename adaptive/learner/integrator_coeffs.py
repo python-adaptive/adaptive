@@ -74,7 +74,8 @@ def newton(n: int) -> np.ndarray:
     c = (n + 1) * [0]
     for (d, a), m in terms.items():
         if m and a != 0:
-            raise ValueError("Newton polynomial cannot be represented exactly.")
+            msg = "Newton polynomial cannot be represented exactly."
+            raise ValueError(msg)
         c[n - d] += m
         # The check could be removed and the above line replaced by
         # the following, but then the result would be no longer exact.
@@ -191,4 +192,5 @@ def __getattr__(name):
     try:
         return _coefficients()[name]
     except KeyError:
-        raise AttributeError(f"module {__name__} has no attribute {name}") from None
+        msg = f"module {__name__} has no attribute {name}"
+        raise AttributeError(msg) from None

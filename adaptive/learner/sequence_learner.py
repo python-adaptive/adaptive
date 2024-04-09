@@ -19,9 +19,9 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Callable
 
-try:
-    import pandas
+    import pandas as pd
 
+try:
     with_pandas = True
 
 except ModuleNotFoundError:
@@ -45,7 +45,7 @@ class _IgnoreFirstArgument:
     pickable.
     """
 
-    def __init__(self, function):
+    def __init__(self, function) -> None:
         self.function = function
 
     def __call__(self, index_point: PointType, *args, **kwargs):
@@ -84,13 +84,14 @@ class SequenceLearner(BaseLearner):
     From primitive tests, the `~adaptive.SequenceLearner` appears to have a
     similar performance to `ipyparallel`\s ``load_balanced_view().map``. With
     the added benefit of having results in the local kernel already.
+
     """
 
     def __init__(
         self,
         function: Callable[[Any], Any],
         sequence: Sequence[Any],
-    ):
+    ) -> None:
         self._original_function = function
         self.function = _IgnoreFirstArgument(function)
         # prefer range(len(...)) over enumerate to avoid slowdowns
@@ -107,7 +108,9 @@ class SequenceLearner(BaseLearner):
         return SequenceLearner(self._original_function, self.sequence)
 
     def ask(
-        self, n: int, tell_pending: bool = True
+        self,
+        n: int,
+        tell_pending: bool = True,
     ) -> tuple[list[PointType], list[float]]:
         indices = []
         points: list[PointType] = []
@@ -156,7 +159,8 @@ class SequenceLearner(BaseLearner):
     def result(self) -> list[Any]:
         """Get the function values in the same order as ``sequence``."""
         if not self.done():
-            raise Exception("Learner is not yet complete.")
+            msg = "Learner is not yet complete."
+            raise Exception(msg)
         return list(self.data.values())
 
     @property
@@ -172,7 +176,7 @@ class SequenceLearner(BaseLearner):
         y_name: str = "y",
         *,
         full_sequence: bool = False,
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
         Parameters
@@ -201,9 +205,11 @@ class SequenceLearner(BaseLearner):
         ------
         ImportError
             If `pandas` is not installed.
+
         """
         if not with_pandas:
-            raise ImportError("pandas is not installed.")
+            msg = "pandas is not installed."
+            raise ImportError(msg)
         import pandas as pd
 
         if full_sequence:
@@ -214,7 +220,7 @@ class SequenceLearner(BaseLearner):
             indices, ys = zip(*self.data.items()) if self.data else ([], [])  # type: ignore[assignment]
             sequence = [self.sequence[i] for i in indices]
 
-        df = pandas.DataFrame(indices, columns=[index_name])
+        df = pd.DataFrame(indices, columns=[index_name])
         df[x_name] = sequence
         df[y_name] = ys
         df.attrs["inputs"] = [index_name]
@@ -225,7 +231,7 @@ class SequenceLearner(BaseLearner):
 
     def load_dataframe(  # type: ignore[override]
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         index_name: str = "i",
@@ -233,7 +239,7 @@ class SequenceLearner(BaseLearner):
         y_name: str = "y",
         *,
         full_sequence: bool = False,
-    ):
+    ) -> None:
         """Load data from a `pandas.DataFrame`.
 
         If ``with_default_function_args`` is True, then ``learner.function``'s
@@ -257,9 +263,11 @@ class SequenceLearner(BaseLearner):
             The ``y_name`` used in ``to_dataframe``, by default "y"
         full_sequence : bool, optional
             The ``full_sequence`` used in ``to_dataframe``, by default False
+
         """
         if not with_pandas:
-            raise ImportError("pandas is not installed.")
+            msg = "pandas is not installed."
+            raise ImportError(msg)
         import pandas as pd
 
         indices = df[index_name].values
@@ -276,7 +284,9 @@ class SequenceLearner(BaseLearner):
 
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
-                self._original_function, df, function_prefix
+                self._original_function,
+                df,
+                function_prefix,
             )
 
     def _get_data(self) -> dict[int, Any]:

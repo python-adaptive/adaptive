@@ -101,5 +101,5 @@ output_file = docs_path / "README.md"
 replace_named_emojis(input_file, output_file)
 
 
-def setup(app):
+def setup(app) -> None:
     app.add_css_file("custom.css")  # For the `live_info` widget

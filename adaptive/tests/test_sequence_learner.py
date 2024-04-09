@@ -15,7 +15,7 @@ def peak(x, offset=offset, wait=True):
 
 
 class FailOnce:
-    def __init__(self):
+    def __init__(self) -> None:
         self.failed = False
 
     def __call__(self, value):
@@ -25,7 +25,7 @@ class FailOnce:
         raise RuntimeError
 
 
-def test_fail_with_sequence_of_unhashable():
+def test_fail_with_sequence_of_unhashable() -> None:
     # https://github.com/python-adaptive/adaptive/issues/265
     seq = [{1: 1}]  # unhashable
     learner = SequenceLearner(FailOnce(), sequence=seq)
@@ -35,7 +35,7 @@ def test_fail_with_sequence_of_unhashable():
 
 
 @pytest.mark.skipif(not with_pandas, reason="pandas is not installed")
-def test_save_load_dataframe():
+def test_save_load_dataframe() -> None:
     learner = SequenceLearner(peak, sequence=range(10, 30, 1))
     simple(learner, npoints_goal=10)
     df = learner.to_dataframe()

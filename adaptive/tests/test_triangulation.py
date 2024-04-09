@@ -28,7 +28,7 @@ def _standard_simplex_volume(dim):
     return 1 / factorial(dim)
 
 
-def _check_simplices_are_valid(t):
+def _check_simplices_are_valid(t) -> None:
     """Check that 'simplices' and 'vertex_to_simplices' are consistent."""
     vertex_to_simplices = [set() for _ in t.vertices]
 
@@ -38,28 +38,29 @@ def _check_simplices_are_valid(t):
     assert vertex_to_simplices == t.vertex_to_simplices
 
 
-def _check_faces_are_valid(t):
+def _check_faces_are_valid(t) -> None:
     """Check that a 'dim-1'-D face is shared by no more than 2 simplices."""
     counts = Counter(t.faces())
     assert not any(i > 2 for i in counts.values()), counts
 
 
-def _check_hull_is_valid(t):
+def _check_hull_is_valid(t) -> None:
     """Check that the stored hull is consistent with one computed from scratch."""
     counts = Counter(t.faces())
     hull = {point for face, count in counts.items() if count == 1 for point in face}
     assert t.hull == hull
 
 
-def _check_triangulation_is_valid(t):
+def _check_triangulation_is_valid(t) -> None:
     _check_simplices_are_valid(t)
     _check_faces_are_valid(t)
     _check_hull_is_valid(t)
 
 
-def _add_point_with_check(tri, point, simplex=None):
+def _add_point_with_check(tri, point, simplex=None) -> None:
     """Check that the difference in simplices before and after adding a point
-    is returned by tri.add_point"""
+    is returned by tri.add_point.
+    """
     old_simplices = tri.simplices.copy()
     deleted_simplices, created_simplices = tri.add_point(point, simplex=simplex)
     new_simplices = tri.simplices.copy()
@@ -68,7 +69,7 @@ def _add_point_with_check(tri, point, simplex=None):
     assert created_simplices == new_simplices - old_simplices
 
 
-def test_triangulation_raises_exception_for_1d_list():
+def test_triangulation_raises_exception_for_1d_list() -> None:
     # We could support 1d, but we don't for now, because it is not relevant
     # so a user has to be aware
     pts = [0, 1]
@@ -76,7 +77,7 @@ def test_triangulation_raises_exception_for_1d_list():
         Triangulation(pts)
 
 
-def test_triangulation_raises_exception_for_1d_points():
+def test_triangulation_raises_exception_for_1d_points() -> None:
     # We could support 1d, but we don't for now, because it is not relevant
     # so a user has to be aware
     pts = [(0,), (1,)]
@@ -85,7 +86,7 @@ def test_triangulation_raises_exception_for_1d_points():
 
 
 @with_dimension
-def test_triangulation_of_standard_simplex(dim):
+def test_triangulation_of_standard_simplex(dim) -> None:
     t = Triangulation(_make_standard_simplex(dim))
     expected_simplex = tuple(range(dim + 1))
     assert t.simplices == {expected_simplex}
@@ -94,7 +95,7 @@ def test_triangulation_of_standard_simplex(dim):
 
 
 @with_dimension
-def test_zero_volume_initial_simplex_raises_exception(dim):
+def test_zero_volume_initial_simplex_raises_exception(dim) -> None:
     points = _make_standard_simplex(dim)[:-1]
     linearly_dependent_point = np.dot(np.random.random(dim), points)
     zero_volume_simplex = np.vstack((points, linearly_dependent_point))
@@ -106,7 +107,9 @@ def test_zero_volume_initial_simplex_raises_exception(dim):
 
 
 @with_dimension
-def test_adding_point_outside_circumscribed_hypersphere_in_positive_orthant(dim):
+def test_adding_point_outside_circumscribed_hypersphere_in_positive_orthant(
+    dim,
+) -> None:
     t = Triangulation(_make_standard_simplex(dim))
 
     point_outside_circumscribed_sphere = (1.1,) * dim
@@ -133,7 +136,7 @@ def test_adding_point_outside_circumscribed_hypersphere_in_positive_orthant(dim)
 
 
 @with_dimension
-def test_adding_point_outside_standard_simplex_in_negative_orthant(dim):
+def test_adding_point_outside_standard_simplex_in_negative_orthant(dim) -> None:
     t = Triangulation(_make_standard_simplex(dim))
     new_point = list(range(-dim, 0))
 
@@ -168,7 +171,7 @@ def test_adding_point_outside_standard_simplex_in_negative_orthant(dim):
 
 @with_dimension
 @pytest.mark.parametrize("provide_simplex", [True, False])
-def test_adding_point_inside_standard_simplex(dim, provide_simplex):
+def test_adding_point_inside_standard_simplex(dim, provide_simplex) -> None:
     t = Triangulation(_make_standard_simplex(dim))
     first_simplex = tuple(range(dim + 1))
     inside_simplex = (0.1,) * dim
@@ -192,7 +195,7 @@ def test_adding_point_inside_standard_simplex(dim, provide_simplex):
 
 
 @with_dimension
-def test_adding_point_on_standard_simplex_face(dim):
+def test_adding_point_on_standard_simplex_face(dim) -> None:
     pts = _make_standard_simplex(dim)
     t = Triangulation(pts)
     on_simplex = np.average(pts[1:], axis=0)
@@ -213,7 +216,7 @@ def test_adding_point_on_standard_simplex_face(dim):
 
 
 @with_dimension
-def test_adding_point_on_standard_simplex_edge(dim):
+def test_adding_point_on_standard_simplex_edge(dim) -> None:
     pts = _make_standard_simplex(dim)
     t = Triangulation(pts)
     on_edge = np.average(pts[:2], axis=0)
@@ -231,7 +234,7 @@ def test_adding_point_on_standard_simplex_edge(dim):
 
 
 @with_dimension
-def test_adding_point_colinear_with_first_edge(dim):
+def test_adding_point_colinear_with_first_edge(dim) -> None:
     pts = _make_standard_simplex(dim)
     t = Triangulation(pts)
     edge_extension = np.multiply(pts[1], 2)
@@ -246,7 +249,7 @@ def test_adding_point_colinear_with_first_edge(dim):
 
 
 @with_dimension
-def test_adding_point_coplanar_with_a_face(dim):
+def test_adding_point_coplanar_with_a_face(dim) -> None:
     pts = _make_standard_simplex(dim)
     t = Triangulation(pts)
     face_extension = np.sum(pts[:-1], axis=0) * 2
@@ -261,7 +264,7 @@ def test_adding_point_coplanar_with_a_face(dim):
 
 
 @with_dimension
-def test_adding_point_inside_circumscribed_circle(dim):
+def test_adding_point_inside_circumscribed_circle(dim) -> None:
     pts = _make_standard_simplex(dim)
     t = Triangulation(pts)
     on_simplex = (0.6,) * dim
@@ -280,7 +283,7 @@ def test_adding_point_inside_circumscribed_circle(dim):
 
 
 @with_dimension
-def test_triangulation_volume_is_less_than_bounding_box(dim):
+def test_triangulation_volume_is_less_than_bounding_box(dim) -> None:
     eps = 1e-8
     points = np.random.random((10, dim))  # all within the unit hypercube
     t = _make_triangulation(points)
@@ -290,7 +293,7 @@ def test_triangulation_volume_is_less_than_bounding_box(dim):
 
 
 @with_dimension
-def test_triangulation_is_deterministic(dim):
+def test_triangulation_is_deterministic(dim) -> None:
     points = np.random.random((10, dim))
     t1 = _make_triangulation(points)
     t2 = _make_triangulation(points)
@@ -298,7 +301,7 @@ def test_triangulation_is_deterministic(dim):
 
 
 @with_dimension
-def test_initialisation_raises_when_not_enough_points(dim):
+def test_initialisation_raises_when_not_enough_points(dim) -> None:
     deficient_simplex = _make_standard_simplex(dim)[:-1]
 
     with pytest.raises(ValueError):
@@ -306,7 +309,7 @@ def test_initialisation_raises_when_not_enough_points(dim):
 
 
 @with_dimension
-def test_initialisation_raises_when_points_coplanar(dim):
+def test_initialisation_raises_when_points_coplanar(dim) -> None:
     zero_volume_simplex = _make_standard_simplex(dim)[:-1]
 
     new_point1 = np.average(zero_volume_simplex, axis=0)
@@ -318,7 +321,7 @@ def test_initialisation_raises_when_points_coplanar(dim):
 
 
 @with_dimension
-def test_initialisation_accepts_more_than_one_simplex(dim):
+def test_initialisation_accepts_more_than_one_simplex(dim) -> None:
     points = _make_standard_simplex(dim)
     new_point = [1.1] * dim  # Point oposing the origin but outside circumsphere
     points = np.vstack((points, new_point))

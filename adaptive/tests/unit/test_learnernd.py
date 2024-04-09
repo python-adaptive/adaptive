@@ -15,28 +15,28 @@ def ring_of_fire(xy):
     return x + math.exp(-((x**2 + y**2 - d**2) ** 2) / a**4)
 
 
-def test_learnerND_inits_loss_depends_on_neighbors_correctly():
+def test_learnerND_inits_loss_depends_on_neighbors_correctly() -> None:
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)])
     assert learner.nth_neighbors == 0
 
 
-def test_learnerND_curvature_inits_loss_depends_on_neighbors_correctly():
+def test_learnerND_curvature_inits_loss_depends_on_neighbors_correctly() -> None:
     loss = curvature_loss_function()
     assert loss.nth_neighbors == 1
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)], loss_per_simplex=loss)
     assert learner.nth_neighbors == 1
 
 
-def test_learnerND_accepts_ConvexHull_as_input():
+def test_learnerND_accepts_ConvexHull_as_input() -> None:
     triangle = ConvexHull([(0, 1), (2, 0), (0, 0)])
     learner = LearnerND(ring_of_fire, bounds=triangle)
     assert learner.nth_neighbors == 0
     assert np.allclose(learner._bbox, [(0, 2), (0, 1)])
 
 
-def test_learnerND_raises_if_too_many_neigbors():
+def test_learnerND_raises_if_too_many_neigbors() -> None:
     @uses_nth_neighbors(2)
-    def loss(*args):
+    def loss(*args) -> int:
         return 0
 
     assert loss.nth_neighbors == 2

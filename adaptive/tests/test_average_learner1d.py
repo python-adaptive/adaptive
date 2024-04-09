@@ -1,5 +1,4 @@
 from itertools import chain
-from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -10,11 +9,8 @@ from adaptive.tests.test_learners import (
     simple_run,
 )
 
-if TYPE_CHECKING:
-    pass
 
-
-def almost_equal_dicts(a, b):
+def almost_equal_dicts(a, b) -> None:
     assert a.keys() == b.keys()
     for k, v1 in a.items():
         v2 = b[k]
@@ -29,10 +25,11 @@ def almost_equal_dicts(a, b):
             try:
                 np.testing.assert_almost_equal(v1, v2)
             except TypeError as e:
-                raise AssertionError(f"{v1} != {v2}") from e
+                msg = f"{v1} != {v2}"
+                raise AssertionError(msg) from e
 
 
-def test_tell_many_at_point():
+def test_tell_many_at_point() -> None:
     f = generate_random_parametrization(noisy_peak)
     learner = AverageLearner1D(f, bounds=(-2, 2))
     control = learner.new()

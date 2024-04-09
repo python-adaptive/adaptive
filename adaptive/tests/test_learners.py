@@ -9,6 +9,7 @@ import random
 import shutil
 import tempfile
 import time
+from typing import NoReturn
 
 import flaky
 import numpy as np
@@ -76,11 +77,13 @@ def generate_random_parametrization(f):
         All parameters but the first must be annotated with a callable
         that, when called with no arguments, produces a value of the
         appropriate type for the parameter in question.
+
     """
     _, *params = inspect.signature(f).parameters.items()
     if any(not callable(v.annotation) for (p, v) in params):
+        msg = f"All parameters to {f.__name__} must be annotated with functions."
         raise TypeError(
-            f"All parameters to {f.__name__} must be annotated with functions."
+            msg,
         )
     realization = {p: v.annotation() for (p, v) in params}
     return ft.partial(f, **realization)
@@ -90,7 +93,7 @@ def uniform(a, b):
     return lambda: random.uniform(a, b)
 
 
-def simple_run(learner, n):
+def simple_run(learner, n) -> None:
     def get_goal(learner):
         if hasattr(learner, "nsamples"):
             return lambda lrn: lrn.nsamples > n
@@ -229,7 +232,7 @@ def ask_randomly(learner, rounds, points):
 
 
 @run_with(Learner1D)
-def test_uniform_sampling1D(learner_type, f, learner_kwargs):
+def test_uniform_sampling1D(learner_type, f, learner_kwargs) -> None:
     """Points are sampled uniformly if no data is provided.
 
     Non-uniform sampling implies that we think we know something about
@@ -245,9 +248,9 @@ def test_uniform_sampling1D(learner_type, f, learner_kwargs):
     assert max(ivals) / min(ivals) < 2 + 1e-8
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail()
 @run_with(Learner2D, LearnerND)
-def test_uniform_sampling2D(learner_type, f, learner_kwargs):
+def test_uniform_sampling2D(learner_type, f, learner_kwargs) -> None:
     """Points are sampled uniformly if no data is provided.
 
     Non-uniform sampling implies that we think we know something about
@@ -271,14 +274,14 @@ def test_uniform_sampling2D(learner_type, f, learner_kwargs):
 
 
 @pytest.mark.parametrize(
-    "learner_type, bounds",
+    ("learner_type", "bounds"),
     [
         (Learner1D, (-1, 1)),
         (Learner2D, ((-1, 1), (-1, 1))),
         (LearnerND, ((-1, 1), (-1, 1), (-1, 1))),
     ],
 )
-def test_learner_accepts_lists(learner_type, bounds):
+def test_learner_accepts_lists(learner_type, bounds) -> None:
     def f(x):
         return [0, 1]
 
@@ -287,7 +290,7 @@ def test_learner_accepts_lists(learner_type, bounds):
 
 
 @run_with(Learner1D, Learner2D, LearnerND, SequenceLearner, AverageLearner1D)
-def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
+def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs) -> None:
     """Adding already existing data is an idempotent operation.
 
     Either it is idempotent, or it is an error.
@@ -341,7 +344,7 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     AverageLearner1D,
     SequenceLearner,
 )
-def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
+def test_adding_non_chosen_data(learner_type, f, learner_kwargs) -> None:
     """Adding data for a point that was not returned by 'ask'."""
     # XXX: learner, control and bounds are not defined
     f = generate_random_parametrization(f)
@@ -383,9 +386,13 @@ def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
 
 
 @run_with(
-    Learner1D, xfail(Learner2D), xfail(LearnerND), AverageLearner, AverageLearner1D
+    Learner1D,
+    xfail(Learner2D),
+    xfail(LearnerND),
+    AverageLearner,
+    AverageLearner1D,
 )
-def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
+def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs) -> None:
     """The order of calls to 'tell' between calls to 'ask'
     is arbitrary.
 
@@ -432,8 +439,10 @@ def test_point_adding_order_is_irrelevant(learner_type, f, learner_kwargs):
 # see https://github.com/python-adaptive/adaptive/issues/55
 @run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner, AverageLearner1D)
 def test_expected_loss_improvement_is_less_than_total_loss(
-    learner_type, f, learner_kwargs
-):
+    learner_type,
+    f,
+    learner_kwargs,
+) -> None:
     """The estimated loss improvement can never be greater than the total loss."""
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
@@ -450,7 +459,7 @@ def test_expected_loss_improvement_is_less_than_total_loss(
 
     if learner_type is Learner2D:
         assert sum(loss_improvements) < sum(
-            learner.loss_per_triangle(learner.interpolator(scaled=True))
+            learner.loss_per_triangle(learner.interpolator(scaled=True)),
         )
     elif learner_type in (Learner1D, AverageLearner1D):
         assert sum(loss_improvements) < sum(learner.losses.values())
@@ -462,8 +471,10 @@ def test_expected_loss_improvement_is_less_than_total_loss(
 #      but we xfail it now, as Learner2D will be deprecated anyway
 @run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner1D)
 def test_learner_performance_is_invariant_under_scaling(
-    learner_type, f, learner_kwargs
-):
+    learner_type,
+    f,
+    learner_kwargs,
+) -> None:
     """Learners behave identically under transformations that leave
        the loss invariant.
 
@@ -529,7 +540,7 @@ def test_learner_performance_is_invariant_under_scaling(
     SequenceLearner,
     with_all_loss_functions=False,
 )
-def test_balancing_learner(learner_type, f, learner_kwargs):
+def test_balancing_learner(learner_type, f, learner_kwargs) -> None:
     """Test if the BalancingLearner works with the different types of learners."""
     learners = [
         learner_type(generate_random_parametrization(f), **learner_kwargs)
@@ -579,7 +590,7 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     SequenceLearner,
     with_all_loss_functions=False,
 )
-def test_saving(learner_type, f, learner_kwargs):
+def test_saving(learner_type, f, learner_kwargs) -> None:
     f = generate_random_parametrization(f)
     learner = learner_type(f, **learner_kwargs)
     control = learner.new()
@@ -612,7 +623,7 @@ def test_saving(learner_type, f, learner_kwargs):
     SequenceLearner,
     with_all_loss_functions=False,
 )
-def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
+def test_saving_of_balancing_learner(learner_type, f, learner_kwargs) -> None:
     f = generate_random_parametrization(f)
     learner = BalancingLearner([learner_type(f, **learner_kwargs)])
     control = learner.new()
@@ -650,7 +661,7 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     IntegratorLearner,
     with_all_loss_functions=False,
 )
-def test_saving_with_datasaver(learner_type, f, learner_kwargs):
+def test_saving_with_datasaver(learner_type, f, learner_kwargs) -> None:
     f = generate_random_parametrization(f)
     g = lambda x: {"y": f(x), "t": random.random()}  # noqa: E731
     arg_picker = operator.itemgetter("y")
@@ -678,25 +689,30 @@ def test_saving_with_datasaver(learner_type, f, learner_kwargs):
         os.remove(path)
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail()
 @run_with(Learner1D, Learner2D, LearnerND)
-def test_convergence_for_arbitrary_ordering(learner_type, f, learner_kwargs):
+def test_convergence_for_arbitrary_ordering(
+    learner_type,
+    f,
+    learner_kwargs,
+) -> NoReturn:
     """Learners that are learning the same function should converge
     to the same result "eventually" if given the same data, regardless
     of the order in which that data is given.
     """
     # XXX: not sure how to implement this. Can we say anything at all about
     #      the scaling of the loss with the number of points?
-    raise NotImplementedError()
+    raise NotImplementedError
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail()
 @run_with(Learner1D, Learner2D, LearnerND)
-def test_learner_subdomain(learner_type, f, learner_kwargs):
+def test_learner_subdomain(learner_type, f, learner_kwargs) -> NoReturn:
     """Learners that never receive data outside of a subdomain should
-    perform 'similarly' to learners defined on that subdomain only."""
+    perform 'similarly' to learners defined on that subdomain only.
+    """
     # XXX: not sure how to implement this. How do we measure "performance"?
-    raise NotImplementedError()
+    raise NotImplementedError
 
 
 def add_time(f):
@@ -720,8 +736,8 @@ def add_time(f):
     IntegratorLearner,
     with_all_loss_functions=False,
 )
-def test_to_dataframe(learner_type, f, learner_kwargs):
-    import pandas
+def test_to_dataframe(learner_type, f, learner_kwargs) -> None:
+    import pandas as pd
 
     if learner_type is LearnerND:
         kw = {"point_names": tuple("xyz")[: len(learner_kwargs["bounds"])]}
@@ -739,7 +755,7 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
     # Run the learner
     simple_run(learner, 100)
     df = learner.to_dataframe(**kw)
-    assert isinstance(df, pandas.DataFrame)
+    assert isinstance(df, pd.DataFrame)
     if learner_type is AverageLearner1D:
         assert len(df) == learner.nsamples
     else:
@@ -758,7 +774,7 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
     bal_learner = BalancingLearner(learners)
     simple_run(bal_learner, 100)
     df_bal = bal_learner.to_dataframe(**kw)
-    assert isinstance(df_bal, pandas.DataFrame)
+    assert isinstance(df_bal, pd.DataFrame)
 
     if learner_type is not AverageLearner1D:
         assert len(df_bal) == bal_learner.npoints
@@ -779,7 +795,8 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
 
     # Test with DataSaver
     learner = learner_type(
-        add_time(generate_random_parametrization(f)), **learner_kwargs
+        add_time(generate_random_parametrization(f)),
+        **learner_kwargs,
     )
     data_saver = DataSaver(learner, operator.itemgetter("result"))
     df = data_saver.to_dataframe(**kw)  # test if empty dataframe works
@@ -796,5 +813,5 @@ def test_to_dataframe(learner_type, f, learner_kwargs):
     assert data_saver2.extra_data.keys() == data_saver.extra_data.keys()
     assert all(
         data_saver2.extra_data[k] == data_saver.extra_data[k]
-        for k in data_saver.extra_data.keys()
+        for k in data_saver.extra_data
     )

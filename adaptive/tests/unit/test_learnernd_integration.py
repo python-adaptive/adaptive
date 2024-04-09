@@ -14,20 +14,20 @@ def ring_of_fire(xy, d=0.75):
     return x + math.exp(-((x**2 + y**2 - d**2) ** 2) / a**4)
 
 
-def test_learnerND_runs_to_10_points():
+def test_learnerND_runs_to_10_points() -> None:
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)])
     SimpleRunner(learner, npoints_goal=10)
     assert learner.npoints == 10
 
 
 @pytest.mark.parametrize("execution_number", range(5))
-def test_learnerND_runs_to_10_points_Blocking(execution_number):
+def test_learnerND_runs_to_10_points_Blocking(execution_number) -> None:
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)])
     BlockingRunner(learner, npoints_goal=10)
     assert learner.npoints >= 10
 
 
-def test_learnerND_curvature_runs_to_10_points():
+def test_learnerND_curvature_runs_to_10_points() -> None:
     loss = curvature_loss_function()
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)], loss_per_simplex=loss)
     SimpleRunner(learner, npoints_goal=10)
@@ -35,14 +35,14 @@ def test_learnerND_curvature_runs_to_10_points():
 
 
 @pytest.mark.parametrize("execution_number", range(5))
-def test_learnerND_curvature_runs_to_10_points_Blocking(execution_number):
+def test_learnerND_curvature_runs_to_10_points_Blocking(execution_number) -> None:
     loss = curvature_loss_function()
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)], loss_per_simplex=loss)
     BlockingRunner(learner, npoints_goal=10)
     assert learner.npoints >= 10
 
 
-def test_learnerND_log_works():
+def test_learnerND_log_works() -> None:
     loss = curvature_loss_function()
     learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)], loss_per_simplex=loss)
     learner.ask(4)

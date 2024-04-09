@@ -3,10 +3,9 @@ from __future__ import annotations
 import math
 import sys
 from collections import defaultdict
-from collections.abc import Iterable, Sequence
 from copy import deepcopy
 from math import hypot
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import numpy as np
 import scipy.stats
@@ -18,8 +17,11 @@ from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Int, Real
 from adaptive.utils import assign_defaults, partial_function_from_dataframe
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
 try:
-    import pandas
+    import pandas as pd
 
     with_pandas = True
 
@@ -73,6 +75,7 @@ class AverageLearner1D(Learner1D):
         If self.error[x] < min_error, then x will not be resampled
         anymore, i.e., the smallest confidence interval at x is
         [self.data[x] - min_error, self.data[x] + min_error].
+
     """
 
     def __init__(
@@ -87,17 +90,22 @@ class AverageLearner1D(Learner1D):
         min_samples: int = 50,
         max_samples: int = sys.maxsize,
         min_error: float = 0,
-    ):
+    ) -> None:
         if not (0 < delta <= 1):
-            raise ValueError("Learner requires 0 < delta <= 1.")
+            msg = "Learner requires 0 < delta <= 1."
+            raise ValueError(msg)
         if not (0 < alpha <= 1):
-            raise ValueError("Learner requires 0 < alpha <= 1.")
+            msg = "Learner requires 0 < alpha <= 1."
+            raise ValueError(msg)
         if not (0 < neighbor_sampling <= 1):
-            raise ValueError("Learner requires 0 < neighbor_sampling <= 1.")
+            msg = "Learner requires 0 < neighbor_sampling <= 1."
+            raise ValueError(msg)
         if min_samples < 0:
-            raise ValueError("min_samples should be positive.")
+            msg = "min_samples should be positive."
+            raise ValueError(msg)
         if min_samples > max_samples:
-            raise ValueError("max_samples should be larger than min_samples.")
+            msg = "max_samples should be larger than min_samples."
+            raise ValueError(msg)
 
         super().__init__(function, bounds, loss_per_interval)  # type: ignore[arg-type]
 
@@ -142,7 +150,7 @@ class AverageLearner1D(Learner1D):
 
     @property
     def nsamples(self) -> int:
-        """Returns the total number of samples"""
+        """Returns the total number of samples."""
         return sum(self._number_samples.values())
 
     @property
@@ -160,7 +168,7 @@ class AverageLearner1D(Learner1D):
                     (seed, x, *np.atleast_1d(y))
                     for x, seed_y in self._data_samples.items()
                     for seed, y in seed_y.items()
-                ]
+                ],
             )
 
     def to_dataframe(  # type: ignore[override]
@@ -171,7 +179,7 @@ class AverageLearner1D(Learner1D):
         seed_name: str = "seed",
         x_name: str = "x",
         y_name: str = "y",
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
         Parameters
@@ -197,9 +205,11 @@ class AverageLearner1D(Learner1D):
         ------
         ImportError
             If `pandas` is not installed.
+
         """
         if not with_pandas:
-            raise ImportError("pandas is not installed.")
+            msg = "pandas is not installed."
+            raise ImportError(msg)
         if mean:
             data: list[tuple[Real, Real]] = sorted(self.data.items())
             columns = [x_name, y_name]
@@ -210,7 +220,7 @@ class AverageLearner1D(Learner1D):
                 for seed, y in sorted(seed_y.items())
             ]
             columns = [seed_name, x_name, y_name]
-        df = pandas.DataFrame(data, columns=columns)
+        df = pd.DataFrame(data, columns=columns)
         df.attrs["inputs"] = [seed_name, x_name]
         df.attrs["output"] = y_name
         if with_default_function_args:
@@ -219,13 +229,13 @@ class AverageLearner1D(Learner1D):
 
     def load_dataframe(  # type: ignore[override]
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         seed_name: str = "seed",
         x_name: str = "x",
         y_name: str = "y",
-    ):
+    ) -> None:
         """Load data from a `pandas.DataFrame`.
 
         If ``with_default_function_args`` is True, then ``learner.function``'s
@@ -247,6 +257,7 @@ class AverageLearner1D(Learner1D):
             The ``x_name`` used in ``to_dataframe``, by default "x"
         y_name : str, optional
             The ``y_name`` used in ``to_dataframe``, by default "y"
+
         """
         # Were using zip instead of df[[seed_name, x_name]].values because that will
         # make the seeds into floats
@@ -254,7 +265,9 @@ class AverageLearner1D(Learner1D):
         self.tell_many(seed_x, df[y_name].values)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
-                self.function, df, function_prefix
+                self.function,
+                df,
+                function_prefix,
             )
 
     def ask(self, n: int, tell_pending: bool = True) -> tuple[Points, list[float]]:  # type: ignore[override]
@@ -268,17 +281,16 @@ class AverageLearner1D(Learner1D):
             # TODO: if `n` is very large, we should suggest a few different points.
             points, loss_improvements = self._ask_for_new_point(n)
         #  Else, check the resampling condition
-        else:
-            if len(self.rescaled_error):
-                # This is in case rescaled_error is empty (e.g. when sigma=0)
-                x, resc_error = self.rescaled_error.peekitem(0)
-                # Resampling condition
-                if resc_error > self.delta:
-                    points, loss_improvements = self._ask_for_more_samples(x, n)
-                else:
-                    points, loss_improvements = self._ask_for_new_point(n)
+        elif len(self.rescaled_error):
+            # This is in case rescaled_error is empty (e.g. when sigma=0)
+            x, resc_error = self.rescaled_error.peekitem(0)
+            # Resampling condition
+            if resc_error > self.delta:
+                points, loss_improvements = self._ask_for_more_samples(x, n)
             else:
                 points, loss_improvements = self._ask_for_new_point(n)
+        else:
+            points, loss_improvements = self._ask_for_new_point(n)
 
         if tell_pending:
             for p in points:
@@ -289,7 +301,8 @@ class AverageLearner1D(Learner1D):
     def _ask_for_more_samples(self, x: Real, n: int) -> tuple[Points, list[float]]:
         """When asking for n points, the learner returns n times an existing point
         to be resampled, since in general n << min_samples and this point will
-        need to be resampled many more times"""
+        need to be resampled many more times.
+        """
         n_existing = self._number_samples.get(x, 0)
         points = [(seed + n_existing, x) for seed in range(n)]
         xl, xr = self.neighbors_combined[x]
@@ -300,7 +313,7 @@ class AverageLearner1D(Learner1D):
             loss_improvement = float("inf")
         else:
             loss_improvement = loss - loss * np.sqrt(n_existing) / np.sqrt(
-                n_existing + n
+                n_existing + n,
             )
         loss_improvements = [loss_improvement / n] * n
         return points, loss_improvements
@@ -308,7 +321,8 @@ class AverageLearner1D(Learner1D):
     def _ask_for_new_point(self, n: int) -> tuple[Points, list[float]]:
         """When asking for n new points, the learner returns n times a single
         new point, since in general n << min_samples and this point will need
-        to be resampled many more times"""
+        to be resampled many more times.
+        """
         points, (loss_improvement,) = self._ask_points_without_adding(1)
         seed_points = list(zip(range(n), n * points))
         loss_improvements = [loss_improvement / n] * n
@@ -324,9 +338,12 @@ class AverageLearner1D(Learner1D):
     def tell(self, seed_x: Point, y: Real) -> None:  # type: ignore[override]
         seed, x = seed_x
         if y is None:
-            raise TypeError(
+            msg = (
                 "Y-value may not be None, use learner.tell_pending(x)"
                 "to indicate that this value is currently being calculated"
+            )
+            raise TypeError(
+                msg,
             )
 
         if x not in self.data:
@@ -344,6 +361,7 @@ class AverageLearner1D(Learner1D):
         ----------
         point_type : str
             Must be either "new" or "resampled".
+
         """
         #  Update neighbors
         x_left, x_right = self.neighbors[x]
@@ -493,27 +511,32 @@ class AverageLearner1D(Learner1D):
         return t_student * (variance_in_mean / n) ** 0.5
 
     def tell_many(  # type: ignore[override]
-        self, xs: Points | np.ndarray, ys: Sequence[Real] | np.ndarray
+        self,
+        xs: Points | np.ndarray,
+        ys: Sequence[Real] | np.ndarray,
     ) -> None:
         # Check that all x are within the bounds
         # TODO: remove this requirement, all other learners add the data
         # but ignore it going forward.
         if not np.prod([x >= self.bounds[0] and x <= self.bounds[1] for _, x in xs]):
-            raise ValueError(
+            msg = (
                 "x value out of bounds, "
                 "remove x or enlarge the bounds of the learner"
+            )
+            raise ValueError(
+                msg,
             )
 
         # Create a mapping of points to a list of samples
         mapping: defaultdict[Real, defaultdict[Int, Real]] = defaultdict(
-            lambda: defaultdict(dict)
+            lambda: defaultdict(dict),
         )
         for (seed, x), y in zip(xs, ys):
             mapping[x][seed] = y
 
         for x, seed_y_mapping in mapping.items():
             if len(seed_y_mapping) == 1:
-                seed, y = list(seed_y_mapping.items())[0]
+                seed, y = next(iter(seed_y_mapping.items()))
                 self.tell((seed, x), y)
             elif len(seed_y_mapping) > 1:
                 # If we stored more than 1 y-value for the previous x,
@@ -530,12 +553,16 @@ class AverageLearner1D(Learner1D):
             Value from the function domain.
         seed_y_mapping : Dict[int, Real]
             Dictionary of ``seed`` -> ``y`` at ``x``.
+
         """
         # Check x is within the bounds
         if not np.prod(x >= self.bounds[0] and x <= self.bounds[1]):
-            raise ValueError(
+            msg = (
                 "x value out of bounds, "
                 "remove x or enlarge the bounds of the learner"
+            )
+            raise ValueError(
+                msg,
             )
 
         # If x is a new point:
@@ -563,7 +590,9 @@ class AverageLearner1D(Learner1D):
             if n > self.min_samples:
                 self._undersampled_points.discard(x)
             self.error[x] = self._calc_error_in_mean(
-                self._data_samples[x].values(), self.data[x], n
+                self._data_samples[x].values(),
+                self.data[x],
+                n,
             )
             self._update_distances(x)
             self._update_rescaled_error_in_mean(x, "resampled")
@@ -595,6 +624,7 @@ class AverageLearner1D(Learner1D):
         plot : `holoviews.element.Scatter * holoviews.element.ErrorBars *
                 holoviews.element.Path`
             Plot of the evaluated data.
+
         """
         hv = ensure_holoviews()
         if not self.data:
@@ -606,7 +636,8 @@ class AverageLearner1D(Learner1D):
             line = hv.Path((xs, ys))
             p = scatter * error * line
         else:
-            raise Exception("plot() not implemented for vector functions.")
+            msg = "plot() not implemented for vector functions."
+            raise Exception(msg)
 
         # Plot with 5% empty margins such that the boundary points are visible
         margin = 0.05 * (self.bounds[1] - self.bounds[0])
@@ -616,7 +647,7 @@ class AverageLearner1D(Learner1D):
 
 
 def decreasing_dict() -> ItemSortedDict:
-    """This initialization orders the dictionary from large to small values"""
+    """This initialization orders the dictionary from large to small values."""
 
     def sorting_rule(key, value):
         return -value

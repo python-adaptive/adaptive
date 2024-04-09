@@ -29,7 +29,7 @@ from adaptive.utils import (
 )
 
 try:
-    import pandas
+    import pandas as pd
 
     with_pandas = True
 
@@ -50,8 +50,7 @@ def volume(simplex, ys=None):
 
     # See https://www.jstor.org/stable/2315353
     dim = len(simplex) - 1
-    vol = np.abs(fast_det(matrix)) / np.math.factorial(dim)
-    return vol
+    return np.abs(fast_det(matrix)) / np.math.factorial(dim)
 
 
 def orientation(simplex):
@@ -311,17 +310,20 @@ class LearnerND(BaseLearner):
 
     """
 
-    def __init__(self, func, bounds, loss_per_simplex=None):
+    def __init__(self, func, bounds, loss_per_simplex=None) -> None:
         self._vdim = None
         self.loss_per_simplex = loss_per_simplex or default_loss
 
         if hasattr(self.loss_per_simplex, "nth_neighbors"):
             if self.loss_per_simplex.nth_neighbors > 1:
-                raise NotImplementedError(
+                msg = (
                     "The provided loss function wants "
                     "next-nearest neighboring simplices for the loss computation, "
                     "this feature is not yet implemented, either use "
-                    "nth_neightbors = 0 or 1",
+                    "nth_neightbors = 0 or 1"
+                )
+                raise NotImplementedError(
+                    msg,
                 )
             self.nth_neighbors = self.loss_per_simplex.nth_neighbors
         else:
@@ -418,7 +420,7 @@ class LearnerND(BaseLearner):
         function_prefix: str = "function.",
         point_names: tuple[str, ...] = ("x", "y", "z"),
         value_name: str = "value",
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
         Parameters
@@ -446,14 +448,18 @@ class LearnerND(BaseLearner):
 
         """
         if not with_pandas:
-            raise ImportError("pandas is not installed.")
+            msg = "pandas is not installed."
+            raise ImportError(msg)
         if len(point_names) != self.ndim:
-            raise ValueError(
+            msg = (
                 f"point_names ({point_names}) should have the"
-                f" same length as learner.ndims ({self.ndim})",
+                f" same length as learner.ndims ({self.ndim})"
+            )
+            raise ValueError(
+                msg,
             )
         data = [(*x, y) for x, y in self.data.items()]
-        df = pandas.DataFrame(data, columns=[*point_names, value_name])
+        df = pd.DataFrame(data, columns=[*point_names, value_name])
         df.attrs["inputs"] = list(point_names)
         df.attrs["output"] = value_name
         if with_default_function_args:
@@ -462,12 +468,12 @@ class LearnerND(BaseLearner):
 
     def load_dataframe(  # type: ignore[override]
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         point_names: tuple[str, ...] = ("x", "y", "z"),
         value_name: str = "value",
-    ):
+    ) -> None:
         """Load data from a `pandas.DataFrame`.
 
         If ``with_default_function_args`` is True, then ``learner.function``'s
@@ -560,6 +566,8 @@ class LearnerND(BaseLearner):
                 simplex = None
             to_delete, to_add = tri.add_point(point, simplex, transform=self._transform)
             self._update_losses(to_delete, to_add)
+            return None
+        return None
 
     def _simplex_exists(self, simplex):
         simplex = tuple(sorted(simplex))
@@ -575,7 +583,7 @@ class LearnerND(BaseLearner):
                 (mn - eps) <= p <= (mx + eps) for p, (mn, mx) in zip(point, self._bbox)
             )
 
-    def tell_pending(self, point, *, simplex=None):
+    def tell_pending(self, point, *, simplex=None) -> None:
         point = tuple(point)
         if not self.inside_bounds(point):
             return
@@ -614,7 +622,7 @@ class LearnerND(BaseLearner):
         self._pending_to_simplex[point] = simplex
         return self._subtriangulations[simplex].add_point(point)
 
-    def _update_subsimplex_losses(self, simplex, new_subsimplices):
+    def _update_subsimplex_losses(self, simplex, new_subsimplices) -> None:
         loss = self._losses[simplex]
 
         loss_density = loss / self.tri.volume(simplex)
@@ -681,9 +689,12 @@ class LearnerND(BaseLearner):
 
         # Could not find a simplex, this code should never be reached
         assert self.tri is not None
-        raise AssertionError(
+        msg = (
             "Could not find a simplex to subdivide. Yet there should always"
-            "  be a simplex available if LearnerND.tri() is not None.",
+            "  be a simplex available if LearnerND.tri() is not None."
+        )
+        raise AssertionError(
+            msg,
         )
 
     def _ask_best_point(self):
@@ -764,7 +775,7 @@ class LearnerND(BaseLearner):
             ),
         )
 
-    def _update_losses(self, to_delete: set, to_add: set):
+    def _update_losses(self, to_delete: set, to_add: set) -> None:
         # XXX: add the points outside the triangulation to this as well
         pending_points_unbound = set()
 
@@ -812,7 +823,7 @@ class LearnerND(BaseLearner):
                     self._subtriangulations[simplex].simplices,
                 )
 
-    def _recompute_all_losses(self):
+    def _recompute_all_losses(self) -> None:
         """Recompute all losses and pending losses."""
         # amortized O(N) complexity
         if self.tri is None:
@@ -841,7 +852,7 @@ class LearnerND(BaseLearner):
         # get the output scale
         return self._max_value - self._min_value
 
-    def _update_range(self, new_output):
+    def _update_range(self, new_output) -> bool:
         if self._min_value is None or self._max_value is None:
             # this is the first point, nothing to do, just set the range
             self._min_value = np.min(new_output)
@@ -882,7 +893,7 @@ class LearnerND(BaseLearner):
         losses = self._losses if self.tri is not None else {}
         return max(losses.values()) if losses else float("inf")
 
-    def remove_unfinished(self):
+    def remove_unfinished(self) -> None:
         # XXX: implement this method
         self.pending_points = set()
         self._subtriangulations = {}
@@ -905,14 +916,18 @@ class LearnerND(BaseLearner):
         """
         hv = ensure_holoviews()
         if self.vdim > 1:
+            msg = "holoviews currently does not support"
             raise NotImplementedError(
-                "holoviews currently does not support",
+                msg,
                 "3D surface plots in bokeh.",
             )
         if self.ndim != 2:
-            raise NotImplementedError(
+            msg = (
                 "Only 2D plots are implemented: You can "
-                "plot a 2D slice with 'plot_slice'.",
+                "plot a 2D slice with 'plot_slice'."
+            )
+            raise NotImplementedError(
+                msg,
             )
         x, y = self._bbox
         lbrt = x[0], y[0], x[1], y[1]
@@ -973,8 +988,9 @@ class LearnerND(BaseLearner):
             if not self.data:
                 return hv.Scatter([]) * hv.Path([])
             elif self.vdim > 1:
+                msg = "multidimensional output not yet supported by `plot_slice`"
                 raise NotImplementedError(
-                    "multidimensional output not yet supported by `plot_slice`",
+                    msg,
                 )
             n = n or 201
             values = [
@@ -993,8 +1009,9 @@ class LearnerND(BaseLearner):
 
         elif plot_dim == 2:
             if self.vdim > 1:
+                msg = "holoviews currently does not support 3D surface plots in bokeh."
                 raise NotImplementedError(
-                    "holoviews currently does not support 3D surface plots in bokeh.",
+                    msg,
                 )
             if n is None:
                 # Calculate how many grid points are needed.
@@ -1025,7 +1042,8 @@ class LearnerND(BaseLearner):
 
             return im.opts(cmap="viridis")
         else:
-            raise ValueError("Only 1 or 2-dimensional plots can be generated.")
+            msg = "Only 1 or 2-dimensional plots can be generated."
+            raise ValueError(msg)
 
     def plot_3D(self, with_triangulation=False, return_fig=False):
         """Plot the learner's data in 3D using plotly.
@@ -1116,16 +1134,20 @@ class LearnerND(BaseLearner):
     def _get_iso(self, level=0.0, which="surface"):
         if which == "surface":
             if self.ndim != 3 or self.vdim != 1:
-                raise Exception(
+                msg = (
                     "Isosurface plotting is only supported"
-                    " for a 3D input and 1D output",
+                    " for a 3D input and 1D output"
+                )
+                raise Exception(
+                    msg,
                 )
             get_surface = True
             get_line = False
         elif which == "line":
             if self.ndim != 2 or self.vdim != 1:
+                msg = "Isoline plotting is only supported for a 2D input and 1D output"
                 raise Exception(
-                    "Isoline plotting is only supported for a 2D input and 1D output",
+                    msg,
                 )
             get_surface = False
             get_line = True
@@ -1176,10 +1198,13 @@ class LearnerND(BaseLearner):
             r_min = min(self.data[v] for v in self.tri.vertices)
             r_max = max(self.data[v] for v in self.tri.vertices)
 
-            raise ValueError(
+            msg = (
                 f"Could not draw isosurface for level={level}, as"
                 " this value is not inside the function range. Please choose"
-                f" a level strictly inside interval ({r_min}, {r_max})",
+                f" a level strictly inside interval ({r_min}, {r_max})"
+            )
+            raise ValueError(
+                msg,
             )
 
         return vertices, faces_or_lines
@@ -1207,10 +1232,7 @@ class LearnerND(BaseLearner):
 
         """
         hv = ensure_holoviews()
-        if n == -1:
-            plot = hv.Path([])
-        else:
-            plot = self.plot(n=n, tri_alpha=tri_alpha)
+        plot = hv.Path([]) if n == -1 else self.plot(n=n, tri_alpha=tri_alpha)
 
         if isinstance(level, Iterable):
             for lvl in level:
@@ -1320,6 +1342,6 @@ class LearnerND(BaseLearner):
     def _get_data(self):
         return deepcopy(self.__dict__)
 
-    def _set_data(self, state):
+    def _set_data(self, state) -> None:
         for k, v in state.items():
             setattr(self, k, v)

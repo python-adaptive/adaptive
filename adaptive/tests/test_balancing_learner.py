@@ -8,7 +8,7 @@ from adaptive.runner import simple
 strategies = ["loss", "loss_improvements", "npoints", "cycle"]
 
 
-def test_balancing_learner_loss_cache():
+def test_balancing_learner_loss_cache() -> None:
     learner = Learner1D(lambda x: x, bounds=(-1, 1))
     learner.tell(-1, -1)
     learner.tell(1, 1)
@@ -29,7 +29,7 @@ def test_balancing_learner_loss_cache():
 
 
 @pytest.mark.parametrize("strategy", strategies)
-def test_distribute_first_points_over_learners(strategy):
+def test_distribute_first_points_over_learners(strategy) -> None:
     for initial_points in [0, 3]:
         learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
         learner = BalancingLearner(learners, strategy=strategy)
@@ -44,7 +44,7 @@ def test_distribute_first_points_over_learners(strategy):
 
 
 @pytest.mark.parametrize("strategy", strategies)
-def test_ask_0(strategy):
+def test_ask_0(strategy) -> None:
     learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
     learner = BalancingLearner(learners, strategy=strategy)
     points, _ = learner.ask(0)
@@ -52,7 +52,7 @@ def test_ask_0(strategy):
 
 
 @pytest.mark.parametrize(
-    "strategy, goal_type, goal",
+    ("strategy", "goal_type", "goal"),
     [
         ("loss", "loss_goal", 0.1),
         ("loss_improvements", "loss_goal", 0.1),
@@ -60,7 +60,7 @@ def test_ask_0(strategy):
         ("cycle", "loss_goal", 0.1),
     ],
 )
-def test_strategies(strategy, goal_type, goal):
+def test_strategies(strategy, goal_type, goal) -> None:
     learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
     learner = BalancingLearner(learners, strategy=strategy)
     simple(learner, **{goal_type: goal})

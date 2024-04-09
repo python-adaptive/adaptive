@@ -18,7 +18,7 @@ from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import assign_defaults, cache_latest, restore
 
 try:
-    import pandas
+    import pandas as pd
 
     with_pandas = True
 
@@ -403,7 +403,8 @@ class IntegratorLearner(BaseLearner):
 
     def tell(self, point: float, value: float) -> None:
         if point not in self.x_mapping:
-            raise ValueError(f"Point {point} doesn't belong to any interval")
+            msg = f"Point {point} doesn't belong to any interval"
+            raise ValueError(msg)
         self.data[point] = value
         self.pending_points.discard(point)
 
@@ -434,11 +435,11 @@ class IntegratorLearner(BaseLearner):
                         assert ival in self.ivals
                         self.priority_split.append(ival)
 
-    def tell_pending(self):
+    def tell_pending(self) -> None:
         pass
 
     def propagate_removed(self, ival: _Interval) -> None:
-        def _propagate_removed_down(ival):
+        def _propagate_removed_down(ival) -> None:
             ival.removed = True
             self.ivals.discard(ival)
 
@@ -474,7 +475,8 @@ class IntegratorLearner(BaseLearner):
             try:
                 self._fill_stack()
             except ValueError:
-                raise RuntimeError("No way to improve the integral estimate.") from None
+                msg = "No way to improve the integral estimate."
+                raise RuntimeError(msg) from None
             new_points, new_loss_improvements = self.pop_from_stack(n_left)
             points += new_points
             loss_improvements += new_loss_improvements
@@ -490,7 +492,7 @@ class IntegratorLearner(BaseLearner):
         ]
         return points, loss_improvements
 
-    def remove_unfinished(self):
+    def remove_unfinished(self) -> None:
         pass
 
     def _fill_stack(self) -> list[float]:
@@ -580,7 +582,7 @@ class IntegratorLearner(BaseLearner):
         function_prefix: str = "function.",
         x_name: str = "x",
         y_name: str = "y",
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
         Parameters
@@ -607,8 +609,9 @@ class IntegratorLearner(BaseLearner):
 
         """
         if not with_pandas:
-            raise ImportError("pandas is not installed.")
-        df = pandas.DataFrame(sorted(self.data.items()), columns=[x_name, y_name])
+            msg = "pandas is not installed."
+            raise ImportError(msg)
+        df = pd.DataFrame(sorted(self.data.items()), columns=[x_name, y_name])
         df.attrs["inputs"] = [x_name]
         df.attrs["output"] = y_name
         if with_default_function_args:
@@ -617,7 +620,7 @@ class IntegratorLearner(BaseLearner):
 
     def load_dataframe(  # type: ignore[override]
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         x_name: str = "x",
@@ -659,7 +662,7 @@ class IntegratorLearner(BaseLearner):
             self.first_ival,
         )
 
-    def _set_data(self, data):
+    def _set_data(self, data) -> None:
         (
             self.priority_split,
             self.data,

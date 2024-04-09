@@ -50,7 +50,8 @@ def identity_function(x):
 
 def datasaver(f, learner_type, learner_kwargs):
     return DataSaver(
-        learner=learner_type(f, **learner_kwargs), arg_picker=identity_function
+        learner=learner_type(f, **learner_kwargs),
+        arg_picker=identity_function,
     )
 
 
@@ -88,10 +89,12 @@ learners = [
 ]
 
 
-@pytest.mark.parametrize("learner_type, learner_kwargs, serializer, f", learners)
-def test_serialization_for(learner_type, learner_kwargs, serializer, f):
+@pytest.mark.parametrize(
+    ("learner_type", "learner_kwargs", "serializer", "f"),
+    learners,
+)
+def test_serialization_for(learner_type, learner_kwargs, serializer, f) -> None:
     """Test serializing a learner using different serializers."""
-
     learner = learner_type(f, **learner_kwargs)
 
     simple(learner, goal=goal_1)

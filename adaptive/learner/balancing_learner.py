@@ -24,7 +24,7 @@ else:
 from typing import Literal
 
 try:
-    import pandas
+    import pandas as pd
 
     with_pandas = True
 except ModuleNotFoundError:
@@ -94,6 +94,7 @@ class BalancingLearner(BaseLearner):
     learner) it may be that the loss cannot be compared *even between learners
     of the same type*. In this case the `~adaptive.BalancingLearner` will
     behave in an undefined way. Change the `strategy` in that case.
+
     """
 
     def __init__(
@@ -116,8 +117,9 @@ class BalancingLearner(BaseLearner):
         self._cdims_default = cdims
 
         if len({learner.__class__ for learner in self.learners}) > 1:
+            msg = "A BalacingLearner can handle only one type of learners."
             raise TypeError(
-                "A BalacingLearner can handle only one type" " of learners."
+                msg,
             )
 
         self.strategy: STRATEGY_TYPE = strategy
@@ -153,8 +155,9 @@ class BalancingLearner(BaseLearner):
         if hasattr(self.learners[0], "nsamples"):
             return sum(lrn.nsamples for lrn in self.learners)
         else:
+            msg = f"{type(self.learners[0])} as no attribute called `nsamples`."
             raise AttributeError(
-                f"{type(self.learners[0])} as no attribute called `nsamples`."
+                msg,
             )
 
     @property
@@ -165,7 +168,8 @@ class BalancingLearner(BaseLearner):
         the child learners, the number of points per learner, using 'npoints',
         or by going through all learners one by one using 'cycle'.
         One can dynamically change the strategy while the simulation is
-        running by changing the ``learner.strategy`` attribute."""
+        running by changing the ``learner.strategy`` attribute.
+        """
         return self._strategy
 
     @strategy.setter
@@ -181,13 +185,17 @@ class BalancingLearner(BaseLearner):
             self._ask_and_tell = self._ask_and_tell_based_on_cycle
             self._cycle = itertools.cycle(range(len(self.learners)))
         else:
-            raise ValueError(
+            msg = (
                 'Only strategy="loss_improvements", strategy="loss",'
                 ' strategy="npoints", or strategy="cycle" is implemented.'
             )
+            raise ValueError(
+                msg,
+            )
 
     def _ask_and_tell_based_on_loss_improvements(
-        self, n: int
+        self,
+        n: int,
     ) -> tuple[list[tuple[int, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
         total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
@@ -199,7 +207,7 @@ class BalancingLearner(BaseLearner):
                     self._ask_cache[index] = learner.ask(n=1, tell_pending=False)
                 points, loss_improvements = self._ask_cache[index]
                 to_select.append(
-                    ((index, points[0]), (loss_improvements[0], -total_points[index]))
+                    ((index, points[0]), (loss_improvements[0], -total_points[index])),
                 )
 
             # Choose the optimal improvement.
@@ -212,14 +220,16 @@ class BalancingLearner(BaseLearner):
         return points, loss_improvements
 
     def _ask_and_tell_based_on_loss(
-        self, n: int
+        self,
+        n: int,
     ) -> tuple[list[tuple[int, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
         total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
         for _ in range(n):
             losses = self._losses(real=False)
             index, _ = max(
-                enumerate(zip(losses, (-n for n in total_points))), key=itemgetter(1)
+                enumerate(zip(losses, (-n for n in total_points))),
+                key=itemgetter(1),
             )
             total_points[index] += 1
 
@@ -235,7 +245,8 @@ class BalancingLearner(BaseLearner):
         return points, loss_improvements
 
     def _ask_and_tell_based_on_npoints(
-        self, n: Int
+        self,
+        n: Int,
     ) -> tuple[list[tuple[Int, Any]], list[float]]:
         selected = []  # tuples ((learner_index, point), loss_improvement)
         total_points = [lrn.npoints + len(lrn.pending_points) for lrn in self.learners]
@@ -253,7 +264,8 @@ class BalancingLearner(BaseLearner):
         return points, loss_improvements
 
     def _ask_and_tell_based_on_cycle(
-        self, n: int
+        self,
+        n: int,
     ) -> tuple[list[tuple[Int, Any]], list[float]]:
         points, loss_improvements = [], []
         for _ in range(n):
@@ -266,7 +278,9 @@ class BalancingLearner(BaseLearner):
         return points, loss_improvements
 
     def ask(
-        self, n: int, tell_pending: bool = True
+        self,
+        n: int,
+        tell_pending: bool = True,
     ) -> tuple[list[tuple[Int, Any]], list[float]]:
         """Chose points for learners."""
         if n == 0:
@@ -348,6 +362,7 @@ class BalancingLearner(BaseLearner):
         dm : `holoviews.core.DynamicMap` (default) or `holoviews.core.HoloMap`
              A `DynamicMap` ``(dynamic=True)`` or `HoloMap`
              ``(dynamic=False)`` with sliders that are defined by `cdims`.
+
         """
         hv = ensure_holoviews()
         cdims = cdims or self._cdims_default
@@ -438,6 +453,7 @@ class BalancingLearner(BaseLearner):
         -----
         The order of the child learners inside `learner.learners` is the same
         as ``adaptive.utils.named_product(**combos)``.
+
         """
         learners = []
         arguments = named_product(**combos)
@@ -465,22 +481,26 @@ class BalancingLearner(BaseLearner):
         ------
         ImportError
             If `pandas` is not installed.
+
         """
         if not with_pandas:
-            raise ImportError("pandas is not installed.")
+            msg = "pandas is not installed."
+            raise ImportError(msg)
         dfs = []
         for i, learner in enumerate(self.learners):
             df = learner.to_dataframe(**kwargs)
             cols = list(df.columns)
             df[index_name] = i
-            df = df[[index_name] + cols]
+            df = df[[index_name, *cols]]
             dfs.append(df)
-        df = pandas.concat(dfs, axis=0, ignore_index=True)
-        return df
+        return pd.concat(dfs, axis=0, ignore_index=True)
 
     def load_dataframe(  # type: ignore[override]
-        self, df: pandas.DataFrame, index_name: str = "learner_index", **kwargs
-    ):
+        self,
+        df: pd.DataFrame,
+        index_name: str = "learner_index",
+        **kwargs,
+    ) -> None:
         """Load the data from a `pandas.DataFrame` into the child learners.
 
         Parameters
@@ -491,6 +511,7 @@ class BalancingLearner(BaseLearner):
             The ``index_name`` used in `to_dataframe`, by default "learner_index".
         **kwargs : dict
             Keyword arguments passed to each ``child_learner.load_dataframe(**kwargs)``.
+
         """
         for i, gr in df.groupby(index_name):
             self.learners[i].load_dataframe(gr, **kwargs)
@@ -529,6 +550,7 @@ class BalancingLearner(BaseLearner):
         >>> runner = adaptive.Runner(learner)
         >>> # Then save
         >>> learner.save(combo_fname)  # use 'load' in the same way
+
         """
         if isinstance(fname, Iterable):
             for lrn, _fname in zip(self.learners, fname):
@@ -557,6 +579,7 @@ class BalancingLearner(BaseLearner):
         Example
         -------
         See the example in the `BalancingLearner.save` doc-string.
+
         """
         if isinstance(fname, Iterable):
             for lrn, _fname in zip(self.learners, fname):
@@ -568,7 +591,7 @@ class BalancingLearner(BaseLearner):
     def _get_data(self) -> list[Any]:
         return [lrn._get_data() for lrn in self.learners]
 
-    def _set_data(self, data: list[Any]):
+    def _set_data(self, data: list[Any]) -> None:
         for lrn, _data in zip(self.learners, data):
             lrn._set_data(_data)
 

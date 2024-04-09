@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import collections
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 import numpy as np
 from skopt import Optimizer
@@ -11,7 +11,7 @@ from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import cache_latest
 
 if TYPE_CHECKING:
-    import pandas
+    import pandas as pd
 
 
 class SKOptLearner(Optimizer, BaseLearner):
@@ -30,7 +30,7 @@ class SKOptLearner(Optimizer, BaseLearner):
 
     """
 
-    def __init__(self, function, **kwargs):
+    def __init__(self, function, **kwargs) -> None:
         self.function = function
         self.pending_points = set()
         self.data = collections.OrderedDict()
@@ -41,7 +41,7 @@ class SKOptLearner(Optimizer, BaseLearner):
         """Return a new `~adaptive.SKOptLearner` without the data."""
         return SKOptLearner(self.function, **self._kwargs)
 
-    def tell(self, x, y, fit=True):
+    def tell(self, x, y, fit=True) -> None:
         if isinstance(x, collections.abc.Iterable):
             self.pending_points.discard(tuple(x))
             self.data[tuple(x)] = y
@@ -51,12 +51,12 @@ class SKOptLearner(Optimizer, BaseLearner):
             self.data[x] = y
             super().tell([x], y, fit)
 
-    def tell_pending(self, x):
+    def tell_pending(self, x) -> None:
         # 'skopt.Optimizer' takes care of points we
         # have not got results for.
         self.pending_points.add(tuple(x))
 
-    def remove_unfinished(self):
+    def remove_unfinished(self) -> None:
         pass
 
     @cache_latest
@@ -72,9 +72,12 @@ class SKOptLearner(Optimizer, BaseLearner):
 
     def ask(self, n, tell_pending=True):
         if not tell_pending:
-            raise NotImplementedError(
+            msg = (
                 "Asking points is an irreversible "
-                "action, so use `ask(n, tell_pending=True`.",
+                "action, so use `ask(n, tell_pending=True`."
+            )
+            raise NotImplementedError(
+                msg,
             )
         points = super().ask(n)
         # TODO: Choose a better estimate for the loss improvement.
@@ -91,7 +94,8 @@ class SKOptLearner(Optimizer, BaseLearner):
     def plot(self, nsamples=200):
         hv = ensure_holoviews()
         if self.space.n_dims > 1:
-            raise ValueError("Can only plot 1D functions")
+            msg = "Can only plot 1D functions"
+            raise ValueError(msg)
         bounds = self.space.bounds[0]
         if not self.Xi:
             p = hv.Scatter([]) * hv.Curve([]) * hv.Area([])
@@ -124,7 +128,7 @@ class SKOptLearner(Optimizer, BaseLearner):
     def _get_data(self):
         return [x[0] for x in self.Xi], self.yi
 
-    def _set_data(self, data):
+    def _set_data(self, data) -> None:
         xs, ys = data
         self.tell_many(xs, ys)
 
@@ -134,7 +138,7 @@ class SKOptLearner(Optimizer, BaseLearner):
         function_prefix: str = "function.",
         seed_name: str = "seed",
         y_name: str = "y",
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
         Parameters
@@ -161,12 +165,12 @@ class SKOptLearner(Optimizer, BaseLearner):
 
     def load_dataframe(  # type: ignore[override]
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         seed_name: str = "seed",
         y_name: str = "y",
-    ):
+    ) -> NoReturn:
         """Load data from a `pandas.DataFrame`.
 
         If ``with_default_function_args`` is True, then ``learner.function``'s
