@@ -58,6 +58,10 @@ testing = [
     "pre_commit",
     "typeguard",
 ]
+dev = [
+    "ruff",
+    "pre-commit",
+]
 
 [project.urls]
 homepage = "https://adaptive.readthedocs.io/"
