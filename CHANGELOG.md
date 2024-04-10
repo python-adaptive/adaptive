@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased](https://github.com/python-adaptive/adaptive/tree/HEAD)
+## [v.1.2.0](https://github.com/python-adaptive/adaptive/tree/v1.2.0) (2024-04-10)
 
 [Full Changelog](https://github.com/python-adaptive/adaptive/compare/v1.1.0...HEAD)
 
