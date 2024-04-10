@@ -114,6 +114,8 @@ ignore = [
     "TD003",   # Missing issue link on the line following this TODO
     "FIX002",  # Line contains TODO, consider resolving the issue
     "FBT001",  # Boolean-typed positional argument in function definition
+    "PLR2004", # Magic value used in comparison
+    "PLR0913", # Too many arguments in function definition
 ]
 select = ["ALL"]
 
@@ -123,10 +125,13 @@ max-complexity = 18
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
     "SLF001",
-    "PLR2004", # Magic value used in comparison
 ]
 "ci/*" = ["INP001"]
 "tests/test_examples.py" = ["E501"]
+"docs/logo.py"  = ["ALL"]
+"ipynb_filter.py"  = ["ALL"]
+"benchmarks/*"  = ["ALL"]
+
 
 [tool.versioningit]
 

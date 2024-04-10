@@ -164,14 +164,14 @@ class SequentialExecutor(concurrent.Executor):
         fut: concurrent.Future = concurrent.Future()
         try:
             fut.set_result(fn(*args, **kwargs))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             fut.set_exception(e)
         return fut
 
     def map(self, fn, *iterable, timeout=None, chunksize=1):
         return map(fn, iterable)
 
-    def shutdown(self, wait=True) -> None:
+    def shutdown(self, wait: bool = True) -> None:
         pass
 
 
