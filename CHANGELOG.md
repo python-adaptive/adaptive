@@ -1,4 +1,4 @@
-# Changelog
+# 🗞️ Changelog
 
 ## [v.1.2.0](https://github.com/python-adaptive/adaptive/tree/v1.2.0) (2024-04-10)
 
