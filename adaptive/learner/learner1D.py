@@ -4,7 +4,6 @@ import collections.abc
 import itertools
 import math
 import sys
-from collections.abc import Sequence
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
@@ -17,7 +16,6 @@ from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
 from adaptive.learner.learnerND import volume
 from adaptive.learner.triangulation import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
-from adaptive.types import Float, Int, Real
 from adaptive.utils import (
     assign_defaults,
     cache_latest,
@@ -31,7 +29,7 @@ else:
 
 
 try:
-    import pandas
+    import pandas as pd
 
     with_pandas = True
 
@@ -42,6 +40,10 @@ if TYPE_CHECKING:
     # -- types --
 
     # Commonly used types
+    from collections.abc import Sequence
+
+    from adaptive.types import Float, Int, Real
+
     Interval: TypeAlias = Union[tuple[float, float], tuple[float, float, int]]
     NeighborsType: TypeAlias = SortedDict[float, list[Optional[float]]]
 
@@ -49,7 +51,10 @@ if TYPE_CHECKING:
     XsType0: TypeAlias = tuple[float, float]
     YsType0: TypeAlias = Union[tuple[float, float], tuple[np.ndarray, np.ndarray]]
     XsType1: TypeAlias = tuple[
-        Optional[float], Optional[float], Optional[float], Optional[float]
+        Optional[float],
+        Optional[float],
+        Optional[float],
+        Optional[float],
     ]
     YsType1: TypeAlias = Union[
         tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
@@ -62,7 +67,8 @@ if TYPE_CHECKING:
     ]
     XsTypeN: TypeAlias = tuple[Optional[float], ...]
     YsTypeN: TypeAlias = Union[
-        tuple[Optional[float], ...], tuple[Optional[np.ndarray], ...]
+        tuple[Optional[float], ...],
+        tuple[Optional[np.ndarray], ...],
     ]
 
 
@@ -92,9 +98,9 @@ def uniform_loss(xs: XsType0, ys: YsType0) -> Float:
     ...                              bounds=(-1, 1),
     ...                              loss_per_interval=uniform_sampling_1d)
     >>>
+
     """
-    dx = xs[1] - xs[0]
-    return dx
+    return xs[1] - xs[0]
 
 
 @uses_nth_neighbors(0)
@@ -141,7 +147,8 @@ def triangle_loss(xs: XsType1, ys: YsType1) -> Float:
 
 
 def resolution_loss_function(
-    min_length: Real = 0, max_length: Real = 1
+    min_length: Real = 0,
+    max_length: Real = 1,
 ) -> Callable[[XsType0, YsType0], Float]:
     """Loss function that is similar to the `default_loss` function, but you
     can set the maximum and minimum size of an interval.
@@ -162,6 +169,7 @@ def resolution_loss_function(
     >>>
     >>> loss = resolution_loss_function(min_length=0.01, max_length=1)
     >>> learner = adaptive.Learner1D(f, bounds=(-1, -1), loss_per_interval=loss)
+
     """
 
     @uses_nth_neighbors(0)
@@ -173,14 +181,15 @@ def resolution_loss_function(
         if loss > max_length:
             # Return infinite such that this interval will be picked
             return np.inf
-        loss = default_loss(xs, ys)
-        return loss
+        return default_loss(xs, ys)
 
     return resolution_loss
 
 
 def curvature_loss_function(
-    area_factor: Real = 1, euclid_factor: Real = 0.02, horizontal_factor: Real = 0.02
+    area_factor: Real = 1,
+    euclid_factor: Real = 0.02,
+    horizontal_factor: Real = 0.02,
 ) -> Callable[[XsType1, YsType1], Float]:
     # XXX: add a doc-string
     @uses_nth_neighbors(1)
@@ -203,7 +212,8 @@ def curvature_loss_function(
 def linspace(x_left: Real, x_right: Real, n: Int) -> list[Float]:
     """This is equivalent to
     'np.linspace(x_left, x_right, n, endpoint=False)[1:]',
-    but it is 15-30 times faster for small 'n'."""
+    but it is 15-30 times faster for small 'n'.
+    """
     if n == 1:
         # This is just an optimization
         return []
@@ -223,7 +233,9 @@ def _get_neighbors_from_array(xs: np.ndarray) -> NeighborsType:
 
 
 def _get_intervals(
-    x: float, neighbors: NeighborsType, nth_neighbors: int
+    x: float,
+    neighbors: NeighborsType,
+    nth_neighbors: int,
 ) -> list[tuple[float, float]]:
     nn = nth_neighbors
     i = neighbors.index(x)
@@ -275,6 +287,7 @@ class Learner1D(BaseLearner):
     If `loss_per_interval` doesn't  have such an attribute, it's assumed that is
     uses **no** neighboring intervals. Also see the `uses_nth_neighbors`
     decorator for more information.
+
     """
 
     def __init__(
@@ -282,11 +295,12 @@ class Learner1D(BaseLearner):
         function: Callable[[Real], Float | np.ndarray],
         bounds: tuple[Real, Real],
         loss_per_interval: Callable[[XsTypeN, YsTypeN], Float] | None = None,
-    ):
+    ) -> None:
         self.function = function  # type: ignore
 
         if loss_per_interval is not None and hasattr(
-            loss_per_interval, "nth_neighbors"
+            loss_per_interval,
+            "nth_neighbors",
         ):
             self.nth_neighbors = loss_per_interval.nth_neighbors
         else:
@@ -362,7 +376,7 @@ class Learner1D(BaseLearner):
         function_prefix: str = "function.",
         x_name: str = "x",
         y_name: str = "y",
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
         Parameters
@@ -386,11 +400,13 @@ class Learner1D(BaseLearner):
         ------
         ImportError
             If `pandas` is not installed.
+
         """
         if not with_pandas:
-            raise ImportError("pandas is not installed.")
+            msg = "pandas is not installed."
+            raise ImportError(msg)
         xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
-        df = pandas.DataFrame(xs, columns=[x_name])
+        df = pd.DataFrame(xs, columns=[x_name])
         df[y_name] = ys
         df.attrs["inputs"] = [x_name]
         df.attrs["output"] = y_name
@@ -400,7 +416,7 @@ class Learner1D(BaseLearner):
 
     def load_dataframe(  # type: ignore[override]
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         x_name: str = "x",
@@ -425,11 +441,14 @@ class Learner1D(BaseLearner):
             The ``x_name`` used in ``to_dataframe``, by default "x"
         y_name : str, optional
             The ``y_name`` used in ``to_dataframe``, by default "y"
+
         """
         self.tell_many(df[x_name].values, df[y_name].values)
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
-                self.function, df, function_prefix
+                self.function,
+                df,
+                function_prefix,
             )
 
     @property
@@ -464,7 +483,8 @@ class Learner1D(BaseLearner):
         return self.neighbors.keys()[ind]
 
     def _get_loss_in_interval(self, x_left: float, x_right: float) -> float:
-        assert x_left is not None and x_right is not None
+        assert x_left is not None
+        assert x_right is not None
 
         if x_right - x_left < self._dx_eps:
             return 0
@@ -484,7 +504,9 @@ class Learner1D(BaseLearner):
         return self.loss_per_interval(xs_scaled, ys_scaled)
 
     def _update_interpolated_loss_in_interval(
-        self, x_left: float, x_right: float
+        self,
+        x_left: float,
+        x_right: float,
     ) -> None:
         if x_left is None or x_right is None:
             return
@@ -502,7 +524,7 @@ class Learner1D(BaseLearner):
             a = b
 
     def _update_losses(self, x: float, real: bool = True) -> None:
-        """Update all losses that depend on x"""
+        """Update all losses that depend on x."""
         # When we add a new point x, we should update the losses
         # (x_left, x_right) are the "real" neighbors of 'x'.
         x_left, x_right = self._find_neighbors(x, self.neighbors)
@@ -592,9 +614,12 @@ class Learner1D(BaseLearner):
             # The point is already evaluated before
             return
         if y is None:
-            raise TypeError(
+            msg = (
                 "Y-value may not be None, use learner.tell_pending(x)"
                 "to indicate that this value is currently being calculated"
+            )
+            raise TypeError(
+                msg,
             )
 
         # either it is a float/int, if not, try casting to a np.array
@@ -730,7 +755,8 @@ class Learner1D(BaseLearner):
 
     def _ask_points_without_adding(self, n: int) -> tuple[list[float], list[float]]:
         """Return 'n' points that are expected to maximally reduce the loss.
-        Without altering the state of the learner"""
+        Without altering the state of the learner.
+        """
         # Find out how to divide the n points over the intervals
         # by finding  positive integer n_i that minimize max(L_i / n_i) subject
         # to a constraint that sum(n_i) = n + N, with N the total number of
@@ -789,13 +815,13 @@ class Learner1D(BaseLearner):
         points = list(
             itertools.chain.from_iterable(
                 linspace(x_l, x_r, n) for (x_l, x_r, n) in quals
-            )
+            ),
         )
 
         loss_improvements = list(
             itertools.chain.from_iterable(
                 itertools.repeat(quals[x0, x1, n], n - 1) for (x0, x1, n) in quals
-            )
+            ),
         )
 
         # add the missing bounds
@@ -805,7 +831,9 @@ class Learner1D(BaseLearner):
         return points, loss_improvements
 
     def _loss(
-        self, mapping: dict[Interval, float], ival: Interval
+        self,
+        mapping: dict[Interval, float],
+        ival: Interval,
     ) -> tuple[float, Interval]:
         loss = mapping[ival]
         return finite_loss(ival, loss, self._scale[0])
@@ -822,9 +850,11 @@ class Learner1D(BaseLearner):
         -------
         plot : `holoviews.Overlay`
             Plot of the evaluated data.
+
         """
         if scatter_or_line not in ("scatter", "line"):
-            raise ValueError("scatter_or_line must be 'scatter' or 'line'")
+            msg = "scatter_or_line must be 'scatter' or 'line'"
+            raise ValueError(msg)
         hv = ensure_holoviews()
 
         xs, ys = zip(*sorted(self.data.items())) if self.data else ([], [])
@@ -882,13 +912,13 @@ def loss_manager(x_scale: float) -> ItemSortedDict[Interval, float]:
         loss, ival = finite_loss(ival, loss, x_scale)
         return -loss, ival
 
-    sorted_dict = ItemSortedDict(sort_key)
-    return sorted_dict
+    return ItemSortedDict(sort_key)
 
 
 def finite_loss(ival: Interval, loss: float, x_scale: float) -> tuple[float, Interval]:
     """Get the so-called finite_loss of an interval in order to be able to
-    sort intervals that have infinite loss."""
+    sort intervals that have infinite loss.
+    """
     # If the loss is infinite we return the
     # distance between the two points.
     if math.isinf(loss) or math.isnan(loss):

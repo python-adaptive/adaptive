@@ -27,11 +27,11 @@ from adaptive.runner import (
 OPERATING_SYSTEM = platform.system()
 
 
-def blocking_runner(learner, **kw):
+def blocking_runner(learner, **kw) -> None:
     BlockingRunner(learner, executor=SequentialExecutor(), **kw)
 
 
-def async_runner(learner, **kw):
+def async_runner(learner, **kw) -> None:
     runner = AsyncRunner(learner, executor=SequentialExecutor(), **kw)
     runner.block_until_done()
 
@@ -40,7 +40,7 @@ runners = [simple, blocking_runner, async_runner]
 
 
 @pytest.mark.parametrize("runner", runners)
-def test_simple(runner):
+def test_simple(runner) -> None:
     """Test that the runners actually run."""
 
     def f(x):
@@ -52,7 +52,7 @@ def test_simple(runner):
 
 
 @pytest.mark.parametrize("runner", runners)
-def test_nonconforming_output(runner):
+def test_nonconforming_output(runner) -> None:
     """Test that using a runner works with a 2D learner, even when the
     learned function outputs a 1-vector. This tests against the regression
     flagged in https://github.com/python-adaptive/adaptive/issues/81.
@@ -64,7 +64,7 @@ def test_nonconforming_output(runner):
     runner(Learner2D(f, ((-1, 1), (-1, 1))), npoints_goal=10)
 
 
-def test_aync_def_function():
+def test_aync_def_function() -> None:
     async def f(x):
         return x
 
@@ -87,7 +87,7 @@ def linear(x):
     return x
 
 
-def test_concurrent_futures_executor():
+def test_concurrent_futures_executor() -> None:
     from concurrent.futures import ProcessPoolExecutor
 
     BlockingRunner(
@@ -97,7 +97,7 @@ def test_concurrent_futures_executor():
     )
 
 
-def test_stop_after_goal():
+def test_stop_after_goal() -> None:
     seconds_to_wait = 0.2  # don't make this too large or the test will take ages
     start_time = time.time()
     BlockingRunner(Learner1D(linear, (-1, 1)), goal=stop_after(seconds=seconds_to_wait))
@@ -111,7 +111,7 @@ def test_stop_after_goal():
     reason="Gets stuck in CI",
 )
 @pytest.mark.skipif(OPERATING_SYSTEM == "Darwin", reason="Cannot stop ipcluster")
-def test_ipyparallel_executor():
+def test_ipyparallel_executor() -> None:
     from ipyparallel import Client
 
     if OPERATING_SYSTEM == "Windows":
@@ -128,7 +128,8 @@ def test_ipyparallel_executor():
     assert learner.npoints > 0
 
     if not child.terminate(force=True):
-        raise RuntimeError("Could not stop ipcluster")
+        msg = "Could not stop ipcluster"
+        raise RuntimeError(msg)
 
 
 @pytest.mark.timeout(60)
@@ -136,7 +137,7 @@ def test_ipyparallel_executor():
 @pytest.mark.skipif(OPERATING_SYSTEM == "Windows", reason="XXX: seems to always fail")
 @pytest.mark.skipif(OPERATING_SYSTEM == "Darwin", reason="XXX: intermittently fails")
 @pytest.mark.skipif(OPERATING_SYSTEM == "Linux", reason="XXX: intermittently fails")
-def test_distributed_executor():
+def test_distributed_executor() -> None:
     from distributed import Client
 
     learner = Learner1D(linear, (-1, 1))
@@ -146,21 +147,24 @@ def test_distributed_executor():
     assert learner.npoints > 0
 
 
-def test_loky_executor(loky_executor):
+def test_loky_executor(loky_executor) -> None:
     learner = Learner1D(lambda x: x, (-1, 1))
     BlockingRunner(
-        learner, npoints_goal=10, executor=loky_executor, shutdown_executor=True
+        learner,
+        npoints_goal=10,
+        executor=loky_executor,
+        shutdown_executor=True,
     )
     assert learner.npoints > 0
 
 
-def test_default_executor():
+def test_default_executor() -> None:
     learner = Learner1D(linear, (-1, 1))
     runner = AsyncRunner(learner, npoints_goal=10)
     runner.block_until_done()
 
 
-def test_auto_goal():
+def test_auto_goal() -> None:
     learner = Learner1D(linear, (-1, 1))
     simple(learner, auto_goal(npoints=4))
     assert learner.npoints == 4
@@ -186,7 +190,8 @@ def test_auto_goal():
     learner2 = Learner1D(linear, (-2, 2))
     balancing_learner = BalancingLearner([learner1, learner2])
     simple(balancing_learner, auto_goal(npoints=4, learner=balancing_learner))
-    assert learner1.npoints == 4 and learner2.npoints == 4
+    assert learner1.npoints == 4
+    assert learner2.npoints == 4
 
     learner1 = Learner1D(linear, bounds=(0, 1))
     learner1 = DataSaver(learner1, lambda x: x)
@@ -194,7 +199,8 @@ def test_auto_goal():
     learner2 = DataSaver(learner2, lambda x: x)
     balancing_learner = BalancingLearner([learner1, learner2])
     simple(balancing_learner, auto_goal(npoints=10, learner=balancing_learner))
-    assert learner1.npoints == 10 and learner2.npoints == 10
+    assert learner1.npoints == 10
+    assert learner2.npoints == 10
 
     learner = Learner1D(linear, (-1, 1))
     t_start = time.time()

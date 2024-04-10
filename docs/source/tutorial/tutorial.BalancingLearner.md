@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: python3
   name: python3
@@ -88,7 +88,10 @@ combos = {
 }
 
 learner = adaptive.BalancingLearner.from_product(
-    jacobi, adaptive.Learner1D, {"bounds": (0, 1)}, combos
+    jacobi,
+    adaptive.Learner1D,
+    {"bounds": (0, 1)},
+    combos,
 )
 
 runner = adaptive.BlockingRunner(learner, loss_goal=0.01)

@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import functools
 from collections import OrderedDict
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from adaptive.learner.base_learner import BaseLearner, LearnerType
 from adaptive.utils import copy_docstring_from
 
-try:
-    import pandas
+if TYPE_CHECKING:
+    import pandas as pd
 
+try:
     with_pandas = True
 
 except ModuleNotFoundError:
@@ -38,6 +39,7 @@ class DataSaver(BaseLearner):
     >>> from operator import itemgetter
     >>> _learner = Learner1D(f, bounds=(-1.0, 1.0))
     >>> learner = DataSaver(_learner, arg_picker=itemgetter('y'))
+
     """
 
     def __init__(self, learner: LearnerType, arg_picker: Callable) -> None:
@@ -81,7 +83,7 @@ class DataSaver(BaseLearner):
         function_prefix: str = "function.",
         extra_data_name: str = "extra_data",
         **kwargs: Any,
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a concatenated `pandas.DataFrame` from child learners.
 
         Parameters
@@ -99,9 +101,11 @@ class DataSaver(BaseLearner):
         ------
         ImportError
             If `pandas` is not installed.
+
         """
         if not with_pandas:
-            raise ImportError("pandas is not installed.")
+            msg = "pandas is not installed."
+            raise ImportError(msg)
         df = self.learner.to_dataframe(
             with_default_function_args=with_default_function_args,
             function_prefix=function_prefix,
@@ -115,7 +119,7 @@ class DataSaver(BaseLearner):
 
     def load_dataframe(  # type: ignore[override]
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         extra_data_name: str = "extra_data",
@@ -138,6 +142,7 @@ class DataSaver(BaseLearner):
             be ``input_names=('x', 'y')``.
         **kwargs : dict
             Keyword arguments passed to each ``child_learner.load_dataframe(**kwargs)``.
+
         """
         self.learner.load_dataframe(
             df,
@@ -146,7 +151,7 @@ class DataSaver(BaseLearner):
             **kwargs,
         )
         keys = df.attrs.get("inputs", list(input_names))
-        for _, x in df[keys + [extra_data_name]].iterrows():
+        for _, x in df[[*keys, extra_data_name]].iterrows():
             key = _to_key(x[:-1])
             self.extra_data[key] = x[-1]
 
@@ -216,5 +221,6 @@ def make_datasaver(learner_type, arg_picker):
     ...     arg_picker=itemgetter('y'))
     >>> learner = adaptive.BalancingLearner.from_product(
     ...     jacobi, learner_type, dict(bounds=(0, 1)), combos)
+
     """
     return functools.partial(_ds, learner_type, arg_picker)

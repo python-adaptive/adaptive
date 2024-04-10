@@ -4,13 +4,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-execution:
-  timeout: 300
 ---
 
 ```{code-cell} ipython3
@@ -197,7 +195,7 @@ def save_webm(fname, fnames):
         "-y",
         fname,
     ]
-    return subprocess.run(args, capture_output=True)
+    return subprocess.run(args, capture_output=True, check=False)
 
 
 if __name__ == "__main__":

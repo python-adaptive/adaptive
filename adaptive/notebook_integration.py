@@ -13,12 +13,15 @@ _ipywidgets_enabled = False
 _plotly_enabled = False
 
 
-def notebook_extension(*, _inline_js=True):
+def notebook_extension(*, _inline_js=True) -> None:
     """Enable ipywidgets, holoviews, and asyncio notebook integration."""
     if not in_ipynb():
-        raise RuntimeError(
+        msg = (
             '"adaptive.notebook_extension()" may only be run '
             "from a Jupyter notebook."
+        )
+        raise RuntimeError(
+            msg,
         )
 
     global _async_enabled, _holoviews_enabled, _ipywidgets_enabled
@@ -61,8 +64,9 @@ def ensure_holoviews():
     try:
         return importlib.import_module("holoviews")
     except ModuleNotFoundError:
+        msg = "holoviews is not installed; plotting is disabled."
         raise RuntimeError(
-            "holoviews is not installed; plotting is disabled."
+            msg,
         ) from None
 
 
@@ -81,7 +85,8 @@ def ensure_plotly():
             _plotly_enabled = True
         return plotly
     except ModuleNotFoundError as e:
-        raise RuntimeError("plotly is not installed; plotting is disabled.") from e
+        msg = "plotly is not installed; plotting is disabled."
+        raise RuntimeError(msg) from e
 
 
 def in_ipynb() -> bool:
@@ -119,11 +124,15 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=T
     -------
     dm : `holoviews.core.DynamicMap`
         The plot that automatically updates every `update_interval`.
+
     """
     if not _holoviews_enabled:
-        raise RuntimeError(
+        msg = (
             "Live plotting is not enabled; did you run "
             "'adaptive.notebook_extension()'?"
+        )
+        raise RuntimeError(
+            msg,
         )
 
     import holoviews as hv
@@ -150,15 +159,16 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=T
         dm = dm.map(lambda obj: obj.opts(framewise=True), hv.Element)
 
     cancel_button = ipywidgets.Button(
-        description="cancel live-plot", layout=ipywidgets.Layout(width="150px")
+        description="cancel live-plot",
+        layout=ipywidgets.Layout(width="150px"),
     )
 
     # Could have used dm.periodic in the following, but this would either spin
     # off a thread (and learner is not threadsafe) or block the kernel.
 
-    async def updater():
+    async def updater() -> None:
         event = lambda: hv.streams.Stream.trigger(  # noqa: E731
-            dm.streams
+            dm.streams,
         )  # XXX: used to be dm.event()
         # see https://github.com/pyviz/holoviews/issues/3564
         try:
@@ -171,7 +181,7 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=T
                 active_plotting_tasks.pop(name, None)
             cancel_button.layout.display = "none"  # remove cancel button
 
-    def cancel(_):
+    def cancel(_) -> None:
         with suppress(KeyError):
             active_plotting_tasks[name].cancel()
 
@@ -200,16 +210,19 @@ def should_update(status):
         return True
 
 
-def live_info(runner, *, update_interval=0.5):
+def live_info(runner, *, update_interval=0.5) -> None:
     """Display live information about the runner.
 
     Returns an interactive ipywidget that can be
     visualized in a Jupyter notebook.
     """
     if not _holoviews_enabled:
-        raise RuntimeError(
+        msg = (
             "Live plotting is not enabled; did you run "
             "'adaptive.notebook_extension()'?"
+        )
+        raise RuntimeError(
+            msg,
         )
 
     import ipywidgets
@@ -218,11 +231,12 @@ def live_info(runner, *, update_interval=0.5):
     status = ipywidgets.HTML(value=_info_html(runner))
 
     cancel = ipywidgets.Button(
-        description="cancel runner", layout=ipywidgets.Layout(width="100px")
+        description="cancel runner",
+        layout=ipywidgets.Layout(width="100px"),
     )
     cancel.on_click(lambda _: runner.cancel())
 
-    async def update():
+    async def update() -> None:
         while not runner.task.done():
             await asyncio.sleep(update_interval)
 
@@ -239,7 +253,7 @@ def live_info(runner, *, update_interval=0.5):
     display(ipywidgets.VBox((status, cancel)))
 
 
-def _table_row(i, key, value):
+def _table_row(i, key, value) -> str:
     """Style the rows of a table. Based on the default Jupyterlab table style."""
     style = "text-align: right; padding: 0.5em 0.5em; line-height: 1.0;"
     if i % 2 == 1:
@@ -247,7 +261,7 @@ def _table_row(i, key, value):
     return f'<tr><th style="{style}">{key}</th><th style="{style}">{value}</th></tr>'
 
 
-def _info_html(runner):
+def _info_html(runner) -> str:
     status = runner.status()
 
     color = {

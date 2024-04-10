@@ -1,7 +1,7 @@
 import os
 import sys
 
-import holoviews
+import holoviews as hv
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
@@ -9,9 +9,9 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.abspath(".."))  # to get adaptive on the path
 
-import adaptive  # noqa: E402, isort:skip
+import adaptive  # , isort:skip
 
-holoviews.notebook_extension("matplotlib")
+hv.notebook_extension("matplotlib")
 
 
 def create_and_run_learner():
@@ -27,7 +27,7 @@ def create_and_run_learner():
     return learner
 
 
-def plot_learner_and_save(learner, fname):
+def plot_learner_and_save(learner, fname) -> None:
     fig, ax = plt.subplots()
     tri = learner.interpolator(scaled=True).tri
     triang = mtri.Triangulation(*tri.points.T, triangles=tri.vertices)
@@ -54,7 +54,7 @@ def add_rounded_corners(fname, rad):
     return im
 
 
-def main(fname="source/_static/logo_docs.png"):
+def main(fname="source/_static/logo_docs.png") -> None:
     learner = create_and_run_learner()
     plot_learner_and_save(learner, fname)
     im = add_rounded_corners(fname, rad=200)

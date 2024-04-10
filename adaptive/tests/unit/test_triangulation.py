@@ -23,12 +23,12 @@ from adaptive.learner.triangulation import Triangulation
 points = np.array([(2, 2), (2, 4), (0, 3), (2, 0), (4, 2), (5, 5)])
 
 
-def test_triangulation_can_find_the_simplices():
+def test_triangulation_can_find_the_simplices() -> None:
     tri = Triangulation(points)
     assert tri.simplices == {(0, 1, 4), (0, 1, 2), (0, 2, 3), (0, 3, 4), (1, 4, 5)}
 
 
-def test_triangulation_can_find_neighbors():
+def test_triangulation_can_find_neighbors() -> None:
     tri = Triangulation(points)
     assert tri.get_simplices_attached_to_points((0, 1, 4)) == {
         (0, 1, 2),
@@ -39,7 +39,7 @@ def test_triangulation_can_find_neighbors():
     assert tri.get_simplices_attached_to_points((0, 3, 4)) == {(0, 1, 4), (0, 2, 3)}
 
 
-def test_triangulation_can_find_oposing_points():
+def test_triangulation_can_find_oposing_points() -> None:
     tri = Triangulation(points)
     assert tri.get_opposing_vertices((0, 1, 4)) == (5, 3, 2)
     assert tri.get_opposing_vertices((1, 4, 5)) == (None, None, 0)
@@ -48,12 +48,12 @@ def test_triangulation_can_find_oposing_points():
     assert tri.get_opposing_vertices((0, 3, 4)) == (None, 1, 2)
 
 
-def test_triangulation_can_get_oposing_points_if_only_one_simplex_exists():
+def test_triangulation_can_get_oposing_points_if_only_one_simplex_exists() -> None:
     tri = Triangulation(points[:3])
     assert tri.get_opposing_vertices((0, 1, 2)) == (None, None, None)
 
 
-def test_triangulation_find_opposing_vertices_raises_if_simplex_is_invalid():
+def test_triangulation_find_opposing_vertices_raises_if_simplex_is_invalid() -> None:
     tri = Triangulation(points)
     with pytest.raises(ValueError):
         tri.get_opposing_vertices((0, 2, 1))
@@ -62,15 +62,14 @@ def test_triangulation_find_opposing_vertices_raises_if_simplex_is_invalid():
         tri.get_opposing_vertices((2, 3, 5))
 
 
-def test_circumsphere():
+def test_circumsphere() -> None:
     from numpy import allclose
     from numpy.random import normal, uniform
 
     from adaptive.learner.triangulation import circumsphere, fast_norm
 
     def generate_random_sphere_points(dim, radius=0):
-        """https://math.stackexchange.com/a/1585996"""
-
+        """https://math.stackexchange.com/a/1585996."""
         vec = [None] * (dim + 1)
         center = uniform(-100, 100, dim)
         radius = uniform(1.0, 100.0) if radius == 0 else radius

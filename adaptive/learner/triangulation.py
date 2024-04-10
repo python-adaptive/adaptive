@@ -2,6 +2,7 @@ from collections import Counter
 from collections.abc import Iterable, Sized
 from itertools import chain, combinations
 from math import factorial, sqrt
+from typing import NoReturn
 
 import scipy.spatial
 from numpy import abs as np_abs
@@ -67,7 +68,7 @@ def point_in_simplex(point, simplex, eps=1e-8):
 
 
 def fast_2d_circumcircle(points):
-    """Compute the center and radius of the circumscribed circle of a triangle
+    """Compute the center and radius of the circumscribed circle of a triangle.
 
     Parameters
     ----------
@@ -78,6 +79,7 @@ def fast_2d_circumcircle(points):
     -------
     tuple
         (center point : tuple(float), radius: float)
+
     """
     points = array(points)
     # transform to relative coordinates
@@ -114,6 +116,7 @@ def fast_3d_circumcircle(points):
     -------
     tuple
         (center point : tuple(float), radius: float)
+
     """
     points = array(points)
     pts = points[1:] - points[0]
@@ -171,8 +174,8 @@ def circumsphere(pts):
     Will fail for matrices which are not (N-dim + 1, N-dim) in size due to non-square determinants:
     will raise numpy.linalg.LinAlgError.
     May fail for points that are integers (due to 32bit integer overflow).
-    """
 
+    """
     dim = len(pts) - 1
     if dim == 2:
         return fast_2d_circumcircle(pts)
@@ -219,6 +222,7 @@ def orientation(face, origin):
 
     If two points lie on the same side of the face, the orientation will
     be equal, if they lie on the other side of the face, it will be negated.
+
     """
     vectors = array(face)
     sign, logdet = slogdet(vectors - origin)
@@ -252,6 +256,7 @@ def simplex_volume_in_embedding(vertices) -> float:
     ValueError
         if the vertices do not form a simplex (for example,
         because they are coplanar, colinear or coincident).
+
     """
     # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
     # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
@@ -280,7 +285,8 @@ def simplex_volume_in_embedding(vertices) -> float:
     if vol_square < 0:
         if vol_square > -1e-15:
             return 0
-        raise ValueError("Provided vertices do not form a simplex")
+        msg = "Provided vertices do not form a simplex"
+        raise ValueError(msg)
 
     return sqrt(vol_square)
 
@@ -310,34 +316,44 @@ class Triangulation:
     ValueError
         if the list of coordinates is incorrect or the points do not form one
         or more simplices in the
+
     """
 
-    def __init__(self, coords):
+    def __init__(self, coords) -> None:
         if not is_iterable_and_sized(coords):
-            raise TypeError("Please provide a 2-dimensional list of points")
+            msg = "Please provide a 2-dimensional list of points"
+            raise TypeError(msg)
         coords = list(coords)
         if not all(is_iterable_and_sized(coord) for coord in coords):
-            raise TypeError("Please provide a 2-dimensional list of points")
+            msg = "Please provide a 2-dimensional list of points"
+            raise TypeError(msg)
         if len(coords) == 0:
-            raise ValueError("Please provide at least one simplex")
+            msg = "Please provide at least one simplex"
+            raise ValueError(msg)
             # raise now because otherwise the next line will raise a less
 
         dim = len(coords[0])
         if any(len(coord) != dim for coord in coords):
-            raise ValueError("Coordinates dimension mismatch")
+            msg = "Coordinates dimension mismatch"
+            raise ValueError(msg)
 
         if dim == 1:
-            raise ValueError("Triangulation class only supports dim >= 2")
+            msg = "Triangulation class only supports dim >= 2"
+            raise ValueError(msg)
 
         if len(coords) < dim + 1:
-            raise ValueError("Please provide at least one simplex")
+            msg = "Please provide at least one simplex"
+            raise ValueError(msg)
 
         coords = list(map(tuple, coords))
         vectors = subtract(coords[1:], coords[0])
         if matrix_rank(vectors) < dim:
-            raise ValueError(
+            msg = (
                 "Initial simplex has zero volumes "
                 "(the points are linearly dependent)"
+            )
+            raise ValueError(
+                msg,
             )
 
         self.vertices = list(coords)
@@ -351,13 +367,13 @@ class Triangulation:
         for simplex in initial_tri.simplices:
             self.add_simplex(simplex)
 
-    def delete_simplex(self, simplex):
+    def delete_simplex(self, simplex) -> None:
         simplex = tuple(sorted(simplex))
         self.simplices.remove(simplex)
         for vertex in simplex:
             self.vertex_to_simplices[vertex].remove(simplex)
 
-    def add_simplex(self, simplex):
+    def add_simplex(self, simplex) -> None:
         simplex = tuple(sorted(simplex))
         self.simplices.add(simplex)
         for vertex in simplex:
@@ -379,6 +395,7 @@ class Triangulation:
         vertices : list of ints
             Indices of vertices of the simplex to which the vertex belongs.
             An empty list indicates that the vertex is outside the simplex.
+
         """
         # XXX: in the end we want to lose this method
         if len(simplex) != self.dim + 1:
@@ -421,7 +438,8 @@ class Triangulation:
             dim = self.dim
 
         if simplices is not None and vertices is not None:
-            raise ValueError("Only one of simplices and vertices is allowed.")
+            msg = "Only one of simplices and vertices is allowed."
+            raise ValueError(msg)
         if vertices is not None:
             vertices = set(vertices)
             simplices = chain(*(self.vertex_to_simplices[i] for i in vertices))
@@ -476,7 +494,8 @@ class Triangulation:
                 self.simplices.remove(tri)
             del self.vertex_to_simplices[pt_index]
             del self.vertices[pt_index]
-            raise ValueError("Candidate vertex is inside the hull.")
+            msg = "Candidate vertex is inside the hull."
+            raise ValueError(msg)
 
         return new_simplices
 
@@ -492,6 +511,7 @@ class Triangulation:
         -------
         tuple (center point, radius)
             The center and radius of the circumscribed circle
+
         """
         pts = dot(self.get_vertices(simplex), transform)
         return circumsphere(pts)
@@ -526,6 +546,7 @@ class Triangulation:
             Simplices that have been deleted
         new_simplices : set of tuples
             Simplices that have been added
+
         """
         queue = set()
         done_simplices = set()
@@ -577,7 +598,8 @@ class Triangulation:
         distance of its vertices. The advantage of this is that the relative
         volume is only dependent on the shape of the simplex and not on the
         absolute size. Due to the weird scaling, the only use of this method
-        is to check that a simplex is almost flat."""
+        is to check that a simplex is almost flat.
+        """
         vertices = array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
         average_edge_length = mean(np_abs(vectors))
@@ -597,6 +619,7 @@ class Triangulation:
             Simplex containing the point. Empty tuple indicates points outside
             the hull. If not provided, the algorithm costs O(N), so this should
             be used whenever possible.
+
         """
         point = tuple(point)
         if simplex is None:
@@ -610,27 +633,30 @@ class Triangulation:
 
             pt_index = len(self.vertices) - 1
             deleted_simplices, added_simplices = self.bowyer_watson(
-                pt_index, transform=transform
+                pt_index,
+                transform=transform,
             )
 
             deleted = deleted_simplices - temporary_simplices
             added = added_simplices | (temporary_simplices - deleted_simplices)
             return deleted, added
-        else:
-            reduced_simplex = self.get_reduced_simplex(point, simplex)
-            if not reduced_simplex:
-                self.vertex_to_simplices.pop()  # revert adding vertex
-                raise ValueError("Point lies outside of the specified simplex.")
-            else:
-                simplex = reduced_simplex
+
+        reduced_simplex = self.get_reduced_simplex(point, simplex)
+        if not reduced_simplex:
+            self.vertex_to_simplices.pop()  # revert adding vertex
+            msg = "Point lies outside of the specified simplex."
+            raise ValueError(msg)
+
+        simplex = reduced_simplex
 
         if len(simplex) == 1:
             self.vertex_to_simplices.pop()  # revert adding vertex
-            raise ValueError("Point already in triangulation.")
-        else:
-            pt_index = len(self.vertices)
-            self.vertices.append(point)
-            return self.bowyer_watson(pt_index, actual_simplex, transform)
+            msg = "Point already in triangulation."
+            raise ValueError(msg)
+
+        pt_index = len(self.vertices)
+        self.vertices.append(point)
+        return self.bowyer_watson(pt_index, actual_simplex, transform)
 
     def volume(self, simplex):
         prefactor = factorial(self.dim)
@@ -641,7 +667,7 @@ class Triangulation:
     def volumes(self):
         return [self.volume(sim) for sim in self.simplices]
 
-    def reference_invariant(self):
+    def reference_invariant(self) -> bool:
         """vertex_to_simplices and simplices are compatible."""
         for vertex in range(len(self.vertices)):
             if any(vertex not in tri for tri in self.vertex_to_simplices[vertex]):
@@ -651,7 +677,7 @@ class Triangulation:
                 return False
         return True
 
-    def vertex_invariant(self, vertex):
+    def vertex_invariant(self, vertex) -> NoReturn:
         """Simplices originating from a vertex don't overlap."""
         raise NotImplementedError
 
@@ -671,7 +697,8 @@ class Triangulation:
 
     def get_opposing_vertices(self, simplex):
         if simplex not in self.simplices:
-            raise ValueError("Provided simplex is not part of the triangulation")
+            msg = "Provided simplex is not part of the triangulation"
+            raise ValueError(msg)
         neighbors = self.get_simplices_attached_to_points(simplex)
 
         def find_opposing_vertex(vertex):
@@ -683,8 +710,7 @@ class Triangulation:
             assert len(opposing) == 1
             return opposing.pop()
 
-        result = tuple(find_opposing_vertex(v) for v in simplex)
-        return result
+        return tuple(find_opposing_vertex(v) for v in simplex)
 
     @property
     def hull(self):
@@ -700,17 +726,20 @@ class Triangulation:
         -------
         hull : set of int
             Vertices in the hull.
+
         """
         counts = Counter(self.faces())
         if any(i > 2 for i in counts.values()):
-            raise RuntimeError(
+            msg = (
                 "Broken triangulation, a (N-1)-dimensional"
                 " appears in more than 2 simplices."
             )
+            raise RuntimeError(
+                msg,
+            )
 
-        hull = {point for face, count in counts.items() if count == 1 for point in face}
-        return hull
+        return {point for face, count in counts.items() if count == 1 for point in face}
 
-    def convex_invariant(self, vertex):
+    def convex_invariant(self, vertex) -> NoReturn:
         """Hull is convex."""
         raise NotImplementedError

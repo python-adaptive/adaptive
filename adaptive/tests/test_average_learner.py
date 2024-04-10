@@ -1,5 +1,5 @@
 import random
-from typing import TYPE_CHECKING
+from typing import NoReturn
 
 import flaky
 import numpy as np
@@ -7,15 +7,13 @@ import numpy as np
 from adaptive.learner import AverageLearner
 from adaptive.runner import simple
 
-if TYPE_CHECKING:
-    pass
+
+def f_unused(seed) -> NoReturn:
+    msg = "This function shouldn't be used."
+    raise NotImplementedError(msg)
 
 
-def f_unused(seed):
-    raise NotImplementedError("This function shouldn't be used.")
-
-
-def test_only_returns_new_points():
+def test_only_returns_new_points() -> None:
     learner = AverageLearner(f_unused, atol=None, rtol=0.01)
 
     # Only tell it n = 5...10
@@ -32,7 +30,7 @@ def test_only_returns_new_points():
 
 
 @flaky.flaky(max_runs=5)
-def test_avg_std_and_npoints():
+def test_avg_std_and_npoints() -> None:
     learner = AverageLearner(f_unused, atol=None, rtol=0.01)
 
     for i in range(300):
@@ -57,19 +55,22 @@ def test_avg_std_and_npoints():
             assert abs(learner.std - std) < 1e-12
 
 
-def test_min_npoints():
-    def constant_function(seed):
+def test_min_npoints() -> None:
+    def constant_function(seed) -> float:
         return 0.1
 
     for min_npoints in [1, 2, 3]:
         learner = AverageLearner(
-            constant_function, atol=0.01, rtol=0.01, min_npoints=min_npoints
+            constant_function,
+            atol=0.01,
+            rtol=0.01,
+            min_npoints=min_npoints,
         )
         simple(learner, loss_goal=1.0)
         assert learner.npoints >= max(2, min_npoints)
 
 
-def test_zero_mean():
+def test_zero_mean() -> None:
     # see https://github.com/python-adaptive/adaptive/issues/275
     learner = AverageLearner(f_unused, rtol=0.01)
     learner.tell(0, -1)

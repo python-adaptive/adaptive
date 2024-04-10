@@ -18,7 +18,7 @@ from adaptive.notebook_integration import ensure_holoviews
 from adaptive.utils import assign_defaults, cache_latest, restore
 
 try:
-    import pandas
+    import pandas as pd
 
     with_pandas = True
 
@@ -71,8 +71,7 @@ class DivergentIntegralError(ValueError):
 
 
 class _Interval:
-    """
-    Attributes
+    """Attributes
     ----------
     (a, b) : (float, float)
         The left and right boundary of the interval.
@@ -114,6 +113,7 @@ class _Interval:
     refinement_complete : depth, optional
         If true, all the function values in the interval are known at `depth`.
         By default the depth is the depth of the interval.
+
     """
 
     __slots__ = [
@@ -210,7 +210,8 @@ class _Interval:
         """Sets the error of an interval using a heuristic (half the error of
         the parent) when the actual error cannot be calculated due to its
         parents not being finished yet. This error is propagated down to its
-        children."""
+        children.
+        """
         self.err = value
         for child in self.children:
             if child.depth_complete or (
@@ -253,7 +254,8 @@ class _Interval:
 
     def complete_process(self, depth: int) -> tuple[bool, bool] | tuple[bool, np.bool_]:
         """Calculate the integral contribution and error from this interval,
-        and update the done leaves of all ancestor intervals."""
+        and update the done leaves of all ancestor intervals.
+        """
         assert self.depth_complete is None or self.depth_complete == depth - 1
         self.depth_complete = depth
 
@@ -341,8 +343,7 @@ class _Interval:
 
 class IntegratorLearner(BaseLearner):
     def __init__(self, function: Callable, bounds: tuple[int, int], tol: float) -> None:
-        """
-        Parameters
+        """Parameters
         ----------
         function : callable: X → Y
             The function to learn.
@@ -373,6 +374,7 @@ class IntegratorLearner(BaseLearner):
             Returns whether the `tol` has been reached.
         plot : hv.Scatter
             Plots all the points that are evaluated.
+
         """
         self.function = function  # type: ignore
         self.bounds = bounds
@@ -383,7 +385,7 @@ class IntegratorLearner(BaseLearner):
         self.pending_points = set()
         self._stack: list[float] = []
         self.x_mapping: dict[float, SortedSet] = defaultdict(
-            lambda: SortedSet([], key=attrgetter("rdepth"))
+            lambda: SortedSet([], key=attrgetter("rdepth")),
         )
         self.ivals: set[_Interval] = set()
         ival = _Interval.make_first(*self.bounds)
@@ -401,7 +403,8 @@ class IntegratorLearner(BaseLearner):
 
     def tell(self, point: float, value: float) -> None:
         if point not in self.x_mapping:
-            raise ValueError(f"Point {point} doesn't belong to any interval")
+            msg = f"Point {point} doesn't belong to any interval"
+            raise ValueError(msg)
         self.data[point] = value
         self.pending_points.discard(point)
 
@@ -432,11 +435,11 @@ class IntegratorLearner(BaseLearner):
                         assert ival in self.ivals
                         self.priority_split.append(ival)
 
-    def tell_pending(self):
+    def tell_pending(self) -> None:
         pass
 
     def propagate_removed(self, ival: _Interval) -> None:
-        def _propagate_removed_down(ival):
+        def _propagate_removed_down(ival) -> None:
             ival.removed = True
             self.ivals.discard(ival)
 
@@ -472,7 +475,8 @@ class IntegratorLearner(BaseLearner):
             try:
                 self._fill_stack()
             except ValueError:
-                raise RuntimeError("No way to improve the integral estimate.") from None
+                msg = "No way to improve the integral estimate."
+                raise RuntimeError(msg) from None
             new_points, new_loss_improvements = self.pop_from_stack(n_left)
             points += new_points
             loss_improvements += new_loss_improvements
@@ -488,7 +492,7 @@ class IntegratorLearner(BaseLearner):
         ]
         return points, loss_improvements
 
-    def remove_unfinished(self):
+    def remove_unfinished(self) -> None:
         pass
 
     def _fill_stack(self) -> list[float]:
@@ -557,7 +561,7 @@ class IntegratorLearner(BaseLearner):
         )
 
     @cache_latest
-    def loss(self, real=True):
+    def loss(self, real: bool = True):
         return abs(abs(self.igral) * self.tol - self.err)
 
     def plot(self):
@@ -578,7 +582,7 @@ class IntegratorLearner(BaseLearner):
         function_prefix: str = "function.",
         x_name: str = "x",
         y_name: str = "y",
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
         Parameters
@@ -602,10 +606,12 @@ class IntegratorLearner(BaseLearner):
         ------
         ImportError
             If `pandas` is not installed.
+
         """
         if not with_pandas:
-            raise ImportError("pandas is not installed.")
-        df = pandas.DataFrame(sorted(self.data.items()), columns=[x_name, y_name])
+            msg = "pandas is not installed."
+            raise ImportError(msg)
+        df = pd.DataFrame(sorted(self.data.items()), columns=[x_name, y_name])
         df.attrs["inputs"] = [x_name]
         df.attrs["output"] = y_name
         if with_default_function_args:
@@ -614,7 +620,7 @@ class IntegratorLearner(BaseLearner):
 
     def load_dataframe(  # type: ignore[override]
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         x_name: str = "x",
@@ -638,6 +644,7 @@ class IntegratorLearner(BaseLearner):
             Name of the input value, by default "x"
         y_name : str, optional
             Name of the output value, by default "y"
+
         """
         raise NotImplementedError
 
@@ -655,7 +662,7 @@ class IntegratorLearner(BaseLearner):
             self.first_ival,
         )
 
-    def _set_data(self, data):
+    def _set_data(self, data) -> None:
         (
             self.priority_split,
             self.data,

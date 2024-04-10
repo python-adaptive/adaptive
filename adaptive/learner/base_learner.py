@@ -9,7 +9,7 @@ import cloudpickle
 from adaptive.utils import load, save
 
 if TYPE_CHECKING:
-    import pandas
+    import pandas as pd
 
 
 def uses_nth_neighbors(n: int):
@@ -25,7 +25,6 @@ def uses_nth_neighbors(n: int):
 
     Examples
     --------
-
     The next function is a part of the `curvature_loss_function` function.
 
     >>> @uses_nth_neighbors(1)
@@ -57,6 +56,7 @@ def uses_nth_neighbors(n: int):
     ...         return loss * 100
     ...
     ...     return loss
+
     """
 
     def _wrapped(loss_per_interval):
@@ -88,6 +88,7 @@ class BaseLearner(abc.ABC):
     -----
     Subclasses may define a ``plot`` method that takes no parameters
     and returns a holoviews plot.
+
     """
 
     data: DataType
@@ -95,23 +96,25 @@ class BaseLearner(abc.ABC):
     pending_points: set
     function: Callable[..., Any]
 
-    def tell(self, x, y):
+    def tell(self, x, y) -> None:
         """Tell the learner about a single value.
 
         Parameters
         ----------
         x : A value from the function domain
         y : A value from the function image
+
         """
         self.tell_many([x], [y])
 
-    def tell_many(self, xs, ys):
+    def tell_many(self, xs, ys) -> None:
         """Tell the learner about some values.
 
         Parameters
         ----------
         xs : Iterable of values from the function domain
         ys : Iterable of values from the function image
+
         """
         for x, y in zip(xs, ys):
             self.tell(x, y)
@@ -119,14 +122,15 @@ class BaseLearner(abc.ABC):
     @abc.abstractmethod
     def tell_pending(self, x):
         """Tell the learner that 'x' has been requested such
-        that it's not suggested again."""
+        that it's not suggested again.
+        """
 
     @abc.abstractmethod
     def remove_unfinished(self):
         """Remove uncomputed data from the learner."""
 
     @abc.abstractmethod
-    def loss(self, real=True):
+    def loss(self, real: bool = True):
         """Return the loss for the current state of the learner.
 
         Parameters
@@ -135,6 +139,7 @@ class BaseLearner(abc.ABC):
             If False, return the "expected" loss, i.e. the
             loss including the as-yet unevaluated points
             (possibly by interpolation).
+
         """
 
     @abc.abstractmethod
@@ -149,6 +154,7 @@ class BaseLearner(abc.ABC):
             If True, add the chosen points to this learner's
             `pending_points`. Set this to False if you do not
             want to modify the state of the learner.
+
         """
 
     @abc.abstractmethod
@@ -162,19 +168,19 @@ class BaseLearner(abc.ABC):
     @abc.abstractmethod
     def new(self):
         """Return a new learner with the same function and parameters."""
-        pass
 
-    def copy_from(self, other):
+    def copy_from(self, other) -> None:
         """Copy over the data from another learner.
 
         Parameters
         ----------
         other : BaseLearner object
             The learner from which the data is copied.
+
         """
         self._set_data(other._get_data())
 
-    def save(self, fname, compress=True):
+    def save(self, fname, compress=True) -> None:
         """Save the data of the learner into a pickle file.
 
         Parameters
@@ -184,11 +190,12 @@ class BaseLearner(abc.ABC):
         compress : bool, default True
             Compress the data upon saving using 'gzip'. When saving
             using compression, one must load it with compression too.
+
         """
         data = self._get_data()
         save(fname, data, compress)
 
-    def load(self, fname, compress=True):
+    def load(self, fname, compress=True) -> None:
         """Load the data of a learner from a pickle file.
 
         Parameters
@@ -198,6 +205,7 @@ class BaseLearner(abc.ABC):
         compress : bool, default True
             If the data is compressed when saved, one must load it
             with compression too.
+
         """
         with suppress(FileNotFoundError, EOFError):
             data = load(fname, compress)
@@ -209,7 +217,7 @@ class BaseLearner(abc.ABC):
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         **kwargs: Any,
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
         Parameters
@@ -228,12 +236,13 @@ class BaseLearner(abc.ABC):
         Returns
         -------
         pandas.DataFrame
+
         """
 
     @abc.abstractmethod
     def load_dataframe(
         self,
-        df: pandas.DataFrame,
+        df: pd.DataFrame,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         **kwargs: Any,

@@ -7,7 +7,7 @@ from adaptive.runner import replay_log, simple
 from .test_learners import generate_random_parametrization, ring_of_fire
 
 
-def test_faiure_case_LearnerND():
+def test_faiure_case_LearnerND() -> None:
     log = [
         ("ask", 4),
         ("tell", (-1, -1, -1), 1.607873907219222e-101),
@@ -26,7 +26,7 @@ def test_faiure_case_LearnerND():
     replay_log(learner, log)
 
 
-def test_interior_vs_bbox_gives_same_result():
+def test_interior_vs_bbox_gives_same_result() -> None:
     f = generate_random_parametrization(ring_of_fire)
 
     control = LearnerND(f, bounds=[(-1, 1), (-1, 1)])
@@ -39,7 +39,7 @@ def test_interior_vs_bbox_gives_same_result():
     assert learner.data == control.data
 
 
-def test_vector_return_with_a_flat_layer():
+def test_vector_return_with_a_flat_layer() -> None:
     f = generate_random_parametrization(ring_of_fire)
     g = generate_random_parametrization(ring_of_fire)
     h1 = lambda xy: np.array([f(xy), g(xy)])  # noqa: E731
