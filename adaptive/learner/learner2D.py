@@ -48,7 +48,7 @@ def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
     deviations : list
         The deviation per triangle.
     """
-    values = ip.values / (ip.values.ptp(axis=0).max() or 1)
+    values = ip.values / (np.ptp(ip.values,axis=0).max() or 1)
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
         ip.tri, values, tol=1e-6
     )
@@ -195,7 +195,7 @@ def minimize_triangle_surface_loss(ip: LinearNDInterpolator) -> np.ndarray:
     tri = ip.tri
     points = tri.points[tri.simplices]
     values = ip.values[tri.simplices]
-    values = values / (ip.values.ptp(axis=0).max() or 1)
+    values = values / (np.ptp(ip.values, axis=0).max() or 1)
 
     def _get_vectors(points):
         delta = points - points[:, -1, :][:, None, :]
