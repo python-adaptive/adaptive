@@ -37,7 +37,6 @@ tutorial.IntegratorLearner
 tutorial.LearnerND
 tutorial.AverageLearner1D
 tutorial.SequenceLearner
-tutorial.SKOptLearner
 tutorial.parallelism
 tutorial.advanced-topics
 ```

@@ -1,5 +1,3 @@
-from contextlib import suppress
-
 from adaptive.learner.average_learner import AverageLearner
 from adaptive.learner.average_learner1D import AverageLearner1D
 from adaptive.learner.balancing_learner import BalancingLearner
@@ -24,9 +22,3 @@ __all__ = [
     "AverageLearner1D",
     "SequenceLearner",
 ]
-
-with suppress(ImportError):
-    # Only available if 'scikit-optimize' is installed
-    from adaptive.learner.skopt_learner import SKOptLearner  # noqa: F401
-
-    __all__.append("SKOptLearner")
