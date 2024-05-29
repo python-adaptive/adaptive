@@ -399,7 +399,7 @@ def test_NaN_loss():
     def f(x):
         a = 0.01
         if random.random() < 0.2:
-            return np.NaN
+            return np.nan
         return x + a**2 / (a**2 + x**2)
 
     learner = Learner1D(f, bounds=(-1, 1))
