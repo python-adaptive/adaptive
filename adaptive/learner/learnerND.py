@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import itertools
+import math
 import random
 from collections import OrderedDict
 from collections.abc import Iterable
@@ -50,7 +51,7 @@ def volume(simplex, ys=None):
 
     # See https://www.jstor.org/stable/2315353
     dim = len(simplex) - 1
-    vol = np.abs(fast_det(matrix)) / np.math.factorial(dim)
+    vol = np.abs(fast_det(matrix)) / math.factorial(dim)
     return vol
 
 
