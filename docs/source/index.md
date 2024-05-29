@@ -1,4 +1,6 @@
-```{include} ../../README.md
+# ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) *Adaptive*: Parallel Active Learning of Mathematical Functions
+
+```{include} ../README.md
 ---
 start-after: <!-- badges-start -->
 end-before: <!-- badges-end -->
@@ -8,22 +10,22 @@ end-before: <!-- badges-end -->
 ```{include} logo.md
 ```
 
-```{include} ../../README.md
+```{include} ../README.md
 ---
 start-after: <!-- summary-start -->
 end-before: <!-- summary-end -->
 ---
 ```
 
-```{tip}
-Start with the {ref}`1D function learning tutorial<TutorialLearner1D>`.
+```{include} ../README.md
+---
+start-after: <!-- key-features-start -->
+end-before: <!-- key-features-end -->
+---
 ```
 
-```{include} ../../README.md
----
-start-after: <!-- references-start -->
-end-before: <!-- references-end -->
----
+```{tip}
+Start with the {ref}`1D function learning tutorial<TutorialLearner1D>`.
 ```
 
 ```{toctree}
@@ -39,6 +41,7 @@ self
 algorithms_and_examples
 docs
 tutorial/tutorial
+benchmarks
 gallery
 reference/adaptive
 CHANGELOG

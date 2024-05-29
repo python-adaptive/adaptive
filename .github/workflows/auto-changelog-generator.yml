@@ -1,0 +1,58 @@
+name: Generate Changelog
+
+on:
+  # Manual trigger only
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch name'
+        required: true
+
+jobs:
+  generate-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+
+      - name: Install github-changelog-generator
+        run: gem install github_changelog_generator
+
+      - name: Generate Changelog
+        run: |
+          github_changelog_generator \
+            -u ${{ github.repository_owner }} \
+            -p ${{ github.event.repository.name }} \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --output CHANGELOG.md
+
+      - name: Commit updated CHANGELOG.md
+        id: commit
+        run: |
+          git add CHANGELOG.md
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No changes in CHANGELOG.md, skipping commit."
+            echo "commit_status=skipped" >> $GITHUB_ENV
+          else
+            git commit -m "Update CHANGELOG.md"
+            echo "commit_status=committed" >> $GITHUB_ENV
+          fi
+
+      - name: Echo CHANGELOG.md
+        run: cat CHANGELOG.md
+
+      - name: Push changes
+        if: env.commit_status == 'committed'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.event.inputs.branch }}

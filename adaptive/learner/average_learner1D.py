@@ -3,11 +3,10 @@ from __future__ import annotations
 import math
 import sys
 from collections import defaultdict
+from collections.abc import Iterable, Sequence
 from copy import deepcopy
 from math import hypot
-from numbers import Integral as Int
-from numbers import Real
-from typing import Callable, DefaultDict, Iterable, List, Sequence, Tuple
+from typing import Callable
 
 import numpy as np
 import scipy.stats
@@ -16,6 +15,7 @@ from sortedcontainers import SortedDict
 
 from adaptive.learner.learner1D import Learner1D, _get_intervals
 from adaptive.notebook_integration import ensure_holoviews
+from adaptive.types import Int, Real
 from adaptive.utils import assign_defaults, partial_function_from_dataframe
 
 try:
@@ -26,8 +26,8 @@ try:
 except ModuleNotFoundError:
     with_pandas = False
 
-Point = Tuple[int, Real]
-Points = List[Point]
+Point = tuple[int, Real]
+Points = list[Point]
 
 __all__: list[str] = ["AverageLearner1D"]
 
@@ -99,7 +99,7 @@ class AverageLearner1D(Learner1D):
         if min_samples > max_samples:
             raise ValueError("max_samples should be larger than min_samples.")
 
-        super().__init__(function, bounds, loss_per_interval)
+        super().__init__(function, bounds, loss_per_interval)  # type: ignore[arg-type]
 
         self.delta = delta
         self.alpha = alpha
@@ -110,7 +110,7 @@ class AverageLearner1D(Learner1D):
 
         # Contains all samples f(x) for each
         # point x in the form {x0: {0: f_0(x0), 1: f_1(x0), ...}, ...}
-        self._data_samples = SortedDict()
+        self._data_samples: SortedDict[float, dict[int, Real]] = SortedDict()
         # Contains the number of samples taken
         # at each point x in the form {x0: n0, x1: n1, ...}
         self._number_samples = SortedDict()
@@ -124,14 +124,14 @@ class AverageLearner1D(Learner1D):
         # form {xi: ((xii-xi)^2 + (yii-yi)^2)^0.5, ...}
         self._distances: dict[Real, float] = decreasing_dict()
         # {xii: error[xii]/min(_distances[xi], _distances[xii], ...}
-        self.rescaled_error: dict[Real, float] = decreasing_dict()
+        self.rescaled_error: ItemSortedDict[Real, float] = decreasing_dict()
 
     def new(self) -> AverageLearner1D:
         """Create a copy of `~adaptive.AverageLearner1D` without the data."""
         return AverageLearner1D(
             self.function,
             self.bounds,
-            self.loss_per_interval,
+            self.loss_per_interval,  # type: ignore[arg-type]
             self.delta,
             self.alpha,
             self.neighbor_sampling,
@@ -163,7 +163,7 @@ class AverageLearner1D(Learner1D):
                 ]
             )
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         mean: bool = False,
         with_default_function_args: bool = True,
@@ -201,10 +201,10 @@ class AverageLearner1D(Learner1D):
         if not with_pandas:
             raise ImportError("pandas is not installed.")
         if mean:
-            data = sorted(self.data.items())
+            data: list[tuple[Real, Real]] = sorted(self.data.items())
             columns = [x_name, y_name]
         else:
-            data = [
+            data: list[tuple[int, Real, Real]] = [  # type: ignore[no-redef]
                 (seed, x, y)
                 for x, seed_y in sorted(self._data_samples.items())
                 for seed, y in sorted(seed_y.items())
@@ -217,7 +217,7 @@ class AverageLearner1D(Learner1D):
             assign_defaults(self.function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
@@ -257,7 +257,7 @@ class AverageLearner1D(Learner1D):
                 self.function, df, function_prefix
             )
 
-    def ask(self, n: int, tell_pending: bool = True) -> tuple[Points, list[float]]:
+    def ask(self, n: int, tell_pending: bool = True) -> tuple[Points, list[float]]:  # type: ignore[override]
         """Return 'n' points that are expected to maximally reduce the loss."""
         # If some point is undersampled, resample it
         if len(self._undersampled_points):
@@ -310,18 +310,18 @@ class AverageLearner1D(Learner1D):
         new point, since in general n << min_samples and this point will need
         to be resampled many more times"""
         points, (loss_improvement,) = self._ask_points_without_adding(1)
-        points = [(seed, x) for seed, x in zip(range(n), n * points)]
+        seed_points = list(zip(range(n), n * points))
         loss_improvements = [loss_improvement / n] * n
-        return points, loss_improvements
+        return seed_points, loss_improvements  # type: ignore[return-value]
 
-    def tell_pending(self, seed_x: Point) -> None:
+    def tell_pending(self, seed_x: Point) -> None:  # type: ignore[override]
         _, x = seed_x
         self.pending_points.add(seed_x)
         if x not in self.data:
             self._update_neighbors(x, self.neighbors_combined)
             self._update_losses(x, real=False)
 
-    def tell(self, seed_x: Point, y: Real) -> None:
+    def tell(self, seed_x: Point, y: Real) -> None:  # type: ignore[override]
         seed, x = seed_x
         if y is None:
             raise TypeError(
@@ -492,7 +492,7 @@ class AverageLearner1D(Learner1D):
         t_student = scipy.stats.t.ppf(1 - self.alpha, df=n - 1)
         return t_student * (variance_in_mean / n) ** 0.5
 
-    def tell_many(
+    def tell_many(  # type: ignore[override]
         self, xs: Points | np.ndarray, ys: Sequence[Real] | np.ndarray
     ) -> None:
         # Check that all x are within the bounds
@@ -505,7 +505,7 @@ class AverageLearner1D(Learner1D):
             )
 
         # Create a mapping of points to a list of samples
-        mapping: DefaultDict[Real, DefaultDict[Int, Real]] = defaultdict(
+        mapping: defaultdict[Real, defaultdict[Int, Real]] = defaultdict(
             lambda: defaultdict(dict)
         )
         for (seed, x), y in zip(xs, ys):
@@ -577,10 +577,10 @@ class AverageLearner1D(Learner1D):
                     self._update_interpolated_loss_in_interval(*interval)
                 self._oldscale = deepcopy(self._scale)
 
-    def _get_data(self) -> dict[Real, dict[Int, Real]]:
+    def _get_data(self) -> dict[Real, dict[Int, Real]]:  # type: ignore[override]
         return self._data_samples
 
-    def _set_data(self, data: dict[Real, dict[Int, Real]]) -> None:
+    def _set_data(self, data: dict[Real, dict[Int, Real]]) -> None:  # type: ignore[override]
         if data:
             for x, samples in data.items():
                 self.tell_many_at_point(x, samples)
@@ -615,7 +615,7 @@ class AverageLearner1D(Learner1D):
         return p.redim(x={"range": plot_bounds})
 
 
-def decreasing_dict() -> dict:
+def decreasing_dict() -> ItemSortedDict:
     """This initialization orders the dictionary from large to small values"""
 
     def sorting_rule(key, value):

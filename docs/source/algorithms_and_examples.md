@@ -1,21 +1,19 @@
 ---
-kernelspec:
-  name: python3
-  display_name: python3
 jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: '0.13'
-    jupytext_version: 1.13.8
-execution:
-  timeout: 300
+    format_version: 0.13
+    jupytext_version: 1.14.5
+kernelspec:
+  display_name: python3
+  name: python3
 ---
 
-```{include} ../../README.md
+```{include} ../README.md
 ---
-start-after: <!-- summary-end -->
-end-before: <!-- not-in-documentation-start -->
+start-after: <!-- implemented-algorithms-start -->
+end-before: <!-- implemented-algorithms-end -->
 ---
 ```
 
@@ -39,7 +37,7 @@ In addition to the learners, `adaptive` also provides primitives for running the
 [ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
-# Examples
+# 💡 Examples
 
 Here are some examples of how Adaptive samples vs. homogeneous sampling.
 Click on the *Play* {fa}`play` button or move the sliders.
@@ -48,16 +46,21 @@ Click on the *Play* {fa}`play` button or move the sliders.
 :tags: [hide-cell]
 
 import itertools
-import adaptive
-from adaptive.learner.learner1D import uniform_loss, default_loss
+
 import holoviews as hv
 import numpy as np
+
+import adaptive
+from adaptive.learner.learner1D import default_loss, uniform_loss
 
 adaptive.notebook_extension()
 hv.output(holomap="scrubber")
 ```
 
 ## {class}`adaptive.Learner1D`
+
+The `Learner1D` class is designed for adaptively learning 1D functions of the form `f: ℝ → ℝ^N`. It focuses on sampling points where the function is less well understood to improve the overall approximation.
+This learner is well-suited for functions with localized features or varying degrees of complexity across the domain.
 
 Adaptively learning a 1D function (the plot below) and live-plotting the process in a Jupyter notebook is as easy as
 
@@ -86,6 +89,11 @@ runner.live_plot()
 ```{code-cell} ipython3
 :tags: [hide-input]
 
+from bokeh.models import WheelZoomTool
+
+wheel_zoom = WheelZoomTool(zoom_on_axis=False)
+
+
 def f(x, offset=0.07357338543088588):
     a = 0.01
     return x + a**2 / (a**2 + (x - offset) ** 2)
@@ -98,30 +106,33 @@ def plot_loss_interval(learner):
         x, y = [x_0, x_1], [y_0, y_1]
     else:
         x, y = [], []
-    return hv.Scatter((x, y)).opts(style=dict(size=6, color="r"))
+    return hv.Scatter((x, y)).opts(size=6, color="r")
 
 
-def plot(learner, npoints):
-    adaptive.runner.simple(learner, npoints_goal= npoints)
+def plot_interval(learner, npoints):
+    adaptive.runner.simple(learner, npoints_goal=npoints)
     return (learner.plot() * plot_loss_interval(learner))[:, -1.1:1.1]
 
 
 def get_hm(loss_per_interval, N=101):
     learner = adaptive.Learner1D(f, bounds=(-1, 1), loss_per_interval=loss_per_interval)
-    plots = {n: plot(learner, n) for n in range(N)}
+    plots = {n: plot_interval(learner, n) for n in range(N)}
     return hv.HoloMap(plots, kdims=["npoints"])
+
 
 plot_homo = get_hm(uniform_loss).relabel("homogeneous sampling")
 plot_adaptive = get_hm(default_loss).relabel("with adaptive")
 layout = plot_homo + plot_adaptive
-layout.opts(plot=dict(toolbar=None))
+layout.opts(hv.opts.Scatter(active_tools=["box_zoom", wheel_zoom]))
 ```
 
 ## {class}`adaptive.Learner2D`
 
+The `Learner2D` class is tailored for adaptively learning 2D functions of the form `f: ℝ^2 → ℝ^N`. Similar to `Learner1D`, it concentrates on sampling points with higher uncertainty to provide a better approximation.
+This learner is ideal for functions with complex features or varying behavior across a 2D domain.
+
 ```{code-cell} ipython3
 :tags: [hide-input]
-
 
 def ring(xy):
     import numpy as np
@@ -131,7 +142,7 @@ def ring(xy):
     return x + np.exp(-((x**2 + y**2 - 0.75**2) ** 2) / a**4)
 
 
-def plot(learner, npoints):
+def plot_compare(learner, npoints):
     adaptive.runner.simple(learner, npoints_goal=npoints)
     learner2 = adaptive.Learner2D(ring, bounds=learner.bounds)
     xs = ys = np.linspace(*learner.bounds[0], int(learner.npoints**0.5))
@@ -146,15 +157,18 @@ def plot(learner, npoints):
 
 
 learner = adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)])
-plots = {n: plot(learner, n) for n in range(4, 1010, 20)}
-hv.HoloMap(plots, kdims=["npoints"]).collate()
+plots = {n: plot_compare(learner, n) for n in range(4, 1010, 20)}
+plot = hv.HoloMap(plots, kdims=["npoints"]).collate()
+plot.opts(hv.opts.Image(active_tools=[wheel_zoom]))
 ```
 
 ## {class}`adaptive.AverageLearner`
 
+The `AverageLearner` class is designed for situations where you want to average the result of a function over multiple evaluations.
+This is particularly useful when working with random variables or stochastic functions, as it helps to estimate the mean value of the function.
+
 ```{code-cell} ipython3
 :tags: [hide-input]
-
 
 def g(n):
     import random
@@ -167,20 +181,23 @@ def g(n):
 learner = adaptive.AverageLearner(g, atol=None, rtol=0.01)
 
 
-def plot(learner, npoints):
+def plot_avg(learner, npoints):
     adaptive.runner.simple(learner, npoints_goal=npoints)
     return learner.plot().relabel(f"loss={learner.loss():.2f}")
 
 
-plots = {n: plot(learner, n) for n in range(10, 10000, 200)}
-hv.HoloMap(plots, kdims=["npoints"])
+plots = {n: plot_avg(learner, n) for n in range(10, 10000, 200)}
+hm = hv.HoloMap(plots, kdims=["npoints"])
+hm.opts(hv.opts.Histogram(active_tools=[wheel_zoom]))
 ```
 
 ## {class}`adaptive.LearnerND`
 
+The `LearnerND` class is intended for adaptively learning ND functions of the form `f: ℝ^N → ℝ^M`.
+It extends the adaptive learning capabilities of the 1D and 2D learners to functions with more dimensions, allowing for efficient exploration of complex, high-dimensional spaces.
+
 ```{code-cell} ipython3
 :tags: [hide-input]
-
 
 def sphere(xyz):
     import numpy as np

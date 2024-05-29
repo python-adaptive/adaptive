@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from fractions import Fraction
-from functools import lru_cache
+from functools import cache
 
 import numpy as np
 import scipy.linalg
@@ -49,7 +49,7 @@ def newton(n: int) -> np.ndarray:
     # monomial x^(n-d).
 
     mod = 2 * (n - 1)
-    terms = defaultdict(int)
+    terms: dict[tuple[int, int], int] = defaultdict(int)
     terms[0, 0] += 1
 
     for i in range(n):
@@ -105,7 +105,7 @@ def scalar_product(a: list[Fraction], b: list[Fraction]) -> Fraction:
             c[i + j] += a[j] * bi
 
     # Calculate the definite integral from -1 to 1.
-    return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))
+    return 2 * sum(c[i] / (i + 1) for i in range(0, lc, 2))  # type: ignore[return-value]
 
 
 def calc_bdef(ns: tuple[int, int, int, int]) -> list[np.ndarray]:
@@ -143,7 +143,7 @@ def calc_V(x: np.ndarray, n: int) -> np.ndarray:
     return np.array(V).T
 
 
-@lru_cache(maxsize=None)
+@cache
 def _coefficients():
     """Compute the coefficients on demand, in order to avoid doing linear algebra on import."""
     eps = np.spacing(1)

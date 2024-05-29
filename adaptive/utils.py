@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import concurrent.futures as concurrent
 import functools
 import gzip
@@ -8,21 +7,26 @@ import inspect
 import os
 import pickle
 import warnings
-from contextlib import _GeneratorContextManager, contextmanager
+from collections.abc import Awaitable, Iterator, Sequence
+from contextlib import contextmanager
+from functools import wraps
 from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 import cloudpickle
 
+if TYPE_CHECKING:
+    from dask.distributed import Client as AsyncDaskClient
 
-def named_product(**items: Mapping[str, Sequence[Any]]):
+
+def named_product(**items: Sequence[Any]):
     names = items.keys()
     vals = items.values()
     return [dict(zip(names, res)) for res in product(*vals)]
 
 
 @contextmanager
-def restore(*learners) -> _GeneratorContextManager:
+def restore(*learners) -> Iterator[None]:
     states = [learner.__getstate__() for learner in learners]
     try:
         yield
@@ -78,7 +82,7 @@ def save(fname: str, data: Any, compress: bool = True) -> bool:
 def load(fname: str, compress: bool = True) -> Any:
     fname = os.path.expanduser(fname)
     _open = gzip.open if compress else open
-    with _open(fname, "rb") as f:
+    with _open(fname, "rb") as f:  # type: ignore[operator]
         return cloudpickle.load(f)
 
 
@@ -88,23 +92,6 @@ def copy_docstring_from(other: Callable) -> Callable:
         return method
 
     return decorator
-
-
-class _RequireAttrsABCMeta(abc.ABCMeta):
-    def __call__(self, *args, **kwargs):
-        obj = super().__call__(*args, **kwargs)
-        for name, type_ in obj.__annotations__.items():
-            try:
-                x = getattr(obj, name)
-            except AttributeError:
-                raise AttributeError(
-                    f"Required attribute {name} not set in __init__."
-                ) from None
-            else:
-                if not isinstance(x, type_):
-                    msg = f"The attribute '{name}' should be of type {type_}, not {type(x)}."
-                    raise TypeError(msg)
-        return obj
 
 
 def _default_parameters(function, function_prefix: str = "function."):
@@ -165,7 +152,7 @@ class SequentialExecutor(concurrent.Executor):
     This executor is mainly for testing.
     """
 
-    def submit(self, fn: Callable, *args, **kwargs) -> concurrent.Future:
+    def submit(self, fn: Callable, *args, **kwargs) -> concurrent.Future:  # type: ignore[override]
         fut: concurrent.Future = concurrent.Future()
         try:
             fut.set_result(fn(*args, **kwargs))
@@ -178,3 +165,43 @@ class SequentialExecutor(concurrent.Executor):
 
     def shutdown(self, wait=True):
         pass
+
+
+def _cache_key(args: tuple[Any], kwargs: dict[str, Any]) -> str:
+    arg_strings = [str(a) for a in args]
+    kwarg_strings = [f"{k}={v}" for k, v in sorted(kwargs.items())]
+    return "_".join(arg_strings + kwarg_strings)
+
+
+T = TypeVar("T")
+
+
+def daskify(
+    client: AsyncDaskClient, cache: bool = False
+) -> Callable[[Callable[..., T]], Callable[..., Awaitable[T]]]:
+    from dask import delayed
+
+    def _daskify(func: Callable[..., T]) -> Callable[..., Awaitable[T]]:
+        if cache:
+            func.cache = {}  # type: ignore[attr-defined]
+
+        delayed_func = delayed(func)
+
+        @wraps(func)
+        async def wrapper(*args: Any, **kwargs: Any) -> T:
+            if cache:
+                key = _cache_key(args, kwargs)  # type: ignore[arg-type]
+                future = func.cache.get(key)  # type: ignore[attr-defined]
+
+                if future is None:
+                    future = client.compute(delayed_func(*args, **kwargs))
+                    func.cache[key] = future  # type: ignore[attr-defined]
+            else:
+                future = client.compute(delayed_func(*args, **kwargs))
+
+            result = await future
+            return result
+
+        return wrapper
+
+    return _daskify

@@ -3,9 +3,10 @@ from __future__ import annotations
 import itertools
 import warnings
 from collections import OrderedDict
+from collections.abc import Iterable
 from copy import copy
 from math import sqrt
-from typing import Callable, Iterable
+from typing import Callable
 
 import cloudpickle
 import numpy as np
@@ -230,6 +231,65 @@ def default_loss(ip: LinearNDInterpolator) -> np.ndarray:
     return losses
 
 
+def thresholded_loss_function(
+    lower_threshold: float | None = None,
+    upper_threshold: float | None = None,
+    priority_factor: float = 0.1,
+) -> Callable[[LinearNDInterpolator], np.ndarray]:
+    """
+    Factory function to create a custom loss function that deprioritizes
+    values above an upper threshold and below a lower threshold.
+
+    Parameters
+    ----------
+    lower_threshold : float, optional
+        The lower threshold for deprioritizing values. If None (default),
+        there is no lower threshold.
+    upper_threshold : float, optional
+        The upper threshold for deprioritizing values. If None (default),
+        there is no upper threshold.
+    priority_factor : float, default: 0.1
+        The factor by which the loss is multiplied for values outside
+        the specified thresholds.
+
+    Returns
+    -------
+    custom_loss : Callable[[LinearNDInterpolator], np.ndarray]
+        A custom loss function that can be used with Learner2D.
+    """
+
+    def custom_loss(ip: LinearNDInterpolator) -> np.ndarray:
+        """Loss function that deprioritizes values outside an upper and lower threshold.
+
+        Parameters
+        ----------
+        ip : `scipy.interpolate.LinearNDInterpolator` instance
+
+        Returns
+        -------
+        losses : numpy.ndarray
+            Loss per triangle in ``ip.tri``.
+        """
+        losses = default_loss(ip)
+
+        if lower_threshold is not None or upper_threshold is not None:
+            simplices = ip.tri.simplices
+            values = ip.values[simplices]
+            if lower_threshold is not None:
+                mask_lower = (values < lower_threshold).all(axis=(1, -1))
+                if mask_lower.any():
+                    losses[mask_lower] *= priority_factor
+
+            if upper_threshold is not None:
+                mask_upper = (values > upper_threshold).all(axis=(1, -1))
+                if mask_upper.any():
+                    losses[mask_upper] *= priority_factor
+
+        return losses
+
+    return custom_loss
+
+
 def choose_point_in_triangle(triangle: np.ndarray, max_badness: int) -> np.ndarray:
     """Choose a new point in inside a triangle.
 
@@ -376,9 +436,12 @@ class Learner2D(BaseLearner):
         loss_per_triangle: Callable | None = None,
     ) -> None:
         self.ndim = len(bounds)
-        self._vdim = None
+        self._vdim: int | None = None
         self.loss_per_triangle = loss_per_triangle or default_loss
-        self.bounds = tuple((float(a), float(b)) for a, b in bounds)
+        self.bounds = (
+            (float(bounds[0][0]), float(bounds[0][1])),
+            (float(bounds[1][0]), float(bounds[1][1])),
+        )
         self.data = OrderedDict()
         self._stack = OrderedDict()
         self.pending_points = set()
@@ -413,7 +476,7 @@ class Learner2D(BaseLearner):
             [(x, y, *np.atleast_1d(z)) for (x, y), z in sorted(self.data.items())]
         )
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -459,7 +522,7 @@ class Learner2D(BaseLearner):
             assign_defaults(self.function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
@@ -506,7 +569,7 @@ class Learner2D(BaseLearner):
         return points * self.xy_scale + self.xy_mean
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         """Number of evaluated points."""
         return len(self.data)
 
@@ -533,7 +596,7 @@ class Learner2D(BaseLearner):
         )
 
     def interpolated_on_grid(
-        self, n: int = None
+        self, n: int | None = None
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get the interpolated data on a grid.
 
@@ -654,7 +717,7 @@ class Learner2D(BaseLearner):
         return xmin <= x <= xmax and ymin <= y <= ymax
 
     def tell(self, point: tuple[float, float], value: float | Iterable[float]) -> None:
-        point = tuple(point)
+        point = tuple(point)  # type: ignore[assignment]
         self.data[point] = value
         if not self.inside_bounds(point):
             return
@@ -663,7 +726,7 @@ class Learner2D(BaseLearner):
         self._stack.pop(point, None)
 
     def tell_pending(self, point: tuple[float, float]) -> None:
-        point = tuple(point)
+        point = tuple(point)  # type: ignore[assignment]
         if not self.inside_bounds(point):
             return
         self.pending_points.add(point)
@@ -818,12 +881,9 @@ class Learner2D(BaseLearner):
         else:
             im = hv.Image([], bounds=lbrt)
             tris = hv.EdgePaths([])
-
-        im_opts = {"cmap": "viridis"}
-        tri_opts = {"line_width": 0.5, "alpha": tri_alpha}
-        no_hover = {"plot": {"inspection_policy": None, "tools": []}}
-
-        return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
+        return im.opts(cmap="viridis") * tris.opts(
+            line_width=0.5, alpha=tri_alpha, tools=[]
+        )
 
     def _get_data(self) -> dict[tuple[float, float], Float | np.ndarray]:
         return self.data

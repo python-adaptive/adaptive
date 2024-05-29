@@ -1,14 +1,23 @@
 from __future__ import annotations
 
+import sys
 from copy import copy
-from numbers import Integral as Int
-from typing import Any, Tuple
+from typing import TYPE_CHECKING, Any
 
 import cloudpickle
 from sortedcontainers import SortedDict, SortedSet
 
 from adaptive.learner.base_learner import BaseLearner
-from adaptive.utils import assign_defaults, partial_function_from_dataframe
+from adaptive.types import Int
+from adaptive.utils import (
+    assign_defaults,
+    cache_latest,
+    partial_function_from_dataframe,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from typing import Callable
 
 try:
     import pandas
@@ -18,13 +27,12 @@ try:
 except ModuleNotFoundError:
     with_pandas = False
 
-try:
+if sys.version_info >= (3, 10):
     from typing import TypeAlias
-except ImportError:
+else:
     from typing_extensions import TypeAlias
 
-
-PointType: TypeAlias = Tuple[Int, Any]
+PointType: TypeAlias = tuple[Int, Any]
 
 
 class _IgnoreFirstArgument:
@@ -78,12 +86,17 @@ class SequenceLearner(BaseLearner):
     the added benefit of having results in the local kernel already.
     """
 
-    def __init__(self, function, sequence):
+    def __init__(
+        self,
+        function: Callable[[Any], Any],
+        sequence: Sequence[Any],
+    ):
         self._original_function = function
         self.function = _IgnoreFirstArgument(function)
         # prefer range(len(...)) over enumerate to avoid slowdowns
         # when passing lazy sequences
-        self._to_do_indices = SortedSet(range(len(sequence)))
+        indices = range(len(sequence))
+        self._to_do_indices = SortedSet(indices)
         self._ntotal = len(sequence)
         self.sequence = copy(sequence)
         self.data = SortedDict()
@@ -97,7 +110,7 @@ class SequenceLearner(BaseLearner):
         self, n: int, tell_pending: bool = True
     ) -> tuple[list[PointType], list[float]]:
         indices = []
-        points = []
+        points: list[PointType] = []
         loss_improvements = []
         for index in self._to_do_indices:
             if len(points) >= n:
@@ -113,6 +126,7 @@ class SequenceLearner(BaseLearner):
 
         return points, loss_improvements
 
+    @cache_latest
     def loss(self, real: bool = True) -> float:
         if not (self._to_do_indices or self.pending_points):
             return 0.0
@@ -146,16 +160,18 @@ class SequenceLearner(BaseLearner):
         return list(self.data.values())
 
     @property
-    def npoints(self) -> int:
+    def npoints(self) -> int:  # type: ignore[override]
         return len(self.data)
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
         index_name: str = "i",
         x_name: str = "x",
         y_name: str = "y",
+        *,
+        full_sequence: bool = False,
     ) -> pandas.DataFrame:
         """Return the data as a `pandas.DataFrame`.
 
@@ -173,6 +189,9 @@ class SequenceLearner(BaseLearner):
             Name of the input value, by default "x"
         y_name : str, optional
             Name of the output value, by default "y"
+        full_sequence : bool, optional
+            If True, the returned dataframe will have the full sequence
+            where the y_name values are pd.NA if not evaluated yet.
 
         Returns
         -------
@@ -185,8 +204,16 @@ class SequenceLearner(BaseLearner):
         """
         if not with_pandas:
             raise ImportError("pandas is not installed.")
-        indices, ys = zip(*self.data.items()) if self.data else ([], [])
-        sequence = [self.sequence[i] for i in indices]
+        import pandas as pd
+
+        if full_sequence:
+            indices = list(range(len(self.sequence)))
+            sequence = list(self.sequence)
+            ys = [self.data.get(i, pd.NA) for i in indices]
+        else:
+            indices, ys = zip(*self.data.items()) if self.data else ([], [])  # type: ignore[assignment]
+            sequence = [self.sequence[i] for i in indices]
+
         df = pandas.DataFrame(indices, columns=[index_name])
         df[x_name] = sequence
         df[y_name] = ys
@@ -196,7 +223,7 @@ class SequenceLearner(BaseLearner):
             assign_defaults(self._original_function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
@@ -204,6 +231,8 @@ class SequenceLearner(BaseLearner):
         index_name: str = "i",
         x_name: str = "x",
         y_name: str = "y",
+        *,
+        full_sequence: bool = False,
     ):
         """Load data from a `pandas.DataFrame`.
 
@@ -226,10 +255,25 @@ class SequenceLearner(BaseLearner):
             The ``x_name`` used in ``to_dataframe``, by default "x"
         y_name : str, optional
             The ``y_name`` used in ``to_dataframe``, by default "y"
+        full_sequence : bool, optional
+            The ``full_sequence`` used in ``to_dataframe``, by default False
         """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        import pandas as pd
+
         indices = df[index_name].values
         xs = df[x_name].values
-        self.tell_many(zip(indices, xs), df[y_name].values)
+        ys = df[y_name].values
+
+        if full_sequence:
+            evaluated_indices = [i for i, y in enumerate(ys) if y is not pd.NA]
+            xs = xs[evaluated_indices]
+            ys = ys[evaluated_indices]
+            indices = indices[evaluated_indices]
+
+        self.tell_many(zip(indices, xs), ys)
+
         if with_default_function_args:
             self.function = partial_function_from_dataframe(
                 self._original_function, df, function_prefix

@@ -407,7 +407,7 @@ class LearnerND(BaseLearner):
         of ``learner.function``."""
         return np.array([(*p, *np.atleast_1d(v)) for p, v in sorted(self.data.items())])
 
-    def to_dataframe(
+    def to_dataframe(  # type: ignore[override]
         self,
         with_default_function_args: bool = True,
         function_prefix: str = "function.",
@@ -454,7 +454,7 @@ class LearnerND(BaseLearner):
             assign_defaults(self.function, df, function_prefix)
         return df
 
-    def load_dataframe(
+    def load_dataframe(  # type: ignore[override]
         self,
         df: pandas.DataFrame,
         with_default_function_args: bool = True,
@@ -932,12 +932,9 @@ class LearnerND(BaseLearner):
         else:
             im = hv.Image([], bounds=lbrt)
             tris = hv.EdgePaths([])
-
-        im_opts = {"cmap": "viridis"}
-        tri_opts = {"line_width": 0.5, "alpha": tri_alpha}
-        no_hover = {"plot": {"inspection_policy": None, "tools": []}}
-
-        return im.opts(style=im_opts) * tris.opts(style=tri_opts, **no_hover)
+        return im.opts(cmap="viridis") * tris.opts(
+            line_width=0.5, alpha=tri_alpha, tools=[]
+        )
 
     def plot_slice(self, cut_mapping, n=None):
         """Plot a 1D or 2D interpolated slice of a N-dimensional function.
@@ -990,9 +987,11 @@ class LearnerND(BaseLearner):
             xs = ys = np.linspace(0, 1, n)
             xys = [xs[:, None], ys[None, :]]
             values = [
-                cut_mapping[i]
-                if i in cut_mapping
-                else xys.pop(0) * (b[1] - b[0]) + b[0]
+                (
+                    cut_mapping[i]
+                    if i in cut_mapping
+                    else xys.pop(0) * (b[1] - b[0]) + b[0]
+                )
                 for i, b in enumerate(self._bbox)
             ]
 
@@ -1005,7 +1004,7 @@ class LearnerND(BaseLearner):
             else:
                 im = hv.Image([], bounds=lbrt)
 
-            return im.opts(style={"cmap": "viridis"})
+            return im.opts(cmap="viridis")
         else:
             raise ValueError("Only 1 or 2-dimensional plots can be generated.")
 
@@ -1114,7 +1113,7 @@ class LearnerND(BaseLearner):
         vertices = []  # index -> (x,y,z)
         faces_or_lines = []  # tuple of indices of the corner points
 
-        @functools.lru_cache()
+        @functools.lru_cache
         def _get_vertex_index(a, b):
             vertex_a = self.tri.vertices[a]
             vertex_b = self.tri.vertices[b]
@@ -1199,10 +1198,7 @@ class LearnerND(BaseLearner):
 
         vertices, lines = self._get_iso(level, which="line")
         paths = [[vertices[i], vertices[j]] for i, j in lines]
-        contour = hv.Path(paths)
-
-        contour_opts = {"color": "black"}
-        contour = contour.opts(style=contour_opts)
+        contour = hv.Path(paths).opts(color="black")
         return plot * contour
 
     def plot_isosurface(self, level=0.0, hull_opacity=0.2):

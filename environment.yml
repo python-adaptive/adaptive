@@ -16,5 +16,4 @@ dependencies:
   - loky
   - jupyter_client>=5.2.2
   - ipywidgets
-  - scikit-learn
   - plotly

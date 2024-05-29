@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import random
 import time
+from typing import TYPE_CHECKING
 
 import flaky
 import numpy as np
@@ -7,6 +10,9 @@ import numpy as np
 from adaptive.learner import Learner1D
 from adaptive.learner.learner1D import curvature_loss_function
 from adaptive.runner import BlockingRunner, simple
+
+if TYPE_CHECKING:
+    pass
 
 
 def flat_middle(x):
