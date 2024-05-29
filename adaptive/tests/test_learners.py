@@ -30,13 +30,6 @@ from adaptive.learner import (
 from adaptive.learner.learner1D import with_pandas
 from adaptive.runner import simple
 
-try:
-    from adaptive.learner.skopt_learner import SKOptLearner
-except (ModuleNotFoundError, ImportError):
-    # XXX: catch the ImportError because of https://github.com/scikit-optimize/scikit-optimize/issues/902
-    SKOptLearner = None  # type: ignore[assignment,misc]
-
-
 LOSS_FUNCTIONS = {
     Learner1D: (
         "loss_per_interval",
@@ -574,7 +567,6 @@ def test_balancing_learner(learner_type, f, learner_kwargs):
     LearnerND,
     AverageLearner,
     AverageLearner1D,
-    maybe_skip(SKOptLearner),
     IntegratorLearner,
     SequenceLearner,
     with_all_loss_functions=False,
@@ -607,7 +599,6 @@ def test_saving(learner_type, f, learner_kwargs):
     LearnerND,
     AverageLearner,
     AverageLearner1D,
-    maybe_skip(SKOptLearner),
     IntegratorLearner,
     SequenceLearner,
     with_all_loss_functions=False,
@@ -646,7 +637,6 @@ def test_saving_of_balancing_learner(learner_type, f, learner_kwargs):
     LearnerND,
     AverageLearner,
     AverageLearner1D,
-    maybe_skip(SKOptLearner),
     IntegratorLearner,
     with_all_loss_functions=False,
 )
