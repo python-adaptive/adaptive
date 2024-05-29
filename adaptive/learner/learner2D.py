@@ -48,7 +48,7 @@ def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
     deviations : list
         The deviation per triangle.
     """
-    values = ip.values / (np.ptp(ip.values,axis=0).max() or 1)
+    values = ip.values / (np.ptp(ip.values, axis=0).max() or 1)
     gradients = interpolate.interpnd.estimate_gradients_2d_global(
         ip.tri, values, tol=1e-6
     )
