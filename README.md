@@ -10,7 +10,6 @@
 [![Downloads](https://img.shields.io/conda/dn/conda-forge/adaptive.svg)](https://anaconda.org/conda-forge/adaptive)
 [![GitHub](https://img.shields.io/github/stars/python-adaptive/adaptive.svg?style=social)](https://github.com/python-adaptive/adaptive/stargazers)
 [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive)
-[![Pipeline-status](https://dev.azure.com/python-adaptive/adaptive/_apis/build/status/python-adaptive.adaptive?branchName=main)](https://dev.azure.com/python-adaptive/adaptive/_build/latest?definitionId=6?branchName=main)
 [![PyPI](https://img.shields.io/pypi/v/adaptive.svg)](https://pypi.python.org/pypi/adaptive)
 
 <!-- badges-end -->
