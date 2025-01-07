@@ -11,7 +11,7 @@ from typing import Callable
 import cloudpickle
 import numpy as np
 from scipy import interpolate
-from scipy.interpolate.interpnd import LinearNDInterpolator
+from scipy.interpolate import LinearNDInterpolator
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.learner.triangulation import simplex_volume_in_embedding
