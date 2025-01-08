@@ -10,7 +10,7 @@ maintainers = [{ name = "Adaptive authors" }]
 license = { text = "BSD" }
 requires-python = ">=3.9"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: BSD License",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3.9",
