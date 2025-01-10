@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from adaptive.learner import BalancingLearner, Learner1D
+from adaptive.learner import BalancingLearner, Learner1D, SequenceLearner
 from adaptive.runner import simple
 
 strategies = ["loss", "loss_improvements", "npoints", "cycle"]
@@ -64,3 +64,11 @@ def test_strategies(strategy, goal_type, goal):
     learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
     learner = BalancingLearner(learners, strategy=strategy)
     simple(learner, **{goal_type: goal})
+
+
+def test_sequential_strategy() -> None:
+    learners = [SequenceLearner(lambda x: x, sequence=[0, 1, 2, 3]) for i in range(10)]
+    learner = BalancingLearner(learners, strategy="sequential")  # type: ignore[arg-type]
+    simple(learner, goal=lambda lrn: sum(x.npoints for x in lrn.learners) >= 4 * 5)
+    assert all(lrn.done() for lrn in learners[:5])
+    assert all(not lrn.done() for lrn in learners[5:])
