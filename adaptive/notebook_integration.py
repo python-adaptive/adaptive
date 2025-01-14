@@ -17,8 +17,7 @@ def notebook_extension(*, _inline_js=True):
     """Enable ipywidgets, holoviews, and asyncio notebook integration."""
     if not in_ipynb():
         raise RuntimeError(
-            '"adaptive.notebook_extension()" may only be run '
-            "from a Jupyter notebook."
+            '"adaptive.notebook_extension()" may only be run from a Jupyter notebook.'
         )
 
     global _async_enabled, _holoviews_enabled, _ipywidgets_enabled
@@ -122,8 +121,7 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None, normalize=T
     """
     if not _holoviews_enabled:
         raise RuntimeError(
-            "Live plotting is not enabled; did you run "
-            "'adaptive.notebook_extension()'?"
+            "Live plotting is not enabled; did you run 'adaptive.notebook_extension()'?"
         )
 
     import holoviews as hv
@@ -208,8 +206,7 @@ def live_info(runner, *, update_interval=0.5):
     """
     if not _holoviews_enabled:
         raise RuntimeError(
-            "Live plotting is not enabled; did you run "
-            "'adaptive.notebook_extension()'?"
+            "Live plotting is not enabled; did you run 'adaptive.notebook_extension()'?"
         )
 
     import ipywidgets
@@ -274,7 +271,7 @@ def _info_html(runner):
         info.append(("# of samples", runner.learner.nsamples))
 
     with suppress(Exception):
-        info.append(("latest loss", f'{runner.learner._cache["loss"]:.3f}'))
+        info.append(("latest loss", f"{runner.learner._cache['loss']:.3f}"))
 
     table = "\n".join(_table_row(i, k, v) for i, (k, v) in enumerate(info))
 

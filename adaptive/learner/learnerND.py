@@ -1098,8 +1098,7 @@ class LearnerND(BaseLearner):
         if which == "surface":
             if self.ndim != 3 or self.vdim != 1:
                 raise Exception(
-                    "Isosurface plotting is only supported"
-                    " for a 3D input and 1D output"
+                    "Isosurface plotting is only supported for a 3D input and 1D output"
                 )
             get_surface = True
             get_line = False
