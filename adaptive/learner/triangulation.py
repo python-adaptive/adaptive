@@ -336,8 +336,7 @@ class Triangulation:
         vectors = subtract(coords[1:], coords[0])
         if matrix_rank(vectors) < dim:
             raise ValueError(
-                "Initial simplex has zero volumes "
-                "(the points are linearly dependent)"
+                "Initial simplex has zero volumes (the points are linearly dependent)"
             )
 
         self.vertices = list(coords)
