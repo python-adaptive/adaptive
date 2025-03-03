@@ -7,7 +7,6 @@ import random
 import warnings
 from contextlib import suppress
 
-_async_enabled = False
 _holoviews_enabled = False
 _ipywidgets_enabled = False
 _plotly_enabled = False
@@ -21,7 +20,7 @@ def notebook_extension(*, _inline_js=True):
             "from a Jupyter notebook."
         )
 
-    global _async_enabled, _holoviews_enabled, _ipywidgets_enabled
+    global _holoviews_enabled, _ipywidgets_enabled
 
     # Load holoviews
     try:
@@ -50,11 +49,6 @@ def notebook_extension(*, _inline_js=True):
             RuntimeWarning,
             stacklevel=2,
         )
-
-    # Enable asyncio integration
-    if not _async_enabled:
-        get_ipython().magic("gui asyncio")  # noqa: F821
-        _async_enabled = True
 
 
 def ensure_holoviews():
