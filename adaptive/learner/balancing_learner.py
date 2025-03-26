@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import sys
 from collections import defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Generator, Iterable, Sequence
 from contextlib import suppress
 from functools import partial
 from operator import itemgetter
@@ -36,7 +36,9 @@ def dispatch(child_functions: list[Callable], arg: Any) -> Any:
     return child_functions[index](x)
 
 
-STRATEGY_TYPE: TypeAlias = Literal["loss_improvements", "loss", "npoints", "cycle"]
+STRATEGY_TYPE: TypeAlias = Literal[
+    "loss_improvements", "loss", "npoints", "cycle", "sequential"
+]
 
 CDIMS_TYPE: TypeAlias = Union[
     Sequence[dict[str, Any]],
@@ -77,13 +79,21 @@ class BalancingLearner(BaseLearner):
     function : callable
         A function that calls the functions of the underlying learners.
         Its signature is ``function(learner_index, point)``.
-    strategy : 'loss_improvements' (default), 'loss', 'npoints', or 'cycle'.
+    strategy : 'loss_improvements' (default), 'loss', 'npoints', 'cycle', or 'sequential'
         The points that the `BalancingLearner` choses can be either based on:
-        the best 'loss_improvements', the smallest total 'loss' of the
-        child learners, the number of points per learner, using 'npoints',
-        or by cycling through the learners one by one using 'cycle'.
-        One can dynamically change the strategy while the simulation is
-        running by changing the ``learner.strategy`` attribute.
+
+        - 'loss_improvements': This strategy selects the points with the best
+          improvement in loss.
+        - 'loss': This strategy selects the points with the smallest total loss
+          from the child learners.
+        - 'npoints': This strategy selects points based on the number of points
+          per learner.
+        - 'cycle': This strategy cycles through all learners one by one.
+        - 'sequential': This strategy goes through learners in a sequential
+          order. Only works with learners that have a `done` method.
+
+        You can change the strategy dynamically while the simulation is
+        running by modifying the `learner.strategy` attribute.
 
     Notes
     -----
@@ -116,11 +126,10 @@ class BalancingLearner(BaseLearner):
         self._cdims_default = cdims
 
         if len({learner.__class__ for learner in self.learners}) > 1:
-            raise TypeError(
-                "A BalacingLearner can handle only one type" " of learners."
-            )
+            raise TypeError("A BalacingLearner can handle only one type of learners.")
 
         self.strategy: STRATEGY_TYPE = strategy
+        self._gen: Generator | None = None
 
     def new(self) -> BalancingLearner:
         """Create a new `BalancingLearner` with the same parameters."""
@@ -159,13 +168,19 @@ class BalancingLearner(BaseLearner):
 
     @property
     def strategy(self) -> STRATEGY_TYPE:
-        """Can be either 'loss_improvements' (default), 'loss', 'npoints', or
-        'cycle'. The points that the `BalancingLearner` choses can be either
-        based on: the best 'loss_improvements', the smallest total 'loss' of
-        the child learners, the number of points per learner, using 'npoints',
-        or by going through all learners one by one using 'cycle'.
-        One can dynamically change the strategy while the simulation is
-        running by changing the ``learner.strategy`` attribute."""
+        """The `BalancingLearner` can choose points based on different strategies.
+
+        The strategies are:
+
+        - 'loss_improvements': This strategy selects the points with the best improvement in loss.
+        - 'loss': This strategy selects the points with the smallest total loss from the child learners.
+        - 'npoints': This strategy selects points based on the number of points per learner.
+        - 'cycle': This strategy cycles through all learners one by one.
+        - 'sequential': This strategy goes through learners in a sequential order.
+
+        You can change the strategy dynamically while the simulation is
+        running by modifying the `learner.strategy` attribute.
+        """
         return self._strategy
 
     @strategy.setter
@@ -180,6 +195,9 @@ class BalancingLearner(BaseLearner):
         elif strategy == "cycle":
             self._ask_and_tell = self._ask_and_tell_based_on_cycle
             self._cycle = itertools.cycle(range(len(self.learners)))
+        elif strategy == "sequential":
+            self._ask_and_tell = self._ask_and_tell_based_on_sequential
+            ...
         else:
             raise ValueError(
                 'Only strategy="loss_improvements", strategy="loss",'
@@ -255,13 +273,30 @@ class BalancingLearner(BaseLearner):
     def _ask_and_tell_based_on_cycle(
         self, n: int
     ) -> tuple[list[tuple[Int, Any]], list[float]]:
-        points, loss_improvements = [], []
+        points: list[tuple[Int, Any]] = []
+        loss_improvements: list[float] = []
         for _ in range(n):
             index = next(self._cycle)
             point, loss_improvement = self.learners[index].ask(n=1)
             points.append((index, point[0]))
             loss_improvements.append(loss_improvement[0])
             self.tell_pending((index, point[0]))
+
+        return points, loss_improvements
+
+    def _ask_and_tell_based_on_sequential(
+        self, n: int
+    ) -> tuple[list[tuple[Int, Any]], list[float]]:
+        if self._gen is None:
+            self._gen = _sequential_generator(self.learners)
+        points: list[tuple[Int, Any]] = []
+        loss_improvements: list[float] = []
+        for learner_index, point, loss_improvement in self._gen:
+            points.append((learner_index, point))
+            loss_improvements.append(loss_improvement)
+            self.tell_pending((learner_index, point))
+            if len(points) >= n:
+                break
 
         return points, loss_improvements
 
@@ -582,3 +617,27 @@ class BalancingLearner(BaseLearner):
     def __setstate__(self, state: tuple[list[BaseLearner], CDIMS_TYPE, STRATEGY_TYPE]):
         learners, cdims, strategy = state
         self.__init__(learners, cdims=cdims, strategy=strategy)  # type: ignore[misc]
+
+
+def _sequential_generator(
+    learners: list[BaseLearner],
+) -> Generator[tuple[int, Any, float], None, None]:
+    learner_index = 0
+    if not hasattr(learners[0], "done"):
+        msg = "All learners must have a `done` method to use the 'sequential' strategy."
+        raise ValueError(msg)
+    while True:
+        learner = learners[learner_index]
+        if learner.done():  # type: ignore[attr-defined]
+            if learner_index == len(learners) - 1:
+                return
+            learner_index += 1
+            continue
+
+        point, loss_improvement = learner.ask(n=1)
+        if not point:  # if learner is exhausted, we don't get points
+            if learner_index == len(learners) - 1:
+                return
+            learner_index += 1
+            continue
+        yield learner_index, point[0], loss_improvement[0]
