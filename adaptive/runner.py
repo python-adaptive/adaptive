@@ -935,7 +935,7 @@ def _info_text(runner, separator: str = "\n"):
         info.append(("# of samples", runner.learner.nsamples))
 
     with suppress(Exception):
-        info.append(("latest loss", f'{runner.learner._cache["loss"]:.3f}'))
+        info.append(("latest loss", f"{runner.learner._cache['loss']:.3f}"))
 
     width = 30
     formatted_info = [f"{k}: {v}".ljust(width) for i, (k, v) in enumerate(info)]
