@@ -2,6 +2,8 @@
 
 import nox
 
+nox.options.default_venv_backend = "uv"
+
 
 @nox.session(python=["3.9", "3.10", "3.11", "3.12"])
 @nox.parametrize("all_deps", [True, False])
