@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pytest
 
-if TYPE_CHECKING:
-    pass
 try:
     import ipykernel.iostream
     import zmq

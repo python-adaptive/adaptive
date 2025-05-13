@@ -5,7 +5,7 @@ import itertools
 import math
 from collections.abc import Callable, Sequence
 from copy import copy, deepcopy
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import Any, TypeAlias
 
 import cloudpickle
 import numpy as np
@@ -31,25 +31,21 @@ try:
 except ModuleNotFoundError:
     with_pandas = False
 
-if TYPE_CHECKING:
-    # -- types --
 
-    # Commonly used types
-    Interval: TypeAlias = tuple[float, float] | tuple[float, float, int]
-    NeighborsType: TypeAlias = SortedDict[float, list[float | None]]
+# Commonly used types
+Interval: TypeAlias = tuple[float, float] | tuple[float, float, int]
+NeighborsType: TypeAlias = SortedDict[float, list[float | None]]
 
-    # Types for loss_per_interval functions
-    XsType0: TypeAlias = tuple[float, float]
-    YsType0: TypeAlias = tuple[float, float] | tuple[np.ndarray, np.ndarray]
-    XsType1: TypeAlias = tuple[float | None, float | None, float | None, float | None]
-    YsType1: TypeAlias = (
-        tuple[float | None, float | None, float | None, float | None]
-        | tuple[
-            np.ndarray | None, np.ndarray | None, np.ndarray | None, np.ndarray | None
-        ]
-    )
-    XsTypeN: TypeAlias = tuple[float | None, ...]
-    YsTypeN: TypeAlias = tuple[float | None, ...] | tuple[np.ndarray | None, ...]
+# Types for loss_per_interval functions
+XsType0: TypeAlias = tuple[float, float]
+YsType0: TypeAlias = tuple[float, float] | tuple[np.ndarray, np.ndarray]
+XsType1: TypeAlias = tuple[float | None, float | None, float | None, float | None]
+YsType1: TypeAlias = (
+    tuple[float | None, float | None, float | None, float | None]
+    | tuple[np.ndarray | None, np.ndarray | None, np.ndarray | None, np.ndarray | None]
+)
+XsTypeN: TypeAlias = tuple[float | None, ...]
+YsTypeN: TypeAlias = tuple[float | None, ...] | tuple[np.ndarray | None, ...]
 
 
 __all__ = [

@@ -24,31 +24,17 @@ from adaptive.learner.base_learner import LearnerType
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 from adaptive.utils import SequentialExecutor
 
+FutureTypes: TypeAlias = concurrent.Future | asyncio.Future
+
 if TYPE_CHECKING:
     import holoviews
+
+    from ._types import ExecutorTypes
 
 
 with_ipyparallel = find_spec("ipyparallel") is not None
 with_distributed = find_spec("distributed") is not None
 with_mpi4py = find_spec("mpi4py") is not None
-
-if TYPE_CHECKING:
-    import distributed
-    import ipyparallel
-    import mpi4py.futures
-
-    ExecutorTypes: TypeAlias = (
-        concurrent.ProcessPoolExecutor
-        | concurrent.ThreadPoolExecutor
-        | SequentialExecutor
-        | loky.reusable_executor._ReusablePoolExecutor
-        | distributed.Client
-        | distributed.cfexecutor.ClientExecutor
-        | mpi4py.futures.MPIPoolExecutor
-        | ipyparallel.Client
-        | ipyparallel.client.view.ViewExecutor
-    )
-    FutureTypes: TypeAlias = concurrent.Future | asyncio.Future
 
 
 with suppress(ModuleNotFoundError):
@@ -906,7 +892,7 @@ def _info_text(runner, separator: str = "\n"):
         info.append(("# of samples", runner.learner.nsamples))
 
     with suppress(Exception):
-        info.append(("latest loss", f'{runner.learner._cache["loss"]:.3f}'))
+        info.append(("latest loss", f"{runner.learner._cache['loss']:.3f}"))
 
     width = 30
     formatted_info = [f"{k}: {v}".ljust(width) for i, (k, v) in enumerate(info)]

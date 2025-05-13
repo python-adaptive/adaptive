@@ -1,14 +1,10 @@
 import random
-from typing import TYPE_CHECKING
 
 import flaky
 import numpy as np
 
 from adaptive.learner import AverageLearner
 from adaptive.runner import simple
-
-if TYPE_CHECKING:
-    pass
 
 
 def f_unused(seed):
