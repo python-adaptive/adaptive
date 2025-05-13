@@ -25,6 +25,6 @@ jobs:
     - name: Register Python problem matcher
       run: echo "::add-matcher::.github/workflows/matchers/pytest.json"
     - name: Test with nox using minimal dependencies
-      run: uv run --group nox nox -e "pytest-${{ matrix.python-version }}(all_deps=False)"
+      run: uv run --group nox nox -e "pytest_min_deps-${{ matrix.python-version }}"
     - name: Test with nox with all dependencies
-      run: uv run --group nox nox -e "pytest-${{ matrix.python-version }}(all_deps=True)"
+      run: uv run --group nox nox -e "pytest_all_deps-${{ matrix.python-version }}"

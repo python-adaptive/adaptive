@@ -4,12 +4,21 @@ import nox
 
 nox.options.default_venv_backend = "uv"
 
+python = ["3.9", "3.10", "3.11", "3.12"]
 
-@nox.session(python=["3.9", "3.10", "3.11", "3.12"])
-@nox.parametrize("all_deps", [True, False])
-def pytest(session: nox.Session, all_deps: bool) -> None:
-    """Run pytest with optional dependencies."""
-    session.install(".[test,other]" if all_deps else ".[test]")
+
+@nox.session(python=python)
+def pytest_min_deps(session: nox.Session) -> None:
+    """Run pytest with no optional dependencies."""
+    session.install(".[test]")
+    session.run("coverage", "erase")
+    session.run("pytest")
+
+
+@nox.session(python=python)
+def pytest_all_deps(session: nox.Session) -> None:
+    """Run pytest with "other" optional dependencies."""
+    session.install(".[test,other]")
     session.run("coverage", "erase")
     session.run("pytest")
 
