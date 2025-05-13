@@ -34,7 +34,6 @@ def pytest_typeguard(session: nox.Session) -> None:
 @nox.session(python="3.11")
 def coverage(session: nox.Session) -> None:
     """Generate coverage report."""
-    session.install("coverage")
     session.install(".[test,other]")
     session.run("pytest")
 

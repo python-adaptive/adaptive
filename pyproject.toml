@@ -55,6 +55,7 @@ test = [
     "pytest-timeout",
     "pre_commit",
     "typeguard",
+    "coverage",
 ]
 dev = ["adaptive[test,nox,notebook,other]"]
 
