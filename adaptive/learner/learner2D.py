@@ -12,6 +12,7 @@ import cloudpickle
 import numpy as np
 from scipy import interpolate
 from scipy.interpolate import LinearNDInterpolator
+import scipy.interpolate._interpnd as interpnd
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.learner.triangulation import simplex_volume_in_embedding
@@ -49,7 +50,7 @@ def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
         The deviation per triangle.
     """
     values = ip.values / (np.ptp(ip.values, axis=0).max() or 1)
-    gradients = interpolate.interpnd.estimate_gradients_2d_global(
+    gradients = interpnd.estimate_gradients_2d_global(
         ip.tri, values, tol=1e-6
     )
 
