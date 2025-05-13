@@ -24,9 +24,7 @@ jobs:
       uses: astral-sh/setup-uv@v6
     - name: Register Python problem matcher
       run: echo "::add-matcher::.github/workflows/matchers/pytest.json"
-    - name: Install dependencies
-      run: pip install nox pytest-github-actions-annotate-failures
     - name: Test with nox using minimal dependencies
-      run: nox -e "pytest-${{ matrix.python-version }}(all_deps=False)"
+      run: uv run --group nox nox -e "pytest-${{ matrix.python-version }}(all_deps=False)"
     - name: Test with nox with all dependencies
-      run: nox -e "pytest-${{ matrix.python-version }}(all_deps=True)"
+      run: uv run --group nox nox -e "pytest-${{ matrix.python-version }}(all_deps=True)"

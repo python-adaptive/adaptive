@@ -47,7 +47,7 @@ notebook = [
     "matplotlib",
     "plotly",
 ]
-testing = [
+test = [
     "flaky",
     "pytest",
     "pytest-cov",
@@ -56,6 +56,7 @@ testing = [
     "pre_commit",
     "typeguard",
 ]
+dev = ["adaptive[test,nox,notebook,other]"]
 
 [project.urls]
 homepage = "https://adaptive.readthedocs.io/"
@@ -65,6 +66,12 @@ repository = "https://github.com/python-adaptive/adaptive"
 [project.readme]
 content-type = "text/markdown"
 file = "README.md"
+
+[dependency-groups]
+nox = [
+    "nox",
+    "pytest-github-actions-annotate-failures",
+]
 
 [tool.setuptools.packages.find]
 include = ["adaptive.*", "adaptive"]

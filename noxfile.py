@@ -9,7 +9,7 @@ nox.options.default_venv_backend = "uv"
 @nox.parametrize("all_deps", [True, False])
 def pytest(session: nox.Session, all_deps: bool) -> None:
     """Run pytest with optional dependencies."""
-    session.install(".[testing,other]" if all_deps else ".[testing]")
+    session.install(".[test,other]" if all_deps else ".[test]")
     session.run("coverage", "erase")
     session.run("pytest")
 
@@ -17,7 +17,7 @@ def pytest(session: nox.Session, all_deps: bool) -> None:
 @nox.session(python="3.11")
 def pytest_typeguard(session: nox.Session) -> None:
     """Run pytest with typeguard."""
-    session.install(".[testing,other]")
+    session.install(".[test,other]")
     session.run("coverage", "erase")
     session.run("pytest", "--typeguard-packages=adaptive")
 
@@ -26,7 +26,7 @@ def pytest_typeguard(session: nox.Session) -> None:
 def coverage(session: nox.Session) -> None:
     """Generate coverage report."""
     session.install("coverage")
-    session.install(".[testing,other]")
+    session.install(".[test,other]")
     session.run("pytest")
 
     session.run("coverage", "report")
