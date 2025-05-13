@@ -35,7 +35,7 @@ def test_distribute_first_points_over_learners(strategy):
         learner = BalancingLearner(learners, strategy=strategy)
 
         points = learner.ask(initial_points)[0]
-        learner.tell_many(points, points)
+        learner.tell_many(points, [x for i, x in points])
 
         points, _ = learner.ask(100)
         i_learner, xs = zip(*points)

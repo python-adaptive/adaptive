@@ -1,8 +1,9 @@
 name: typeguard
 
-# TODO: enable this once typeguard=4 is released and issues are fixed.
-# on:
-#   - push
+on:
+  pull_request:
+  push:
+    branches: [main]
 
 jobs:
   typeguard:
