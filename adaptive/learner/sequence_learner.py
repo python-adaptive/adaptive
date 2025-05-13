@@ -134,7 +134,7 @@ class SequenceLearner(BaseLearner):
         self.pending_points = set()
 
     def tell(self, point: PointType, value: Any) -> None:
-        index, point = point
+        index, _ = point
         self.data[index] = value
         self.pending_points.discard(index)
         self._to_do_indices.discard(index)
