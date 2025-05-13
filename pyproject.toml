@@ -8,15 +8,15 @@ dynamic = ["version"]
 description = "Parallel active learning of mathematical functions"
 maintainers = [{ name = "Adaptive authors" }]
 license = { text = "BSD" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: BSD License",
     "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "scipy",
@@ -100,11 +100,11 @@ output = ".coverage.xml"
 
 [tool.mypy]
 ignore_missing_imports = true
-python_version = "3.9"
+python_version = "3.10"
 
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["B", "C", "E", "F", "W", "T", "B9", "I", "UP"]
