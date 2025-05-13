@@ -106,9 +106,7 @@ class BalancingLearner(BaseLearner):
         self._cdims_default = cdims
 
         if len({learner.__class__ for learner in self.learners}) > 1:
-            raise TypeError(
-                "A BalacingLearner can handle only one type" " of learners."
-            )
+            raise TypeError("A BalacingLearner can handle only one type of learners.")
 
         self.strategy: STRATEGY_TYPE = strategy
 

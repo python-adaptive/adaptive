@@ -448,7 +448,7 @@ class Learner2D(BaseLearner):
         self.aspect_ratio = 1
 
         self._bounds_points = list(itertools.product(*bounds))
-        self._stack.update({p: np.inf for p in self._bounds_points})
+        self._stack.update(dict.fromkeys(self._bounds_points, np.inf))
         self.function = function  # type: ignore
         self._ip = self._ip_combined = None
 

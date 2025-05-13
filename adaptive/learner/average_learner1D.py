@@ -499,8 +499,7 @@ class AverageLearner1D(Learner1D):
         # but ignore it going forward.
         if not np.prod([x >= self.bounds[0] and x <= self.bounds[1] for _, x in xs]):
             raise ValueError(
-                "x value out of bounds, "
-                "remove x or enlarge the bounds of the learner"
+                "x value out of bounds, remove x or enlarge the bounds of the learner"
             )
 
         # Create a mapping of points to a list of samples
@@ -533,8 +532,7 @@ class AverageLearner1D(Learner1D):
         # Check x is within the bounds
         if not np.prod(x >= self.bounds[0] and x <= self.bounds[1]):
             raise ValueError(
-                "x value out of bounds, "
-                "remove x or enlarge the bounds of the learner"
+                "x value out of bounds, remove x or enlarge the bounds of the learner"
             )
 
         # If x is a new point:
