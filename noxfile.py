@@ -23,7 +23,7 @@ def pytest_all_deps(session: nox.Session) -> None:
     session.run("pytest")
 
 
-@nox.session(python="3.11")
+@nox.session(python="3.13")
 def pytest_typeguard(session: nox.Session) -> None:
     """Run pytest with typeguard."""
     session.install(".[test,other]")
@@ -31,7 +31,7 @@ def pytest_typeguard(session: nox.Session) -> None:
     session.run("pytest", "--typeguard-packages=adaptive")
 
 
-@nox.session(python="3.11")
+@nox.session(python="3.13")
 def coverage(session: nox.Session) -> None:
     """Generate coverage report."""
     session.install(".[test,other]")
