@@ -1157,7 +1157,7 @@ def auto_goal(
     if isinstance(learner, DataSaver):
         assert learner is not None
         return auto_goal(
-            learner=learner.learner,
+            learner=learner.learner,  # type: ignore[arg-type]
             loss=loss,
             npoints=npoints,
             end_time=end_time,
