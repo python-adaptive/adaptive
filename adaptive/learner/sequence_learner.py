@@ -140,7 +140,7 @@ class SequenceLearner(BaseLearner):
         self._to_do_indices.discard(index)
 
     def tell_pending(self, point: PointType) -> None:
-        index, point = point
+        index, _ = point
         self.pending_points.add(index)
         self._to_do_indices.discard(index)
 

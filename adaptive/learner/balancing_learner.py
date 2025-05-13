@@ -269,17 +269,17 @@ class BalancingLearner(BaseLearner):
             return self._ask_and_tell(n)
 
     def tell(self, x: tuple[Int, Any], y: Any) -> None:
-        index, x = x
+        index, x_ = x
         self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
         self._pending_loss.pop(index, None)
-        self.learners[index].tell(x, y)
+        self.learners[index].tell(x_, y)
 
     def tell_pending(self, x: tuple[Int, Any]) -> None:
-        index, x = x
+        index, x_ = x
         self._ask_cache.pop(index, None)
         self._loss.pop(index, None)
-        self.learners[index].tell_pending(x)
+        self.learners[index].tell_pending(x_)
 
     def _losses(self, real: bool = True) -> list[float]:
         losses = []
