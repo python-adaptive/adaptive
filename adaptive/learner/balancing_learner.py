@@ -209,8 +209,7 @@ class BalancingLearner(BaseLearner):
         for _ in range(n):
             losses = self._losses(real=False)
             index, _ = max(
-                enumerate(zip(losses, (-n for n in total_points))),
-                key=itemgetter(1),
+                enumerate(zip(losses, (-n for n in total_points))), key=itemgetter(1)
             )
             total_points[index] += 1
 

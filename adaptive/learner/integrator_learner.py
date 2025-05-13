@@ -566,10 +566,7 @@ class IntegratorLearner(BaseLearner):
         ivals = sorted(self.ivals, key=attrgetter("a"))
         if not self.data:
             return hv.Path([])
-        xs, ys = zip(
-            *[(x, y) for ival in ivals for x, y in sorted(ival.data.items())],
-            strict=True,
-        )
+        xs, ys = zip(*[(x, y) for ival in ivals for x, y in sorted(ival.data.items())])
         return hv.Path((xs, ys))
 
     def to_numpy(self):
