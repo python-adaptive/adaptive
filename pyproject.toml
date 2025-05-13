@@ -53,6 +53,7 @@ test = [
     "pytest-cov",
     "pytest-randomly",
     "pytest-timeout",
+    "pytest-xdist",
     "pre_commit",
     "typeguard",
     "coverage",
