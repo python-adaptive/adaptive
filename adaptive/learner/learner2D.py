@@ -287,6 +287,10 @@ def thresholded_loss_function(
     return custom_loss
 
 
+def _cross_2d(x, y):
+    return x[..., 0] * y[..., 1] - x[..., 1] * y[..., 0]
+
+
 def choose_point_in_triangle(triangle: np.ndarray, max_badness: int) -> np.ndarray:
     """Choose a new point in inside a triangle.
 
@@ -310,7 +314,7 @@ def choose_point_in_triangle(triangle: np.ndarray, max_badness: int) -> np.ndarr
         The x and y coordinate of the suggested new point.
     """
     a, b, c = triangle
-    area = 0.5 * np.cross(b - a, c - a)
+    area = 0.5 * _cross_2d(b - a, c - a)
     triangle_roll = np.roll(triangle, 1, axis=0)
     edge_lengths = np.linalg.norm(triangle - triangle_roll, axis=1)
     i = edge_lengths.argmax()
