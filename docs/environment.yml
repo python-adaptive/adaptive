@@ -4,7 +4,7 @@ channels:
   - conda-forge
 
 dependencies:
-  - python=3.10
+  - python=3.11
   - sortedcollections=2.1.0
   - scipy=1.10.1
   - holoviews=1.18.3

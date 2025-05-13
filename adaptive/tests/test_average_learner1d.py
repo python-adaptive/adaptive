@@ -21,7 +21,7 @@ def almost_equal_dicts(a, b):
         if (
             v1 is None
             or v2 is None
-            or isinstance(v1, (tuple, list))
+            or isinstance(v1, tuple | list)
             and any(x is None for x in chain(v1, v2))
         ):
             assert v1 == v2

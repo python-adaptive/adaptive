@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import sys
 from collections import defaultdict
+from collections.abc import Callable
 from math import sqrt
 from operator import attrgetter
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import cloudpickle
 import numpy as np

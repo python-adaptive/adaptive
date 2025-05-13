@@ -3,10 +3,9 @@ from __future__ import annotations
 import math
 import sys
 from collections import defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from copy import deepcopy
 from math import hypot
-from typing import Callable
 
 import numpy as np
 import scipy.stats

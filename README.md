@@ -160,12 +160,12 @@ jupyter labextension install @pyviz/jupyterlab_pyviz
 
 ## :wrench: Development
 
-Clone the repository and run `pip install -e ".[notebook,testing,other]"` to add a link to the cloned repo into your Python path:
+Clone the repository and run `pip install -e ".[notebook,test,other]"` to add a link to the cloned repo into your Python path:
 
 ```bash
 git clone git@github.com:python-adaptive/adaptive.git
 cd adaptive
-pip install -e ".[notebook,testing,other]"
+pip install -e ".[notebook,test,other]"
 ```
 
 We recommend using a Conda environment or a virtualenv for package management during Adaptive development.
