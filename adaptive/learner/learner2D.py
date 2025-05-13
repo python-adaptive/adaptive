@@ -11,7 +11,7 @@ from typing import Callable
 import cloudpickle
 import numpy as np
 from scipy import interpolate
-from scipy.interpolate import LinearNDInterpolator
+from scipy.interpolate import CloughTocher2DInterpolator, LinearNDInterpolator
 
 from adaptive.learner.base_learner import BaseLearner
 from adaptive.learner.triangulation import simplex_volume_in_embedding
@@ -49,9 +49,7 @@ def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
         The deviation per triangle.
     """
     values = ip.values / (np.ptp(ip.values, axis=0).max() or 1)
-    gradients = interpolate.interpnd.estimate_gradients_2d_global(
-        ip.tri, values, tol=1e-6
-    )
+    gradients = CloughTocher2DInterpolator(ip.tri, values, tol=1e-6).grad
 
     simplices = ip.tri.simplices
     p = ip.tri.points[simplices]
