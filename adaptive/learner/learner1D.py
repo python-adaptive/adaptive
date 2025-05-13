@@ -761,8 +761,9 @@ class Learner1D(BaseLearner):
                 ival is not None
                 and self._loss(self.losses_combined, ival) >= self._loss(quals, qual)
             ):
+                assert ival is not None
                 i += 1
-                quals[(*ival, 2)] = loss_ival / 2
+                quals[(ival[0], ival[1], 2)] = loss_ival / 2
             else:
                 quals.pop(qual, None)
                 *xs, n = qual

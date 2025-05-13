@@ -162,7 +162,7 @@ class DataSaver(BaseLearner):
         self.learner._set_data(learner_data)
 
     def __getstate__(self) -> tuple[LearnerType, Callable, OrderedDict]:
-        return (
+        return (  # type: ignore[return-value]
             self.learner,
             self.arg_picker,
             self.extra_data,
