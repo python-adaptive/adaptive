@@ -36,7 +36,6 @@ with_mpi4py = find_spec("mpi4py") is not None
 if TYPE_CHECKING:
     import distributed
     import ipyparallel
-    import ipyparallel.client.asyncresult
     import mpi4py.futures
 
     ExecutorTypes: TypeAlias = (
@@ -50,12 +49,7 @@ if TYPE_CHECKING:
         | ipyparallel.Client
         | ipyparallel.client.view.ViewExecutor
     )
-    FutureTypes: TypeAlias = (
-        concurrent.Future
-        | asyncio.Future
-        | asyncio.Task
-        | ipyparallel.client.asyncresult.AsyncResult
-    )
+    FutureTypes: TypeAlias = concurrent.Future | asyncio.Future
 
 
 with suppress(ModuleNotFoundError):
