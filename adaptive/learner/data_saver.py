@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import functools
 from collections import OrderedDict
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from adaptive.learner.base_learner import BaseLearner, LearnerType
 from adaptive.utils import copy_docstring_from

@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
 from fractions import Fraction
-from typing import Callable
 
 import numpy as np
 from numpy.testing import assert_allclose

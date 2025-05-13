@@ -7,11 +7,11 @@ import inspect
 import os
 import pickle
 import warnings
-from collections.abc import Awaitable, Iterator, Sequence
+from collections.abc import Awaitable, Callable, Iterator, Sequence
 from contextlib import contextmanager
 from functools import wraps
 from itertools import product
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import cloudpickle
 

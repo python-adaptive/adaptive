@@ -6,7 +6,7 @@ import nox
 
 nox.options.default_venv_backend = "uv"
 
-python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
+python = ["3.11", "3.12", "3.13"]
 num_cpus = os.cpu_count() or 1
 xdist = ("-n", "auto") if num_cpus > 2 else ()
 

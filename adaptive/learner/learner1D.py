@@ -3,10 +3,9 @@ from __future__ import annotations
 import collections.abc
 import itertools
 import math
-import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from copy import copy, deepcopy
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 import cloudpickle
 import numpy as np
@@ -24,12 +23,6 @@ from adaptive.utils import (
     partial_function_from_dataframe,
 )
 
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias
-
-
 try:
     import pandas
 
@@ -42,28 +35,21 @@ if TYPE_CHECKING:
     # -- types --
 
     # Commonly used types
-    Interval: TypeAlias = Union[tuple[float, float], tuple[float, float, int]]
-    NeighborsType: TypeAlias = SortedDict[float, list[Optional[float]]]
+    Interval: TypeAlias = tuple[float, float] | tuple[float, float, int]
+    NeighborsType: TypeAlias = SortedDict[float, list[float | None]]
 
     # Types for loss_per_interval functions
     XsType0: TypeAlias = tuple[float, float]
-    YsType0: TypeAlias = Union[tuple[float, float], tuple[np.ndarray, np.ndarray]]
-    XsType1: TypeAlias = tuple[
-        Optional[float], Optional[float], Optional[float], Optional[float]
-    ]
-    YsType1: TypeAlias = Union[
-        tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
-        tuple[
-            Optional[np.ndarray],
-            Optional[np.ndarray],
-            Optional[np.ndarray],
-            Optional[np.ndarray],
-        ],
-    ]
-    XsTypeN: TypeAlias = tuple[Optional[float], ...]
-    YsTypeN: TypeAlias = Union[
-        tuple[Optional[float], ...], tuple[Optional[np.ndarray], ...]
-    ]
+    YsType0: TypeAlias = tuple[float, float] | tuple[np.ndarray, np.ndarray]
+    XsType1: TypeAlias = tuple[float | None, float | None, float | None, float | None]
+    YsType1: TypeAlias = (
+        tuple[float | None, float | None, float | None, float | None]
+        | tuple[
+            np.ndarray | None, np.ndarray | None, np.ndarray | None, np.ndarray | None
+        ]
+    )
+    XsTypeN: TypeAlias = tuple[float | None, ...]
+    YsTypeN: TypeAlias = tuple[float | None, ...] | tuple[np.ndarray | None, ...]
 
 
 __all__ = [
@@ -598,7 +584,7 @@ class Learner1D(BaseLearner):
             )
 
         # either it is a float/int, if not, try casting to a np.array
-        if not isinstance(y, (float, int)):
+        if not isinstance(y, float | int):
             y = np.asarray(y, dtype=float)
 
         # Add point to the real data dict
