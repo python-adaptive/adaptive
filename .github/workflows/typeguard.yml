@@ -12,8 +12,8 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
-    - name: Install dependencies
-      run: pip install nox
+        python-version: "3.13"
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
     - name: Test with nox
-      run: nox -e pytest_typeguard
+      run: uv run --group nox nox -e pytest_typeguard
