@@ -12,39 +12,21 @@ import sys
 import time
 import traceback
 import warnings
+from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime, timedelta
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 import loky
 
-from adaptive import (
-    BalancingLearner,
-    DataSaver,
-    IntegratorLearner,
-    SequenceLearner,
-)
+from adaptive import BalancingLearner, DataSaver, IntegratorLearner, SequenceLearner
 from adaptive.learner.base_learner import LearnerType
 from adaptive.notebook_integration import in_ipynb, live_info, live_plot
 from adaptive.utils import SequentialExecutor
 
-ExecutorTypes: TypeAlias = Union[
-    concurrent.ProcessPoolExecutor,
-    concurrent.ThreadPoolExecutor,
-    SequentialExecutor,
-    loky.reusable_executor._ReusablePoolExecutor,
-]
-FutureTypes: TypeAlias = Union[concurrent.Future, asyncio.Future, asyncio.Task]
-
 if TYPE_CHECKING:
     import holoviews
-
-
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias
 
 
 with_ipyparallel = find_spec("ipyparallel") is not None
@@ -52,33 +34,29 @@ with_distributed = find_spec("distributed") is not None
 with_mpi4py = find_spec("mpi4py") is not None
 
 if TYPE_CHECKING:
-    ExecutorTypes = Optional[()]
-    FutureTypes = Optional[()]
+    import distributed
+    import ipyparallel
+    import ipyparallel.client.asyncresult
+    import mpi4py.futures
 
-    if with_distributed:
-        import distributed
+    ExecutorTypes: TypeAlias = (
+        concurrent.ProcessPoolExecutor
+        | concurrent.ThreadPoolExecutor
+        | SequentialExecutor
+        | loky.reusable_executor._ReusablePoolExecutor
+        | distributed.Client
+        | distributed.cfexecutor.ClientExecutor
+        | mpi4py.futures.MPIPoolExecutor
+        | ipyparallel.Client
+        | ipyparallel.client.view.ViewExecutor
+    )
+    FutureTypes: TypeAlias = (
+        concurrent.Future
+        | asyncio.Future
+        | asyncio.Task
+        | ipyparallel.client.asyncresult.AsyncResult
+    )
 
-        ExecutorTypes = Optional[
-            Union[
-                ExecutorTypes, distributed.Client, distributed.cfexecutor.ClientExecutor
-            ]
-        ]
-
-    if with_mpi4py:
-        import mpi4py.futures
-
-        ExecutorTypes = Optional[Union[ExecutorTypes, mpi4py.futures.MPIPoolExecutor]]
-
-    if with_ipyparallel:
-        import ipyparallel
-        from ipyparallel.client.asyncresult import AsyncResult
-
-        ExecutorTypes = Optional[
-            Union[
-                ExecutorTypes, ipyparallel.Client, ipyparallel.client.view.ViewExecutor
-            ]
-        ]
-        FutureTypes = Optional[Union[FutureTypes, AsyncResult]]
 
 with suppress(ModuleNotFoundError):
     import uvloop
@@ -203,7 +181,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
         self._max_tasks = ntasks
 
-        self._pending_tasks: dict[concurrent.Future, int] = {}
+        self._pending_tasks: dict[FutureTypes, int] = {}
 
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
@@ -292,7 +270,8 @@ class BaseRunner(metaclass=abc.ABCMeta):
             pid = self._pending_tasks.pop(fut)
             try:
                 y = fut.result()
-                t = time.time() - fut.start_time  # total execution time
+                # total execution time
+                t = time.time() - fut.start_time  # type: ignore[union-attr]
             except Exception as e:
                 self._tracebacks[pid] = traceback.format_exc()
                 self._to_retry[pid] = self._to_retry.get(pid, 0) + 1
@@ -508,12 +487,12 @@ class BlockingRunner(BaseRunner):
         try:
             while not self.goal(self.learner):
                 futures = self._get_futures()
-                done, _ = concurrent.wait(futures, return_when=first_completed)
-                self._process_futures(done)
+                done, _ = concurrent.wait(futures, return_when=first_completed)  # type: ignore[arg-type]
+                self._process_futures(done)  # type: ignore[arg-type]
         finally:
             remaining = self._remove_unfinished()
             if remaining:
-                concurrent.wait(remaining)
+                concurrent.wait(remaining)  # type: ignore[arg-type]
                 # Some futures get their result set, despite being cancelled.
                 # see https://github.com/python-adaptive/adaptive/issues/319
                 with_result = {f for f in remaining if not f.cancelled() and f.done()}
@@ -836,12 +815,12 @@ class AsyncRunner(BaseRunner):
             while not self.goal(self.learner):
                 futures = self._get_futures()
                 kw = {"loop": self.ioloop} if sys.version_info[:2] < (3, 10) else {}
-                done, _ = await asyncio.wait(futures, return_when=first_completed, **kw)  # type: ignore[arg-type]
+                done, _ = await asyncio.wait(futures, return_when=first_completed, **kw)  # type: ignore[arg-type,type-var]
                 self._process_futures(done)
         finally:
             remaining = self._remove_unfinished()
             if remaining:
-                await asyncio.wait(remaining)
+                await asyncio.wait(remaining)  # type: ignore[type-var]
             self._cleanup()
 
     def elapsed_time(self) -> float:
@@ -1062,9 +1041,7 @@ def _get_ncores(
         import mpi4py.futures
     if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
         return len(ex.view)
-    elif isinstance(
-        ex, (concurrent.ProcessPoolExecutor, concurrent.ThreadPoolExecutor)
-    ):
+    elif isinstance(ex, concurrent.ProcessPoolExecutor | concurrent.ThreadPoolExecutor):
         return ex._max_workers  # type: ignore[union-attr]
     elif isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
         return ex._max_workers  # type: ignore[union-attr]
@@ -1119,7 +1096,7 @@ def stop_after(*, seconds=0, minutes=0, hours=0) -> Callable[[LearnerType], bool
 
 class _TimeGoal:
     def __init__(self, dt: timedelta | datetime | int | float):
-        self.dt = dt if isinstance(dt, (timedelta, datetime)) else timedelta(seconds=dt)
+        self.dt = dt if isinstance(dt, timedelta | datetime) else timedelta(seconds=dt)
         self.start_time = None
 
     def __call__(self, _):

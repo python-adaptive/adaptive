@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import itertools
-import sys
 from collections import defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from contextlib import suppress
 from functools import partial
 from operator import itemgetter
-from typing import Any, Callable, Union, cast
+from typing import Any, Literal, TypeAlias, cast
 
 import numpy as np
 
@@ -15,13 +14,6 @@ from adaptive.learner.base_learner import BaseLearner, LearnerType
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Int, Real
 from adaptive.utils import cache_latest, named_product, restore
-
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias
-
-from typing import Literal
 
 try:
     import pandas
@@ -38,11 +30,9 @@ def dispatch(child_functions: list[Callable], arg: Any) -> Any:
 
 STRATEGY_TYPE: TypeAlias = Literal["loss_improvements", "loss", "npoints", "cycle"]
 
-CDIMS_TYPE: TypeAlias = Union[
-    Sequence[dict[str, Any]],
-    tuple[Sequence[str], Sequence[tuple[Any, ...]]],
-    None,
-]
+CDIMS_TYPE: TypeAlias = (
+    Sequence[dict[str, Any]] | tuple[Sequence[str], Sequence[tuple[Any, ...]]] | None
+)
 
 
 class BalancingLearner(BaseLearner):
@@ -219,7 +209,8 @@ class BalancingLearner(BaseLearner):
         for _ in range(n):
             losses = self._losses(real=False)
             index, _ = max(
-                enumerate(zip(losses, (-n for n in total_points))), key=itemgetter(1)
+                enumerate(zip(losses, (-n for n in total_points))),
+                key=itemgetter(1),
             )
             total_points[index] += 1
 

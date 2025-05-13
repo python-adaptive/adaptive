@@ -1,17 +1,11 @@
-import sys
-from typing import Union
+from typing import TypeAlias
 
 import numpy as np
 
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias
-
-Float: TypeAlias = Union[float, np.float64]
-Bool: TypeAlias = Union[bool, np.bool_]
-Int: TypeAlias = Union[int, np.int_]
-Real: TypeAlias = Union[Float, Int]
+Float: TypeAlias = float | np.float64
+Bool: TypeAlias = bool | np.bool_
+Int: TypeAlias = int | np.int_
+Real: TypeAlias = Float | Int
 
 
 __all__ = ["Float", "Bool", "Int", "Real"]

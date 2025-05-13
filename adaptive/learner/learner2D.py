@@ -3,10 +3,9 @@ from __future__ import annotations
 import itertools
 import warnings
 from collections import OrderedDict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from copy import copy
 from math import sqrt
-from typing import Callable
 
 import cloudpickle
 import numpy as np
