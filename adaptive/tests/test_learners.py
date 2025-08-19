@@ -286,8 +286,6 @@ def test_learner2d_vector_valued_function():
     the function returns a vector (array/list) of values instead of a scalar.
     """
 
-    from adaptive import Learner2D
-
     def vector_function(xy):
         """A 2D function that returns a 3-element vector."""
         x, y = xy
