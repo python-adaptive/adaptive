@@ -279,6 +279,69 @@ def test_learner_accepts_lists(learner_type, bounds):
     simple_run(learner, 10)
 
 
+def test_learner2d_vector_valued_function():
+    """Test that Learner2D handles vector-valued functions correctly.
+
+    This test verifies that the deviations function works properly when
+    the function returns a vector (array/list) of values instead of a scalar.
+    """
+
+    from adaptive import Learner2D
+
+    def vector_function(xy):
+        """A 2D function that returns a 3-element vector."""
+        x, y = xy
+        return [x + y, x * y, x - y]  # Returns 3-element vector
+
+    # Create learner with vector-valued function
+    learner = Learner2D(vector_function, bounds=[(-1, 1), (-1, 1)])
+
+    # Add some initial points
+    points = [
+        (0.0, 0.0),
+        (1.0, 0.0),
+        (0.0, 1.0),
+        (1.0, 1.0),
+        (0.5, 0.5),
+        (-0.5, 0.5),
+        (0.5, -0.5),
+        (-1.0, -1.0),
+    ]
+
+    for point in points:
+        value = vector_function(point)
+        learner.tell(point, value)
+
+    # Run the learner to trigger deviations calculation
+    # This should not raise any errors
+    learner.ask(10)
+
+    # Verify that the interpolator is created (ip is a property that may return a function)
+    assert hasattr(learner, "ip")
+
+    # Check the internal interpolator if it exists
+    if hasattr(learner, "_ip") and learner._ip is not None:
+        # Check that values have the correct shape
+        assert learner._ip.values.shape[1] == 3  # 3 output dimensions
+
+    # Test that we can evaluate the interpolated function
+    test_point = (0.25, 0.25)
+    ip_func = learner.interpolator(scaled=True)  # Get the interpolator function
+    if ip_func is not None:
+        interpolated_value = ip_func(test_point)
+        assert len(interpolated_value) == 3
+
+    # Run more iterations to ensure deviations are computed correctly
+    simple_run(learner, 20)
+
+    # Final verification
+    assert len(learner.data) > len(points)  # Learner added more points
+
+    # Check that all values in data are vectors
+    for _point, value in learner.data.items():
+        assert len(value) == 3, f"Expected 3-element vector, got {value}"
+
+
 @run_with(Learner1D, Learner2D, LearnerND, SequenceLearner, AverageLearner1D)
 def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     """Adding already existing data is an idempotent operation.
