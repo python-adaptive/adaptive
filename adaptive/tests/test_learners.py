@@ -294,7 +294,7 @@ def test_learner2d_vector_valued_function():
         return [x + y, x * y, x - y]  # Returns 3-element vector
 
     # Create learner with vector-valued function
-    learner = Learner2D(vector_function, bounds=[(-1, 1), (-1, 1)])
+    learner = Learner2D(vector_function, bounds=((-1, 1), (-1, 1)))
 
     # Add some initial points
     points = [
