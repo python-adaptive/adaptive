@@ -44,7 +44,7 @@ def deviations(ip: LinearNDInterpolator) -> np.ndarray:
 
     Returns
     -------
-    deviations : list
+    deviations : numpy.ndarray
         The deviation per triangle.
     """
     values = ip.values / (np.ptp(ip.values, axis=0).max() or 1)
