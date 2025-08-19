@@ -33,7 +33,7 @@ except ModuleNotFoundError:
 # Learner2D and helper functions.
 
 
-def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
+def deviations(ip: LinearNDInterpolator) -> np.ndarray:
     """Returns the deviation of the linear estimate.
 
     Is useful when defining custom loss functions.
@@ -44,7 +44,7 @@ def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
 
     Returns
     -------
-    deviations : list
+    deviations : numpy.ndarray
         The deviation per triangle.
     """
     values = ip.values / (np.ptp(ip.values, axis=0).max() or 1)
@@ -55,18 +55,14 @@ def deviations(ip: LinearNDInterpolator) -> list[np.ndarray]:
     vs = values[simplices]
     gs = gradients[simplices]
 
-    def deviation(p, v, g):
-        dev = 0
-        for j in range(3):
-            vest = v[:, j, None] + (
-                (p[:, :, :] - p[:, j, None, :]) * g[:, j, None, :]
-            ).sum(axis=-1)
-            dev += abs(vest - v).max(axis=1)
-        return dev
+    p = np.expand_dims(p, axis=2)
 
-    n_levels = vs.shape[2]
-    devs = [deviation(p, vs[:, :, i], gs[:, :, i]) for i in range(n_levels)]
-    return devs
+    p_diff = p[:, None] - p[:, :, None]
+    p_diff_scaled = p_diff * gs[:, :, None]
+    vest = vs[:, :, None] + p_diff_scaled.sum(axis=-1)
+    devs = np.sum(np.max(np.abs(vest - vs[:, None]), axis=2), axis=1)
+
+    return np.swapaxes(devs, 0, 1)
 
 
 def areas(ip: LinearNDInterpolator) -> np.ndarray:
