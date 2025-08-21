@@ -201,3 +201,65 @@ def test_auto_goal():
     simple(learner, auto_goal(duration=1e-2, learner=learner))
     t_end = time.time()
     assert t_end - t_start >= 1e-2
+
+
+def test_simple_points_per_ask():
+    """Test that the simple runner respects the points_per_ask parameter (PR #484)."""
+
+    def f(x):
+        return x**2
+
+    # Test with 1D learner asking for multiple points at once
+    learner1 = Learner1D(f, (-1, 1))
+    simple(learner1, npoints_goal=20, points_per_ask=5)
+    assert learner1.npoints >= 20
+
+    # Test with 2D learner
+    def f2d(xy):
+        x, y = xy
+        return x**2 + y**2
+
+    learner2 = Learner2D(f2d, ((-1, 1), (-1, 1)))
+    simple(learner2, npoints_goal=32, points_per_ask=8)
+    assert learner2.npoints >= 32
+
+    # Test that default behavior (points_per_ask=1) is preserved
+    learner3 = Learner1D(f, (-1, 1))
+    simple(learner3, npoints_goal=15)
+    assert learner3.npoints >= 15
+
+    # Test performance improvement: more points per ask = fewer ask calls
+    ask_count = 0
+    original_ask = Learner1D.ask
+
+    def counting_ask(self, n, tell_pending=True):
+        nonlocal ask_count
+        ask_count += 1
+        return original_ask(self, n, tell_pending)
+
+    # Monkey patch to count ask calls
+    Learner1D.ask = counting_ask
+
+    try:
+        # Test with points_per_ask=1 (default)
+        learner4 = Learner1D(f, (-1, 1))
+        ask_count = 0
+        simple(learner4, npoints_goal=10, points_per_ask=1)
+        ask_count_single = ask_count
+
+        # Test with points_per_ask=5
+        learner5 = Learner1D(f, (-1, 1))
+        ask_count = 0
+        simple(learner5, npoints_goal=10, points_per_ask=5)
+        ask_count_batch = ask_count
+
+        # When asking for 5 points at a time, we should have fewer ask calls
+        assert ask_count_batch < ask_count_single
+
+        # Both learners should have reached their goal
+        assert learner4.npoints >= 10
+        assert learner5.npoints >= 10
+
+    finally:
+        # Restore original method
+        Learner1D.ask = original_ask

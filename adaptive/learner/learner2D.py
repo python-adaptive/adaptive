@@ -817,7 +817,7 @@ class Learner2D(BaseLearner):
             if p not in self.data:
                 self._stack[p] = np.inf
 
-    def plot(self, n=None, tri_alpha=0):
+    def plot(self, n=None, tri_alpha=0.0):
         r"""Plot the Learner2D's current state.
 
         This plot function interpolates the data on a regular grid.

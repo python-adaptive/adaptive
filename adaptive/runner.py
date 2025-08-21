@@ -911,11 +911,12 @@ def simple(
     npoints_goal: int | None = None,
     end_time_goal: datetime | None = None,
     duration_goal: timedelta | int | float | None = None,
+    points_per_ask: int = 1,
 ):
     """Run the learner until the goal is reached.
 
-    Requests a single point from the learner, evaluates
-    the function to be learned, and adds the point to the
+    Requests points from the learner, evaluates
+    the function to be learned, and adds the points to the
     learner, until the goal is reached, blocking the current
     thread.
 
@@ -946,6 +947,9 @@ def simple(
         calculation. Stop when the current time is larger or equal than
         ``start_time + duration_goal``. ``duration_goal`` can be a number
         indicating the number of seconds.
+    points_per_ask : int, optional
+        The number of points to ask for between every interpolation rerun. Defaults
+        to 1, which can introduce significant overhead on long runs.
     """
     goal = _goal(
         learner,
@@ -958,7 +962,7 @@ def simple(
     )
     assert goal is not None
     while not goal(learner):
-        xs, _ = learner.ask(1)
+        xs, _ = learner.ask(points_per_ask)
         for x in xs:
             y = learner.function(x)
             learner.tell(x, y)
