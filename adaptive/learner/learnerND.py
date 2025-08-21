@@ -207,6 +207,16 @@ def curvature_loss_function(exploration=0.05):
     return curvature_loss
 
 
+def isosurface_loss_function(level, priority=1000):
+    def loss(simplex, values, value_scale):
+        values = np.array(values)
+        which_side = np.sign(level * value_scale - values)
+        crosses_isoline = np.any(np.diff(which_side))
+        return volume(simplex) * (1 + priority * crosses_isoline)
+
+    return loss
+
+
 def choose_point_in_simplex(simplex, transform=None):
     """Choose a new point in inside a simplex.
 
