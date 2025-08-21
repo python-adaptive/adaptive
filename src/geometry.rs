@@ -224,15 +224,18 @@ pub fn circumsphere(points: &[Vec<f64>]) -> Result<(Vec<f64>, f64), GeometryErro
         // Build matrix with appropriate column replaced
         let mut num_mat = DMatrix::<f64>::zeros(dim + 1, dim + 1);
         for i in 0..=dim {
-            for j in 0..=dim {
+            for j in 0..dim {
                 if j == coord_idx {
                     num_mat[(i, j)] = mat[i][0]; // Replace with sum of squares
                 } else if j < coord_idx {
                     num_mat[(i, j)] = mat[i][j + 1];
                 } else {
+                    // j > coord_idx
                     num_mat[(i, j)] = mat[i][j + 2];
                 }
             }
+            // Last column is always 1
+            num_mat[(i, dim)] = 1.0;
         }
 
         center[coord_idx] = factor * num_mat.determinant();
