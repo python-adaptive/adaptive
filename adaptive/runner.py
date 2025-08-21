@@ -911,7 +911,7 @@ def simple(
     npoints_goal: int | None = None,
     end_time_goal: datetime | None = None,
     duration_goal: timedelta | int | float | None = None,
-    points_per_ask: int | None = 1,
+    points_per_ask: int = 1,
 ):
     """Run the learner until the goal is reached.
 
