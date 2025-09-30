@@ -1,8 +1,13 @@
+import json
 import math
+from pathlib import Path
 
+import numpy as np
 import pytest
+from scipy.spatial import ConvexHull
 
 from adaptive.learner import LearnerND
+from adaptive.learner.learner1D import with_pandas
 from adaptive.learner.learnerND import curvature_loss_function
 from adaptive.runner import BlockingRunner
 from adaptive.runner import simple as SimpleRunner
@@ -53,3 +58,29 @@ def test_learnerND_log_works():
     learner.ask(2)
     # At this point, there should! be one simplex in the triangulation,
     # furthermore the last two points that were asked should be in this simplex
+
+
+@pytest.mark.skipif(not with_pandas, reason="pandas is not installed")
+def test_learnerND_resume_after_loading_dataframe_convex_hull():
+    import pandas
+
+    data_dir = Path(__file__).resolve().parent.parent / "data"
+    df = pandas.read_csv(data_dir / "issue_470_sampled_points.csv", sep=";")
+    boundaries = json.loads((data_dir / "issue_470_boundaries.json").read_text())
+    hull = ConvexHull(boundaries)
+
+    def some_f(xy):
+        x, y = xy
+        a = 0.2
+        return x + np.exp(-((x**2 + y**2 - 0.75**2) ** 2) / a**4)
+
+    learner = LearnerND(some_f, hull)
+    learner.load_dataframe(
+        df,
+        with_default_function_args=False,
+        point_names=("x", "y"),
+    )
+
+    target = len(df) + 10
+    BlockingRunner(learner, npoints_goal=target)
+    assert learner.npoints >= target
