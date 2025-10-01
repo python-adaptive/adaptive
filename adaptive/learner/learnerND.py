@@ -377,7 +377,8 @@ class LearnerND(BaseLearner):
         # been returned has not been deleted. This checking is done by
         # _pop_highest_existing_simplex
         self._simplex_queue = SortedKeyList(key=_simplex_evaluation_priority)
-        self._skipped_bound_points: set[tuple[float, ...]] = set()
+        self._next_bound_idx = 0
+        self._bound_match_tol = 1e-10
 
     def new(self) -> LearnerND:
         """Create a new learner with the same function and bounds."""
@@ -495,6 +496,7 @@ class LearnerND(BaseLearner):
             self.function = partial_function_from_dataframe(
                 self.function, df, function_prefix
             )
+        self._next_bound_idx = 0
 
     @property
     def bounds_are_done(self):
@@ -606,6 +608,27 @@ class LearnerND(BaseLearner):
         simplex = tuple(sorted(simplex))
         return simplex in self.tri.simplices
 
+    def _is_known_point(self, point):
+        point = tuple(map(float, point))
+        if point in self.data or point in self.pending_points:
+            return True
+
+        tolerances = [
+            max(self._bound_match_tol, self._bound_match_tol * (hi - lo))
+            for lo, hi in self._bbox
+        ]
+
+        def _close(other):
+            return all(abs(a - b) <= tol for (a, b, tol) in zip(point, other, tolerances))
+
+        for existing in self.data.keys():
+            if _close(existing):
+                return True
+        for existing in self.pending_points:
+            if _close(existing):
+                return True
+        return False
+
     def inside_bounds(self, point):
         """Check whether a point is inside the bounds."""
         if self._interior is not None:
@@ -683,23 +706,17 @@ class LearnerND(BaseLearner):
 
     def _ask_bound_point(self):
         # get the next bound point that is still available
-        while True:
-            new_point = next(
-                p
-                for p in self._bounds_points
-                if p not in self.data
-                and p not in self.pending_points
-                and p not in self._skipped_bound_points
-            )
-            try:
-                self.tell_pending(new_point)
-            except ValueError as exc:
-                if str(exc) == "Point already in triangulation.":
-                    self.pending_points.discard(new_point)
-                    self._skipped_bound_points.add(new_point)
-                    continue
-                raise
+        while self._next_bound_idx < len(self._bounds_points):
+            new_point = self._bounds_points[self._next_bound_idx]
+            self._next_bound_idx += 1
+
+            if self._is_known_point(new_point):
+                continue
+
+            self.tell_pending(new_point)
             return new_point, np.inf
+
+        raise StopIteration
 
     def _ask_point_without_known_simplices(self):
         assert not self._bounds_available
@@ -772,20 +789,13 @@ class LearnerND(BaseLearner):
     @property
     def _bounds_available(self):
         return any(
-            (
-                p not in self.pending_points
-                and p not in self.data
-                and p not in self._skipped_bound_points
-            )
-            for p in self._bounds_points
+            not self._is_known_point(p)
+            for p in self._bounds_points[self._next_bound_idx :]
         )
 
     def _ask(self):
         if self._bounds_available:
-            try:
-                return self._ask_bound_point()  # O(1)
-            except StopIteration:
-                pass
+            return self._ask_bound_point()  # O(1)
 
         if self.tri is None:
             # All bound points are pending or have been evaluated, but we do not
