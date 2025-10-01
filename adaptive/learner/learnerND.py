@@ -619,7 +619,9 @@ class LearnerND(BaseLearner):
         ]
 
         def _close(other):
-            return all(abs(a - b) <= tol for (a, b, tol) in zip(point, other, tolerances))
+            return all(
+                abs(a - b) <= tol for (a, b, tol) in zip(point, other, tolerances)
+            )
 
         for existing in self.data.keys():
             if _close(existing):

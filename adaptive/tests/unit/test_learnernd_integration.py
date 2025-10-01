@@ -1,7 +1,7 @@
 import math
 
-import pytest
 import numpy as np
+import pytest
 from scipy.spatial import ConvexHull
 
 from adaptive.learner import LearnerND
@@ -60,8 +60,9 @@ def test_learnerND_log_works():
 
 @pytest.mark.skipif(not with_pandas, reason="pandas is not installed")
 def test_learnerND_resume_after_loading_dataframe_convex_hull(monkeypatch):
-    import pandas
     from types import MethodType
+
+    import pandas
 
     hull_points = [
         (4.375872112626925, 8.917730007820797),
@@ -98,7 +99,9 @@ def test_learnerND_resume_after_loading_dataframe_convex_hull(monkeypatch):
 
     def old_ask_bound_point(self):
         new_point = next(
-            p for p in self._bounds_points if p not in self.data and p not in self.pending_points
+            p
+            for p in self._bounds_points
+            if p not in self.data and p not in self.pending_points
         )
         self.tell_pending(new_point)
         return new_point, np.inf
