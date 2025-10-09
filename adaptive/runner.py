@@ -8,6 +8,7 @@ import inspect
 import itertools
 import pickle
 import platform
+import sys
 import time
 import traceback
 import warnings
@@ -44,12 +45,9 @@ with suppress(ModuleNotFoundError):
 
 
 # -- Runner definitions
-# Check if InterpreterPoolExecutor is available (Python 3.14+)
-_has_interpreter_pool = hasattr(concurrent, "InterpreterPoolExecutor")
+_has_interpreter_pool = sys.version_info >= (3, 14)
 
 if _has_interpreter_pool:
-    # Use InterpreterPoolExecutor for Python 3.14+
-    # It provides better isolation and performance than ProcessPoolExecutor
     _default_executor = concurrent.InterpreterPoolExecutor  # type: ignore[misc,attr-defined]
 elif platform.system() == "Linux":
     _default_executor = concurrent.ProcessPoolExecutor  # type: ignore[misc]
