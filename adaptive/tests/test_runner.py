@@ -263,3 +263,27 @@ def test_simple_points_per_ask():
     finally:
         # Restore original method
         Learner1D.ask = original_ask
+
+
+def test_interpreter_pool_executor_detection():
+    """Test that InterpreterPoolExecutor is detected and used in Python 3.14+."""
+    import concurrent.futures as concurrent
+    import sys
+
+    from adaptive.runner import _default_executor, _has_interpreter_pool
+
+    if sys.version_info >= (3, 14) and hasattr(concurrent, "InterpreterPoolExecutor"):
+        # On Python 3.14+, InterpreterPoolExecutor should be available and used
+        assert _has_interpreter_pool is True
+        assert _default_executor == concurrent.InterpreterPoolExecutor
+    else:
+        # On older Python versions, it should not be available
+        assert _has_interpreter_pool is False
+        # Should fall back to ProcessPoolExecutor on Linux or loky on others
+        if OPERATING_SYSTEM == "Linux":
+            assert _default_executor == concurrent.ProcessPoolExecutor
+        else:
+            import loky
+
+            assert _default_executor == loky.get_reusable_executor
+
