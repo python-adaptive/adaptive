@@ -4,11 +4,7 @@
 
 **New features:**
 
-- Use `InterpreterPoolExecutor` as default executor on Python 3.14+ [\#XXX](https://github.com/python-adaptive/adaptive/pull/XXX)
-  - Automatically detects and uses `InterpreterPoolExecutor` when available (Python 3.14+)
-  - Provides better isolation and performance than `ProcessPoolExecutor`
-  - Falls back to `ProcessPoolExecutor` on Linux or `loky` on Windows/macOS for older Python versions
-  - Maintains full backward compatibility with existing code
+- Use `InterpreterPoolExecutor` as default executor on Python 3.14+ [\#488](https://github.com/python-adaptive/adaptive/pull/488). See also [Python documentation](https://docs.python.org/3.14/whatsnew/3.14.html#pep-734-multiple-interpreters-in-the-standard-library).
 
 ## [v1.4.0](https://github.com/python-adaptive/adaptive/tree/v1.3.0) (2025-05-13)
 
