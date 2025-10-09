@@ -286,4 +286,3 @@ def test_interpreter_pool_executor_detection():
             import loky
 
             assert _default_executor == loky.get_reusable_executor
-
