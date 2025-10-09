@@ -92,7 +92,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
                `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.InterpreterPoolExecutor`
-        on Python 3.14+, a new `~concurrent.futures.ProcessPoolExecutor` on
+        on Python 3.14+, a `~concurrent.futures.ProcessPoolExecutor` on
         Python < 3.14 on Linux, and a `loky.get_reusable_executor` on
         Python < 3.14 on MacOS and Windows.
     ntasks : int, optional
@@ -381,7 +381,7 @@ class BlockingRunner(BaseRunner):
                `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
         If not provided, a new `~concurrent.futures.InterpreterPoolExecutor`
-        on Python 3.14+, a new `~concurrent.futures.ProcessPoolExecutor` on
+        on Python 3.14+, a `~concurrent.futures.ProcessPoolExecutor` on
         Python < 3.14 on Linux, and a `loky.get_reusable_executor` on
         Python < 3.14 on MacOS and Windows.
     ntasks : int, optional
