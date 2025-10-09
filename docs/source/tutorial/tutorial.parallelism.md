@@ -16,7 +16,13 @@ Often you will want to evaluate the function on some remote computing resources.
 
 ## `concurrent.futures`
 
-On Unix-like systems by default {class}`adaptive.Runner` creates a {class}`~concurrent.futures.ProcessPoolExecutor`, but you can also pass one explicitly e.g. to limit the number of workers:
+By default, {class}`adaptive.Runner` automatically selects the best executor based on your Python version and platform:
+
+- **Python 3.14+**: Uses {class}`~concurrent.futures.InterpreterPoolExecutor` (provides better isolation and performance)
+- **Python < 3.14 on Unix-like systems**: Uses {class}`~concurrent.futures.ProcessPoolExecutor`
+- **Python < 3.14 on Windows/macOS**: Uses `loky.get_reusable_executor` (better compatibility in interactive environments)
+
+You can also pass an executor explicitly, e.g. to limit the number of workers:
 
 ```python
 from concurrent.futures import ProcessPoolExecutor
