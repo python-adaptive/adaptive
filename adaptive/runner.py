@@ -45,7 +45,9 @@ with suppress(ModuleNotFoundError):
 
 
 # -- Runner definitions
-_has_interpreter_pool = sys.version_info >= (3, 14)
+_has_interpreter_pool = sys.version_info >= (3, 14) and hasattr(
+    concurrent, "InterpreterPoolExecutor"
+)
 
 if _has_interpreter_pool:
     _default_executor = concurrent.InterpreterPoolExecutor  # type: ignore[misc,attr-defined]
@@ -1034,9 +1036,9 @@ def _get_ncores(
         import mpi4py.futures
     if with_ipyparallel and isinstance(ex, ipyparallel.client.view.ViewExecutor):
         return len(ex.view)
-    elif isinstance(ex, concurrent.ProcessPoolExecutor | concurrent.ThreadPoolExecutor):
-        return ex._max_workers  # type: ignore[union-attr]
     elif _has_interpreter_pool and isinstance(ex, concurrent.InterpreterPoolExecutor):  # type: ignore[attr-defined]
+        return ex._max_workers  # type: ignore[union-attr]
+    elif isinstance(ex, concurrent.ProcessPoolExecutor | concurrent.ThreadPoolExecutor):
         return ex._max_workers  # type: ignore[union-attr]
     elif isinstance(ex, loky.reusable_executor._ReusablePoolExecutor):
         return ex._max_workers  # type: ignore[union-attr]
