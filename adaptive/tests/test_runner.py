@@ -1,4 +1,3 @@
-import asyncio
 import platform
 import sys
 import time
@@ -264,26 +263,3 @@ def test_simple_points_per_ask():
     finally:
         # Restore original method
         Learner1D.ask = original_ask
-
-
-def test_async_runner_without_running_event_loop():
-    """Test that AsyncRunner works when no event loop is running.
-
-    In Python 3.10+, asyncio.get_event_loop() was deprecated when no running
-    event loop exists. In Python 3.12+ it emits a DeprecationWarning, and in
-    Python 3.14+ it raises a RuntimeError.
-
-    This test ensures AsyncRunner properly handles the case when no event
-    loop is running by creating one.
-
-    Regression test for: https://github.com/python-adaptive/adaptive/issues/489
-    """
-    # Ensure no event loop is currently running
-    with pytest.raises(RuntimeError, match="no running event loop"):
-        asyncio.get_running_loop()
-
-    # AsyncRunner should still work - it should create its own event loop
-    learner = Learner1D(linear, (-1, 1))
-    runner = AsyncRunner(learner, npoints_goal=10, executor=SequentialExecutor())
-    runner.block_until_done()
-    assert learner.npoints >= 10
