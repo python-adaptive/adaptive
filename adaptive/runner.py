@@ -626,7 +626,18 @@ class AsyncRunner(BaseRunner):
             raise_if_retries_exceeded=raise_if_retries_exceeded,
             allow_running_forever=True,
         )
-        self.ioloop = ioloop or asyncio.get_event_loop()
+        if ioloop is not None:
+            self.ioloop = ioloop
+        else:
+            try:
+                self.ioloop = asyncio.get_running_loop()
+            except RuntimeError:
+                # No running event loop exists (e.g., running outside of async context).
+                # Create a new event loop. This is needed for Python 3.10+ where
+                # asyncio.get_event_loop() is deprecated when no loop is running,
+                # and Python 3.14+ where it raises RuntimeError.
+                self.ioloop = asyncio.new_event_loop()
+                asyncio.set_event_loop(self.ioloop)
 
         # When the learned function is 'async def', we run it
         # directly on the event loop, and not in the executor.
