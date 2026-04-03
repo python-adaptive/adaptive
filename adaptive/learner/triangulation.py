@@ -1,4 +1,5 @@
-from collections import Counter, Sized, Iterable
+from collections import Counter
+from collections.abc import Sized, Iterable
 from itertools import combinations, chain
 
 import numpy as np
@@ -575,7 +576,7 @@ class Triangulation:
             return self.bowyer_watson(pt_index, actual_simplex, transform)
 
     def volume(self, simplex):
-        prefactor = np.math.factorial(self.dim)
+        prefactor = factorial(self.dim)
         vertices = np.array(self.get_vertices(simplex))
         vectors = vertices[1:] - vertices[0]
         return float(abs(np.linalg.det(vectors)) / prefactor)

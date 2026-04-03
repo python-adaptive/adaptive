@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict, Iterable
+from collections import OrderedDict
+from collections.abc import Iterable
 import heapq
 import itertools
 import random
@@ -24,7 +25,7 @@ def volume(simplex, ys=None):
     dim = len(simplex) - 1
 
     # See https://www.jstor.org/stable/2315353
-    vol = np.abs(np.linalg.det(matrix)) / np.math.factorial(dim)
+    vol = np.abs(np.linalg.det(matrix)) / math.factorial(dim)
     return vol
 
 
