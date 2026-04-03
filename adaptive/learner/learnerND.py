@@ -265,9 +265,14 @@ class LearnerND(BaseLearner):
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = self.tri.locate_point(point)
-            transform = self.get_local_transform_matrix(simplex)
+            # Use uniform scale matrix for Bowyer-Watson insertion rather than
+            # the per-simplex anisotropic transform. The anisotropic transform
+            # varies locally (based on gradient), which can produce disconnected
+            # or non-star-shaped cavities in the original space, breaking the
+            # volume conservation invariant of Bowyer-Watson. Anisotropy still
+            # drives point selection via choose_point_in_simplex in _ask_best_point.
             to_delete, to_add = self._tri.add_point(
-                point, simplex, transform=transform)
+                point, simplex, transform=self._scale_matrix)
             self.update_losses(to_delete, to_add)
 
     def get_local_transform_matrix(self, simplex):
