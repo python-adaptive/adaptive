@@ -4,13 +4,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.19.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-execution:
-  timeout: 300
 ---
 
 ```{code-cell} ipython3
@@ -168,7 +166,7 @@ def animate_png(folder=None, nseconds=15):
 
 
 def save_webp(fname_webp, ims):
-    (im, *_ims) = ims
+    im, *_ims = ims
     im.save(
         fname_webp,
         save_all=True,
