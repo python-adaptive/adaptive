@@ -1,0 +1,17 @@
+trigger:
+  branches:
+    include:
+    - main
+pr:
+  - "*"
+
+jobs:
+- job: authors_check
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - script: |
+      MISSING_AUTHORS=$(git shortlog -s HEAD | sed -e "s/^[0-9\t ]*//"| xargs -i sh -c 'grep -q "{}" AUTHORS.md || echo "{} missing from authors"')
+      if [ ! -z "$MISSING_AUTHORS" ]; then { echo $MISSING_AUTHORS; exit 1; }; fi
+    displayName: 'Authors check'
+    continueOnError: true

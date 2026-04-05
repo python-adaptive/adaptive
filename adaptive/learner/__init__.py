@@ -1,15 +1,24 @@
-# -*- coding: utf-8 -*-
-from contextlib import suppress
+from adaptive.learner.average_learner import AverageLearner
+from adaptive.learner.average_learner1D import AverageLearner1D
+from adaptive.learner.balancing_learner import BalancingLearner
+from adaptive.learner.base_learner import BaseLearner
+from adaptive.learner.data_saver import DataSaver, make_datasaver
+from adaptive.learner.integrator_learner import IntegratorLearner
+from adaptive.learner.learner1D import Learner1D
+from adaptive.learner.learner2D import Learner2D
+from adaptive.learner.learnerND import LearnerND
+from adaptive.learner.sequence_learner import SequenceLearner
 
-from .average_learner import AverageLearner
-from .base_learner import BaseLearner
-from .balancing_learner import BalancingLearner
-from .learner1D import Learner1D
-from .learner2D import Learner2D
-from .learnerND import LearnerND
-from .integrator_learner import IntegratorLearner
-from .data_saver import DataSaver, make_datasaver
-
-with suppress(ImportError):
-    # Only available if 'scikit-optimize' is installed
-    from .skopt_learner import SKOptLearner
+__all__ = [
+    "AverageLearner",
+    "BalancingLearner",
+    "BaseLearner",
+    "DataSaver",
+    "make_datasaver",
+    "IntegratorLearner",
+    "Learner1D",
+    "Learner2D",
+    "LearnerND",
+    "AverageLearner1D",
+    "SequenceLearner",
+]

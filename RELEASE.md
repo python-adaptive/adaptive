@@ -11,16 +11,16 @@ The following checks should be made *before* tagging the release.
 #### Check that all issues are resolved
 
 Check that all the issues and merge requests for the appropriate
-[milestone](https://gitlab.kwant-project.org/qt/adaptive/issues)
+[milestone](https://github.com/python-adaptive/adaptive/issues)
 have been resolved. Any unresolved issues should have their milestone
 bumped.
 
 
 #### Ensure that all tests pass
 
-For major and minor releases we will be tagging the ``master`` branch.
+For major and minor releases we will be tagging the ``main`` branch.
 This should be as simple as verifying that the
-[latest CI pipeline](https://gitlab.kwant-project.org/qt/adaptive/pipelines)
+[latest CI pipeline](https://dev.azure.com/python-adaptive/adaptive/_build)
 succeeded.
 
 
@@ -42,6 +42,15 @@ Make an **annotated, signed** tag for the release. The tag must have the name:
 git tag -s v<version> -m "version <version>"
 ```
 
+### Update the changelog
+Use
+```
+docker run -it --rm -v "$(pwd)":/usr/local/src/your-app ferrarimarco/github-changelog-generator -u python-adaptive -p adaptive -t API_TOKEN_HERE
+```
+and commit the relevant parts using
+```
+git commit -p CHANGELOG.md
+```
 
 ### Build a source tarball and wheels and test it
 
@@ -82,7 +91,6 @@ git push origin v<version> v<version+1>-dev
 ```
 twine upload dist/*
 ```
-
 
 
 ## Update the [conda-forge recipe](https://github.com/conda-forge/adaptive-feedstock)

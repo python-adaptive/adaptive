@@ -1,20 +1,21 @@
-import adaptive
-
-import numpy as np
 import random
 
+import numpy as np
+
+import adaptive
 
 offset = random.uniform(-0.5, 0.5)
 
+
 def f_1d(x, offset=offset):
     a = 0.01
-    return x + a**2 / (a**2 + (x - offset)**2)
+    return x + a**2 / (a**2 + (x - offset) ** 2)
 
 
 def f_2d(xy):
     x, y = xy
     a = 0.2
-    return x + np.exp(-(x**2 + y**2 - 0.75**2)**2/a**4)
+    return x + np.exp(-((x**2 + y**2 - 0.75**2) ** 2) / a**4)
 
 
 class TimeLearner1D:

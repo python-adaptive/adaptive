@@ -1,0 +1,62 @@
+.ignore-css {
+  all: unset !important;
+}
+
+/* https://gitter.im/pyviz/pyviz?at=5e8efb2b16f84f0461683446 */
+.panel-widget-box.bk form {
+  display: none !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 25%;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+/* but changed `rendered_html` to `text_html` */
+
+div.text_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  /* color: black; */
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.text_html thead {
+  border-bottom: 1px solid;
+  vertical-align: bottom;
+}
+div.text_html tr,
+div.text_html th,
+div.text_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.text_html th {
+  font-weight: bold;
+}
+
+/* alternating color light theme */
+body[data-theme="light"] div.text_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+body[data-theme="light"] div.text_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* alternating color dark theme */
+body[data-theme="dark"] div.text_html tbody tr:nth-child(odd) {
+  background: #696969;
+}
+body[data-theme="dark"] div.text_html tbody tr:hover {
+  background: rgba(175, 175, 175, 0.2);
+}
+
+/* for rendered markdown on meta_data.md docs */
+body[data-theme="dark"] .widget-html-content {
+  color: #f5f5f5;
+}

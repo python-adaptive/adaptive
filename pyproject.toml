@@ -1,0 +1,140 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools ~= 69.0.0", "versioningit ~= 3.0.0", "wheel"]
+
+[project]
+name = "adaptive"
+dynamic = ["version"]
+description = "Parallel active learning of mathematical functions"
+maintainers = [{ name = "Adaptive authors" }]
+license = { text = "BSD" }
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: BSD License",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "scipy",
+    "sortedcollections >= 1.1",
+    "sortedcontainers >= 2.0",
+    "cloudpickle",
+    "loky >= 2.9",
+    "versioningit",
+]
+
+[project.optional-dependencies]
+other = [
+    "dill",
+    "distributed",
+    "ipyparallel>=6.2.5",       # because of https://github.com/ipython/ipyparallel/issues/404
+    "wexpect; os_name == 'nt'",
+    "pexpect; os_name != 'nt'",
+]
+notebook = [
+    "ipython",
+    "ipykernel>=4.8.0",      # because https://github.com/ipython/ipykernel/issues/274 and https://github.com/ipython/ipykernel/issues/263
+    "jupyter_client>=5.2.2", # because https://github.com/jupyter/jupyter_client/pull/314
+    "holoviews>=1.9.1",
+    "ipywidgets",
+    "bokeh",
+    "pandas",
+    "matplotlib",
+    "plotly",
+]
+test = [
+    "flaky",
+    "pytest",
+    "pytest-cov",
+    "pytest-randomly",
+    "pytest-timeout",
+    "pytest-xdist",
+    "pre_commit",
+    "typeguard",
+    "coverage",
+]
+dev = ["adaptive[test,nox,notebook,other]"]
+
+[project.urls]
+homepage = "https://adaptive.readthedocs.io/"
+documentation = "https://adaptive.readthedocs.io/"
+repository = "https://github.com/python-adaptive/adaptive"
+
+[project.readme]
+content-type = "text/markdown"
+file = "README.md"
+
+[dependency-groups]
+nox = [
+    "nox",
+    "pytest-github-actions-annotate-failures",
+]
+
+[tool.setuptools.packages.find]
+include = ["adaptive.*", "adaptive"]
+
+[tool.pytest.ini_options]
+testpaths = ["adaptive"]
+addopts = "--durations=5 --cov --cov-append --cov-fail-under=70 -vvv --cov-report="
+norecursedirs = ["docs"]
+
+[tool.coverage.paths]
+source = ["adaptive", ".nox/py*/lib/python*/site-packages"]
+
+[tool.coverage.run]
+branch = true
+parallel = true
+source = ["adaptive"]
+
+[tool.coverage.report]
+show_missing = true
+precision = 2
+
+[tool.coverage.xml]
+output = ".coverage.xml"
+
+[tool.mypy]
+ignore_missing_imports = true
+python_version = "3.11"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["B", "C", "E", "F", "W", "T", "B9", "I", "UP"]
+ignore = [
+    "T20",     # flake8-print
+    "ANN101",  # Missing type annotation for {name} in method
+    "S101",    # Use of assert detected
+    "PD901",   # df is a bad variable name. Be kinder to your future self.
+    "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed in {name}
+    "D402",    # First line should not be the function's signature
+    "PLW0603", # Using the global statement to update `X` is discouraged
+    "D401",    # First line of docstring should be in imperative mood
+    "E501",    # Line too long
+    "B905",    # `zip()` without an explicit `strict=` parameter
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 18
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["SLF001"]
+"ci/*" = ["INP001"]
+"tests/test_examples.py" = ["E501"]
+
+[tool.versioningit]
+
+[tool.versioningit.vcs]
+method = "git"
+match = ["v*"]
+default-tag = "0.0.0"
+
+[tool.versioningit.onbuild]
+build-file = "adaptive/_version.py"
+source-file = "adaptive/_version.py"

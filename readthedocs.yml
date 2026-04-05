@@ -1,0 +1,16 @@
+version: 2
+
+build:
+    os: "ubuntu-22.04"
+    tools:
+        python: "mambaforge-latest"
+    jobs:
+        post_checkout:
+            - git fetch --unshallow || true
+
+sphinx:
+    configuration: docs/source/conf.py
+    builder: dirhtml
+
+conda:
+    environment: docs/environment.yml

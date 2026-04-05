@@ -1,34 +1,44 @@
-# -*- coding: utf-8 -*-
 # Based on an adaptive quadrature algorithm by Pedro Gonnet
+from __future__ import annotations
 
+import sys
 from collections import defaultdict
+from collections.abc import Callable
 from math import sqrt
 from operator import attrgetter
-import sys
+from typing import TYPE_CHECKING
 
+import cloudpickle
 import numpy as np
 from scipy.linalg import norm
 from sortedcontainers import SortedSet
 
-from .base_learner import BaseLearner
-from .integrator_coeffs import (b_def, T_left, T_right, ns, hint,
-                                ndiv_max, min_sep, eps, xi, V_inv,
-                                Vcond, alpha, gamma)
-from ..notebook_integration import ensure_holoviews
-from ..utils import restore
+from adaptive.learner import integrator_coeffs as coeff
+from adaptive.learner.base_learner import BaseLearner
+from adaptive.notebook_integration import ensure_holoviews
+from adaptive.utils import assign_defaults, cache_latest, restore
+
+try:
+    import pandas
+
+    with_pandas = True
+
+except ModuleNotFoundError:
+    with_pandas = False
 
 
-def _downdate(c, nans, depth):
+def _downdate(c: np.ndarray, nans: list[int], depth: int) -> np.ndarray:
     # This is algorithm 5 from the thesis of Pedro Gonnet.
-    b = b_def[depth].copy()
-    m = ns[depth] - 1
+    b = coeff.b_def[depth].copy()
+    m = coeff.ns[depth] - 1
     for i in nans:
-        b[m + 1] /= alpha[m]
-        xii = xi[depth][i]
-        b[m] = (b[m] + xii * b[m + 1]) / alpha[m - 1]
+        b[m + 1] /= coeff.alpha[m]
+        xii = coeff.xi[depth][i]
+        b[m] = (b[m] + xii * b[m + 1]) / coeff.alpha[m - 1]
         for j in range(m - 1, 0, -1):
-            b[j] = ((b[j] + xii * b[j + 1] - gamma[j + 1] * b[j + 2])
-                    / alpha[j - 1])
+            b[j] = (
+                b[j] + xii * b[j + 1] - coeff.gamma[j + 1] * b[j + 2]
+            ) / coeff.alpha[j - 1]
         b = b[1:]
 
         c[:m] -= c[m] / b[m] * b[:m]
@@ -37,7 +47,7 @@ def _downdate(c, nans, depth):
     return c
 
 
-def _zero_nans(fx):
+def _zero_nans(fx: np.ndarray) -> list[int]:
     """Caution: this function modifies fx."""
     nans = []
     for i in range(len(fx)):
@@ -47,10 +57,10 @@ def _zero_nans(fx):
     return nans
 
 
-def _calc_coeffs(fx, depth):
+def _calc_coeffs(fx: np.ndarray, depth: int) -> np.ndarray:
     """Caution: this function modifies fx."""
     nans = _zero_nans(fx)
-    c_new = V_inv[depth] @ fx
+    c_new = coeff.V_inv[depth] @ fx
     if nans:
         fx[nans] = np.nan
         c_new = _downdate(c_new, nans, depth)
@@ -62,7 +72,6 @@ class DivergentIntegralError(ValueError):
 
 
 class _Interval:
-
     """
     Attributes
     ----------
@@ -88,7 +97,7 @@ class _Interval:
         The parent interval.
     children : list of `_Interval`s
         The intervals resulting from a split.
-    done_points : dict
+    data : dict
         A dictionary with the x-values and y-values: `{x1: y1, x2: y2 ...}`.
     done : bool
         The integral and the error for the interval has been calculated.
@@ -109,24 +118,42 @@ class _Interval:
     """
 
     __slots__ = [
-        'a', 'b', 'c', 'c00', 'depth', 'igral', 'err', 'fx', 'rdepth',
-        'ndiv', 'parent', 'children', 'done_points', 'done_leaves',
-        'depth_complete', 'removed',
+        "a",
+        "b",
+        "c",
+        "c00",
+        "depth",
+        "igral",
+        "err",
+        "fx",
+        "rdepth",
+        "ndiv",
+        "parent",
+        "children",
+        "data",
+        "done_leaves",
+        "depth_complete",
+        "removed",
     ]
 
-    def __init__(self, a, b, depth, rdepth):
-        self.children = []
-        self.done_points = {}
+    def __init__(self, a: int | float, b: int | float, depth: int, rdepth: int) -> None:
+        self.children: list[_Interval] = []
+        self.data: dict[float, float] = {}
         self.a = a
         self.b = b
         self.depth = depth
         self.rdepth = rdepth
-        self.done_leaves = set()
-        self.depth_complete = None
+        self.done_leaves: set[_Interval] | None = set()
+        self.depth_complete: int | None = None
         self.removed = False
+        if TYPE_CHECKING:
+            self.ndiv: int
+            self.parent: _Interval | None
+            self.err: float
+            self.c: np.ndarray
 
     @classmethod
-    def make_first(cls, a, b, depth=2):
+    def make_first(cls, a: int, b: int, depth: int = 2) -> _Interval:
         ival = _Interval(a, b, depth, rdepth=1)
         ival.ndiv = 0
         ival.parent = None
@@ -134,7 +161,7 @@ class _Interval:
         return ival
 
     @property
-    def T(self):
+    def T(self) -> np.ndarray:
         """Get the correct shift matrix.
 
         Should only be called on children of a split interval.
@@ -143,30 +170,32 @@ class _Interval:
         left = self.a == self.parent.a
         right = self.b == self.parent.b
         assert left != right
-        return T_left if left else T_right
+        return coeff.T_left if left else coeff.T_right
 
-    def refinement_complete(self, depth):
+    def refinement_complete(self, depth: int) -> bool:
         """The interval has all the y-values to calculate the intergral."""
-        if len(self.done_points) < ns[depth]:
+        if len(self.data) < coeff.ns[depth]:
             return False
-        return all(p in self.done_points for p in self.points(depth))
+        return all(p in self.data for p in self.points(depth))
 
-    def points(self, depth=None):
+    def points(self, depth: int | None = None) -> np.ndarray:
         if depth is None:
             depth = self.depth
         a = self.a
         b = self.b
-        return (a + b) / 2 + (b - a) * xi[depth] / 2
+        return (a + b) / 2 + (b - a) * coeff.xi[depth] / 2
 
-    def refine(self):
+    def refine(self) -> _Interval:
         self.depth += 1
         return self
 
-    def split(self):
+    def split(self) -> list[_Interval]:
         points = self.points()
         m = points[len(points) // 2]
-        ivals = [_Interval(self.a, m, 0, self.rdepth + 1),
-                 _Interval(m, self.b, 0, self.rdepth + 1)]
+        ivals = [
+            _Interval(self.a, m, 0, self.rdepth + 1),
+            _Interval(m, self.b, 0, self.rdepth + 1),
+        ]
         self.children = ivals
         for ival in ivals:
             ival.parent = self
@@ -175,26 +204,27 @@ class _Interval:
 
         return ivals
 
-    def calc_igral(self):
+    def calc_igral(self) -> None:
         self.igral = (self.b - self.a) * self.c[0] / sqrt(2)
 
-    def update_heuristic_err(self, value):
+    def update_heuristic_err(self, value: float) -> None:
         """Sets the error of an interval using a heuristic (half the error of
         the parent) when the actual error cannot be calculated due to its
         parents not being finished yet. This error is propagated down to its
         children."""
         self.err = value
         for child in self.children:
-            if child.depth_complete or (child.depth_complete == 0
-                                        and self.depth_complete is not None):
+            if child.depth_complete or (
+                child.depth_complete == 0 and self.depth_complete is not None
+            ):
                 continue
             child.update_heuristic_err(value / 2)
 
-    def calc_err(self, c_old):
+    def calc_err(self, c_old: np.ndarray) -> float:
         c_new = self.c
         c_diff = np.zeros(max(len(c_old), len(c_new)))
-        c_diff[:len(c_old)] = c_old
-        c_diff[:len(c_new)] -= c_new
+        c_diff[: len(c_old)] = c_old
+        c_diff[: len(c_new)] -= c_new
         c_diff = norm(c_diff)
         self.err = (self.b - self.a) * c_diff
         for child in self.children:
@@ -202,32 +232,33 @@ class _Interval:
                 child.update_heuristic_err(self.err / 2)
         return c_diff
 
-    def calc_ndiv(self):
-        div = (self.parent.c00 and self.c00 / self.parent.c00 > 2)
-        self.ndiv += div
+    def calc_ndiv(self) -> None:
+        assert self.parent is not None
+        div = self.parent.c00 and self.c00 / self.parent.c00 > 2
+        self.ndiv += int(div)
 
-        if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
+        if self.ndiv > coeff.ndiv_max and 2 * self.ndiv > self.rdepth:
             raise DivergentIntegralError
 
         if div:
             for child in self.children:
                 child.update_ndiv_recursively()
 
-    def update_ndiv_recursively(self):
+    def update_ndiv_recursively(self) -> None:
         self.ndiv += 1
-        if self.ndiv > ndiv_max and 2*self.ndiv > self.rdepth:
+        if self.ndiv > coeff.ndiv_max and 2 * self.ndiv > self.rdepth:
             raise DivergentIntegralError
 
         for child in self.children:
             child.update_ndiv_recursively()
 
-    def complete_process(self, depth):
+    def complete_process(self, depth: int) -> tuple[bool, bool] | tuple[bool, np.bool_]:
         """Calculate the integral contribution and error from this interval,
         and update the done leaves of all ancestor intervals."""
         assert self.depth_complete is None or self.depth_complete == depth - 1
         self.depth_complete = depth
 
-        fx = [self.done_points[k] for k in self.points(depth)]
+        fx = [self.data[k] for k in self.points(depth)]
         self.fx = np.array(fx)
         force_split = False  # This may change when refining
 
@@ -248,13 +279,15 @@ class _Interval:
         if depth:
             # Refine
             c_diff = self.calc_err(c_old)
-            force_split = c_diff > hint * norm(self.c)
+            force_split = c_diff > coeff.hint * norm(self.c)
         else:
             # Split
             self.c00 = self.c[0]
-
+            assert self.parent is not None
             if self.parent.depth_complete is not None:
-                c_old = self.T[:, :ns[self.parent.depth_complete]] @ self.parent.c
+                c_old = (
+                    self.T[:, : coeff.ns[self.parent.depth_complete]] @ self.parent.c
+                )
                 self.calc_err(c_old)
                 self.calc_ndiv()
 
@@ -262,7 +295,7 @@ class _Interval:
                 if child.depth_complete is not None:
                     child.calc_ndiv()
                 if child.depth_complete == 0:
-                    c_old = child.T[:, :ns[self.depth_complete]] @ self.c
+                    c_old = child.T[:, : coeff.ns[self.depth_complete]] @ self.c
                     child.calc_err(c_old)
 
         if self.done_leaves is not None and not len(self.done_leaves):
@@ -274,10 +307,11 @@ class _Interval:
             ival = self.parent
             old_leaves = set()
             while ival is not None:
-                unused_children = [child for child in ival.children
-                                   if child.done_leaves is not None]
+                unused_children = [
+                    child for child in ival.children if child.done_leaves is not None
+                ]
 
-                if not all(len(child.done_leaves) for child in unused_children):
+                if not all(len(child.done_leaves) for child in unused_children):  # type: ignore[arg-type]
                     break
 
                 if ival.done_leaves is None:
@@ -291,24 +325,23 @@ class _Interval:
                 ival.done_leaves -= old_leaves
                 ival = ival.parent
 
-        remove = self.err < (abs(self.igral) * eps * Vcond[depth])
+        remove = self.err < (abs(self.igral) * coeff.eps * coeff.Vcond[depth])
 
         return force_split, remove
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         lst = [
-            '(a, b)=({:.5f}, {:.5f})'.format(self.a, self.b),
-            'depth={}'.format(self.depth),
-            'rdepth={}'.format(self.rdepth),
-            'err={:.5E}'.format(self.err),
-            'igral={:.5E}'.format(self.igral if hasattr(self, 'igral') else np.inf),
+            f"(a, b)=({self.a:.5f}, {self.b:.5f})",
+            f"depth={self.depth}",
+            f"rdepth={self.rdepth}",
+            f"err={self.err:.5E}",
+            "igral={:.5E}".format(self.igral if hasattr(self, "igral") else np.inf),
         ]
-        return ' '.join(lst)
+        return " ".join(lst)
 
 
 class IntegratorLearner(BaseLearner):
-
-    def __init__(self, function, bounds, tol):
+    def __init__(self, function: Callable, bounds: tuple[int, int], tol: float) -> None:
         """
         Parameters
         ----------
@@ -330,7 +363,7 @@ class IntegratorLearner(BaseLearner):
             The integral value in `self.bounds`.
         err : float
             The absolute error associated with `self.igral`.
-        max_ivals : int, default 1000
+        max_ivals : int, default: 1000
             Maximum number of intervals that can be present in the calculation
             of the integral. If this amount exceeds max_ivals, the interval
             with the smallest error will be discarded.
@@ -342,35 +375,41 @@ class IntegratorLearner(BaseLearner):
         plot : hv.Scatter
             Plots all the points that are evaluated.
         """
-        self.function = function
+        self.function = function  # type: ignore
         self.bounds = bounds
         self.tol = tol
         self.max_ivals = 1000
-        self.priority_split = []
-        self.done_points = {}
+        self.priority_split: list[_Interval] = []
+        self.data = {}
         self.pending_points = set()
-        self._stack = []
-        self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter('rdepth')))
-        self.ivals = set()
+        self._stack: list[float] = []
+        self.x_mapping: dict[float, SortedSet] = defaultdict(
+            lambda: SortedSet([], key=attrgetter("rdepth"))
+        )
+        self.ivals: set[_Interval] = set()
         ival = _Interval.make_first(*self.bounds)
         self.add_ival(ival)
         self.first_ival = ival
 
+    def new(self) -> IntegratorLearner:
+        """Create a copy of `~adaptive.Learner2D` without the data."""
+        return IntegratorLearner(self.function, self.bounds, self.tol)
+
     @property
-    def approximating_intervals(self):
+    def approximating_intervals(self) -> set[_Interval]:
+        assert self.first_ival.done_leaves is not None
         return self.first_ival.done_leaves
 
-    def tell(self, point, value):
+    def tell(self, point: float, value: float) -> None:
         if point not in self.x_mapping:
-            raise ValueError("Point {} doesn't belong to any interval"
-                             .format(point))
-        self.done_points[point] = value
+            raise ValueError(f"Point {point} doesn't belong to any interval")
+        self.data[point] = value
         self.pending_points.discard(point)
 
         # Select the intervals that have this point
         ivals = self.x_mapping[point]
         for ival in ivals:
-            ival.done_points[point] = value
+            ival.data[point] = value
 
             if ival.depth_complete is None:
                 from_depth = 0 if ival.parent is not None else 2
@@ -397,7 +436,7 @@ class IntegratorLearner(BaseLearner):
     def tell_pending(self):
         pass
 
-    def propagate_removed(self, ival):
+    def propagate_removed(self, ival: _Interval) -> None:
         def _propagate_removed_down(ival):
             ival.removed = True
             self.ivals.discard(ival)
@@ -407,19 +446,18 @@ class IntegratorLearner(BaseLearner):
 
         _propagate_removed_down(ival)
 
-    def add_ival(self, ival):
+    def add_ival(self, ival: _Interval) -> None:
         for x in ival.points():
             # Update the mappings
             self.x_mapping[x].add(ival)
-            if x in self.done_points:
-                self.tell(x, self.done_points[x])
+            if x in self.data:
+                self.tell(x, self.data[x])
             elif x not in self.pending_points:
                 self.pending_points.add(x)
                 self._stack.append(x)
         self.ivals.add(ival)
 
-
-    def ask(self, n, tell_pending=True):
+    def ask(self, n: int, tell_pending: bool = True) -> tuple[list[float], list[float]]:
         """Choose points for learners."""
         if not tell_pending:
             with restore(self):
@@ -427,7 +465,7 @@ class IntegratorLearner(BaseLearner):
         else:
             return self._ask_and_tell_pending(n)
 
-    def _ask_and_tell_pending(self, n):
+    def _ask_and_tell_pending(self, n: int) -> tuple[list[float], list[float]]:
         points, loss_improvements = self.pop_from_stack(n)
         n_left = n - len(points)
         while n_left > 0:
@@ -435,7 +473,7 @@ class IntegratorLearner(BaseLearner):
             try:
                 self._fill_stack()
             except ValueError:
-                raise RuntimeError("No way to improve the integral estimate.")
+                raise RuntimeError("No way to improve the integral estimate.") from None
             new_points, new_loss_improvements = self.pop_from_stack(n_left)
             points += new_points
             loss_improvements += new_loss_improvements
@@ -443,17 +481,18 @@ class IntegratorLearner(BaseLearner):
 
         return points, loss_improvements
 
-    def pop_from_stack(self, n):
+    def pop_from_stack(self, n: int) -> tuple[list[float], list[float]]:
         points = self._stack[:n]
         self._stack = self._stack[n:]
-        loss_improvements = [max(ival.err for ival in self.x_mapping[x])
-                             for x in points]
+        loss_improvements = [
+            max(ival.err for ival in self.x_mapping[x]) for x in points
+        ]
         return points, loss_improvements
 
     def remove_unfinished(self):
         pass
 
-    def _fill_stack(self):
+    def _fill_stack(self) -> list[float]:
         # XXX: to-do if all the ivals have err=inf, take the interval
         # with the lowest rdepth and no children.
         force_split = bool(self.priority_split)
@@ -468,14 +507,16 @@ class IntegratorLearner(BaseLearner):
         # don't continue with splitting or refining.
         points = ival.points()
 
-        if (points[1] - points[0] < points[0] * min_sep
-            or points[-1] - points[-2] < points[-2] * min_sep):
+        if (
+            points[1] - points[0] < points[0] * coeff.min_sep
+            or points[-1] - points[-2] < points[-2] * coeff.min_sep
+        ):
             self.ivals.remove(ival)
         elif ival.depth == 3 or force_split:
             # Always split when depth is maximal or if refining didn't help
             self.ivals.remove(ival)
-            for ival in ival.split():
-                self.add_ival(ival)
+            for iv in ival.split():
+                self.add_ival(iv)
         else:
             self.add_ival(ival.refine())
 
@@ -487,15 +528,16 @@ class IntegratorLearner(BaseLearner):
         return self._stack
 
     @property
-    def npoints(self):
-        return len(self.done_points)
+    def npoints(self) -> int:  # type: ignore[override]
+        """Number of evaluated points."""
+        return len(self.data)
 
     @property
-    def igral(self):
+    def igral(self) -> float:
         return sum(i.igral for i in self.approximating_intervals)
 
     @property
-    def err(self):
+    def err(self) -> float:
         if self.approximating_intervals:
             err = sum(i.err for i in self.approximating_intervals)
             if err > sys.float_info.max:
@@ -507,21 +549,145 @@ class IntegratorLearner(BaseLearner):
     def done(self):
         err = self.err
         igral = self.igral
-        err_excess = sum(i.err for i in self.approximating_intervals
-                         if i.removed)
-        return (err == 0
-                or err < abs(igral) * self.tol
-                or (err - err_excess < abs(igral) * self.tol < err_excess)
-                or not self.ivals)
+        err_excess = sum(i.err for i in self.approximating_intervals if i.removed)
+        return (
+            err == 0
+            or err < abs(igral) * self.tol
+            or (err - err_excess < abs(igral) * self.tol < err_excess)
+            or not self.ivals
+        )
 
+    @cache_latest
     def loss(self, real=True):
         return abs(abs(self.igral) * self.tol - self.err)
 
     def plot(self):
         hv = ensure_holoviews()
-        ivals = sorted(self.ivals, key=attrgetter('a'))
-        if not self.done_points:
+        ivals = sorted(self.ivals, key=attrgetter("a"))
+        if not self.data:
             return hv.Path([])
-        xs, ys = zip(*[(x, y) for ival in ivals
-                       for x, y in sorted(ival.done_points.items())])
+        xs, ys = zip(*[(x, y) for ival in ivals for x, y in sorted(ival.data.items())])
         return hv.Path((xs, ys))
+
+    def to_numpy(self):
+        """Data as NumPy array of size (npoints, 2)."""
+        return np.array(sorted(self.data.items()))
+
+    def to_dataframe(  # type: ignore[override]
+        self,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> pandas.DataFrame:
+        """Return the data as a `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        x_name : str, optional
+            Name of the input value, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+
+        Returns
+        -------
+        pandas.DataFrame
+
+        Raises
+        ------
+        ImportError
+            If `pandas` is not installed.
+        """
+        if not with_pandas:
+            raise ImportError("pandas is not installed.")
+        df = pandas.DataFrame(sorted(self.data.items()), columns=[x_name, y_name])
+        df.attrs["inputs"] = [x_name]
+        df.attrs["output"] = y_name
+        if with_default_function_args:
+            assign_defaults(self.function, df, function_prefix)
+        return df
+
+    def load_dataframe(  # type: ignore[override]
+        self,
+        df: pandas.DataFrame,
+        with_default_function_args: bool = True,
+        function_prefix: str = "function.",
+        x_name: str = "x",
+        y_name: str = "y",
+    ) -> None:
+        """Load data from a `pandas.DataFrame`.
+
+        If ``with_default_function_args`` is True, then ``learner.function``'s
+        default arguments are set (using `functools.partial`) from the values
+        in the `pandas.DataFrame`.
+
+        Parameters
+        ----------
+        with_default_function_args : bool, optional
+            Include the ``learner.function``'s default arguments as a
+            column, by default True
+        function_prefix : str, optional
+            Prefix to the ``learner.function``'s default arguments' names,
+            by default "function."
+        x_name : str, optional
+            Name of the input value, by default "x"
+        y_name : str, optional
+            Name of the output value, by default "y"
+        """
+        raise NotImplementedError
+
+    def _get_data(self):
+        # Change the defaultdict of SortedSets to a normal dict of sets.
+        x_mapping = {k: set(v) for k, v in self.x_mapping.items()}
+
+        return (
+            self.priority_split,
+            self.data,
+            self.pending_points,
+            self._stack,
+            x_mapping,
+            self.ivals,
+            self.first_ival,
+        )
+
+    def _set_data(self, data):
+        (
+            self.priority_split,
+            self.data,
+            self.pending_points,
+            self._stack,
+            x_mapping,
+            self.ivals,
+            self.first_ival,
+        ) = data
+
+        # Add the pending_points to the _stack such that they are evaluated again
+        for x in self.pending_points:
+            if x not in self._stack:
+                self._stack.append(x)
+
+        # x_mapping is a data structure that can't easily be saved
+        # so we recreate it here
+        self.x_mapping = defaultdict(lambda: SortedSet([], key=attrgetter("rdepth")))
+        for k, _set in x_mapping.items():
+            self.x_mapping[k].update(_set)
+
+    def __getstate__(self):
+        return (
+            cloudpickle.dumps(self.function),
+            self.bounds,
+            self.tol,
+            self._get_data(),
+        )
+
+    def __setstate__(self, state):
+        function, bounds, tol, data = state
+        function = cloudpickle.loads(function)
+        self.__init__(function, bounds, tol)
+        self._set_data(data)

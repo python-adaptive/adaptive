@@ -1,25 +1,49 @@
-# -*- coding: utf-8 -*-
-from contextlib import suppress
+from adaptive._version import __version__
+from adaptive.learner import (
+    AverageLearner,
+    AverageLearner1D,
+    BalancingLearner,
+    BaseLearner,
+    DataSaver,
+    IntegratorLearner,
+    Learner1D,
+    Learner2D,
+    LearnerND,
+    SequenceLearner,
+    make_datasaver,
+)
+from adaptive.notebook_integration import (
+    active_plotting_tasks,
+    live_plot,
+    notebook_extension,
+)
+from adaptive.runner import AsyncRunner, BlockingRunner, Runner
 
-from .notebook_integration import (notebook_extension, live_plot,
-                                   active_plotting_tasks)
+from adaptive import learner, runner, utils  # isort:skip
 
-from . import learner
-from . import runner
-from . import utils
+__all__ = [
+    "learner",
+    "runner",
+    "utils",
+    "__version__",
+    "AverageLearner",
+    "BalancingLearner",
+    "BaseLearner",
+    "DataSaver",
+    "IntegratorLearner",
+    "Learner1D",
+    "Learner2D",
+    "LearnerND",
+    "AverageLearner1D",
+    "make_datasaver",
+    "SequenceLearner",
+    "active_plotting_tasks",
+    "live_plot",
+    "notebook_extension",
+    "AsyncRunner",
+    "BlockingRunner",
+    "Runner",
+]
 
-from .learner import (Learner1D, Learner2D, LearnerND, AverageLearner,
-                      BalancingLearner, make_datasaver, DataSaver,
-                      IntegratorLearner)
-
-with suppress(ImportError):
-    # Only available if 'scikit-optimize' is installed
-    from .learner import SKOptLearner
-
-from .runner import Runner, BlockingRunner
-from . import version
-
-__version__ = version.version
-
-del notebook_integration  # to avoid confusion with `notebook_extension`
-del version
+# to avoid confusion with `notebook_extension`
+del notebook_integration  # type: ignore[name-defined] # noqa: F821

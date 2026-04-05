@@ -4,13 +4,16 @@ channels:
 - conda-forge
 
 dependencies:
-  - python=3.6
+  - python=3.13
   - sortedcontainers
+  - sortedcollections
   - scipy
+  - cloudpickle
   - holoviews
-  - ipyparallel
+  - ipyparallel>=6.2.5
   - distributed
   - ipykernel>=4.8*
+  - loky
   - jupyter_client>=5.2.2
   - ipywidgets
-  - scikit-optimize
+  - plotly
