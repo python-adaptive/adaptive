@@ -17,8 +17,10 @@ except ModuleNotFoundError:
     with_pandas = False
 
 
-def _to_key(x):
-    return tuple(x.values) if x.values.size > 1 else x.item()
+def _to_key(x, use_tuple=False):
+    if x.values.size > 1 or use_tuple:
+        return tuple(x.values)
+    return x.item()
 
 
 class DataSaver(BaseLearner):
@@ -109,8 +111,11 @@ class DataSaver(BaseLearner):
             **kwargs,
         )
 
+        # Detect if the learner uses tuple keys even for single inputs (e.g., LearnerND 1D)
+        use_tuple = self.extra_data and isinstance(next(iter(self.extra_data)), tuple)
         df[extra_data_name] = [
-            self.extra_data[_to_key(x)] for _, x in df[df.attrs["inputs"]].iterrows()
+            self.extra_data[_to_key(x, use_tuple=use_tuple)]
+            for _, x in df[df.attrs["inputs"]].iterrows()
         ]
         return df
 
@@ -147,9 +152,11 @@ class DataSaver(BaseLearner):
             **kwargs,
         )
         keys = df.attrs.get("inputs", list(input_names))
+        # Detect if the learner uses tuple keys even for single inputs
+        use_tuple = self.data and isinstance(next(iter(self.data)), tuple)
         for _, x in df[keys + [extra_data_name]].iterrows():
-            key = _to_key(x[:-1])
-            self.extra_data[key] = x[-1]
+            key = _to_key(x.iloc[:-1], use_tuple=use_tuple)
+            self.extra_data[key] = x.iloc[-1]
 
     def _get_data(self) -> tuple[Any, OrderedDict[Any, Any]]:
         return self.learner._get_data(), self.extra_data

@@ -48,3 +48,18 @@ def test_vector_return_with_a_flat_layer():
     for function in [h1, h2, h3]:
         learner = LearnerND(function, bounds=[(-1, 1), (-1, 1)])
         simple(learner, loss_goal=0.1)
+
+
+def test_learnerND_1d_basic():
+    """Test LearnerND works with 1D bounds."""
+    learner = LearnerND(lambda x: x[0] ** 2, bounds=[(-1, 1)])
+    simple(learner, npoints_goal=10)
+    assert learner.npoints == 10
+    assert learner.loss() < float("inf")
+
+
+def test_learnerND_1d_with_loss_goal():
+    """Test LearnerND 1D converges with a loss goal."""
+    learner = LearnerND(lambda x: x[0] ** 2, bounds=[(-1, 1)])
+    simple(learner, loss_goal=0.1)
+    assert learner.loss() <= 0.1

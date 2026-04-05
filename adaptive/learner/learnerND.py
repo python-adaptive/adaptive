@@ -497,6 +497,15 @@ class LearnerND(BaseLearner):
         """A `scipy.interpolate.LinearNDInterpolator` instance
         containing the learner's data."""
         # XXX: take our own triangulation into account when generating the _ip
+        if self.ndim == 1:
+            points = self.points.ravel()
+            sorted_idx = np.argsort(points)
+            return interpolate.interp1d(
+                points[sorted_idx],
+                self.values[sorted_idx],
+                bounds_error=False,
+                fill_value=np.nan,
+            )
         return interpolate.LinearNDInterpolator(self.points, self.values)
 
     @property
@@ -895,9 +904,23 @@ class LearnerND(BaseLearner):
             raise NotImplementedError(
                 "holoviews currently does not support", "3D surface plots in bokeh."
             )
+        if self.ndim == 1:
+            if len(self.data) >= 2:
+                (x,) = self._bbox
+                n = n or 201
+                xs = np.linspace(x[0], x[1], n)
+                ys = self._ip()(xs)
+                path = hv.Path((xs, ys))
+                points = np.array(sorted(self.data.items()))
+                scatter = hv.Scatter(points)
+            else:
+                path = hv.Path([])
+                scatter = hv.Scatter([])
+            return path * scatter.opts(size=5)
+
         if self.ndim != 2:
             raise NotImplementedError(
-                "Only 2D plots are implemented: You can "
+                "Only 1D and 2D plots are implemented: You can "
                 "plot a 2D slice with 'plot_slice'."
             )
         x, y = self._bbox

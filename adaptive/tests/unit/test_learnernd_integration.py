@@ -53,3 +53,41 @@ def test_learnerND_log_works():
     learner.ask(2)
     # At this point, there should! be one simplex in the triangulation,
     # furthermore the last two points that were asked should be in this simplex
+
+
+# ---- 1D-specific integration tests ----
+
+
+def f_1d(x):
+    return math.sin(x[0] * 5)
+
+
+def test_learnerND_1d_runs_to_10_points():
+    learner = LearnerND(f_1d, bounds=[(-1, 1)])
+    SimpleRunner(learner, npoints_goal=10)
+    assert learner.npoints == 10
+
+
+@pytest.mark.parametrize("execution_number", range(5))
+def test_learnerND_1d_runs_to_10_points_Blocking(execution_number):
+    learner = LearnerND(f_1d, bounds=[(-1, 1)])
+    BlockingRunner(learner, npoints_goal=10)
+    assert learner.npoints >= 10
+
+
+def test_learnerND_1d_curvature_runs_to_10_points():
+    loss = curvature_loss_function()
+    learner = LearnerND(f_1d, bounds=[(-1, 1)], loss_per_simplex=loss)
+    SimpleRunner(learner, npoints_goal=10)
+    assert learner.npoints == 10
+
+
+def test_learnerND_1d_loss_decreases():
+    """Test that loss decreases as more points are added."""
+    learner = LearnerND(f_1d, bounds=[(-1, 1)])
+    SimpleRunner(learner, npoints_goal=5)
+    loss_5 = learner.loss()
+    assert loss_5 != float("inf")
+    SimpleRunner(learner, npoints_goal=20)
+    loss_20 = learner.loss()
+    assert loss_20 <= loss_5

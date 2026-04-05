@@ -257,6 +257,10 @@ def simplex_volume_in_embedding(vertices) -> float:
     # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
 
     vertices = asarray(vertices, dtype=float)
+    if len(vertices) == 2:
+        # 1-simplex (line segment): volume is the Euclidean distance
+        return float(norm(vertices[1] - vertices[0]))
+
     dim = len(vertices[0])
     if dim == 2:
         # Heron's formula
@@ -326,9 +330,6 @@ class Triangulation:
         if any(len(coord) != dim for coord in coords):
             raise ValueError("Coordinates dimension mismatch")
 
-        if dim == 1:
-            raise ValueError("Triangulation class only supports dim >= 2")
-
         if len(coords) < dim + 1:
             raise ValueError("Please provide at least one simplex")
 
@@ -344,11 +345,17 @@ class Triangulation:
         # initialise empty set for each vertex
         self.vertex_to_simplices = [set() for _ in coords]
 
-        # find a Delaunay triangulation to start with, then we will throw it
-        # away and continue with our own algorithm
-        initial_tri = scipy.spatial.Delaunay(coords)
-        for simplex in initial_tri.simplices:
-            self.add_simplex(simplex)
+        if dim == 1:
+            # For 1D, sort points and create intervals as simplices
+            sorted_indices = sorted(range(len(coords)), key=lambda i: coords[i])
+            for i in range(len(sorted_indices) - 1):
+                self.add_simplex((sorted_indices[i], sorted_indices[i + 1]))
+        else:
+            # find a Delaunay triangulation to start with, then we will throw it
+            # away and continue with our own algorithm
+            initial_tri = scipy.spatial.Delaunay(coords)
+            for simplex in initial_tri.simplices:
+                self.add_simplex(simplex)
 
     def delete_simplex(self, simplex):
         simplex = tuple(sorted(simplex))

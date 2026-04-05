@@ -8,6 +8,7 @@ import pytest
 from adaptive.learner.triangulation import Triangulation
 
 with_dimension = pytest.mark.parametrize("dim", [2, 3, 4])
+with_dimension_incl_1d = pytest.mark.parametrize("dim", [1, 2, 3, 4])
 
 
 def _make_triangulation(points):
@@ -76,15 +77,14 @@ def test_triangulation_raises_exception_for_1d_list():
         Triangulation(pts)
 
 
-def test_triangulation_raises_exception_for_1d_points():
-    # We could support 1d, but we don't for now, because it is not relevant
-    # so a user has to be aware
+def test_triangulation_supports_1d_points():
     pts = [(0,), (1,)]
-    with pytest.raises(ValueError):
-        Triangulation(pts)
+    t = Triangulation(pts)
+    assert t.simplices == {(0, 1)}
+    assert t.hull == {0, 1}
 
 
-@with_dimension
+@with_dimension_incl_1d
 def test_triangulation_of_standard_simplex(dim):
     t = Triangulation(_make_standard_simplex(dim))
     expected_simplex = tuple(range(dim + 1))
@@ -132,7 +132,7 @@ def test_adding_point_outside_circumscribed_hypersphere_in_positive_orthant(dim)
     )
 
 
-@with_dimension
+@with_dimension_incl_1d
 def test_adding_point_outside_standard_simplex_in_negative_orthant(dim):
     t = Triangulation(_make_standard_simplex(dim))
     new_point = list(range(-dim, 0))
@@ -166,7 +166,7 @@ def test_adding_point_outside_standard_simplex_in_negative_orthant(dim):
     assert extra_simplices | {initial_simplex} == t.simplices
 
 
-@with_dimension
+@with_dimension_incl_1d
 @pytest.mark.parametrize("provide_simplex", [True, False])
 def test_adding_point_inside_standard_simplex(dim, provide_simplex):
     t = Triangulation(_make_standard_simplex(dim))
@@ -212,7 +212,7 @@ def test_adding_point_on_standard_simplex_face(dim):
     assert np.isclose(np.sum(t.volumes()), _standard_simplex_volume(dim))
 
 
-@with_dimension
+@with_dimension_incl_1d
 def test_adding_point_on_standard_simplex_edge(dim):
     pts = _make_standard_simplex(dim)
     t = Triangulation(pts)
@@ -230,7 +230,7 @@ def test_adding_point_on_standard_simplex_edge(dim):
     assert np.isclose(np.sum(t.volumes()), _standard_simplex_volume(dim))
 
 
-@with_dimension
+@with_dimension_incl_1d
 def test_adding_point_colinear_with_first_edge(dim):
     pts = _make_standard_simplex(dim)
     t = Triangulation(pts)
@@ -279,7 +279,7 @@ def test_adding_point_inside_circumscribed_circle(dim):
     assert new_simplices == t.simplices
 
 
-@with_dimension
+@with_dimension_incl_1d
 def test_triangulation_volume_is_less_than_bounding_box(dim):
     eps = 1e-8
     points = np.random.random((10, dim))  # all within the unit hypercube
@@ -289,7 +289,7 @@ def test_triangulation_volume_is_less_than_bounding_box(dim):
     assert np.sum(t.volumes()) < 1 + eps
 
 
-@with_dimension
+@with_dimension_incl_1d
 def test_triangulation_is_deterministic(dim):
     points = np.random.random((10, dim))
     t1 = _make_triangulation(points)
@@ -297,7 +297,7 @@ def test_triangulation_is_deterministic(dim):
     assert t1.simplices == t2.simplices
 
 
-@with_dimension
+@with_dimension_incl_1d
 def test_initialisation_raises_when_not_enough_points(dim):
     deficient_simplex = _make_standard_simplex(dim)[:-1]
 
@@ -317,7 +317,7 @@ def test_initialisation_raises_when_points_coplanar(dim):
         Triangulation(zero_volume_simplex)
 
 
-@with_dimension
+@with_dimension_incl_1d
 def test_initialisation_accepts_more_than_one_simplex(dim):
     points = _make_standard_simplex(dim)
     new_point = [1.1] * dim  # Point oposing the origin but outside circumsphere
@@ -331,3 +331,90 @@ def test_initialisation_accepts_more_than_one_simplex(dim):
     _check_triangulation_is_valid(tri)
 
     assert tri.simplices == {simplex1, simplex2}
+
+
+# ---- 1D-specific triangulation tests ----
+
+
+def test_1d_triangulation_basic():
+    """Test basic 1D triangulation with two points."""
+    t = Triangulation([(0.0,), (1.0,)])
+    assert t.simplices == {(0, 1)}
+    assert t.hull == {0, 1}
+    assert t.volume((0, 1)) == 1.0
+    _check_triangulation_is_valid(t)
+
+
+def test_1d_triangulation_multiple_points():
+    """Test 1D triangulation with multiple initial points."""
+    pts = [(0.0,), (0.5,), (1.0,)]
+    t = Triangulation(pts)
+    # Points 0=(0.0,), 1=(0.5,), 2=(1.0,) → sorted: 0, 1, 2
+    assert len(t.simplices) == 2
+    assert t.hull == {0, 2}  # endpoints
+    _check_triangulation_is_valid(t)
+    assert np.isclose(sum(t.volumes()), 1.0)
+
+
+def test_1d_triangulation_unsorted_points():
+    """Test that 1D triangulation handles unsorted initial points."""
+    pts = [(1.0,), (0.0,), (0.5,)]
+    t = Triangulation(pts)
+    assert len(t.simplices) == 2
+    _check_triangulation_is_valid(t)
+    assert np.isclose(sum(t.volumes()), 1.0)
+
+
+def test_1d_add_point_inside():
+    """Test adding a point inside a 1D interval."""
+    t = Triangulation([(0.0,), (1.0,)])
+    _add_point_with_check(t, (0.5,))
+    assert len(t.simplices) == 2
+    assert t.hull == {0, 1}  # original endpoints are still hull
+    _check_triangulation_is_valid(t)
+    assert np.isclose(sum(t.volumes()), 1.0)
+
+
+def test_1d_add_point_outside_right():
+    """Test adding a point to the right of a 1D triangulation."""
+    t = Triangulation([(0.0,), (1.0,)])
+    _add_point_with_check(t, (2.0,))
+    assert t.simplices == {(0, 1), (1, 2)}
+    assert t.hull == {0, 2}
+    _check_triangulation_is_valid(t)
+
+
+def test_1d_add_point_outside_left():
+    """Test adding a point to the left of a 1D triangulation."""
+    t = Triangulation([(0.0,), (1.0,)])
+    _add_point_with_check(t, (-1.0,))
+    assert t.simplices == {(0, 1), (0, 2)}
+    assert t.hull == {1, 2}
+    _check_triangulation_is_valid(t)
+
+
+def test_1d_locate_point():
+    """Test locating a point in a 1D triangulation."""
+    t = Triangulation([(0.0,), (0.5,), (1.0,)])
+    # Point in first interval
+    simplex = t.locate_point((0.25,))
+    assert simplex  # should find a simplex
+    # Point in second interval
+    simplex = t.locate_point((0.75,))
+    assert simplex
+    # Point outside
+    simplex = t.locate_point((1.5,))
+    assert simplex == ()
+
+
+def test_1d_opposing_vertices():
+    """Test opposing vertices in 1D."""
+    pts = [(0.0,), (0.5,), (1.0,)]
+    t = Triangulation(pts)
+    # sorted: 0=(0.0,), 1=(0.5,), 2=(1.0,) → simplices: (0,1), (1,2)
+    # For simplex (0,1): opposing 0 is 2 (from simplex (1,2)), opposing 1 is None (0 is hull)
+    opp = t.get_opposing_vertices((0, 1))
+    # vertex 0 is opposed by the vertex in neighbor of face (1,) not containing 0
+    # vertex 1 is opposed by the vertex in neighbor of face (0,) not containing 1
+    assert opp[1] is None  # face (0,) is hull, no neighbor
+    assert opp[0] == 2  # face (1,) connects to simplex (1,2), opposing vertex is 2
