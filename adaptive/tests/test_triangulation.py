@@ -407,6 +407,20 @@ def test_1d_locate_point():
     assert simplex == ()
 
 
+def test_1d_duplicate_coordinates_skipped():
+    """Test that duplicate 1D coordinates don't create degenerate simplices."""
+    t = Triangulation([(0.0,), (1.0,), (1.0,)])
+    # The duplicate (1.0,) should be skipped, leaving only one simplex
+    assert t.simplices == {(0, 1)}
+    assert all(v > 0 for v in t.volumes())
+    _check_triangulation_is_valid(t)
+
+    # Multiple duplicates
+    t2 = Triangulation([(0.0,), (0.0,), (0.5,), (1.0,), (1.0,)])
+    assert all(v > 0 for v in t2.volumes())
+    _check_triangulation_is_valid(t2)
+
+
 def test_1d_opposing_vertices():
     """Test opposing vertices in 1D."""
     pts = [(0.0,), (0.5,), (1.0,)]

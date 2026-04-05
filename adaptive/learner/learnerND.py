@@ -503,6 +503,7 @@ class LearnerND(BaseLearner):
             return interpolate.interp1d(
                 points[sorted_idx],
                 self.values[sorted_idx],
+                axis=0,
                 bounds_error=False,
                 fill_value=np.nan,
             )
@@ -911,7 +912,7 @@ class LearnerND(BaseLearner):
                 xs = np.linspace(x[0], x[1], n)
                 ys = self._ip()(xs)
                 path = hv.Path((xs, ys))
-                points = np.array(sorted(self.data.items()))
+                points = [(x[0], y) for x, y in sorted(self.data.items())]
                 scatter = hv.Scatter(points)
             else:
                 path = hv.Path([])

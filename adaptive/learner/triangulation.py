@@ -346,9 +346,12 @@ class Triangulation:
         self.vertex_to_simplices = [set() for _ in coords]
 
         if dim == 1:
-            # For 1D, sort points and create intervals as simplices
+            # For 1D, sort points and create intervals as simplices,
+            # skipping adjacent duplicates to avoid degenerate zero-volume simplices
             sorted_indices = sorted(range(len(coords)), key=lambda i: coords[i])
             for i in range(len(sorted_indices) - 1):
+                if coords[sorted_indices[i]] == coords[sorted_indices[i + 1]]:
+                    continue
                 self.add_simplex((sorted_indices[i], sorted_indices[i + 1]))
         else:
             # find a Delaunay triangulation to start with, then we will throw it

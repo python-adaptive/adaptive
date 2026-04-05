@@ -53,6 +53,29 @@ Added 1D support to `LearnerND` and the `Triangulation` class, allowing `Learner
 #### `adaptive/tests/test_learners.py`
 - Registered `peak_1d` function with `@learn_with(LearnerND, bounds=((-1, 1),))` for cross-learner tests
 
+## Review Round 1 — Fixes
+
+### Fix 1 (HIGH): 1D `plot()` crash
+`np.array(sorted(self.data.items()))` failed because items are `((x,), y)` tuples
+that can't be coerced into a homogeneous array. Fixed by flattening:
+`[(x[0], y) for x, y in sorted(self.data.items())]`.
+Regression test: `test_learnerND_1d_plot`.
+
+### Fix 2 (MEDIUM): 1D `_ip()` fails for vector outputs
+`interp1d` defaults to `axis=-1`, which causes a length mismatch when values
+have shape `(npoints, vdim)`. Fixed by passing `axis=0`.
+Regression test: `test_learnerND_1d_vector_output_interpolation`.
+
+### Fix 3 (MEDIUM): Duplicate 1D coordinates unchecked
+`Triangulation([(0.0,), (1.0,), (1.0,)])` created a degenerate zero-volume
+simplex. Fixed by skipping adjacent duplicates after sorting in the 1D init.
+Regression test: `test_1d_duplicate_coordinates_skipped`.
+
+### Fix 4 (MEDIUM): Flaky `test_circumsphere` for dim=1
+Gaussian sampling could place both boundary points on the same side of center,
+producing `inf`. Fixed by special-casing `dim == 1` to generate `center ± radius`
+deterministically. Verified stable over 20 consecutive runs.
+
 ## Why No Other Changes Were Needed
 
 The existing `Triangulation` methods (add_point, bowyer_watson, _extend_hull, circumsphere, orientation, volume, hull, faces, etc.) all work correctly for 1D without modification because:
@@ -69,13 +92,13 @@ The existing `Triangulation` methods (add_point, bowyer_watson, _extend_hull, ci
 All tests pass:
 
 ```
-adaptive/tests/test_triangulation.py           — 68 passed
-adaptive/tests/unit/test_triangulation.py      —  9 passed
-adaptive/tests/unit/test_learnernd.py          —  9 passed
-adaptive/tests/unit/test_learnernd_integration.py — 21 passed
-adaptive/tests/test_learnernd.py               —  5 passed
-adaptive/tests/test_learners.py (LearnerND)    — 52 passed
-                                         Total: 164 passed
+adaptive/tests/test_triangulation.py              — 69 passed
+adaptive/tests/unit/test_triangulation.py          — 11 passed
+adaptive/tests/unit/test_learnernd.py              — 11 passed
+adaptive/tests/unit/test_learnernd_integration.py  — 21 passed
+adaptive/tests/test_learnernd.py                   —  5 passed
+adaptive/tests/test_learners.py                    — 153 passed
+                                            Total: 270 passed
 ```
 
 All existing 2D/3D/4D tests continue to pass unchanged.
@@ -83,8 +106,11 @@ All existing 2D/3D/4D tests continue to pass unchanged.
 ## Verified Functionality
 
 - All loss functions work for 1D: `default_loss`, `uniform_loss`, `std_loss`, `curvature_loss_function()`
-- Interpolation produces correct values
+- Interpolation produces correct values (scalar and vector outputs)
+- 1D `plot()` renders without crash
 - Loss decreases as more points are added
 - `BlockingRunner` and `simple` runner both work
 - DataFrame serialization/deserialization works (including DataSaver)
 - Balancing learner works with 1D LearnerND
+- Duplicate 1D coordinates are handled gracefully
+- `circumsphere` is deterministic for dim=1

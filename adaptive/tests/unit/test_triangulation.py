@@ -71,9 +71,20 @@ def test_circumsphere():
     def generate_random_sphere_points(dim, radius=0):
         """https://math.stackexchange.com/a/1585996"""
 
-        vec = [None] * (dim + 1)
         center = uniform(-100, 100, dim)
         radius = uniform(1.0, 100.0) if radius == 0 else radius
+
+        if dim == 1:
+            # For 1D, place the two points exactly at center ± radius
+            # to avoid the Gaussian sampling flakiness where both points
+            # can land on the same side of center.
+            vec = [
+                tuple(center - radius),
+                tuple(center + radius),
+            ]
+            return radius, center, vec
+
+        vec = [None] * (dim + 1)
         for i in range(dim + 1):
             points = normal(0, size=dim)
             x = fast_norm(points)

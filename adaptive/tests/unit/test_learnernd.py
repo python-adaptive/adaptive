@@ -118,3 +118,31 @@ def test_learnerND_1d_interpolation():
     assert np.isclose(ip(1.0), 1.0)
     # Check interpolation at midpoint (linear interpolation)
     assert np.isclose(ip(0.25), 0.125)  # linear between 0 and 0.5
+
+
+def test_learnerND_1d_vector_output_interpolation():
+    """Test that 1D interpolation works for R^1 -> R^M functions."""
+
+    def f_vec(x):
+        return np.array([x[0] ** 2, np.sin(x[0])])
+
+    learner = LearnerND(f_vec, bounds=[(-1, 1)])
+    for x in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+        learner.tell((x,), f_vec((x,)))
+    ip = learner._ip()
+    result = ip(0.0)
+    assert result.shape == (2,)
+    assert np.isclose(result[0], 0.0)
+    assert np.isclose(result[1], 0.0)
+
+
+def test_learnerND_1d_plot():
+    """Test that 1D plot() does not crash."""
+    import holoviews as hv
+
+    hv.extension("bokeh")
+    learner = LearnerND(f_1d, bounds=[(-1, 1)])
+    for x in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+        learner.tell((x,), x**2)
+    plot = learner.plot()
+    assert plot is not None
