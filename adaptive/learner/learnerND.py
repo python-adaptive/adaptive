@@ -308,7 +308,7 @@ class LearnerND(BaseLearner):
     children based on volume.
     """
 
-    def __init__(self, func, bounds, loss_per_simplex=None, anisotropic=False):
+    def __init__(self, func, bounds, loss_per_simplex=None, *, anisotropic=False):
         self._vdim = None
         self.loss_per_simplex = loss_per_simplex or default_loss
 
