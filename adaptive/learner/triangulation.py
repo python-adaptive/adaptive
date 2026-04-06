@@ -3,6 +3,7 @@ from collections.abc import Iterable, Sized
 from itertools import chain, combinations
 from math import factorial, sqrt
 
+import numpy as np
 import scipy.spatial
 from numpy import abs as np_abs
 from numpy import (
@@ -252,6 +253,8 @@ def simplex_volume_in_embedding(vertices) -> float:
     ValueError
         if the vertices do not form a simplex (for example,
         because they are coplanar, colinear or coincident).
+
+    Warning: this algorithm has not been tested for numerical stability.
     """
     # Implements http://mathworld.wolfram.com/Cayley-MengerDeterminant.html
     # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
@@ -566,7 +569,14 @@ class Triangulation:
                     self.add_simplex(simplex)
 
         new_triangles = self.vertex_to_simplices[pt_index]
-        return bad_triangles - new_triangles, new_triangles - bad_triangles
+        deleted_simplices = bad_triangles - new_triangles
+        new_simplices = new_triangles - bad_triangles
+
+        old_vol = sum([self.volume(simplex) for simplex in deleted_simplices])
+        new_vol = sum([self.volume(simplex) for simplex in new_simplices])
+        assert np.isclose(old_vol, new_vol), f"{old_vol} !== {new_vol}"
+
+        return deleted_simplices, new_simplices
 
     def _simplex_is_almost_flat(self, simplex):
         return self._relative_volume(simplex) < 1e-8
@@ -713,3 +723,45 @@ class Triangulation:
     def convex_invariant(self, vertex):
         """Hull is convex."""
         raise NotImplementedError
+
+
+class FakeDelaunay(scipy.spatial.Delaunay):
+    def __init__(self, vertices, simplices):
+        """
+        Throw in a Triangulation object, and receive a brandnew
+        scipy.spatial.Delaunay
+
+        Parameters
+        ----------
+        vertices : 2d arraylike of floats
+
+        simplices : 2d arraylike of integers
+        """
+
+        # just create some Delaunay triangulation object, any would do.
+        super().__init__([[0, 1], [1, 0], [0, 0]])
+
+        self.ndim = len(vertices[0])
+        self._points = np.array(vertices, dtype="float64")
+        self.simplices = np.array(list(simplices), dtype="int32")
+        # self.neighbors = np.zero # () todo
+        self.nsimplex = len(simplices)
+        self.npoints = len(vertices)
+        self.min_bound = self._points.min(axis=0)
+        self.max_bound = self._points.max(axis=0)
+        self._transform = None  # Set it to None to recompute it when needed
+
+        # now the hard part: finding the neighbours
+        self.neighbors = -np.ones_like(self.simplices)  # set all to -1
+
+        faces_dict = {}
+        for n, simplex in enumerate(self.simplices):
+            simplex = tuple(simplex)
+            for i, _point in enumerate(simplex):
+                face = tuple(sorted(simplex[:i] + simplex[i + 1 :]))
+                if face in faces_dict:
+                    other_simpl_index, other_point_index = faces_dict[face]
+                    self.neighbors[other_simpl_index, other_point_index] = n
+                    self.neighbors[n, i] = other_simpl_index
+                else:
+                    faces_dict[face] = (n, i)

@@ -34,6 +34,11 @@ def test_learnerND_accepts_ConvexHull_as_input():
     assert np.allclose(learner._bbox, [(0, 2), (0, 1)])
 
 
+def test_learnerND_anisotropic_is_keyword_only():
+    with pytest.raises(TypeError):
+        LearnerND(ring_of_fire, [(-1, 1), (-1, 1)], None, True)
+
+
 def test_learnerND_raises_if_too_many_neigbors():
     @uses_nth_neighbors(2)
     def loss(*args):

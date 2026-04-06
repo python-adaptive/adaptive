@@ -308,7 +308,7 @@ class LearnerND(BaseLearner):
     children based on volume.
     """
 
-    def __init__(self, func, bounds, loss_per_simplex=None):
+    def __init__(self, func, bounds, loss_per_simplex=None, *, anisotropic=False):
         self._vdim = None
         self.loss_per_simplex = loss_per_simplex or default_loss
 
@@ -363,6 +363,7 @@ class LearnerND(BaseLearner):
 
         # create a private random number generator with fixed seed
         self._random = random.Random(1)
+        self.anisotropic = anisotropic
 
         # all real triangles that have not been subdivided and the pending
         # triangles heap of tuples (-loss, real simplex, sub_simplex or None)
@@ -379,7 +380,12 @@ class LearnerND(BaseLearner):
 
     def new(self) -> LearnerND:
         """Create a new learner with the same function and bounds."""
-        return LearnerND(self.function, self.bounds, self.loss_per_simplex)
+        return LearnerND(
+            self.function,
+            self.bounds,
+            self.loss_per_simplex,
+            anisotropic=self.anisotropic,
+        )
 
     @property
     def npoints(self):
@@ -529,7 +535,6 @@ class LearnerND(BaseLearner):
 
     def tell(self, point, value):
         point = tuple(point)
-
         if point in self.data:
             return  # we already know about the point
 
@@ -548,8 +553,53 @@ class LearnerND(BaseLearner):
             simplex = self._pending_to_simplex.get(point)
             if simplex is not None and not self._simplex_exists(simplex):
                 simplex = None
+            # Keep Bowyer-Watson in the globally scaled coordinates. The
+            # anisotropic per-simplex transform is only used for point
+            # selection, not for cavity construction.
             to_delete, to_add = tri.add_point(point, simplex, transform=self._transform)
             self._update_losses(to_delete, to_add)
+
+    def get_local_transform_matrix(self, simplex):
+        scale = self._transform
+
+        if simplex is None or self.tri is None or not self.anisotropic:
+            return scale
+
+        neighbors = set.union(*[self.tri.vertex_to_simplices[i] for i in simplex])
+        indices = set.union(set(), *neighbors)
+
+        points = np.array([self.points[i] for i in indices])
+        values = [self.data[tuple(p)] for p in points]
+
+        if isinstance(values[0], Iterable):
+            raise ValueError("Anisotropic learner only works with 1D output")
+
+        # Do a linear least square fit
+        # A x = B, find x
+        points = points @ scale
+        ones = np.ones((len(points), 1))
+        A = np.hstack((points, ones))
+        B = np.array(values, dtype=float)
+        fit = np.linalg.lstsq(A, B, rcond=None)[0]
+        *gradient, _constant = fit
+        # we do not need the constant, only the gradient
+
+        # gradient is a vector of the amount of the slope in each direction
+        magnitude = np.linalg.norm(gradient)
+
+        if np.isclose(magnitude, 0):
+            return scale  # there is no noticable gradient
+
+        # Make it a 2d numpy array and normalise it.
+        gradient = np.array([gradient], dtype=float) / magnitude
+        projection_matrix = gradient.T @ gradient
+        identity = np.eye(self.ndim)
+
+        factor = math.sqrt(magnitude**2 + 1) - 1
+
+        scale_along_gradient = projection_matrix * factor + identity
+        m = np.dot(scale_along_gradient, scale)
+        return m.T
 
     def _simplex_exists(self, simplex):
         simplex = tuple(sorted(simplex))
@@ -679,22 +729,29 @@ class LearnerND(BaseLearner):
     def _ask_best_point(self):
         assert self.tri is not None
 
-        loss, simplex, subsimplex = self._pop_highest_existing_simplex()
+        while True:
+            loss, simplex, subsimplex = self._pop_highest_existing_simplex()
 
-        if subsimplex is None:
-            # We found a real simplex and want to subdivide it
-            points = self.tri.get_vertices(simplex)
-        else:
-            # We found a pending simplex and want to subdivide it
-            subtri = self._subtriangulations[simplex]
-            points = subtri.get_vertices(subsimplex)
+            if subsimplex is None:
+                # We found a real simplex and want to subdivide it
+                points = self.tri.get_vertices(simplex)
+            else:
+                # We found a pending simplex and want to subdivide it
+                subtri = self._subtriangulations[simplex]
+                points = subtri.get_vertices(subsimplex)
 
-        point_new = tuple(choose_point_in_simplex(points, transform=self._transform))
+            transform = self.get_local_transform_matrix(simplex)
+            point_new = tuple(choose_point_in_simplex(points, transform=transform))
 
-        self._pending_to_simplex[point_new] = simplex
-        self.tell_pending(point_new, simplex=simplex)  # O(??)
+            # The priority queue may still contain stale simplices from before a
+            # pending split. Skip those rather than returning duplicate work.
+            if point_new in self.data or point_new in self.pending_points:
+                continue
 
-        return point_new, loss
+            self._pending_to_simplex[point_new] = simplex
+            self.tell_pending(point_new, simplex=simplex)  # O(??)
+
+            return point_new, loss
 
     @property
     def _bounds_available(self):
