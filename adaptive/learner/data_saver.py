@@ -17,10 +17,14 @@ except ModuleNotFoundError:
     with_pandas = False
 
 
-def _to_key(x, use_tuple=False):
-    if x.values.size > 1 or use_tuple:
-        return tuple(x.values)
-    return x.item()
+def _mapping_uses_tuple_keys(mapping):
+    return bool(mapping) and isinstance(next(iter(mapping)), tuple)
+
+
+def _row_to_key(row, force_tuple=False):
+    if row.values.size > 1 or force_tuple:
+        return tuple(row.values)
+    return row.item()
 
 
 class DataSaver(BaseLearner):
@@ -111,10 +115,9 @@ class DataSaver(BaseLearner):
             **kwargs,
         )
 
-        # Detect if the learner uses tuple keys even for single inputs (e.g., LearnerND 1D)
-        use_tuple = self.extra_data and isinstance(next(iter(self.extra_data)), tuple)
+        force_tuple = _mapping_uses_tuple_keys(self.extra_data)
         df[extra_data_name] = [
-            self.extra_data[_to_key(x, use_tuple=use_tuple)]
+            self.extra_data[_row_to_key(x, force_tuple=force_tuple)]
             for _, x in df[df.attrs["inputs"]].iterrows()
         ]
         return df
@@ -151,12 +154,11 @@ class DataSaver(BaseLearner):
             function_prefix=function_prefix,
             **kwargs,
         )
-        keys = df.attrs.get("inputs", list(input_names))
-        # Detect if the learner uses tuple keys even for single inputs
-        use_tuple = self.data and isinstance(next(iter(self.data)), tuple)
-        for _, x in df[keys + [extra_data_name]].iterrows():
-            key = _to_key(x.iloc[:-1], use_tuple=use_tuple)
-            self.extra_data[key] = x.iloc[-1]
+        input_columns = df.attrs.get("inputs", list(input_names))
+        force_tuple = _mapping_uses_tuple_keys(self.learner.data)
+        for _, row in df[input_columns + [extra_data_name]].iterrows():
+            key = _row_to_key(row.iloc[:-1], force_tuple=force_tuple)
+            self.extra_data[key] = row.iloc[-1]
 
     def _get_data(self) -> tuple[Any, OrderedDict[Any, Any]]:
         return self.learner._get_data(), self.extra_data
