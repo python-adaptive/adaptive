@@ -493,21 +493,39 @@ class LearnerND(BaseLearner):
     def bounds_are_done(self):
         return all(p in self.data for p in self._bounds_points)
 
+    def _sorted_line_data(self):
+        coordinates = self.points[:, 0]
+        sorted_indices = np.argsort(coordinates)
+        return coordinates[sorted_indices], self.values[sorted_indices]
+
     def _ip(self):
-        """A `scipy.interpolate.LinearNDInterpolator` instance
-        containing the learner's data."""
+        """A SciPy interpolator containing the learner's data."""
         # XXX: take our own triangulation into account when generating the _ip
-        if self.ndim == 1:
-            points = self.points.ravel()
-            sorted_idx = np.argsort(points)
-            return interpolate.interp1d(
-                points[sorted_idx],
-                self.values[sorted_idx],
-                axis=0,
-                bounds_error=False,
-                fill_value=np.nan,
-            )
-        return interpolate.LinearNDInterpolator(self.points, self.values)
+        if self.ndim != 1:
+            return interpolate.LinearNDInterpolator(self.points, self.values)
+
+        coordinates, values = self._sorted_line_data()
+        return interpolate.interp1d(
+            coordinates,
+            values,
+            axis=0,
+            bounds_error=False,
+            fill_value=np.nan,
+        )
+
+    def _plot_1d(self, n=None):
+        hv = ensure_holoviews()
+        if len(self.data) < 2:
+            return hv.Path([]) * hv.Scatter([]).opts(size=5)
+
+        (x_bounds,) = self._bbox
+        n = n or 201
+        xs = np.linspace(*x_bounds, n)
+        ys = self._ip()(xs)
+        scatter_points = [
+            (point[0], value) for point, value in sorted(self.data.items())
+        ]
+        return hv.Path((xs, ys)) * hv.Scatter(scatter_points).opts(size=5)
 
     @property
     def tri(self):
@@ -891,34 +909,23 @@ class LearnerND(BaseLearner):
     ##########################
 
     def plot(self, n=None, tri_alpha=0):
-        """Plot the function we want to learn, only works in 2D.
+        """Plot the function we want to learn in 1D or 2D.
 
         Parameters
         ----------
         n : int
-            the number of boxes in the interpolation grid along each axis
+            The number of interpolation points per axis.
         tri_alpha : float (0 to 1)
             Opacity of triangulation lines
         """
-        hv = ensure_holoviews()
         if self.vdim > 1:
             raise NotImplementedError(
                 "holoviews currently does not support", "3D surface plots in bokeh."
             )
         if self.ndim == 1:
-            if len(self.data) >= 2:
-                (x,) = self._bbox
-                n = n or 201
-                xs = np.linspace(x[0], x[1], n)
-                ys = self._ip()(xs)
-                path = hv.Path((xs, ys))
-                points = [(x[0], y) for x, y in sorted(self.data.items())]
-                scatter = hv.Scatter(points)
-            else:
-                path = hv.Path([])
-                scatter = hv.Scatter([])
-            return path * scatter.opts(size=5)
+            return self._plot_1d(n)
 
+        hv = ensure_holoviews()
         if self.ndim != 2:
             raise NotImplementedError(
                 "Only 1D and 2D plots are implemented: You can "
