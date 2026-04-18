@@ -163,12 +163,16 @@ def test_learnerND_1d_plot_requires_holoviews(monkeypatch):
             raise ModuleNotFoundError
         return import_module(name)
 
-    monkeypatch.setattr(notebook_integration.importlib, "import_module", missing_holoviews)
+    monkeypatch.setattr(
+        notebook_integration.importlib, "import_module", missing_holoviews
+    )
 
     learner = make_1d_learner()
     tell_1d_points(learner)
 
-    with pytest.raises(RuntimeError, match="holoviews is not installed; plotting is disabled."):
+    with pytest.raises(
+        RuntimeError, match="holoviews is not installed; plotting is disabled."
+    ):
         learner.plot()
 
 
