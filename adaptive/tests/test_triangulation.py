@@ -76,6 +76,7 @@ def test_triangulation_raises_exception_for_1d_list():
     with pytest.raises(TypeError):
         Triangulation(pts)
 
+
 @with_dimension_incl_1d
 def test_triangulation_of_standard_simplex(dim):
     t = Triangulation(_make_standard_simplex(dim))
