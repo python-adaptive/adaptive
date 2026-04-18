@@ -862,7 +862,7 @@ class LearnerND(BaseLearner):
             # this is the first point, nothing to do, just set the range
             self._min_value = np.min(new_output)
             self._max_value = np.max(new_output)
-            self._old_scale = self._scale or 1
+            self._old_scale = self._scale
             return False
 
         # if range in one or more directions is doubled, then update all losses
@@ -885,7 +885,10 @@ class LearnerND(BaseLearner):
 
         self._output_multiplier = scale_multiplier
 
-        scale_factor = self._scale / self._old_scale
+        if self._old_scale == 0:
+            scale_factor = math.inf if self._scale > 0 else 1
+        else:
+            scale_factor = self._scale / self._old_scale
         if scale_factor > self._recompute_losses_factor:
             self._old_scale = self._scale
             self._recompute_all_losses()

@@ -1,11 +1,22 @@
 from __future__ import annotations
 
+import functools as ft
+import math
+import random
+
+import numpy as np
 import pytest
 
-from adaptive.learner import BalancingLearner, Learner1D
+from adaptive.learner import BalancingLearner, Learner1D, Learner2D
 from adaptive.runner import simple
 
 strategies = ["loss", "loss_improvements", "npoints", "cycle"]
+
+
+def ring_of_fire(xy, d):
+    a = 0.2
+    x, y = xy
+    return x + math.exp(-((x**2 + y**2 - d**2) ** 2) / a**4)
 
 
 def test_balancing_learner_loss_cache():
@@ -64,3 +75,34 @@ def test_strategies(strategy, goal_type, goal):
     learners = [Learner1D(lambda x: x, bounds=(-1, 1)) for i in range(10)]
     learner = BalancingLearner(learners, strategy=strategy)
     simple(learner, **{goal_type: goal})
+
+
+def test_loss_improvements_strategy_with_tell_pending_false_reserves_child_points():
+    random.seed(3104322362)
+    np.random.seed(3104322362 % 2**32)
+
+    learners = [
+        Learner2D(
+            ft.partial(ring_of_fire, d=random.uniform(0.2, 1)),
+            bounds=((-1, 1), (-1, 1)),
+        )
+        for _ in range(4)
+    ]
+    learner = BalancingLearner(learners, strategy="loss_improvements")
+
+    stash = []
+    for n, m in [(1, 1), (4, 4), (2, 0), (4, 4), (8, 6)]:
+        xs, _ = learner.ask(n, tell_pending=False)
+        random.shuffle(xs)
+        for _ in range(m):
+            stash.append(xs.pop())
+
+        for x in xs:
+            learner.tell(x, learner.function(x))
+
+        random.shuffle(stash)
+        for _ in range(m):
+            x = stash.pop()
+            learner.tell(x, learner.function(x))
+
+    assert all(not child.pending_points for child in learners)

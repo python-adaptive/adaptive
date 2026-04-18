@@ -153,6 +153,37 @@ def test_learnerND_1d_vector_output_interpolation():
     assert np.isclose(result[1], 0.0)
 
 
+def test_learnerND_recomputes_losses_for_small_scale_updates():
+    learner = make_1d_learner()
+    learner._recompute_losses_factor = 1
+
+    for point, value in [((-1,), 0.0), ((0.0,), 0.45), ((1.0,), 0.45)]:
+        learner.tell(point, value)
+
+    simplex = next(
+        simplex
+        for simplex in learner.tri.simplices
+        if {tuple(vertex) for vertex in learner.tri.get_vertices(simplex)}
+        == {(-1.0,), (0.0,)}
+    )
+    cached_before = learner._losses[simplex]
+    assert np.isclose(cached_before, learner._compute_loss(simplex))
+
+    learner.tell((0.5,), 0.67)
+
+    simplex = next(
+        simplex
+        for simplex in learner.tri.simplices
+        if {tuple(vertex) for vertex in learner.tri.get_vertices(simplex)}
+        == {(-1.0,), (0.0,)}
+    )
+    cached_after = learner._losses[simplex]
+
+    assert learner._old_scale == pytest.approx(0.67)
+    assert np.isclose(cached_after, learner._compute_loss(simplex))
+    assert not np.isclose(cached_after, cached_before)
+
+
 def test_learnerND_1d_plot_requires_holoviews(monkeypatch):
     """Test that plotting fails with a clear error without holoviews."""
 
