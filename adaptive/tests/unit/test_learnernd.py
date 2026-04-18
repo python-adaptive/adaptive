@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from scipy.spatial import ConvexHull
 
+import adaptive.notebook_integration as notebook_integration
 from adaptive.learner.base_learner import uses_nth_neighbors
 from adaptive.learner.learnerND import (
     LearnerND,
@@ -152,9 +153,28 @@ def test_learnerND_1d_vector_output_interpolation():
     assert np.isclose(result[1], 0.0)
 
 
+def test_learnerND_1d_plot_requires_holoviews(monkeypatch):
+    """Test that plotting fails with a clear error without holoviews."""
+
+    import_module = notebook_integration.importlib.import_module
+
+    def missing_holoviews(name):
+        if name == "holoviews":
+            raise ModuleNotFoundError
+        return import_module(name)
+
+    monkeypatch.setattr(notebook_integration.importlib, "import_module", missing_holoviews)
+
+    learner = make_1d_learner()
+    tell_1d_points(learner)
+
+    with pytest.raises(RuntimeError, match="holoviews is not installed; plotting is disabled."):
+        learner.plot()
+
+
 def test_learnerND_1d_plot():
     """Test that 1D plot() does not crash."""
-    import holoviews as hv
+    hv = pytest.importorskip("holoviews")
 
     hv.extension("bokeh")
     learner = make_1d_learner()
