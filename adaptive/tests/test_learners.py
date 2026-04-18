@@ -137,6 +137,13 @@ def linear_with_peak(x, d: uniform(-1, 1)):  # type: ignore[valid-type]
     return x + a**2 / (a**2 + (x - d) ** 2)
 
 
+@learn_with(LearnerND, bounds=((-1, 1),))
+def peak_1d(x, d: uniform(-0.5, 0.5)):  # type: ignore[valid-type]
+    a = 0.01
+    (x,) = x
+    return x + a**2 / (a**2 + (x - d) ** 2)
+
+
 @learn_with(LearnerND, bounds=((-1, 1), (-1, 1)))
 @learn_with(Learner2D, bounds=((-1, 1), (-1, 1)))
 @learn_with(SequenceLearner, sequence=np.random.rand(1000, 2))
