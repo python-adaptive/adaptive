@@ -76,14 +76,6 @@ def test_triangulation_raises_exception_for_1d_list():
     with pytest.raises(TypeError):
         Triangulation(pts)
 
-
-def test_triangulation_supports_1d_points():
-    pts = [(0,), (1,)]
-    t = Triangulation(pts)
-    assert t.simplices == {(0, 1)}
-    assert t.hull == {0, 1}
-
-
 @with_dimension_incl_1d
 def test_triangulation_of_standard_simplex(dim):
     t = Triangulation(_make_standard_simplex(dim))
@@ -336,61 +328,44 @@ def test_initialisation_accepts_more_than_one_simplex(dim):
 # ---- 1D-specific triangulation tests ----
 
 
-def test_1d_triangulation_basic():
-    """Test basic 1D triangulation with two points."""
+@pytest.mark.parametrize(
+    ("points", "expected_simplices", "expected_hull", "expected_total_volume"),
+    [
+        ([(0.0,), (1.0,)], {(0, 1)}, {0, 1}, 1.0),
+        ([(0.0,), (0.5,), (1.0,)], {(0, 1), (1, 2)}, {0, 2}, 1.0),
+        ([(1.0,), (0.0,), (0.5,)], {(0, 2), (1, 2)}, {0, 1}, 1.0),
+    ],
+    ids=["two-points", "sorted", "unsorted"],
+)
+def test_1d_triangulation_initialisation(
+    points, expected_simplices, expected_hull, expected_total_volume
+):
+    t = Triangulation(points)
+
+    assert t.simplices == expected_simplices
+    assert t.hull == expected_hull
+    _check_triangulation_is_valid(t)
+    assert np.isclose(sum(t.volumes()), expected_total_volume)
+
+
+@pytest.mark.parametrize(
+    ("point", "expected_simplices", "expected_hull", "expected_total_volume"),
+    [
+        ((0.5,), {(0, 2), (1, 2)}, {0, 1}, 1.0),
+        ((2.0,), {(0, 1), (1, 2)}, {0, 2}, 2.0),
+        ((-1.0,), {(0, 1), (0, 2)}, {1, 2}, 2.0),
+    ],
+    ids=["inside", "outside-right", "outside-left"],
+)
+def test_1d_add_point(point, expected_simplices, expected_hull, expected_total_volume):
     t = Triangulation([(0.0,), (1.0,)])
-    assert t.simplices == {(0, 1)}
-    assert t.hull == {0, 1}
-    assert t.volume((0, 1)) == 1.0
+
+    _add_point_with_check(t, point)
+
+    assert t.simplices == expected_simplices
+    assert t.hull == expected_hull
     _check_triangulation_is_valid(t)
-
-
-def test_1d_triangulation_multiple_points():
-    """Test 1D triangulation with multiple initial points."""
-    pts = [(0.0,), (0.5,), (1.0,)]
-    t = Triangulation(pts)
-    # Points 0=(0.0,), 1=(0.5,), 2=(1.0,) → sorted: 0, 1, 2
-    assert len(t.simplices) == 2
-    assert t.hull == {0, 2}  # endpoints
-    _check_triangulation_is_valid(t)
-    assert np.isclose(sum(t.volumes()), 1.0)
-
-
-def test_1d_triangulation_unsorted_points():
-    """Test that 1D triangulation handles unsorted initial points."""
-    pts = [(1.0,), (0.0,), (0.5,)]
-    t = Triangulation(pts)
-    assert len(t.simplices) == 2
-    _check_triangulation_is_valid(t)
-    assert np.isclose(sum(t.volumes()), 1.0)
-
-
-def test_1d_add_point_inside():
-    """Test adding a point inside a 1D interval."""
-    t = Triangulation([(0.0,), (1.0,)])
-    _add_point_with_check(t, (0.5,))
-    assert len(t.simplices) == 2
-    assert t.hull == {0, 1}  # original endpoints are still hull
-    _check_triangulation_is_valid(t)
-    assert np.isclose(sum(t.volumes()), 1.0)
-
-
-def test_1d_add_point_outside_right():
-    """Test adding a point to the right of a 1D triangulation."""
-    t = Triangulation([(0.0,), (1.0,)])
-    _add_point_with_check(t, (2.0,))
-    assert t.simplices == {(0, 1), (1, 2)}
-    assert t.hull == {0, 2}
-    _check_triangulation_is_valid(t)
-
-
-def test_1d_add_point_outside_left():
-    """Test adding a point to the left of a 1D triangulation."""
-    t = Triangulation([(0.0,), (1.0,)])
-    _add_point_with_check(t, (-1.0,))
-    assert t.simplices == {(0, 1), (0, 2)}
-    assert t.hull == {1, 2}
-    _check_triangulation_is_valid(t)
+    assert np.isclose(sum(t.volumes()), expected_total_volume)
 
 
 def test_1d_locate_point():
@@ -407,18 +382,23 @@ def test_1d_locate_point():
     assert simplex == ()
 
 
-def test_1d_duplicate_coordinates_skipped():
+@pytest.mark.parametrize(
+    ("points", "expected_simplices"),
+    [
+        ([(0.0,), (1.0,), (1.0,)], {(0, 1)}),
+        ([(0.0,), (0.0,), (0.5,), (1.0,), (1.0,)], None),
+    ],
+    ids=["single-duplicate", "multiple-duplicates"],
+)
+def test_1d_duplicate_coordinates_skipped(points, expected_simplices):
     """Test that duplicate 1D coordinates don't create degenerate simplices."""
-    t = Triangulation([(0.0,), (1.0,), (1.0,)])
-    # The duplicate (1.0,) should be skipped, leaving only one simplex
-    assert t.simplices == {(0, 1)}
+    t = Triangulation(points)
+
+    if expected_simplices is not None:
+        assert t.simplices == expected_simplices
     assert all(v > 0 for v in t.volumes())
     _check_triangulation_is_valid(t)
-
-    # Multiple duplicates
-    t2 = Triangulation([(0.0,), (0.0,), (0.5,), (1.0,), (1.0,)])
-    assert all(v > 0 for v in t2.volumes())
-    _check_triangulation_is_valid(t2)
+    assert np.isclose(sum(t.volumes()), 1.0)
 
 
 def test_1d_opposing_vertices():

@@ -107,36 +107,30 @@ def test_circumsphere():
             raise AssertionError(err_msg)
 
 
-def test_simplex_volume_in_embedding_1d():
+@pytest.mark.parametrize(
+    ("vertices", "expected"),
+    [
+        ([(0.0,), (1.0,)], 1.0),
+        ([(0.0,), (3.0,)], 3.0),
+        ([(0.0, 0.0), (3.0, 4.0)], 5.0),
+        ([(0.0, 0.0, 0.0), (1.0, 1.0, 1.0)], np.sqrt(3)),
+    ],
+)
+def test_simplex_volume_in_embedding_1d(vertices, expected):
     """Test simplex_volume_in_embedding for 1-simplices (line segments)."""
     from adaptive.learner.triangulation import simplex_volume_in_embedding
 
-    # 1D line segment
-    assert np.isclose(simplex_volume_in_embedding([(0.0,), (1.0,)]), 1.0)
-    assert np.isclose(simplex_volume_in_embedding([(0.0,), (3.0,)]), 3.0)
-
-    # Line segment in 2D embedding
-    assert np.isclose(simplex_volume_in_embedding([(0.0, 0.0), (3.0, 4.0)]), 5.0)
-
-    # Line segment in 3D embedding
-    assert np.isclose(
-        simplex_volume_in_embedding([(0.0, 0.0, 0.0), (1.0, 1.0, 1.0)]),
-        np.sqrt(3),
-    )
+    assert np.isclose(simplex_volume_in_embedding(vertices), expected)
 
 
-def test_1d_triangulation_find_simplices():
-    """Test that 1D triangulation correctly identifies simplices."""
-    pts = [(0.0,), (1.0,), (2.0,), (3.0,)]
-    tri = Triangulation(pts)
-    # Sorted: 0, 1, 2, 3 → intervals: (0,1), (1,2), (2,3)
-    assert tri.simplices == {(0, 1), (1, 2), (2, 3)}
-
-
-def test_1d_triangulation_find_neighbors():
+@pytest.mark.parametrize(
+    ("simplex", "expected_neighbors"),
+    [
+        ((0, 1), {(1, 2)}),
+        ((1, 2), {(0, 1)}),
+    ],
+)
+def test_1d_triangulation_find_neighbors(simplex, expected_neighbors):
     """Test finding neighbors in 1D."""
-    pts = [(0.0,), (1.0,), (2.0,)]
-    tri = Triangulation(pts)
-    # Simplices: (0,1) and (1,2)
-    assert tri.get_simplices_attached_to_points((0, 1)) == {(1, 2)}
-    assert tri.get_simplices_attached_to_points((1, 2)) == {(0, 1)}
+    tri = Triangulation([(0.0,), (1.0,), (2.0,)])
+    assert tri.get_simplices_attached_to_points(simplex) == expected_neighbors

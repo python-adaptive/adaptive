@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import scipy.spatial
 
 from adaptive.learner import LearnerND
@@ -50,16 +51,21 @@ def test_vector_return_with_a_flat_layer():
         simple(learner, loss_goal=0.1)
 
 
-def test_learnerND_1d_basic():
+@pytest.mark.parametrize(
+    ("run_kwargs", "expected_npoints"),
+    [
+        ({"npoints_goal": 10}, 10),
+        ({"loss_goal": 0.1}, None),
+    ],
+    ids=["npoints-goal", "loss-goal"],
+)
+def test_learnerND_1d(run_kwargs, expected_npoints):
     """Test LearnerND works with 1D bounds."""
     learner = LearnerND(lambda x: x[0] ** 2, bounds=[(-1, 1)])
-    simple(learner, npoints_goal=10)
-    assert learner.npoints == 10
+    simple(learner, **run_kwargs)
+
+    if expected_npoints is not None:
+        assert learner.npoints == expected_npoints
     assert learner.loss() < float("inf")
-
-
-def test_learnerND_1d_with_loss_goal():
-    """Test LearnerND 1D converges with a loss goal."""
-    learner = LearnerND(lambda x: x[0] ** 2, bounds=[(-1, 1)])
-    simple(learner, loss_goal=0.1)
-    assert learner.loss() <= 0.1
+    if "loss_goal" in run_kwargs:
+        assert learner.loss() <= run_kwargs["loss_goal"]

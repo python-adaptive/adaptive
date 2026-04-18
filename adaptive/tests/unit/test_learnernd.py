@@ -5,7 +5,13 @@ import pytest
 from scipy.spatial import ConvexHull
 
 from adaptive.learner.base_learner import uses_nth_neighbors
-from adaptive.learner.learnerND import LearnerND, curvature_loss_function
+from adaptive.learner.learnerND import (
+    LearnerND,
+    curvature_loss_function,
+    default_loss,
+    std_loss,
+    uniform_loss,
+)
 
 
 def ring_of_fire(xy):
@@ -47,76 +53,87 @@ def test_learnerND_raises_if_too_many_neigbors():
 # ---- 1D-specific LearnerND tests ----
 
 
+ONE_D_BOUNDS = [(-1, 1)]
+ONE_D_POINTS = (-1.0, -0.5, 0.0, 0.5, 1.0)
+
+
 def f_1d(x):
     """Simple 1D test function."""
     return x[0] ** 2
 
 
+def make_1d_learner(function=f_1d, **kwargs):
+    return LearnerND(function, bounds=ONE_D_BOUNDS, **kwargs)
+
+
+def tell_1d_points(learner, function=None, points=ONE_D_POINTS):
+    function = learner.function if function is None else function
+    for x in points:
+        learner.tell((x,), function((x,)))
+
+
+def initialize_1d_learner(**kwargs):
+    learner = make_1d_learner(**kwargs)
+    points, _ = learner.ask(2)
+    for point in points:
+        learner.tell(point, learner.function(point))
+    return learner
+
+
 def test_learnerND_1d_construction():
     """Test that LearnerND can be constructed with 1D bounds."""
-    learner = LearnerND(f_1d, bounds=[(-1, 1)])
+    learner = make_1d_learner()
     assert learner.ndim == 1
     assert learner._bounds_points == [(-1,), (1,)]
     assert learner._bbox == ((-1.0, 1.0),)
 
 
-def test_learnerND_1d_tell_ask():
+@pytest.mark.parametrize(
+    ("loss_fn", "expected_nth_neighbors"),
+    [
+        (None, 0),
+        (curvature_loss_function(), 1),
+    ],
+    ids=["default", "curvature"],
+)
+def test_learnerND_1d_tell_ask(loss_fn, expected_nth_neighbors):
     """Test basic tell/ask cycle for 1D LearnerND."""
-    learner = LearnerND(f_1d, bounds=[(-1, 1)])
-    # Ask for bound points first
-    points, losses = learner.ask(2)
-    assert len(points) == 2
-    # Tell the boundary values
-    for p in points:
-        learner.tell(p, f_1d(p))
-    # Now we should have a triangulation
+    kwargs = {} if loss_fn is None else {"loss_per_simplex": loss_fn}
+    learner = initialize_1d_learner(**kwargs)
+
     assert learner.tri is not None
-    # Ask for more points
+    assert learner.nth_neighbors == expected_nth_neighbors
+
     points2, losses2 = learner.ask(3)
+
     assert len(points2) == 3
+    assert all(loss > 0 for loss in losses2)
 
 
-def test_learnerND_1d_loss_functions():
+@pytest.mark.parametrize(
+    "loss_fn",
+    [
+        pytest.param(loss_fn, id=loss_fn.__name__)
+        for loss_fn in (default_loss, uniform_loss, std_loss)
+    ],
+)
+def test_learnerND_1d_loss_functions(loss_fn):
     """Test that all standard loss functions work for 1D."""
-    from adaptive.learner.learnerND import (
-        default_loss,
-        std_loss,
-        uniform_loss,
-    )
+    learner = initialize_1d_learner(loss_per_simplex=loss_fn)
+    points2, losses2 = learner.ask(3)
 
-    for loss_fn in [default_loss, uniform_loss, std_loss]:
-        learner = LearnerND(f_1d, bounds=[(-1, 1)], loss_per_simplex=loss_fn)
-        points, _ = learner.ask(2)
-        for p in points:
-            learner.tell(p, f_1d(p))
-        points2, losses2 = learner.ask(3)
-        assert len(points2) == 3
-        assert all(l > 0 for l in losses2)
-
-
-def test_learnerND_1d_curvature_loss():
-    """Test that curvature loss function works for 1D."""
-    loss = curvature_loss_function()
-    learner = LearnerND(f_1d, bounds=[(-1, 1)], loss_per_simplex=loss)
-    assert learner.nth_neighbors == 1
-    points, _ = learner.ask(2)
-    for p in points:
-        learner.tell(p, f_1d(p))
-    points2, _ = learner.ask(3)
     assert len(points2) == 3
+    assert all(loss > 0 for loss in losses2)
 
 
 def test_learnerND_1d_interpolation():
     """Test that 1D interpolation works correctly."""
-    learner = LearnerND(f_1d, bounds=[(-1, 1)])
-    # Tell some points
-    for x in [-1.0, -0.5, 0.0, 0.5, 1.0]:
-        learner.tell((x,), x**2)
+    learner = make_1d_learner()
+    tell_1d_points(learner)
     ip = learner._ip()
-    # Check interpolation at known points
+
     assert np.isclose(ip(0.0), 0.0)
     assert np.isclose(ip(1.0), 1.0)
-    # Check interpolation at midpoint (linear interpolation)
     assert np.isclose(ip(0.25), 0.125)  # linear between 0 and 0.5
 
 
@@ -126,9 +143,8 @@ def test_learnerND_1d_vector_output_interpolation():
     def f_vec(x):
         return np.array([x[0] ** 2, np.sin(x[0])])
 
-    learner = LearnerND(f_vec, bounds=[(-1, 1)])
-    for x in [-1.0, -0.5, 0.0, 0.5, 1.0]:
-        learner.tell((x,), f_vec((x,)))
+    learner = make_1d_learner(function=f_vec)
+    tell_1d_points(learner, function=f_vec)
     ip = learner._ip()
     result = ip(0.0)
     assert result.shape == (2,)
@@ -141,8 +157,7 @@ def test_learnerND_1d_plot():
     import holoviews as hv
 
     hv.extension("bokeh")
-    learner = LearnerND(f_1d, bounds=[(-1, 1)])
-    for x in [-1.0, -0.5, 0.0, 0.5, 1.0]:
-        learner.tell((x,), x**2)
+    learner = make_1d_learner()
+    tell_1d_points(learner)
     plot = learner.plot()
     assert plot is not None
