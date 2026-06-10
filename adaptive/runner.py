@@ -92,8 +92,9 @@ class BaseRunner(metaclass=abc.ABCMeta):
         If True, record the method calls made to the learner by this runner.
     shutdown_executor : bool, default: False
         If True, shutdown the executor when the runner has completed. If
-        `executor` is not provided then the executor created internally
-        by the runner is shut down, regardless of this parameter.
+        `executor` is not provided then the runner uses loky's reusable
+        executor, which is shared between runners and is therefore not
+        shut down unless this parameter is True.
     retries : int, default: 0
         Maximum amount of retries of a certain point ``x`` in
         ``learner.function(x)``. After `retries` is reached for ``x``
@@ -159,9 +160,11 @@ class BaseRunner(metaclass=abc.ABCMeta):
 
         self._pending_tasks: dict[FutureTypes, int] = {}
 
-        # if we instantiate our own executor, then we are also responsible
-        # for calling 'shutdown'
-        self.shutdown_executor = shutdown_executor or (executor is None)
+        # The internally created executor (when `executor is None`) is loky's
+        # reusable executor, a singleton shared between all runners, so we
+        # must not shut it down implicitly: another runner may still be using
+        # it. Pass `shutdown_executor=True` to shut it down anyway.
+        self.shutdown_executor = shutdown_executor
 
         self.learner = learner
         self.log: list | None = [] if log else None
@@ -378,8 +381,9 @@ class BlockingRunner(BaseRunner):
         If True, record the method calls made to the learner by this runner.
     shutdown_executor : bool, default: False
         If True, shutdown the executor when the runner has completed. If
-        `executor` is not provided then the executor created internally
-        by the runner is shut down, regardless of this parameter.
+        `executor` is not provided then the runner uses loky's reusable
+        executor, which is shared between runners and is therefore not
+        shut down unless this parameter is True.
     retries : int, default: 0
         Maximum amount of retries of a certain point ``x`` in
         ``learner.function(x)``. After `retries` is reached for ``x``
@@ -524,8 +528,9 @@ class AsyncRunner(BaseRunner):
         If True, record the method calls made to the learner by this runner.
     shutdown_executor : bool, default: False
         If True, shutdown the executor when the runner has completed. If
-        `executor` is not provided then the executor created internally
-        by the runner is shut down, regardless of this parameter.
+        `executor` is not provided then the runner uses loky's reusable
+        executor, which is shared between runners and is therefore not
+        shut down unless this parameter is True.
     ioloop : ``asyncio.AbstractEventLoop``, optional
         The ioloop in which to run the learning algorithm. If not provided,
         the default event loop is used.
