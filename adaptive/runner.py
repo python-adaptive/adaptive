@@ -6,8 +6,6 @@ import concurrent.futures as concurrent
 import functools
 import inspect
 import itertools
-import pickle
-import platform
 import time
 import traceback
 import warnings
@@ -44,16 +42,16 @@ with suppress(ModuleNotFoundError):
 
 
 # -- Runner definitions
-if platform.system() == "Linux":
-    _default_executor = concurrent.ProcessPoolExecutor  # type: ignore[misc]
-else:
-    # On Windows and MacOS functions, the __main__ module must be
-    # importable by worker subprocesses. This means that
-    # ProcessPoolExecutor will not work in the interactive interpreter.
-    # On Linux the whole process is forked, so the issue does not appear.
-    # See https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor
-    # and https://github.com/python-adaptive/adaptive/issues/301
-    _default_executor = loky.get_reusable_executor  # type: ignore[misc]
+# Functions submitted to a stdlib ProcessPoolExecutor must be importable from
+# `__main__` by the worker, which fails for functions defined interactively
+# (notebooks, doc pages). This used to work on Linux because workers were
+# forked, but Python 3.14 changed the default start method on Linux to
+# "forkserver", which re-imports `__main__` like Windows/macOS always did.
+# loky serializes functions by value with cloudpickle, so it works everywhere.
+# See https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor,
+# https://github.com/python-adaptive/adaptive/issues/301,
+# and https://github.com/python/cpython/issues/84559
+_default_executor = loky.get_reusable_executor
 
 
 class BaseRunner(metaclass=abc.ABCMeta):
@@ -86,8 +84,7 @@ class BaseRunner(metaclass=abc.ABCMeta):
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
-        If not provided, a new `~concurrent.futures.ProcessPoolExecutor` on
-        Linux, and a `loky.get_reusable_executor` on MacOS and Windows.
+        If not provided, a new `loky.get_reusable_executor` is used.
     ntasks : int, optional
         The number of concurrent function evaluations. Defaults to the number
         of cores available in `executor`.
@@ -373,8 +370,7 @@ class BlockingRunner(BaseRunner):
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
-        If not provided, a new `~concurrent.futures.ProcessPoolExecutor` on
-        Linux, and a `loky.get_reusable_executor` on MacOS and Windows.
+        If not provided, a new `loky.get_reusable_executor` is used.
     ntasks : int, optional
         The number of concurrent function evaluations. Defaults to the number
         of cores available in `executor`.
@@ -520,8 +516,7 @@ class AsyncRunner(BaseRunner):
                `mpi4py.futures.MPIPoolExecutor`, `ipyparallel.Client` or\
                `loky.get_reusable_executor`, optional
         The executor in which to evaluate the function to be learned.
-        If not provided, a new `~concurrent.futures.ProcessPoolExecutor` on
-        Linux, and a `loky.get_reusable_executor` on MacOS and Windows.
+        If not provided, a new `loky.get_reusable_executor` is used.
     ntasks : int, optional
         The number of concurrent function evaluations. Defaults to the number
         of cores available in `executor`.
@@ -595,22 +590,6 @@ class AsyncRunner(BaseRunner):
         retries: int = 0,
         raise_if_retries_exceeded: bool = True,
     ) -> None:
-        if (
-            executor is None
-            and _default_executor is concurrent.ProcessPoolExecutor
-            and not inspect.iscoroutinefunction(learner.function)
-        ):
-            try:
-                pickle.dumps(learner.function)
-            except pickle.PicklingError as e:
-                raise ValueError(
-                    "`learner.function` cannot be pickled (is it a lamdba function?)"
-                    " and therefore does not work with the default executor."
-                    " Either make sure the function is pickleble or use an executor"
-                    " that might work with 'hard to pickle'-functions"
-                    " , e.g. `ipyparallel` with `dill`."
-                ) from e
-
         super().__init__(
             learner,
             goal=goal,
