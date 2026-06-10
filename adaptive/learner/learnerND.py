@@ -613,8 +613,11 @@ class LearnerND(BaseLearner):
         if point in self.data or point in self.pending_points:
             return True
 
+        # Scale the tolerance with the coordinate magnitude so that float
+        # round-trip drift (e.g. through a dataframe) is matched in domains
+        # of any size.
         tolerances = [
-            max(self._bound_match_tol, self._bound_match_tol * (hi - lo))
+            self._bound_match_tol * max(abs(lo), abs(hi), hi - lo)
             for lo, hi in self._bbox
         ]
 
@@ -678,12 +681,7 @@ class LearnerND(BaseLearner):
             self._subtriangulations[simplex] = Triangulation(vertices)
 
         self._pending_to_simplex[point] = simplex
-        try:
-            return self._subtriangulations[simplex].add_point(point)
-        except ValueError as exc:
-            if str(exc) == "Point already in triangulation.":
-                self._pending_to_simplex.pop(point, None)
-            raise
+        return self._subtriangulations[simplex].add_point(point)
 
     def _update_subsimplex_losses(self, simplex, new_subsimplices):
         loss = self._losses[simplex]
@@ -718,7 +716,9 @@ class LearnerND(BaseLearner):
             self.tell_pending(new_point)
             return new_point, np.inf
 
-        raise StopIteration
+        # Unreachable: _ask only calls this method when _bounds_available,
+        # which guarantees an unknown bound point at index >= _next_bound_idx.
+        raise RuntimeError("No bound points available to ask.")
 
     def _ask_point_without_known_simplices(self):
         assert not self._bounds_available
@@ -797,7 +797,7 @@ class LearnerND(BaseLearner):
 
     def _ask(self):
         if self._bounds_available:
-            return self._ask_bound_point()  # O(1)
+            return self._ask_bound_point()  # O(N) worst case, amortized O(1)
 
         if self.tri is None:
             # All bound points are pending or have been evaluated, but we do not
@@ -967,6 +967,9 @@ class LearnerND(BaseLearner):
         self.pending_points = set()
         self._subtriangulations = {}
         self._pending_to_simplex = {}
+        # Discarded pending points may include bound points that were already
+        # consumed by _ask_bound_point; rescan them so they can be asked again.
+        self._next_bound_idx = 0
 
     ##########################
     # Plotting related stuff #

@@ -1,11 +1,9 @@
 import math
 
-import numpy as np
 import pytest
 from scipy.spatial import ConvexHull
 
 from adaptive.learner import LearnerND
-from adaptive.learner.learner1D import with_pandas
 from adaptive.learner.learnerND import curvature_loss_function
 from adaptive.runner import BlockingRunner
 from adaptive.runner import simple as SimpleRunner
@@ -58,11 +56,9 @@ def test_learnerND_log_works():
     # furthermore the last two points that were asked should be in this simplex
 
 
-@pytest.mark.skipif(not with_pandas, reason="pandas is not installed")
-def test_learnerND_resume_after_loading_dataframe_convex_hull(monkeypatch):
-    from types import MethodType
-
-    import pandas
+def test_learnerND_resume_after_loading_dataframe_convex_hull():
+    # Regression test for https://github.com/python-adaptive/adaptive/issues/470
+    pandas = pytest.importorskip("pandas")
 
     hull_points = [
         (4.375872112626925, 8.917730007820797),
@@ -71,54 +67,19 @@ def test_learnerND_resume_after_loading_dataframe_convex_hull(monkeypatch):
         (9.636627605010293, 3.8344151882577773),
     ]
 
-    data_points = [
-        (4.375872112626925, 8.917730007820797),
-        (4.236547993389047, 6.458941130666561),
-        (6.027633760716439, 5.448831829968968),
-        (9.636627605086398, 3.834415188269945),
-        (0.7103605819788694, 0.8712929970154071),
-        (0.2021839744032572, 8.32619845547938),
-        (7.781567509498505, 8.700121482468191),
-    ]
+    # Simulate float drift from a dataframe round-trip: one hull vertex is
+    # off by 1e-10, so exact membership checks miss it and the learner used
+    # to re-ask it, crashing with "Point already in triangulation.".
+    drifted = tuple(c + 1e-10 for c in hull_points[-1])
+    data_points = [*hull_points[:-1], drifted, (7.0, 6.0)]
 
     df = pandas.DataFrame(data_points, columns=["x", "y"])
     df["value"] = df["x"] + df["y"]
 
-    hull = ConvexHull(hull_points)
-
     def some_f(xy):
         return xy[0] + xy[1]
 
-    learner_old = LearnerND(some_f, hull)
-    learner_old.load_dataframe(
-        df,
-        with_default_function_args=False,
-        point_names=("x", "y"),
-        value_name="value",
-    )
-
-    def old_ask_bound_point(self):
-        new_point = next(
-            p
-            for p in self._bounds_points
-            if p not in self.data and p not in self.pending_points
-        )
-        self.tell_pending(new_point)
-        return new_point, np.inf
-
-    learner_old._ask_bound_point = MethodType(old_ask_bound_point, learner_old)
-
-    def naive_is_known_point(self, point):
-        point = tuple(map(float, point))
-        return point in self.data or point in self.pending_points
-
-    learner_old._is_known_point = MethodType(naive_is_known_point, learner_old)
-    learner_old._bound_match_tol = 0.0
-
-    with pytest.raises(ValueError):
-        BlockingRunner(learner_old, npoints_goal=len(df) + 1)
-
-    learner = LearnerND(some_f, hull)
+    learner = LearnerND(some_f, ConvexHull(hull_points))
     learner.load_dataframe(
         df,
         with_default_function_args=False,
@@ -129,3 +90,14 @@ def test_learnerND_resume_after_loading_dataframe_convex_hull(monkeypatch):
     target = len(df) + 1
     BlockingRunner(learner, npoints_goal=target)
     assert learner.npoints >= target
+
+
+def test_learnerND_remove_unfinished_reasks_bound_points():
+    learner = LearnerND(ring_of_fire, bounds=[(-1, 1), (-1, 1)])
+    points, _ = learner.ask(4)
+    assert set(points) == set(learner._bounds_points)
+
+    # Discarding the pending bound points must make them available again.
+    learner.remove_unfinished()
+    points, _ = learner.ask(4)
+    assert set(points) == set(learner._bounds_points)
