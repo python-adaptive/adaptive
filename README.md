@@ -1,5 +1,5 @@
 
-# ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) *Adaptive*: Parallel Active Learning of Mathematical Functions :brain::1234:
+# ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) *Adaptive*: Parallel Active Learning of Mathematical Functions
 <!-- badges-start -->
 
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb)
@@ -31,16 +31,16 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [:star: Key features](#star-key-features)
-- [:rocket: Example usage](#rocket-example-usage)
-  - [:floppy_disk: Exporting Data](#floppy_disk-exporting-data)
-- [:test_tube: Implemented Algorithms](#test_tube-implemented-algorithms)
-- [:package: Installation](#package-installation)
+- [Key features](#key-features)
+- [Example usage](#example-usage)
+  - [Exporting Data](#exporting-data)
+- [Implemented Algorithms](#implemented-algorithms)
+- [Installation](#installation)
   - [Faster triangulation (optional)](#faster-triangulation-optional)
-- [:wrench: Development](#wrench-development)
-- [:books: Citing](#books-citing)
-- [:page_facing_up: Draft Paper](#page_facing_up-draft-paper)
-- [:sparkles: Credits](#sparkles-credits)
+- [Development](#development)
+- [Citing](#citing)
+- [Draft Paper](#draft-paper)
+- [Credits](#credits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -48,7 +48,7 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 
 <!-- key-features-start -->
 
-## :star: Key features
+## Key features
 
 - 🎯 **Intelligent Adaptive Sampling**: Adaptive focuses on areas of interest within a function, ensuring better results with fewer evaluations, saving time, and computational resources.
 - ⚡ **Parallel Execution**: The library leverages parallel processing for faster function evaluations, making optimal use of available computational resources.
@@ -61,7 +61,7 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 
 <!-- key-features-end -->
 
-## :rocket: Example usage
+## Example usage
 
 Adaptively learning a 1D function and live-plotting the process in a Jupyter notebook:
 
@@ -83,7 +83,7 @@ runner.live_plot()
 
 <img src="https://user-images.githubusercontent.com/6897215/38739170-6ac7c014-3f34-11e8-9e8f-93b3a3a3d61b.gif" width='20%'> </img> <img src="https://user-images.githubusercontent.com/6897215/35219611-ac8b2122-ff73-11e7-9332-adffab64a8ce.gif" width='40%'> </img> <img src="https://user-images.githubusercontent.com/6897215/47256441-d6d53700-d480-11e8-8224-d1cc49dbdcf5.gif" width='20%'> </img>
 
-### :floppy_disk: Exporting Data
+### Exporting Data
 
 You can export the learned data as a NumPy array:
 
@@ -99,7 +99,7 @@ df = learner.to_dataframe()
 
 <!-- implemented-algorithms-start -->
 
-## :test_tube: Implemented Algorithms
+## Implemented Algorithms
 
 The core concept in `adaptive` is the *learner*.
 A *learner* samples a function at the most interesting locations within its parameter space, allowing for optimal sampling of the function.
@@ -134,7 +134,7 @@ In addition to learners, `adaptive` offers primitives for parallel sampling acro
 
 <!-- rest-start -->
 
-## :package: Installation
+## Installation
 
 `adaptive` works with Python 3.7 and higher on Linux, Windows, or Mac, and provides optional extensions for working with the Jupyter/IPython Notebook.
 
@@ -170,7 +170,7 @@ jupyter labextension install @jupyter-widgets/jupyterlab-manager
 jupyter labextension install @pyviz/jupyterlab_pyviz
 ```
 
-## :wrench: Development
+## Development
 
 Clone the repository and run `pip install -e ".[notebook,test,other]"` to add a link to the cloned repo into your Python path:
 
@@ -198,7 +198,7 @@ pre-commit install
 
 in the repository.
 
-## :books: Citing
+## Citing
 
 If you used Adaptive in a scientific work, please cite it as follows.
 
@@ -212,12 +212,12 @@ If you used Adaptive in a scientific work, please cite it as follows.
 }
 ```
 
-## :page_facing_up: Draft Paper
+## Draft Paper
 
 If you're interested in the scientific background and principles behind Adaptive, we recommend taking a look at the [draft paper](https://github.com/python-adaptive/paper) that is currently being written.
 This paper provides a comprehensive overview of the concepts, algorithms, and applications of the Adaptive library.
 
-## :sparkles: Credits
+## Credits
 
 We would like to give credits to the following people:
 
