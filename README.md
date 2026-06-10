@@ -36,6 +36,7 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
   - [:floppy_disk: Exporting Data](#floppy_disk-exporting-data)
 - [:test_tube: Implemented Algorithms](#test_tube-implemented-algorithms)
 - [:package: Installation](#package-installation)
+  - [Faster triangulation (optional)](#faster-triangulation-optional)
 - [:wrench: Development](#wrench-development)
 - [:books: Citing](#books-citing)
 - [:page_facing_up: Draft Paper](#page_facing_up-draft-paper)
