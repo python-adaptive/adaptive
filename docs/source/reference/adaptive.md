@@ -29,6 +29,8 @@ adaptive.runner.extras
 ## Other
 
 ```{toctree}
+adaptive.learner.triangulation
+adaptive.learner.triangulation_backend
 adaptive.utils
 adaptive.notebook_integration
 ```
