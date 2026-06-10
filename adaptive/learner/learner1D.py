@@ -14,7 +14,7 @@ from sortedcontainers.sorteddict import SortedDict
 
 from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
 from adaptive.learner.learnerND import volume
-from adaptive.learner.triangulation import simplex_volume_in_embedding
+from adaptive.learner.triangulation_backend import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Float, Int, Real
 from adaptive.utils import (

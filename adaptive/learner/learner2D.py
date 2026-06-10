@@ -13,7 +13,7 @@ from scipy import interpolate
 from scipy.interpolate import CloughTocher2DInterpolator, LinearNDInterpolator
 
 from adaptive.learner.base_learner import BaseLearner
-from adaptive.learner.triangulation import simplex_volume_in_embedding
+from adaptive.learner.triangulation_backend import simplex_volume_in_embedding
 from adaptive.notebook_integration import ensure_holoviews
 from adaptive.types import Bool, Float, Real
 from adaptive.utils import (

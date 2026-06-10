@@ -14,11 +14,12 @@ from scipy import interpolate
 from sortedcontainers import SortedKeyList
 
 from adaptive.learner.base_learner import BaseLearner, uses_nth_neighbors
-from adaptive.learner.triangulation import (
+from adaptive.learner.triangulation import fast_det
+from adaptive.learner.triangulation_backend import (
     Triangulation,
     circumsphere,
-    fast_det,
     point_in_simplex,
+    resolve_triangulation_class,
     simplex_volume_in_embedding,
 )
 from adaptive.notebook_integration import ensure_holoviews, ensure_plotly
@@ -274,6 +275,15 @@ class LearnerND(BaseLearner):
         If not provided, then a default is used, which uses
         the deviation from a linear estimate, as well as
         triangle area, to determine the loss.
+    anisotropic : bool, optional
+        If True, the triangulation is stretched along the local gradient
+        when choosing new points. Only works with scalar output.
+    triangulation_backend : str or type, optional
+        Which triangulation implementation to use: ``"auto"`` (default,
+        prefers the optional Rust-accelerated `adaptive-triangulation
+        <https://github.com/python-adaptive/adaptive-triangulation>`_
+        package when it is installed), ``"python"``, ``"rust"``, or a
+        `~adaptive.learner.triangulation.Triangulation`-compatible class.
 
 
     Attributes
@@ -308,7 +318,20 @@ class LearnerND(BaseLearner):
     children based on volume.
     """
 
-    def __init__(self, func, bounds, loss_per_simplex=None, *, anisotropic=False):
+    # Class-level fallback so that learners restored from pickles made
+    # before `triangulation_backend` existed keep working.
+    _triangulation_class = Triangulation
+
+    def __init__(
+        self,
+        func,
+        bounds,
+        loss_per_simplex=None,
+        *,
+        anisotropic=False,
+        triangulation_backend="auto",
+    ):
+        self._triangulation_class = resolve_triangulation_class(triangulation_backend)
         self._vdim = None
         self.loss_per_simplex = loss_per_simplex or default_loss
 
@@ -385,6 +408,7 @@ class LearnerND(BaseLearner):
             self.bounds,
             self.loss_per_simplex,
             anisotropic=self.anisotropic,
+            triangulation_backend=self._triangulation_class,
         )
 
     @property
@@ -513,7 +537,7 @@ class LearnerND(BaseLearner):
             return self._tri
 
         try:
-            self._tri = Triangulation(self.points)
+            self._tri = self._triangulation_class(self.points)
         except ValueError:
             # A ValueError is raised if we do not have enough points or
             # the provided points are coplanar, so we need more points to
@@ -649,7 +673,7 @@ class LearnerND(BaseLearner):
 
         if simplex not in self._subtriangulations:
             vertices = self.tri.get_vertices(simplex)
-            self._subtriangulations[simplex] = Triangulation(vertices)
+            self._subtriangulations[simplex] = self._triangulation_class(vertices)
 
         self._pending_to_simplex[point] = simplex
         return self._subtriangulations[simplex].add_point(point)
@@ -713,7 +737,8 @@ class LearnerND(BaseLearner):
             ):
                 return abs(loss), simplex, subsimplex
             if (
-                simplex in self._subtriangulations
+                subsimplex is not None
+                and simplex in self._subtriangulations
                 and simplex in self.tri.simplices
                 and subsimplex in self._subtriangulations[simplex].simplices
             ):

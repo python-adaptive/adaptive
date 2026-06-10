@@ -36,6 +36,7 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
   - [:floppy_disk: Exporting Data](#floppy_disk-exporting-data)
 - [:test_tube: Implemented Algorithms](#test_tube-implemented-algorithms)
 - [:package: Installation](#package-installation)
+  - [Faster triangulation (optional)](#faster-triangulation-optional)
 - [:wrench: Development](#wrench-development)
 - [:books: Citing](#books-citing)
 - [:page_facing_up: Draft Paper](#page_facing_up-draft-paper)
@@ -150,6 +151,17 @@ pip install "adaptive[notebook]"
 ```
 
 The `[notebook]` above will also install the optional dependencies for running `adaptive` inside a Jupyter notebook.
+
+### Faster triangulation (optional)
+
+Installing the optional [adaptive-triangulation](https://github.com/python-adaptive/adaptive-triangulation) package makes `adaptive.LearnerND` significantly faster by replacing the pure-Python triangulation with a Rust implementation:
+
+```bash
+pip install "adaptive[rust]"
+```
+
+No code changes are needed — the Rust backend is detected and used automatically.
+To control the selection, pass `LearnerND(..., triangulation_backend="python" | "rust" | "auto")` per learner, or set the environment variable `ADAPTIVE_TRIANGULATION_BACKEND=python` to force the pure-Python implementation globally (or to `rust` to make a missing Rust backend an error instead of a silent fallback).
 
 To use Adaptive in Jupyterlab, you need to install the following labextensions.
 
