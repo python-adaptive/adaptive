@@ -897,8 +897,8 @@ class Learner2D(BaseLearner):
             cloudpickle.dumps(self.function),
             self.bounds,
             self.loss_per_triangle,
-            self._stack,
-            self._get_data(),
+            self._stack.copy(),
+            self._get_data().copy(),
         )
 
     def __setstate__(self, state):

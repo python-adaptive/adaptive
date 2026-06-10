@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from adaptive.learner import BalancingLearner, Learner1D
+from adaptive.learner import BalancingLearner, Learner1D, Learner2D
 from adaptive.runner import simple
 
 strategies = ["loss", "loss_improvements", "npoints", "cycle"]
@@ -49,6 +49,18 @@ def test_ask_0(strategy):
     learner = BalancingLearner(learners, strategy=strategy)
     points, _ = learner.ask(0)
     assert len(points) == 0
+
+
+def test_ask_without_pending_restores_learner2d_state():
+    learner = Learner2D(lambda xy: xy[0] + xy[1], bounds=((-1, 1), (-1, 1)))
+    initial_stack = list(learner._stack.items())
+    initial_data = learner.data.copy()
+
+    balancing_learner = BalancingLearner([learner])
+    balancing_learner.ask(1, tell_pending=False)
+
+    assert list(learner._stack.items()) == initial_stack
+    assert learner.data == initial_data
 
 
 @pytest.mark.parametrize(
