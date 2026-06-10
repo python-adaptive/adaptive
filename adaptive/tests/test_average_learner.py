@@ -5,6 +5,7 @@ import numpy as np
 
 from adaptive.learner import AverageLearner
 from adaptive.runner import simple
+from adaptive.tests.flaky_utils import fresh_seed_each_run
 
 
 def f_unused(seed):
@@ -28,6 +29,7 @@ def test_only_returns_new_points():
 
 
 @flaky.flaky(max_runs=5)
+@fresh_seed_each_run
 def test_avg_std_and_npoints():
     learner = AverageLearner(f_unused, atol=None, rtol=0.01)
 

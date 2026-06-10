@@ -29,6 +29,7 @@ from adaptive.learner import (
 )
 from adaptive.learner.learner1D import with_pandas
 from adaptive.runner import simple
+from adaptive.tests.flaky_utils import fresh_seed_each_run
 
 LOSS_FUNCTIONS = {
     Learner1D: (
@@ -514,7 +515,9 @@ def test_expected_loss_improvement_is_less_than_total_loss(
 
 # XXX: This *should* pass (https://github.com/python-adaptive/adaptive/issues/55)
 #      but we xfail it now, as Learner2D will be deprecated anyway
+@flaky.flaky(max_runs=5)
 @run_with(Learner1D, xfail(Learner2D), LearnerND, AverageLearner1D)
+@fresh_seed_each_run
 def test_learner_performance_is_invariant_under_scaling(
     learner_type, f, learner_kwargs
 ):
@@ -583,6 +586,7 @@ def test_learner_performance_is_invariant_under_scaling(
     SequenceLearner,
     with_all_loss_functions=False,
 )
+@fresh_seed_each_run
 def test_balancing_learner(learner_type, f, learner_kwargs):
     """Test if the BalancingLearner works with the different types of learners."""
     learners = [

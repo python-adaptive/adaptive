@@ -9,6 +9,7 @@ import numpy as np
 from adaptive.learner import Learner1D
 from adaptive.learner.learner1D import curvature_loss_function
 from adaptive.runner import BlockingRunner, simple
+from adaptive.tests.flaky_utils import fresh_seed_each_run
 
 
 def flat_middle(x):
@@ -259,6 +260,7 @@ def test_ask_does_not_return_known_points_when_returning_bounds():
 
 
 @flaky.flaky(max_runs=3)
+@fresh_seed_each_run
 def test_tell_many():
     def f(x, offset=0.123214):
         a = 0.01
