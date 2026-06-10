@@ -79,7 +79,9 @@ html_logo = "_static/logo_docs.png"
 
 # myst-nb configuration
 nb_execution_mode = "cache"
-nb_execution_timeout = 180
+# Generating the logo animation (logo.md) takes ~3 minutes on Read the Docs
+# builders, which intermittently exceeded the previous 180 s limit.
+nb_execution_timeout = 600
 nb_execution_raise_on_error = True
 
 
