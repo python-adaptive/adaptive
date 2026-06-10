@@ -26,9 +26,11 @@ from __future__ import annotations
 
 import os
 
-# Minimal version that is a complete drop-in for the learners
-# (incl. ``get_opposing_vertices`` and pickle/deepcopy support).
-_MIN_RUST_VERSION = (0, 2, 1)
+# Minimal version that is a complete drop-in for the learners: includes the
+# degenerate-simplex fix for curvature losses, plus the batched
+# ``simplices_containing`` query and Rust ``default_loss`` that `LearnerND`
+# uses when this backend is active.
+_MIN_RUST_VERSION = (0, 3, 1)
 
 
 def _rust_version() -> tuple[int, ...] | None:
@@ -119,6 +121,12 @@ if TRIANGULATION_BACKEND == "rust":
         point_in_simplex,
         simplex_volume_in_embedding,
     )
+
+    # The Rust implementation of `adaptive.learner.learnerND.default_loss`,
+    # which `LearnerND` prefers when no loss is given. Defined here (rather
+    # than re-exporting the Python one) to avoid a circular import with
+    # `learnerND`; ``None`` means "use the pure-Python default".
+    from adaptive_triangulation import default_loss as rust_default_loss
 else:
     from adaptive.learner.triangulation import (
         Triangulation,
@@ -132,6 +140,8 @@ else:
         simplex_volume_in_embedding,
     )
 
+    rust_default_loss = None
+
 __all__ = [
     "TRIANGULATION_BACKEND",
     "Triangulation",
@@ -143,5 +153,6 @@ __all__ = [
     "fast_norm",
     "orientation",
     "point_in_simplex",
+    "rust_default_loss",
     "simplex_volume_in_embedding",
 ]

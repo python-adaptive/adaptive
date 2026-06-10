@@ -122,3 +122,40 @@ def test_learnernd_uses_rust_backend():
             learner.tell(point, learner.function(point))
     assert isinstance(learner.tri, adaptive_triangulation.Triangulation)
     assert learner.npoints >= 50
+
+
+def test_rust_default_loss_matches_backend():
+    if backend.TRIANGULATION_BACKEND == "rust":
+        import adaptive_triangulation
+
+        assert backend.rust_default_loss is adaptive_triangulation.default_loss
+    else:
+        assert backend.rust_default_loss is None
+
+
+def _ring_of_fire(xy):
+    import numpy as np
+
+    x, y = xy
+    a, d = 0.2, 0.5
+    return x + np.exp(-((x**2 + y**2 - d**2) ** 2) / a**4)
+
+
+@pytest.mark.skipif(not rust_is_usable(), reason="needs adaptive-triangulation")
+def test_rust_backend_samples_identical_points():
+    # The batched tell_pending path and the Rust default loss must not change
+    # which points the learner chooses.
+    from adaptive import LearnerND
+
+    learners = {
+        which: LearnerND(
+            _ring_of_fire, bounds=[(-1, 1), (-1, 1)], triangulation_backend=which
+        )
+        for which in ("python", "rust")
+    }
+    for learner in learners.values():
+        for _ in range(200):
+            points, _ = learner.ask(1)
+            for point in points:
+                learner.tell(point, learner.function(point))
+    assert sorted(learners["python"].data) == sorted(learners["rust"].data)

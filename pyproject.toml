@@ -29,7 +29,7 @@ dependencies = [
 
 [project.optional-dependencies]
 rust = [
-    "adaptive-triangulation>=0.2.1", # Rust-accelerated triangulation backend
+    "adaptive-triangulation>=0.3.1", # Rust-accelerated triangulation backend
 ]
 other = [
     "dill",

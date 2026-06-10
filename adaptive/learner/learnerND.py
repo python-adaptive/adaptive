@@ -20,6 +20,7 @@ from adaptive.learner.triangulation_backend import (
     circumsphere,
     point_in_simplex,
     resolve_triangulation_class,
+    rust_default_loss,
     simplex_volume_in_embedding,
 )
 from adaptive.notebook_integration import ensure_holoviews, ensure_plotly
@@ -333,7 +334,9 @@ class LearnerND(BaseLearner):
     ):
         self._triangulation_class = resolve_triangulation_class(triangulation_backend)
         self._vdim = None
-        self.loss_per_simplex = loss_per_simplex or default_loss
+        # Prefer the Rust implementation of the default loss when the Rust
+        # backend is active; it computes the same embedded simplex volume.
+        self.loss_per_simplex = loss_per_simplex or rust_default_loss or default_loss
 
         if hasattr(self.loss_per_simplex, "nth_neighbors"):
             if self.loss_per_simplex.nth_neighbors > 1:
@@ -649,34 +652,45 @@ class LearnerND(BaseLearner):
         if self.tri is None:
             return
 
-        simplex = tuple(simplex or self.tri.locate_point(point))
-        if not simplex:
-            return
-            # Simplex is None if pending point is outside the triangulation,
-            # then you do not have subtriangles
-
-        simplex = tuple(simplex)
-        simplices = [self.tri.vertex_to_simplices[i] for i in simplex]
-        neighbors = set.union(*simplices)
-        # Neighbours also includes the simplex itself
-
-        for simpl in neighbors:
-            _, to_add = self._try_adding_pending_point_to_simplex(point, simpl)
+        for simpl in self._simplices_containing_point(point, simplex):
+            _, to_add = self._add_pending_point_to_simplex(point, simpl)
             if to_add is None:
                 continue
             self._update_subsimplex_losses(simpl, to_add)
 
-    def _try_adding_pending_point_to_simplex(self, point, simplex):
-        # try to insert it
-        if not self.tri.point_in_simplex(point, simplex):
-            return None, None
+    def _simplices_containing_point(self, point, simplex=None):
+        """All simplices of the triangulation containing `point`, found from
+        the `simplex` hint when given."""
+        if hasattr(self.tri, "simplices_containing"):
+            # Rust backend: one call instead of a point_in_simplex loop.
+            return self.tri.simplices_containing(point, simplex=simplex)
 
+        simplex = tuple(simplex or self.tri.locate_point(point))
+        if not simplex:
+            return []
+            # Simplex is empty if the pending point is outside the
+            # triangulation, then you do not have subtriangles
+
+        simplices = [self.tri.vertex_to_simplices[i] for i in simplex]
+        neighbors = set.union(*simplices)
+        # Neighbours also includes the simplex itself
+        return [s for s in neighbors if self.tri.point_in_simplex(point, s)]
+
+    def _add_pending_point_to_simplex(self, point, simplex):
+        """Insert `point` into the subtriangulation of `simplex`, which must
+        contain the point."""
         if simplex not in self._subtriangulations:
             vertices = self.tri.get_vertices(simplex)
             self._subtriangulations[simplex] = self._triangulation_class(vertices)
 
         self._pending_to_simplex[point] = simplex
         return self._subtriangulations[simplex].add_point(point)
+
+    def _try_adding_pending_point_to_simplex(self, point, simplex):
+        # try to insert it
+        if not self.tri.point_in_simplex(point, simplex):
+            return None, None
+        return self._add_pending_point_to_simplex(point, simplex)
 
     def _update_subsimplex_losses(self, simplex, new_subsimplices):
         loss = self._losses[simplex]
