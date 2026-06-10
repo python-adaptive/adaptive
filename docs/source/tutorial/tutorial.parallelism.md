@@ -16,7 +16,8 @@ Often you will want to evaluate the function on some remote computing resources.
 
 ## `concurrent.futures`
 
-On Unix-like systems by default {class}`adaptive.Runner` creates a {class}`~concurrent.futures.ProcessPoolExecutor`, but you can also pass one explicitly e.g. to limit the number of workers:
+By default {class}`adaptive.Runner` creates a `loky.get_reusable_executor`, which serializes functions by value so it also works with functions defined interactively (e.g. in a notebook).
+You can also pass a {class}`~concurrent.futures.ProcessPoolExecutor` explicitly, e.g. to limit the number of workers, but then the function must be importable from `__main__` by the worker processes:
 
 ```python
 from concurrent.futures import ProcessPoolExecutor
