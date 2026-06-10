@@ -4,7 +4,7 @@ import itertools
 import warnings
 from collections import OrderedDict
 from collections.abc import Callable, Iterable
-from copy import copy, deepcopy
+from copy import copy
 from math import sqrt
 
 import cloudpickle
@@ -897,8 +897,8 @@ class Learner2D(BaseLearner):
             cloudpickle.dumps(self.function),
             self.bounds,
             self.loss_per_triangle,
-            deepcopy(self._stack),
-            deepcopy(self._get_data()),
+            self._stack.copy(),
+            self._get_data().copy(),
         )
 
     def __setstate__(self, state):
