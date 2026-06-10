@@ -28,6 +28,14 @@ def pytest_all_deps(session: nox.Session) -> None:
 
 
 @nox.session(python="3.13")
+def pytest_rust_backend(session: nox.Session) -> None:
+    """Run the test suite with the Rust triangulation backend required."""
+    session.install(".[test,other,rust]")
+    session.run("coverage", "erase")
+    session.run("pytest", *xdist, env={"ADAPTIVE_TRIANGULATION_BACKEND": "rust"})
+
+
+@nox.session(python="3.13")
 def pytest_typeguard(session: nox.Session) -> None:
     """Run pytest with typeguard."""
     session.install(".[test,other]")
