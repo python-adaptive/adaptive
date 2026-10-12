@@ -72,7 +72,6 @@ from mpi4py.futures import MPIPoolExecutor
 # use the idiom below, see the warning at
 # https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor
 if __name__ == "__main__":
-
     learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
     # load the data
