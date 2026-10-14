@@ -21,12 +21,15 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import matplotlib.tri as mtri  # noqa: E402
 import numpy as np  # noqa: E402
+from matplotlib.colors import to_rgba  # noqa: E402
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
 
 import adaptive  # noqa: E402
 
 STATIC = Path(__file__).parent / "_static"
-DARK, ACCENT, GREY = "#2c3e6b", "#21918c", "#c8c8c8"
+DARK, ACCENT, NEW = "#2c3e6b", "#21918c", "#e4572e"
+BLUE, YELLOW = "#3b528b", "#fde725"
 plt.rcParams.update(
     {
         "font.family": "DejaVu Sans",
@@ -43,8 +46,9 @@ plt.rcParams.update(
 )
 
 
-def peak(x, a=0.01):
-    return x + a**2 / (a**2 + x**2)
+def peak(x, a=0.01, x0=0.137):
+    # Off-center, so a homogeneous grid does not happen to hit the peak exactly.
+    return x + a**2 / (a**2 + (x - x0) ** 2)
 
 
 def ring(xy, a=0.2):
@@ -52,7 +56,7 @@ def ring(xy, a=0.2):
     return x + np.exp(-((x**2 + y**2 - 0.75**2) ** 2) / a**4)
 
 
-def shell(xyz, a=0.3):
+def shell(xyz, a=0.4):
     x, y, z = xyz
     return np.exp(-((x**2 + y**2 + z**2 - 0.75**2) ** 2) / a**4)
 
@@ -102,29 +106,32 @@ def _ffmpeg(*args) -> None:
 
 
 def learner1d(target: Path) -> None:
-    xs, ys = sampled(adaptive.Learner1D(peak, bounds=(-1, 1)), npoints_goal=120)
-    x_true = np.linspace(-1, 1, 4000)
+    xs, _ = sampled(adaptive.Learner1D(peak, bounds=(-1, 1)), npoints_goal=100)
 
     def draw(fig, i):
         n = frames[i]
         axes = fig.subplots(1, 2, sharey=True)
         homogeneous = np.linspace(-1, 1, n)
-        adaptive_xs = np.sort(xs[:n])
         for ax, x, title in [
             (axes[0], homogeneous, "Homogeneous grid"),
-            (axes[1], adaptive_xs, "Adaptive"),
+            (axes[1], xs[:n], "Adaptive"),
         ]:
-            ax.plot(x_true, peak(x_true), color=GREY, lw=1, zorder=1)
-            ax.plot(x, peak(x), color=DARK, lw=1.6, zorder=2)
-            ax.scatter(x, peak(x), s=14, color=ACCENT, zorder=3, linewidths=0)
+            order = np.sort(x)
+            ax.plot(order, peak(order), color=DARK, lw=1.6, zorder=2)
+            ax.scatter(x, peak(x), s=16, color=ACCENT, zorder=3, linewidths=0)
             ax.set_title(title)
             ax.set_xlim(-1.05, 1.05)
-            ax.set_ylim(-1.1, 2.1)
+            ax.set_ylim(-1.15, 1.35)
+        if n:  # the point the adaptive learner chose last
+            axes[1].scatter(xs[n - 1], peak(xs[n - 1]), s=50, color=NEW, zorder=4)
         fig.suptitle(f"{n} points", fontsize=12, color="#555555", y=0.06)
         fig.subplots_adjust(left=0.06, right=0.98, top=0.88, bottom=0.2, wspace=0.08)
 
-    frames = counts(3, len(xs), 90, power=1.5)
-    _render_gif(draw, len(frames), (8, 3.6), target)
+    # One point per frame at first, then speed up.
+    frames = np.concatenate(
+        [np.arange(0, 40), np.linspace(40, len(xs), 30).astype(int)]
+    )
+    _render_gif(draw, len(frames), (8, 3.6), target, fps=12)
 
 
 def _triangles(ax, points, values, vmin, vmax, edge_color):
@@ -158,7 +165,7 @@ def learner2d(target: Path) -> None:
         )
         fig.subplots_adjust(left=0.02, right=0.98, top=0.9, bottom=0.1, wspace=0.05)
 
-    frames = counts(9, len(points), 60)
+    frames = counts(4, len(points), 60, power=2.5)
     _render_gif(draw, len(frames), (7, 3.75), target, dpi=90)
 
 
@@ -166,49 +173,77 @@ def learnerND(target: Path) -> None:
     points, values = sampled(
         adaptive.LearnerND(shell, bounds=[(-1, 1)] * 3), npoints_goal=2500
     )
-    # Hide the octant facing the camera to show the inside of the shell.
-    visible = ~((points[:, 0] > 0) & (points[:, 1] < 0) & (points[:, 2] > 0))
-    colors = plt.get_cmap("viridis")(values)
-    colors[:, 3] = 0.15 + 0.85 * values
-    sizes = 2 + 10 * values
-    nframes = 90
+    grow, turn = 45, 60
+    frames = np.concatenate([counts(30, len(points), grow), np.full(turn, len(points))])
+    surfaces = _isosurfaces(points, values, np.unique(frames))
 
     def draw(fig, i):
         n = frames[i]
+        # Rock back and forth, so the cut-away wedge stays in view.
+        azim = 45 + 50 * np.sin(2 * np.pi * max(0, i - grow) / turn)
+        triangles = surfaces[n]
+        centers = triangles.mean(axis=1)
+        inner = np.linalg.norm(centers, axis=1) < 0.75
+        # Cut an x > 0, y > 0 wedge out of the outer surface to show the inner one.
+        keep = inner | ~((centers[:, 0] > 0) & (centers[:, 1] > 0))
+        triangles, inner = triangles[keep], inner[keep]
+        base = np.array([to_rgba(BLUE), to_rgba(YELLOW)])[inner.astype(int)]
+        colors = base * _lambert(triangles, azim - 30, 25 + 20)[:, None]
+        colors[:, 3] = 1
         ax = fig.add_subplot(projection="3d")
-        mask = visible.copy()
-        mask[n:] = False
-        ax.scatter(
-            *points[mask].T,
-            c=colors[mask],
-            s=sizes[mask],
-            depthshade=False,
-            linewidths=0,
+        surface = Poly3DCollection(
+            triangles, facecolors=colors, edgecolors=colors, linewidths=0.3
         )
-        ax.view_init(elev=20, azim=-60 + 360 * i / nframes)
+        ax.add_collection3d(surface)
+        ax.view_init(elev=25, azim=azim)
         for set_lim in (ax.set_xlim, ax.set_ylim, ax.set_zlim):
             set_lim(-1, 1)
         ax.set_box_aspect((1, 1, 1), zoom=1.25)
         ax.set_axis_off()
-        fig.text(
-            0.5,
-            0.04,
-            f"LearnerND, {n} points",
-            ha="center",
-            color="#555555",
-            fontsize=12,
-        )
+        fig.text(0.5, 0.04, f"{n} points", ha="center", color="#555555", fontsize=12)
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
-    frames = counts(20, len(points), nframes // 2)
-    frames = np.concatenate([frames, np.full(nframes - len(frames), len(points))])
-    _render_gif(draw, nframes, (4.5, 4.5), target, hold=0, dpi=80)
+    _render_gif(draw, len(frames), (4.5, 4.5), target, hold=0, dpi=90)
 
 
-def _render_gif(draw, nframes, figsize, target, hold=2.5, dpi=100):
+def _lambert(triangles: np.ndarray, azim: float, elev: float) -> np.ndarray:
+    """Brightness of each triangle lit from the direction (azim, elev) in degrees."""
+    azim, elev = np.radians(azim), np.radians(elev)
+    light = np.array(
+        [np.cos(elev) * np.cos(azim), np.cos(elev) * np.sin(azim), np.sin(elev)]
+    )
+    normals = np.cross(
+        triangles[:, 1] - triangles[:, 0], triangles[:, 2] - triangles[:, 0]
+    )
+    normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+    return 0.45 + 0.55 * np.clip(normals @ light, 0, 1)
+
+
+def _isosurfaces(points, values, counts_) -> dict[int, np.ndarray]:
+    """Triangles of the f = 0.5 isosurface after the first n points, for each n."""
+    learner = adaptive.LearnerND(shell, bounds=[(-1, 1)] * 3)
+    surfaces, told = {}, 0
+    for n in counts_:
+        for point, value in zip(points[told:n], values[told:n]):
+            learner.tell(tuple(point), value)
+        told = n
+        vertices, faces = learner._get_iso(level=0.5)
+        triangles = np.array(vertices)[np.array(faces)]
+        # Wind every triangle with its normal pointing away from the center,
+        # so the shading is consistent.
+        normals = np.cross(
+            triangles[:, 1] - triangles[:, 0], triangles[:, 2] - triangles[:, 0]
+        )
+        inward = np.einsum("ij,ij->i", normals, triangles.mean(axis=1)) < 0
+        triangles[inward] = triangles[inward][:, ::-1]
+        surfaces[n] = triangles
+    return surfaces
+
+
+def _render_gif(draw, nframes, figsize, target, hold=2.5, dpi=100, fps=15):
     with tempfile.TemporaryDirectory() as folder:
         write_frames(draw, nframes, figsize, Path(folder), dpi=dpi)
-        to_gif(Path(folder), target, hold=hold)
+        to_gif(Path(folder), target, fps=fps, hold=hold)
     print(f"{target.relative_to(STATIC.parent)}: {target.stat().st_size / 1e6:.2f} MB")
 
 

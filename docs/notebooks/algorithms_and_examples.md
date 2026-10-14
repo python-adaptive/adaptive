@@ -10,7 +10,7 @@ kernelspec:
   name: python3
 ---
 
-# 🧪 Algorithms and examples
+# Algorithms and examples
 
 --8<-- "README.md:implemented-algorithms"
 
@@ -34,7 +34,7 @@ In addition to the learners, `adaptive` also provides primitives for running the
 [ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
-## 💡 Examples
+## Examples
 
 Here are some examples of how Adaptive samples vs. homogeneous sampling.
 Click on the *Play* :fontawesome-solid-play: button or move the sliders.

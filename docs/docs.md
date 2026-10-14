@@ -1,4 +1,4 @@
-# 🛠️ Installation and development
+# Installation and development
 
 --8<-- "README.md:rest"
 

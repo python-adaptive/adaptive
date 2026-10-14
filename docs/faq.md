@@ -1,4 +1,4 @@
-# ❓ FAQ: Frequently Asked Questions
+# FAQ: Frequently Asked Questions
 
 ## Where can I learn more about the algorithm used?
 

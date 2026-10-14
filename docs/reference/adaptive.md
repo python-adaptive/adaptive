@@ -1,4 +1,4 @@
-# 📜 API reference
+# API reference
 
 ## Learners
 

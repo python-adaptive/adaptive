@@ -26,7 +26,7 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 
 <!-- --8<-- [end:summary] -->
 
-<details><summary><b><u>[ToC]</u></b> 📚</summary>
+<details><summary><b>Table of contents</b></summary>
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -51,14 +51,14 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 
 ## Key features
 
-- 🎯 **Intelligent Adaptive Sampling**: Adaptive focuses on areas of interest within a function, ensuring better results with fewer evaluations, saving time, and computational resources.
-- ⚡ **Parallel Execution**: The library leverages parallel processing for faster function evaluations, making optimal use of available computational resources.
-- 📊 **Live Plotting and Info Widgets**: When working in Jupyter notebooks, Adaptive offers real-time visualization of the learning process, making it easier to monitor progress and identify areas of improvement.
-- 🔧 **Customizable Loss Functions**: Adaptive supports various loss functions and allows customization, enabling users to tailor the learning process according to their specific needs.
-- 📈 **Support for Multidimensional Functions**: The library can handle functions with scalar or vector outputs in one or multiple dimensions, providing flexibility for a wide range of problems.
-- 🧩 **Seamless Integration**: Adaptive offers a simple and intuitive interface, making it easy to integrate with existing Python projects and workflows.
-- 💾 **Flexible Data Export**: The library provides options to export learned data as NumPy arrays or Pandas DataFrames, ensuring compatibility with various data processing tools.
-- 🌐 **Open-Source and Community-Driven**: Adaptive is an open-source project, encouraging contributions from the community to continuously improve and expand the library's features and capabilities.
+- **Intelligent Adaptive Sampling**: Adaptive focuses on areas of interest within a function, ensuring better results with fewer evaluations, saving time, and computational resources.
+- **Parallel Execution**: The library leverages parallel processing for faster function evaluations, making optimal use of available computational resources.
+- **Live Plotting and Info Widgets**: When working in Jupyter notebooks, Adaptive offers real-time visualization of the learning process, making it easier to monitor progress and identify areas of improvement.
+- **Customizable Loss Functions**: Adaptive supports various loss functions and allows customization, enabling users to tailor the learning process according to their specific needs.
+- **Support for Multidimensional Functions**: The library can handle functions with scalar or vector outputs in one or multiple dimensions, providing flexibility for a wide range of problems.
+- **Seamless Integration**: Adaptive offers a simple and intuitive interface, making it easy to integrate with existing Python projects and workflows.
+- **Flexible Data Export**: The library provides options to export learned data as NumPy arrays or Pandas DataFrames, ensuring compatibility with various data processing tools.
+- **Open-Source and Community-Driven**: Adaptive is an open-source project, encouraging contributions from the community to continuously improve and expand the library's features and capabilities.
 
 <!-- --8<-- [end:key-features] -->
 

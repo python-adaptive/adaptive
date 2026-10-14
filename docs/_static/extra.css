@@ -40,7 +40,8 @@
 }
 
 /* Bokeh plots and widgets are designed for a light background */
-[data-md-color-scheme="slate"] .md-typeset .nb-output:has([data-root-id]),
+/* (empty roots are the HoloViews extension loader, which renders nothing) */
+[data-md-color-scheme="slate"] .md-typeset .nb-output:has([data-root-id]:not(:empty)),
 [data-md-color-scheme="slate"] .md-typeset .nb-output:has(.plotly-graph-div),
 [data-md-color-scheme="slate"] .md-typeset .nb-output:has(.jupyter-widgets) {
   background: #ffffff;
@@ -50,7 +51,8 @@
 }
 
 /* `live_info` and `live_plot` cancel buttons do nothing on a static page */
-.md-typeset .nb-output .widget-button {
+.md-typeset .nb-output .widget-button,
+.md-typeset .nb-output:has(.widget-button):not(:has(.widget-html)) {
   display: none !important;
 }
 
