@@ -1,6 +1,6 @@
 
 # ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) *Adaptive*: Parallel Active Learning of Mathematical Functions
-<!-- badges-start -->
+<!-- --8<-- [start:badges] -->
 
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb)
 [![Conda](https://img.shields.io/badge/install%20with-conda-green.svg)](https://anaconda.org/conda-forge/adaptive)
@@ -12,9 +12,9 @@
 [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive)
 [![PyPI](https://img.shields.io/pypi/v/adaptive.svg)](https://pypi.python.org/pypi/adaptive)
 
-<!-- badges-end -->
+<!-- --8<-- [end:badges] -->
 
-<!-- summary-start -->
+<!-- --8<-- [start:summary] -->
 
 Adaptive is an open-source Python library that streamlines adaptive parallel function evaluations.
 Rather than calculating all points on a dense grid, it intelligently selects the "best" points in the parameter space based on your provided function and bounds.
@@ -24,7 +24,7 @@ Adaptive is most efficient for computations where each function evaluation takes
 
 To see Adaptive in action, try the [example notebook on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb) or explore the [tutorial on Read the Docs](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial).
 
-<!-- summary-end -->
+<!-- --8<-- [end:summary] -->
 
 <details><summary><b><u>[ToC]</u></b> 📚</summary>
 
@@ -46,7 +46,7 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 
 </details>
 
-<!-- key-features-start -->
+<!-- --8<-- [start:key-features] -->
 
 ## Key features
 
@@ -59,7 +59,7 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 - 💾 **Flexible Data Export**: The library provides options to export learned data as NumPy arrays or Pandas DataFrames, ensuring compatibility with various data processing tools.
 - 🌐 **Open-Source and Community-Driven**: Adaptive is an open-source project, encouraging contributions from the community to continuously improve and expand the library's features and capabilities.
 
-<!-- key-features-end -->
+<!-- --8<-- [end:key-features] -->
 
 ## Example usage
 
@@ -97,7 +97,7 @@ If you have Pandas installed, you can also export the data as a DataFrame:
 df = learner.to_dataframe()
 ```
 
-<!-- implemented-algorithms-start -->
+<!-- --8<-- [start:implemented-algorithms] -->
 
 ## Implemented Algorithms
 
@@ -110,7 +110,7 @@ While `adaptive` provides sensible default choices, the adaptive sampling proces
 
 The following learners are implemented:
 
-<!-- implemented-algorithms-end -->
+<!-- --8<-- [end:implemented-algorithms] -->
 
 - `Learner1D`: for 1D functions `f: ℝ → ℝ^N`,
 - `Learner2D`: for 2D functions `f: ℝ^2 → ℝ^N`,
@@ -132,7 +132,7 @@ In addition to learners, `adaptive` offers primitives for parallel sampling acro
 [ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
-<!-- rest-start -->
+<!-- --8<-- [start:rest] -->
 
 ## Installation
 
@@ -224,7 +224,10 @@ We would like to give credits to the following people:
 - Pedro Gonnet for his implementation of [CQUAD](https://www.gnu.org/software/gsl/manual/html_node/CQUAD-doubly_002dadaptive-integration.html), “Algorithm 4” as described in “Increasing the Reliability of Adaptive Quadrature Using Explicit Interpolants”, P. Gonnet, ACM Transactions on Mathematical Software, 37 (3), art. no. 26, 2010.
 - Pauli Virtanen for his `AdaptiveTriSampling` script (no longer available online since SciPy Central went down) which served as inspiration for the `adaptive.Learner2D`.
 
-<!-- rest-end -->
+<!-- --8<-- [end:rest] -->
+<!-- --8<-- [start:community] -->
 
 For general discussion, we have a [Gitter chat channel](https://gitter.im/python-adaptive/adaptive).
 If you find any bugs or have any feature suggestions please file a GitHub [issue](https://github.com/python-adaptive/adaptive/issues/new) or submit a [pull request](https://github.com/python-adaptive/adaptive/pulls).
+
+<!-- --8<-- [end:community] -->

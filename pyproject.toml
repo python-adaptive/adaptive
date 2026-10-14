@@ -76,6 +76,16 @@ nox = [
     "nox",
     "pytest-github-actions-annotate-failures",
 ]
+docs = [
+    "adaptive[notebook,other]",
+    "zensical",
+    "mkdocstrings-python",
+    "jupytext",
+    "nbclient",
+    "nbformat",
+    "pillow",
+    "pytest",
+]
 
 [tool.setuptools.packages.find]
 include = ["adaptive.*", "adaptive"]

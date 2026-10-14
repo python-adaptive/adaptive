@@ -1,0 +1,191 @@
+# Adaptive documentation, built with Zensical (https://zensical.org).
+# Executable pages live in docs/notebooks/ and are rendered into docs/ by
+# docs/build_notebooks.py before running `zensical build`.
+
+[project]
+site_name = "Adaptive"
+site_description = "Parallel active learning of mathematical functions"
+site_author = "Adaptive Authors"
+site_url = "https://adaptive.readthedocs.io/"
+copyright = "Copyright &copy; 2018-2026 Adaptive Authors"
+repo_url = "https://github.com/python-adaptive/adaptive"
+repo_name = "python-adaptive/adaptive"
+edit_uri = "edit/main/docs/"
+docs_dir = "docs"
+exclude_docs = """
+notebooks/
+*.py
+"""
+
+nav = [
+  { "Home" = "index.md" },
+  { "Algorithms and examples" = "algorithms_and_examples.md" },
+  { "Tutorial" = [
+    "tutorial/tutorial.md",
+    "tutorial/tutorial.Learner1D.md",
+    "tutorial/tutorial.Learner2D.md",
+    "tutorial/tutorial.custom_loss.md",
+    "tutorial/tutorial.AverageLearner.md",
+    "tutorial/tutorial.BalancingLearner.md",
+    "tutorial/tutorial.DataSaver.md",
+    "tutorial/tutorial.IntegratorLearner.md",
+    "tutorial/tutorial.LearnerND.md",
+    "tutorial/tutorial.AverageLearner1D.md",
+    "tutorial/tutorial.SequenceLearner.md",
+    "tutorial/tutorial.parallelism.md",
+    "tutorial/tutorial.advanced-topics.md",
+  ] },
+  { "Benchmarks" = "benchmarks.md" },
+  { "Gallery" = "gallery.md" },
+  { "API reference" = [
+    "reference/adaptive.md",
+    { "Learners" = [
+      "reference/adaptive.learner.learner1D.md",
+      "reference/adaptive.learner.learner2D.md",
+      "reference/adaptive.learner.learnerND.md",
+      "reference/adaptive.learner.average_learner.md",
+      "reference/adaptive.learner.average_learner1D.md",
+      "reference/adaptive.learner.balancing_learner.md",
+      "reference/adaptive.learner.data_saver.md",
+      "reference/adaptive.learner.integrator_learner.md",
+      "reference/adaptive.learner.sequence_learner.md",
+      "reference/adaptive.learner.base_learner.md",
+    ] },
+    { "Runners" = [
+      "reference/adaptive.runner.Runner.md",
+      "reference/adaptive.runner.AsyncRunner.md",
+      "reference/adaptive.runner.BlockingRunner.md",
+      "reference/adaptive.runner.BaseRunner.md",
+      "reference/adaptive.runner.extras.md",
+    ] },
+    { "Other" = [
+      "reference/adaptive.learner.triangulation.md",
+      "reference/adaptive.notebook_integration.md",
+      "reference/adaptive.utils.md",
+    ] },
+  ] },
+  { "Changelog" = "CHANGELOG.md" },
+  { "FAQ" = "faq.md" },
+  { "Contributing" = "docs.md" },
+]
+
+extra_css = ["_static/extra.css"]
+
+[project.theme]
+language = "en"
+logo = "_static/logo_docs.png"
+favicon = "_static/logo.png"
+features = [
+  "content.action.edit",
+  "content.action.view",
+  "content.code.annotate",
+  "content.code.copy",
+  "content.footnote.tooltips",
+  "content.tabs.link",
+  "content.tooltips",
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.path",
+  "navigation.sections",
+  "navigation.top",
+  "navigation.tracking",
+  "search.highlight",
+  "toc.follow",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/moon-star"
+toggle.name = "Switch to system preference"
+
+[project.theme.font]
+text = "Inter"
+code = "JetBrains Mono"
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/python-adaptive/adaptive"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/python"
+link = "https://pypi.org/project/adaptive/"
+
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["."]
+inventories = [
+  "https://docs.python.org/3/objects.inv",
+  "https://docs.scipy.org/doc/scipy/objects.inv",
+  "https://holoviews.org/objects.inv",
+  "https://loky.readthedocs.io/en/stable/objects.inv",
+]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "numpy"
+docstring_section_style = "table"
+show_root_heading = true
+show_root_full_path = false
+show_source = true
+show_bases = true
+show_signature_annotations = true
+separate_signature = true
+signature_crossrefs = true
+merge_init_into_class = true
+members_order = "source"
+filters = ["!^_"]
+heading_level = 2
+
+# Zensical replaces its default extension set when this table is present,
+# so the defaults are listed explicitly next to `pymdownx.snippets`.
+[project.markdown_extensions.abbr]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+[project.markdown_extensions.md_in_html]
+[project.markdown_extensions.toc]
+permalink = true
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+[project.markdown_extensions.pymdownx.betterem]
+[project.markdown_extensions.pymdownx.caret]
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.emoji]
+emoji_index = "zensical.extensions.emoji.twemoji"
+emoji_generator = "zensical.extensions.emoji.to_svg"
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.keys]
+[project.markdown_extensions.pymdownx.magiclink]
+[project.markdown_extensions.pymdownx.mark]
+[project.markdown_extensions.pymdownx.smartsymbols]
+[project.markdown_extensions.pymdownx.snippets]
+check_paths = true
+[project.markdown_extensions.pymdownx.superfences]
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+combine_header_slug = true
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true
+[project.markdown_extensions.pymdownx.tilde]

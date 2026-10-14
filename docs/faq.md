@@ -2,7 +2,7 @@
 
 ## Where can I learn more about the algorithm used?
 
-Read our [draft paper](https://gitlab.kwant-project.org/qt/adaptive-paper/builds/artifacts/master/file/paper.pdf?job=make) or the source code on [GitHub](https://github.com/python-adaptive/adaptive/).
+Read our [draft paper](https://github.com/python-adaptive/paper) or the source code on [GitHub](https://github.com/python-adaptive/adaptive/).
 
 ## How do I get the data?
 
@@ -10,19 +10,19 @@ Check `learner.data`.
 
 ## How do I learn more than one value per point?
 
-Use the {class}`adaptive.DataSaver`.
+Use the [`DataSaver`][adaptive.DataSaver].
 
 ## My runner failed, how do I get the error message?
 
 Check `runner.task.print_stack()`.
 
-## How do I get a {class}`~adaptive.Learner2D`'s data on a grid?
+## How do I get a `Learner2D`'s data on a grid?
 
 Use `learner.interpolated_on_grid()` optionally with a argument `n` to specify the the amount of points in `x` and `y`.
 
 ## Why can I not use a `lambda` with a learner?
 
-When using the {class}`~adaptive.Runner` the learner's function is evaluated in different Python processes.
+When using the [`Runner`][adaptive.Runner] the learner's function is evaluated in different Python processes.
 Therefore, the `function` needs to be serialized (pickled) and send to the other Python processes; `lambda`s cannot be pickled.
 Instead you can probably use `functools.partial` to accomplish what you want to do.
 
@@ -55,33 +55,5 @@ Unfortunately Gaussian processes are computationally expensive and won't be usef
 Adaptive is much more simple-minded and it relies only on the local properties of the data, rather than fitting it globally.
 
 We'd say that Bayesian modeling is good for really computationally expensive data, regular grids for really cheap data, and local adaptive algorithms are somewhere in the middle.
-
-% I get "``concurrent.futures.process.BrokenProcessPool``: A process in the process pool was terminated abruptly while the future was running or pending." what does it mean?
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-%
-% XXX: add answer!
-%
-% What is the difference with Kriging?
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-%
-% XXX: add answer!
-%
-%
-% What is the difference with adaptive meshing in CFD or computer graphics?
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-%
-% XXX: add answer!
-%
-%
-% Can I use this to tune my hyper parameters for machine learning models?
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-%
-% XXX: add answer!
-%
-%
-% How to use Adaptive with MATLAB?
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-%
-% XXX: add answer!
 
 Missing a question that you think belongs here? Let us [know](https://github.com/python-adaptive/adaptive/issues/new).
