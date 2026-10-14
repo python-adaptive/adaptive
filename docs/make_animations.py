@@ -205,7 +205,8 @@ def learnerND(target: Path) -> None:
     nframes = 90
     figures = []
     for i in range(nframes):
-        angle = np.pi / 4 + 2 * np.pi * i / nframes  # start looking into the cut
+        # Sway back and forth around the view into the cut.
+        angle = np.pi / 4 + np.radians(45) * np.sin(2 * np.pi * i / nframes)
         eye = {"x": 2 * np.cos(angle), "y": 2 * np.sin(angle), "z": 0.25}
         figures.append(go.Figure(fig).update_layout(scene_camera_eye=eye))
     with tempfile.TemporaryDirectory() as folder:
