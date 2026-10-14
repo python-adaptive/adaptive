@@ -10,12 +10,11 @@ kernelspec:
   name: python3
 ---
 
-# Tutorial {class}`~adaptive.Learner2D`
+# Tutorial `Learner2D`
 
-```{note}
-Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
-Download the notebook in order to see the real behaviour. [^download]
-```
+!!! note
+    Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
+    Download the notebook in order to see the real behaviour.
 
 ```{code-cell} ipython3
 :tags: [hide-cell]
@@ -27,7 +26,7 @@ import numpy as np
 
 import adaptive
 
-adaptive.notebook_extension()
+adaptive.notebook_extension(_inline_js=False)
 ```
 
 Besides 1D functions, we can also learn 2D functions: $f: ℝ^2 → ℝ$.
@@ -89,5 +88,3 @@ learner2.tell_many(xys, map(partial(ring, wait=False), xys))
     + learner.plot(tri_alpha=0.4)
 ).cols(2).opts(hv.opts.EdgePaths(color="w"))
 ```
-
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.Learner2D.ipynb`** and {download}`tutorial.Learner2D.md`.

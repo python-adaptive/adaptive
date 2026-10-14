@@ -112,3 +112,11 @@ def test_widget_state_round_trips_html_values():
     start = md.index('<script type="application/vnd.jupyter.widget-state+json">')
     content = md[md.index(">", start) + 1 : md.index("</script>", start)]
     assert json.loads(content) == state
+
+
+def test_inline_plotly_bundle_replaced_by_cdn():
+    bundle = "<script>window.PlotlyConfig = {};</script>\n<script>/**\n* plotly.js v4.1.1\n*/" + "x" * 2000 + "</script>"
+    out = new_output("display_data", data={"text/html": bundle, "text/plain": ""})
+    md = render(new_code_cell("learner.plot_3D()", outputs=[out]))
+    assert '<script src="https://cdn.plot.ly/plotly-4.1.1.min.js"' in md
+    assert "x" * 2000 not in md

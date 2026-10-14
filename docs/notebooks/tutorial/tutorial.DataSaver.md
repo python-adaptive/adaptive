@@ -9,22 +9,21 @@ jupytext:
     format_version: '0.13'
     jupytext_version: 1.13.8
 ---
-# Tutorial {class}`~adaptive.DataSaver`
+# Tutorial `DataSaver`
 
-```{note}
-Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
-Download the notebook in order to see the real behaviour. [^download]
-```
+!!! note
+    Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
+    Download the notebook in order to see the real behaviour.
 
 ```{code-cell} ipython3
 :tags: [hide-cell]
 
 import adaptive
 
-adaptive.notebook_extension()
+adaptive.notebook_extension(_inline_js=False)
 ```
 
-If the function that you want to learn returns a value along with some metadata, you can wrap your learner in an {class}`adaptive.DataSaver`.
+If the function that you want to learn returns a value along with some metadata, you can wrap your learner in an [`adaptive.DataSaver`][adaptive.DataSaver].
 
 In the following example the function to be learned returns its result and the execution time in a dictionary:
 
@@ -77,5 +76,3 @@ Now the `DataSavingLearner` will have an dictionary attribute `extra_data` that 
 ```{code-cell} ipython3
 learner.extra_data
 ```
-
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.DataSaver.ipynb`** and {download}`tutorial.DataSaver.md`.

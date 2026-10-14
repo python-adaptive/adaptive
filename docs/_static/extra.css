@@ -1,62 +1,79 @@
-.ignore-css {
-  all: unset !important;
+/* Viridis-inspired palette, matching the logo */
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color: #3b528b;
+  --md-primary-fg-color--light: #5a6fa8;
+  --md-primary-fg-color--dark: #2c3e6b;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #ffffffb3;
+}
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color: #21918c;
+  --md-accent-fg-color--transparent: #21918c1a;
+  --md-accent-bg-color: #ffffff;
+  --md-accent-bg-color--light: #ffffffb3;
+}
+[data-md-color-scheme="slate"][data-md-color-primary="custom"] {
+  --md-typeset-a-color: #7ea6e0;
 }
 
-/* https://gitter.im/pyviz/pyviz?at=5e8efb2b16f84f0461683446 */
-.panel-widget-box.bk form {
+/* Animated logo on the home page */
+.adaptive-logo-video {
+  display: block;
+  width: 320px;
+  max-width: 100%;
+  margin: 1.5rem auto;
+}
+
+/* Notebook outputs rendered by docs/build_notebooks.py */
+.md-typeset .nb-output {
+  margin: 0 0 1.5em;
+  overflow-x: auto;
+}
+.md-typeset .highlight.nb-output-text pre {
+  border-left: 0.2rem solid var(--md-accent-fg-color);
+}
+.md-typeset .highlight.nb-output-text code {
+  background: transparent;
+}
+
+/* Bokeh plots and widgets are designed for a light background */
+[data-md-color-scheme="slate"] .md-typeset .nb-output:has([data-root-id]),
+[data-md-color-scheme="slate"] .md-typeset .nb-output:has(.plotly-graph-div),
+[data-md-color-scheme="slate"] .md-typeset .nb-output:has(.jupyter-widgets) {
+  background: #ffffff;
+  color: #000000;
+  border-radius: 0.4rem;
+  padding: 0.5rem;
+}
+
+/* `live_info` and `live_plot` cancel buttons do nothing on a static page */
+.md-typeset .nb-output .widget-button {
   display: none !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  width: 25%;
 }
 
-/* Some additional styling taken form the Jupyter notebook CSS */
-/* but changed `rendered_html` to `text_html` */
-
-div.text_html table {
+/* pandas DataFrames */
+.md-typeset .nb-output table.dataframe {
   border: none;
   border-collapse: collapse;
   border-spacing: 0;
-  /* color: black; */
-  font-size: 12px;
+  font-size: 0.7rem;
   table-layout: fixed;
 }
-div.text_html thead {
-  border-bottom: 1px solid;
+.md-typeset .nb-output table.dataframe thead {
+  border-bottom: 1px solid var(--md-default-fg-color--lighter);
   vertical-align: bottom;
 }
-div.text_html tr,
-div.text_html th,
-div.text_html td {
+.md-typeset .nb-output table.dataframe :is(tr, th, td) {
   text-align: right;
   vertical-align: middle;
-  padding: 0.5em 0.5em;
+  padding: 0.4em 0.6em;
   line-height: normal;
   white-space: normal;
-  max-width: none;
   border: none;
 }
-div.text_html th {
-  font-weight: bold;
+.md-typeset .nb-output table.dataframe tbody tr:nth-child(odd) {
+  background: var(--md-code-bg-color);
 }
-
-/* alternating color light theme */
-body[data-theme="light"] div.text_html tbody tr:nth-child(odd) {
-  background: #f5f5f5;
-}
-body[data-theme="light"] div.text_html tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
-}
-
-/* alternating color dark theme */
-body[data-theme="dark"] div.text_html tbody tr:nth-child(odd) {
-  background: #696969;
-}
-body[data-theme="dark"] div.text_html tbody tr:hover {
-  background: rgba(175, 175, 175, 0.2);
-}
-
-/* for rendered markdown on meta_data.md docs */
-body[data-theme="dark"] .widget-html-content {
-  color: #f5f5f5;
+.md-typeset .nb-output table.dataframe tbody tr:hover {
+  background: var(--md-accent-fg-color--transparent);
 }

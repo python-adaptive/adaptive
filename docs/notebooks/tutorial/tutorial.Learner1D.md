@@ -10,20 +10,18 @@ kernelspec:
   name: python3
 ---
 
-(TutorialLearner1D)=
-# Tutorial {class}`~adaptive.Learner1D`
+# Tutorial `Learner1D`
 
-```{note}
-Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
-Download the notebook in order to see the real behaviour. [^download]
-```
+!!! note
+    Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
+    Download the notebook in order to see the real behaviour.
 
 ```{code-cell} ipython3
 :tags: [hide-cell]
 
 import adaptive
 
-adaptive.notebook_extension()
+adaptive.notebook_extension(_inline_js=False)
 
 import random
 from functools import partial
@@ -59,10 +57,10 @@ learner = adaptive.Learner1D(f, bounds=(-1, 1))
 
 Next we create a “runner” that will request points from the learner and evaluate ‘f’ on them.
 
-By default on Unix-like systems the runner will evaluate the points in parallel using local processes {class}`concurrent.futures.ProcessPoolExecutor`.
+By default on Unix-like systems the runner will evaluate the points in parallel using local processes [`concurrent.futures.ProcessPoolExecutor`][concurrent.futures.ProcessPoolExecutor].
 
-On Windows systems the runner will use a {class}`loky.get_reusable_executor`.
-A {class}`~concurrent.futures.ProcessPoolExecutor` cannot be used on Windows for reasons.
+On Windows systems the runner will use a [`loky.get_reusable_executor`][loky.get_reusable_executor].
+A [`ProcessPoolExecutor`][concurrent.futures.ProcessPoolExecutor] cannot be used on Windows for reasons.
 
 ```{code-cell} ipython3
 # The end condition is when the "loss" is less than 0.01. In the context of the
@@ -205,7 +203,7 @@ adaptive.runner.simple(learner_2, npoints_goal=100)
 ).cols(2)
 ```
 
-More info about using custom loss functions can be found in {ref}`Custom adaptive logic for 1D and 2D`.
+More info about using custom loss functions can be found in [Custom adaptive logic for 1D and 2D](tutorial.custom_loss.md).
 
 ## Exporting the data
 
@@ -230,5 +228,3 @@ new_learner = adaptive.Learner1D(learner.function, (-1, 1))  # create an empty l
 new_learner.load_dataframe(df)  # load the pandas.DataFrame's data
 new_learner.plot()
 ```
-
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.Learner1D.ipynb`** and {download}`tutorial.Learner1D.md`.

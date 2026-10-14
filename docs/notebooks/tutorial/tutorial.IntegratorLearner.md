@@ -10,19 +10,18 @@ kernelspec:
   name: python3
 ---
 
-# Tutorial {class}`~adaptive.IntegratorLearner`
+# Tutorial `IntegratorLearner`
 
-```{note}
-Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
-Download the notebook in order to see the real behaviour. [^download]
-```
+!!! note
+    Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
+    Download the notebook in order to see the real behaviour.
 
 ```{code-cell} ipython3
 :tags: [hide-cell]
 
 import adaptive
 
-adaptive.notebook_extension()
+adaptive.notebook_extension(_inline_js=False)
 
 import holoviews as hv
 import numpy as np
@@ -51,7 +50,7 @@ scipy.integrate.quad(f24, 0, 3)
 ```
 
 We initialize a learner again and pass the bounds and relative tolerance we want to reach.
-Then in the {class}`~adaptive.Runner` we pass `goal=lambda l: l.done()` where `learner.done()` is `True` when the relative tolerance has been reached.
+Then in the [`Runner`][adaptive.Runner] we pass `goal=lambda l: l.done()` where `learner.done()` is `True` when the relative tolerance has been reached.
 
 ```{code-cell} ipython3
 from adaptive.runner import SequentialExecutor
@@ -90,5 +89,3 @@ print(
 )
 learner.plot()
 ```
-
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.IntegratorLearner.ipynb`** and {download}`tutorial.IntegratorLearner.md`.

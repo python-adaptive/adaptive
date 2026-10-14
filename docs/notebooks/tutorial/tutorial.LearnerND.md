@@ -10,21 +10,18 @@ kernelspec:
   name: python3
 ---
 
-# Tutorial {class}`~adaptive.LearnerND`
+# Tutorial `LearnerND`
 
-```{note}
-Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
-Download the notebook in order to see the real behaviour. [^download]
-```
-
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.LearnerND.ipynb`** and {download}`tutorial.LearnerND.md`.
+!!! note
+    Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
+    Download the notebook in order to see the real behaviour.
 
 ```{code-cell} ipython3
 :tags: [hide-cell]
 
 import adaptive
 
-adaptive.notebook_extension()
+adaptive.notebook_extension(_inline_js=False)
 
 import holoviews as hv
 import numpy as np

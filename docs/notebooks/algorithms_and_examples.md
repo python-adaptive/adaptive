@@ -10,25 +10,22 @@ kernelspec:
   name: python3
 ---
 
-```{include} ../README.md
----
-start-after: <!-- implemented-algorithms-start -->
-end-before: <!-- implemented-algorithms-end -->
----
-```
+# 🧪 Algorithms and examples
 
-- {class}`~adaptive.Learner1D`, for 1D functions `f: ℝ → ℝ^N`,
-- {class}`~adaptive.Learner2D`, for 2D functions `f: ℝ^2 → ℝ^N`,
-- {class}`~adaptive.LearnerND`, for ND functions `f: ℝ^N → ℝ^M`,
-- {class}`~adaptive.AverageLearner`, for random variables where you want to average the result over many evaluations,
-- {class}`~adaptive.AverageLearner1D`, for stochastic 1D functions where you want to estimate the mean value of the function at each point,
-- {class}`~adaptive.IntegratorLearner`, for when you want to intergrate a 1D function `f: ℝ → ℝ`.
-- {class}`~adaptive.BalancingLearner`, for when you want to run several learners at once, selecting the “best” one each time you get more points.
+--8<-- "README.md:implemented-algorithms"
+
+- [`Learner1D`][adaptive.Learner1D], for 1D functions `f: ℝ → ℝ^N`,
+- [`Learner2D`][adaptive.Learner2D], for 2D functions `f: ℝ^2 → ℝ^N`,
+- [`LearnerND`][adaptive.LearnerND], for ND functions `f: ℝ^N → ℝ^M`,
+- [`AverageLearner`][adaptive.AverageLearner], for random variables where you want to average the result over many evaluations,
+- [`AverageLearner1D`][adaptive.AverageLearner1D], for stochastic 1D functions where you want to estimate the mean value of the function at each point,
+- [`IntegratorLearner`][adaptive.IntegratorLearner], for when you want to integrate a 1D function `f: ℝ → ℝ`.
+- [`BalancingLearner`][adaptive.BalancingLearner], for when you want to run several learners at once, selecting the “best” one each time you get more points.
 
 Meta-learners (to be used with other learners):
 
-- {class}`~adaptive.BalancingLearner`, for when you want to run several learners at once, selecting the “best” one each time you get more points,
-- {class}`~adaptive.DataSaver`, for when your function doesn't just return a scalar or a vector.
+- [`BalancingLearner`][adaptive.BalancingLearner], for when you want to run several learners at once, selecting the “best” one each time you get more points,
+- [`DataSaver`][adaptive.DataSaver], for when your function doesn't just return a scalar or a vector.
 
 In addition to the learners, `adaptive` also provides primitives for running the sampling across several cores and even several machines, with built-in support for
 [concurrent.futures](https://docs.python.org/3/library/concurrent.futures.html),
@@ -37,10 +34,10 @@ In addition to the learners, `adaptive` also provides primitives for running the
 [ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
-# 💡 Examples
+## 💡 Examples
 
 Here are some examples of how Adaptive samples vs. homogeneous sampling.
-Click on the *Play* {fa}`play` button or move the sliders.
+Click on the *Play* :fontawesome-solid-play: button or move the sliders.
 
 ```{code-cell} ipython3
 :tags: [hide-cell]
@@ -53,11 +50,11 @@ import numpy as np
 import adaptive
 from adaptive.learner.learner1D import default_loss, uniform_loss
 
-adaptive.notebook_extension()
+adaptive.notebook_extension(_inline_js=False)
 hv.output(holomap="scrubber")
 ```
 
-## {class}`adaptive.Learner1D`
+### `adaptive.Learner1D`
 
 The `Learner1D` class is designed for adaptively learning 1D functions of the form `f: ℝ → ℝ^N`. It focuses on sampling points where the function is less well understood to improve the overall approximation.
 This learner is well-suited for functions with localized features or varying degrees of complexity across the domain.
@@ -69,17 +66,13 @@ from adaptive import notebook_extension, Runner, Learner1D
 
 notebook_extension()  # enables notebook integration
 
-
 def peak(x, a=0.01):  # function to "learn"
     return x + a**2 / (a**2 + x**2)
 
-
 learner = Learner1D(peak, bounds=(-1, 1))
-
 
 def goal(learner):
     return learner.loss() < 0.01  # continue until loss is small enough
-
 
 runner = Runner(learner, goal)  # start calculation on all CPU cores
 runner.live_info()  # shows a widget with status information
@@ -126,7 +119,7 @@ layout = plot_homo + plot_adaptive
 layout.opts(hv.opts.Scatter(active_tools=["box_zoom", wheel_zoom]))
 ```
 
-## {class}`adaptive.Learner2D`
+### `adaptive.Learner2D`
 
 The `Learner2D` class is tailored for adaptively learning 2D functions of the form `f: ℝ^2 → ℝ^N`. Similar to `Learner1D`, it concentrates on sampling points with higher uncertainty to provide a better approximation.
 This learner is ideal for functions with complex features or varying behavior across a 2D domain.
@@ -162,7 +155,7 @@ plot = hv.HoloMap(plots, kdims=["npoints"]).collate()
 plot.opts(hv.opts.Image(active_tools=[wheel_zoom]))
 ```
 
-## {class}`adaptive.AverageLearner`
+### `adaptive.AverageLearner`
 
 The `AverageLearner` class is designed for situations where you want to average the result of a function over multiple evaluations.
 This is particularly useful when working with random variables or stochastic functions, as it helps to estimate the mean value of the function.
@@ -191,7 +184,7 @@ hm = hv.HoloMap(plots, kdims=["npoints"])
 hm.opts(hv.opts.Histogram(active_tools=[wheel_zoom]))
 ```
 
-## {class}`adaptive.LearnerND`
+### `adaptive.LearnerND`
 
 The `LearnerND` class is intended for adaptively learning ND functions of the form `f: ℝ^N → ℝ^M`.
 It extends the adaptive learning capabilities of the 1D and 2D learners to functions with more dimensions, allowing for efficient exploration of complex, high-dimensional spaces.
@@ -226,4 +219,4 @@ scatter["x"], scatter["y"], scatter["z"], scatter.marker["color"] = zip(*coords_
 fig
 ```
 
-see more in the {ref}`Tutorial Adaptive`.
+see more in the [tutorial](tutorial/tutorial.md).

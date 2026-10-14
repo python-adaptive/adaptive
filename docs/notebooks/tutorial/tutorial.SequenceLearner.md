@@ -9,19 +9,18 @@ jupytext:
     format_version: '0.13'
     jupytext_version: 1.13.8
 ---
-# Tutorial {class}`~adaptive.SequenceLearner`
+# Tutorial `SequenceLearner`
 
-```{note}
-Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
-Download the notebook in order to see the real behaviour. [^download]
-```
+!!! note
+    Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
+    Download the notebook in order to see the real behaviour.
 
 ```{code-cell} ipython3
 :tags: [hide-cell]
 
 import adaptive
 
-adaptive.notebook_extension()
+adaptive.notebook_extension(_inline_js=False)
 
 import holoviews as hv
 import numpy as np
@@ -73,5 +72,3 @@ To get the values in the same order as the input sequence (`learner.sequence`) u
 result = learner.result()
 print(result[:10])  # print the 10 first values
 ```
-
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.SequenceLearner.ipynb`** and {download}`tutorial.SequenceLearner.md`.

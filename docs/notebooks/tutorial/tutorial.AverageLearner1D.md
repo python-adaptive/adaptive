@@ -10,19 +10,18 @@ kernelspec:
   name: python3
 ---
 
-# Tutorial {class}`~adaptive.AverageLearner1D`
+# Tutorial `AverageLearner1D`
 
-```{note}
-Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
-Download the notebook in order to see the real behaviour. [^download]
-```
+!!! note
+    Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
+    Download the notebook in order to see the real behaviour.
 
 ```{code-cell} ipython3
 :tags: [hide-cell]
 
 import adaptive
 
-adaptive.notebook_extension()
+adaptive.notebook_extension(_inline_js=False)
 
 from functools import partial
 
@@ -98,7 +97,7 @@ In some cases, the default configuration of the 1D average learner can be sub-op
 One can then tune the internal parameters of the learner.
 The most relevant are:
 
-- `loss_per_interval`: loss function (see {class}`~adaptive.Learner1D`).
+- `loss_per_interval`: loss function (see [`Learner1D`][adaptive.Learner1D]).
 - `delta`: this parameter is the most relevant and controls the balance between resampling existing points (exploitation) and sampling new ones (exploration). Its value should remain between 0 and 1 (the default value is 0.2). Large values favor the "exploration" behavior, although this can make the learner to sample noise. Small values favor the "exploitation" behavior, leading the learner to thoroughly resample existing points. In general, the optimal value of `delta` is between 0.1 and 0.4.
 - `neighbor_sampling`: each new point is initially sampled a fraction `neighbor_sampling` of the number of samples of its nearest neighbor. We recommend to keep the value of `neighbor_sampling` below 1 to prevent oversampling.
 - `min_samples`: minimum number of samples that are initially taken at a new point. This parameter can prevent the learner from sampling noise in case we accidentally set a too large value of `delta`.
@@ -144,5 +143,3 @@ await runner.task  # This is not needed in a notebook environment!
 runner.live_info()
 runner.live_plot(update_interval=0.1)
 ```
-
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.AverageLearner1D.ipynb`** and {download}`tutorial.AverageLearner1D.md`.

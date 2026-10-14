@@ -9,19 +9,18 @@ jupytext:
     format_version: '0.13'
     jupytext_version: 1.13.8
 ---
-# Tutorial {class}`~adaptive.AverageLearner`
+# Tutorial `AverageLearner`
 
-```{note}
-Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
-Download the notebook in order to see the real behaviour. [^download]
-```
+!!! note
+    Because this documentation consists of static html, the `live_plot` and `live_info` widget is not live.
+    Download the notebook in order to see the real behaviour.
 
 ```{code-cell} ipython3
 :tags: [hide-cell]
 
 import adaptive
 
-adaptive.notebook_extension()
+adaptive.notebook_extension(_inline_js=False)
 ```
 
 The next type of learner averages a function until the uncertainty in the average meets some condition.
@@ -62,5 +61,3 @@ runner.live_info()
 ```{code-cell} ipython3
 runner.live_plot(update_interval=0.1)
 ```
-
-[^download]: This notebook can be downloaded as **{nb-download}`tutorial.AverageLearner.ipynb`** and {download}`tutorial.AverageLearner.md`.

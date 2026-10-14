@@ -46,6 +46,8 @@ WIDGET_LOADER = (
     '@jupyter-widgets/html-manager@1/dist/embed.js" crossorigin="anonymous"></script>'
 )
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+# adaptive calls plotly.offline.init_notebook_mode(), which inlines plotly.js.
+PLOTLY_BUNDLE = re.compile(r"\* plotly\.js v(\d+\.\d+\.\d+)")
 HIDE_LABELS = {
     "hide-cell": "Show code cell",
     "hide-input": "Show code",
@@ -62,9 +64,13 @@ def _raw(html_text: str) -> str:
     return f'<div class="nb-output" markdown="0">\n{html_text.strip()}\n</div>'
 
 
-def _code_block(text: str, lang: str = "") -> str:
+def _code_block(text: str, lang: str) -> str:
     fence = "````" if "```" in text else "```"
     return f"{fence}{lang}\n{text.rstrip()}\n{fence}"
+
+
+def _text_output(text: str) -> str:
+    return _code_block(ANSI.sub("", text), " { .text .nb-output-text }")
 
 
 def _details(label: str, body: str) -> str:
@@ -84,6 +90,9 @@ def _render_data(data: dict, has_widget_state: bool) -> str:
         if mime == "application/javascript":
             return _raw(f'<script type="text/javascript">\n{value}\n</script>')
         if mime == "text/html":
+            if bundle := PLOTLY_BUNDLE.search(value):
+                url = f"https://cdn.plot.ly/plotly-{bundle.group(1)}.min.js"
+                value = f'<script src="{url}" charset="utf-8"></script>'
             return _raw(value)
         if mime == "text/markdown":
             return value
@@ -94,16 +103,16 @@ def _render_data(data: dict, has_widget_state: bool) -> str:
             return _raw(f'<img src="{src}" alt="output">')
         if mime == "text/latex":
             return value
-        return _code_block(ANSI.sub("", value), "text")
+        return _text_output(value)
     return ""
 
 
 def _render_output(output: dict, has_widget_state: bool) -> str:
     kind = output["output_type"]
     if kind == "stream":
-        return _code_block(ANSI.sub("", output["text"]), "text")
+        return _text_output(output["text"])
     if kind == "error":
-        return _code_block(ANSI.sub("", "\n".join(output["traceback"])), "text")
+        return _text_output("\n".join(output["traceback"]))
     return _render_data(output.get("data", {}), has_widget_state)
 
 

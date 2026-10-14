@@ -16,8 +16,8 @@ Often you will want to evaluate the function on some remote computing resources.
 
 ## `concurrent.futures`
 
-By default {class}`adaptive.Runner` creates a `loky.get_reusable_executor`, which serializes functions by value so it also works with functions defined interactively (e.g. in a notebook).
-You can also pass a {class}`~concurrent.futures.ProcessPoolExecutor` explicitly, e.g. to limit the number of workers, but then the function must be importable from `__main__` by the worker processes:
+By default [`adaptive.Runner`][adaptive.Runner] creates a [`loky.get_reusable_executor`][loky.get_reusable_executor], which serializes functions by value so it also works with functions defined interactively (e.g. in a notebook).
+You can also pass a [`ProcessPoolExecutor`][concurrent.futures.ProcessPoolExecutor] explicitly, e.g. to limit the number of workers, but then the function must be importable from `__main__` by the worker processes:
 
 ```python
 from concurrent.futures import ProcessPoolExecutor
@@ -45,7 +45,7 @@ runner.live_plot()
 
 ## `distributed.Client`
 
-On Windows by default {class}`adaptive.Runner` uses a `distributed.Client`.
+On Windows by default [`adaptive.Runner`][adaptive.Runner] uses a `distributed.Client`.
 
 ```python
 import distributed
@@ -58,7 +58,7 @@ runner.live_info()
 runner.live_plot(update_interval=0.1)
 ```
 
-Also check out the {ref}`Custom parallelization<CustomParallelization>` section in the {ref}`advanced topics tutorial<TutorialAdvancedTopics>` for more control over caching and parallelization.
+Also check out the [Custom parallelization](tutorial.advanced-topics.md#custom-parallelization-using-coroutines) section in the [advanced topics tutorial](tutorial.advanced-topics.md) for more control over caching and parallelization.
 
 ## `mpi4py.futures.MPIPoolExecutor`
 
@@ -123,7 +123,7 @@ srun -n $SLURM_NTASKS --mpi=pmi2 ~/miniconda3/envs/py37_min/bin/python -m mpi4py
 
 ## `loky.get_reusable_executor`
 
-This executor is basically a powered-up version of {class}`~concurrent.futures.ProcessPoolExecutor`, check its [documentation](https://loky.readthedocs.io/).
+This executor is basically a powered-up version of [`ProcessPoolExecutor`][concurrent.futures.ProcessPoolExecutor], check its [documentation](https://loky.readthedocs.io/).
 Among other things, it allows to *reuse* the executor and uses `cloudpickle` for serialization.
 This means you can even learn closures, lambdas, or other functions that are not picklable with `pickle`.
 
