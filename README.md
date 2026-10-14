@@ -9,8 +9,8 @@
 [![Documentation](https://readthedocs.org/projects/adaptive/badge/?version=latest)](https://adaptive.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://img.shields.io/conda/dn/conda-forge/adaptive.svg)](https://anaconda.org/conda-forge/adaptive)
 [![GitHub](https://img.shields.io/github/stars/python-adaptive/adaptive.svg?style=social)](https://github.com/python-adaptive/adaptive/stargazers)
-[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive)
 [![PyPI](https://img.shields.io/pypi/v/adaptive.svg)](https://pypi.python.org/pypi/adaptive)
+[![Python](https://img.shields.io/pypi/pyversions/adaptive.svg)](https://pypi.python.org/pypi/adaptive)
 
 <!-- --8<-- [end:badges] -->
 
@@ -22,7 +22,7 @@ With minimal code, you can perform evaluations on a computing cluster, display l
 
 Adaptive is most efficient for computations where each function evaluation takes at least ≈50ms due to the overhead of selecting potentially interesting points.
 
-To see Adaptive in action, try the [example notebook on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb) or explore the [tutorial on Read the Docs](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial).
+To see Adaptive in action, try the [example notebook on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb) or explore the [tutorial on Read the Docs](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial/).
 
 <!-- --8<-- [end:summary] -->
 
@@ -38,6 +38,7 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 - [Installation](#installation)
   - [Faster triangulation (optional)](#faster-triangulation-optional)
 - [Development](#development)
+  - [Documentation](#documentation)
 - [Citing](#citing)
 - [Draft Paper](#draft-paper)
 - [Credits](#credits)
@@ -81,7 +82,13 @@ runner.live_info()
 runner.live_plot()
 ```
 
-<img src="https://user-images.githubusercontent.com/6897215/38739170-6ac7c014-3f34-11e8-9e8f-93b3a3a3d61b.gif" width='20%'> </img> <img src="https://user-images.githubusercontent.com/6897215/35219611-ac8b2122-ff73-11e7-9332-adffab64a8ce.gif" width='40%'> </img> <img src="https://user-images.githubusercontent.com/6897215/47256441-d6d53700-d480-11e8-8224-d1cc49dbdcf5.gif" width='20%'> </img>
+With the same number of points, adaptive sampling resolves features that a homogeneous grid misses:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learner1d.gif" width="43%" alt="Learner1D: homogeneous grid versus adaptive sampling of a sharp peak">
+  <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learner2d.gif" width="36%" alt="Learner2D: homogeneous grid versus adaptive triangulation of a ring">
+  <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learnerND.gif" width="19%" alt="LearnerND: sampled points concentrate on a spherical shell">
+</p>
 
 ### Exporting Data
 
@@ -118,7 +125,7 @@ The following learners are implemented:
 - `AverageLearner`: for random variables, allowing averaging of results over multiple evaluations,
 - `AverageLearner1D`: for stochastic 1D functions, estimating the mean value at each point,
 - `IntegratorLearner`: for integrating a 1D function `f: ℝ → ℝ`,
-- `BalancingLearner`: for running multiple learners simultaneously and selecting the "best" one as more points are gathered.
+- `SequenceLearner`: for evaluating a fixed sequence of points while still using the runners, parallelism, and data export of Adaptive.
 
 Meta-learners (to be used with other learners):
 
@@ -136,7 +143,7 @@ In addition to learners, `adaptive` offers primitives for parallel sampling acro
 
 ## Installation
 
-`adaptive` works with Python 3.7 and higher on Linux, Windows, or Mac, and provides optional extensions for working with the Jupyter/IPython Notebook.
+`adaptive` works with Python 3.11 and higher on Linux, Windows, or Mac, and provides optional extensions for working with Jupyter.
 
 The recommended way to install adaptive is using `conda`:
 
@@ -150,7 +157,7 @@ conda install -c conda-forge adaptive
 pip install "adaptive[notebook]"
 ```
 
-The `[notebook]` above will also install the optional dependencies for running `adaptive` inside a Jupyter notebook.
+The `[notebook]` above also installs the optional dependencies for live plotting and widgets in JupyterLab and Jupyter Notebook; no extra Jupyter extensions need to be installed.
 
 ### Faster triangulation (optional)
 
@@ -163,16 +170,9 @@ pip install "adaptive[rust]"
 No code changes are needed — the Rust backend is detected and used automatically.
 To control the selection, pass `LearnerND(..., triangulation_backend="python" | "rust" | "auto")` per learner, or set the environment variable `ADAPTIVE_TRIANGULATION_BACKEND=python` to force the pure-Python implementation globally (or to `rust` to make a missing Rust backend an error instead of a silent fallback).
 
-To use Adaptive in Jupyterlab, you need to install the following labextensions.
-
-```bash
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-jupyter labextension install @pyviz/jupyterlab_pyviz
-```
-
 ## Development
 
-Clone the repository and run `pip install -e ".[notebook,test,other]"` to add a link to the cloned repo into your Python path:
+Clone the repository and install it in editable mode with the optional dependencies:
 
 ```bash
 git clone git@github.com:python-adaptive/adaptive.git
@@ -180,7 +180,7 @@ cd adaptive
 pip install -e ".[notebook,test,other]"
 ```
 
-We recommend using a Conda environment or a virtualenv for package management during Adaptive development.
+We recommend a virtual environment, for example with [uv](https://docs.astral.sh/uv/) (`uv sync --extra notebook --extra test --extra other`) or Conda.
 
 To avoid polluting the history with notebook output, set up the git filter by running:
 
@@ -197,6 +197,19 @@ pre-commit install
 ```
 
 in the repository.
+
+### Documentation
+
+The documentation is built with [Zensical](https://zensical.org).
+The executable pages in `docs/notebooks/` are Jupyter notebooks in [jupytext's MyST Markdown format](https://jupytext.readthedocs.io/en/latest/formats-markdown.html).
+`docs/build_notebooks.py` executes them (with caching) and renders them into `docs/`, after which Zensical builds the site:
+
+```bash
+uv run --group docs python docs/build_notebooks.py
+uv run --group docs zensical serve  # preview on http://localhost:8000
+```
+
+The animations in this README are rendered from real learner runs with `uv run --group docs python docs/make_animations.py` (requires `ffmpeg`).
 
 ## Citing
 

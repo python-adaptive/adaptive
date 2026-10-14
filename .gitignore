@@ -101,3 +101,4 @@ benchmarks/results/
 
 # Zensical
 site/
+.notebook_cache/

@@ -3,7 +3,7 @@
 Every ``docs/notebooks/<path>.md`` (a jupytext MyST notebook) becomes
 ``docs/<path>.md`` with its outputs embedded as raw HTML, plus a
 ``docs/<path>.ipynb`` download without outputs. Executed notebooks are cached
-in ``.cache/notebooks/`` keyed by their source text.
+in ``.notebook_cache/`` keyed by their source text.
 
 Usage: python docs/build_notebooks.py [docs/notebooks/<path>.md ...]
 """
@@ -25,7 +25,7 @@ from nbclient import NotebookClient
 
 DOCS_DIR = Path(__file__).parent
 SOURCE_DIR = DOCS_DIR / "notebooks"
-CACHE_DIR = DOCS_DIR.parent / ".cache" / "notebooks"
+CACHE_DIR = DOCS_DIR.parent / ".notebook_cache"  # Zensical owns .cache/
 
 # Richest representation first, like nbconvert's HTML exporter.
 MIME_PRIORITY = [

@@ -19,8 +19,8 @@ kernelspec:
 - [`LearnerND`][adaptive.LearnerND], for ND functions `f: ℝ^N → ℝ^M`,
 - [`AverageLearner`][adaptive.AverageLearner], for random variables where you want to average the result over many evaluations,
 - [`AverageLearner1D`][adaptive.AverageLearner1D], for stochastic 1D functions where you want to estimate the mean value of the function at each point,
-- [`IntegratorLearner`][adaptive.IntegratorLearner], for when you want to integrate a 1D function `f: ℝ → ℝ`.
-- [`BalancingLearner`][adaptive.BalancingLearner], for when you want to run several learners at once, selecting the “best” one each time you get more points.
+- [`IntegratorLearner`][adaptive.IntegratorLearner], for when you want to integrate a 1D function `f: ℝ → ℝ`,
+- [`SequenceLearner`][adaptive.SequenceLearner], for when you want to evaluate a fixed sequence of points while still using the runners and data export of Adaptive.
 
 Meta-learners (to be used with other learners):
 

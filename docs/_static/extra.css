@@ -77,3 +77,8 @@
 .md-typeset .nb-output table.dataframe tbody tr:hover {
   background: var(--md-accent-fg-color--transparent);
 }
+
+/* README animations on the home page */
+.md-typeset img[src*="_static/readme/"] {
+  border-radius: 0.4rem;
+}
