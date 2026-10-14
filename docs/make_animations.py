@@ -32,6 +32,7 @@ from adaptive.learner.learner2D import uniform_loss as uniform_loss_2d  # noqa: 
 STATIC = Path(__file__).parent / "_static"
 DARK, ACCENT, NEW = "#2c3e6b", "#21918c", "#e4572e"
 BLUE, YELLOW = "#3b528b", "#fde725"
+NPOINTS_3D = 6000
 plt.rcParams.update(
     {
         "font.family": "DejaVu Sans",
@@ -171,24 +172,19 @@ def learner2d(target: Path) -> None:
 
 
 def learnerND(target: Path) -> None:
-    points, values = sampled(
-        adaptive.LearnerND(shell, bounds=[(-1, 1)] * 3), npoints_goal=2500
-    )
-    grow, turn = 45, 60
-    frames = np.concatenate([counts(30, len(points), grow), np.full(turn, len(points))])
-    surfaces = _isosurfaces(points, values, np.unique(frames))
+    learner = adaptive.LearnerND(shell, bounds=[(-1, 1)] * 3)
+    adaptive.runner.simple(learner, npoints_goal=NPOINTS_3D)
+    triangles = _isosurface(learner)
+    centers = triangles.mean(axis=1)
+    inner = np.linalg.norm(centers, axis=1) < 0.75
+    # Cut an x > 0, y > 0 wedge out of the outer surface to show the inner one.
+    keep = inner | ~((centers[:, 0] > 0) & (centers[:, 1] > 0))
+    triangles, inner = triangles[keep], inner[keep]
+    base = np.array([to_rgba(BLUE), to_rgba(YELLOW)])[inner.astype(int)]
+    nframes = 90
 
     def draw(fig, i):
-        n = frames[i]
-        # Rock back and forth, so the cut-away wedge stays in view.
-        azim = 45 + 50 * np.sin(2 * np.pi * max(0, i - grow) / turn)
-        triangles = surfaces[n]
-        centers = triangles.mean(axis=1)
-        inner = np.linalg.norm(centers, axis=1) < 0.75
-        # Cut an x > 0, y > 0 wedge out of the outer surface to show the inner one.
-        keep = inner | ~((centers[:, 0] > 0) & (centers[:, 1] > 0))
-        triangles, inner = triangles[keep], inner[keep]
-        base = np.array([to_rgba(BLUE), to_rgba(YELLOW)])[inner.astype(int)]
+        azim = 45 + 55 * np.sin(2 * np.pi * i / nframes)  # keeps the cut in view
         colors = base * _lambert(triangles, azim - 30, 25 + 20)[:, None]
         colors[:, 3] = 1
         ax = fig.add_subplot(projection="3d")
@@ -201,10 +197,13 @@ def learnerND(target: Path) -> None:
             set_lim(-1, 1)
         ax.set_box_aspect((1, 1, 1), zoom=1.25)
         ax.set_axis_off()
-        fig.text(0.5, 0.04, f"{n} points", ha="center", color="#555555", fontsize=12)
+        fig.text(
+            0.5, 0.04, f"LearnerND, {learner.npoints} points",
+            ha="center", color="#555555", fontsize=12,
+        )  # fmt: skip
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
-    _render_gif(draw, len(frames), (4.5, 4.5), target, hold=0, dpi=90)
+    _render_gif(draw, nframes, (4.5, 4.5), target, hold=0, dpi=90)
 
 
 def _lambert(triangles: np.ndarray, azim: float, elev: float) -> np.ndarray:
@@ -220,25 +219,18 @@ def _lambert(triangles: np.ndarray, azim: float, elev: float) -> np.ndarray:
     return 0.45 + 0.55 * np.clip(normals @ light, 0, 1)
 
 
-def _isosurfaces(points, values, counts_) -> dict[int, np.ndarray]:
-    """Triangles of the f = 0.5 isosurface after the first n points, for each n."""
-    learner = adaptive.LearnerND(shell, bounds=[(-1, 1)] * 3)
-    surfaces, told = {}, 0
-    for n in counts_:
-        for point, value in zip(points[told:n], values[told:n]):
-            learner.tell(tuple(point), value)
-        told = n
-        vertices, faces = learner._get_iso(level=0.5)
-        triangles = np.array(vertices)[np.array(faces)]
-        # Wind every triangle with its normal pointing away from the center,
-        # so the shading is consistent.
-        normals = np.cross(
-            triangles[:, 1] - triangles[:, 0], triangles[:, 2] - triangles[:, 0]
-        )
-        inward = np.einsum("ij,ij->i", normals, triangles.mean(axis=1)) < 0
-        triangles[inward] = triangles[inward][:, ::-1]
-        surfaces[n] = triangles
-    return surfaces
+def _isosurface(learner: adaptive.LearnerND) -> np.ndarray:
+    """Triangles of the learner's f = 0.5 isosurface, with outward normals."""
+    vertices, faces = learner._get_iso(level=0.5)
+    triangles = np.array(vertices)[np.array(faces)]
+    # Wind every triangle with its normal pointing away from the center,
+    # so the shading is consistent.
+    normals = np.cross(
+        triangles[:, 1] - triangles[:, 0], triangles[:, 2] - triangles[:, 0]
+    )
+    inward = np.einsum("ij,ij->i", normals, triangles.mean(axis=1)) < 0
+    triangles[inward] = triangles[inward][:, ::-1]
+    return triangles
 
 
 def _render_gif(draw, nframes, figsize, target, hold=2.5, dpi=100, fps=15):
