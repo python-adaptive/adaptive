@@ -100,5 +100,5 @@ benchmarks/results/
 .vscode/
 
 # Zensical
-site/
+_site/
 .notebook_cache/

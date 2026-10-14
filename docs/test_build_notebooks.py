@@ -7,6 +7,7 @@ import json
 import sys
 from pathlib import Path
 
+import markdown  # type: ignore[import-untyped]
 from nbformat.v4 import new_code_cell, new_markdown_cell, new_notebook, new_output
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -136,3 +137,49 @@ def test_inline_plotly_bundle_replaced_by_cdn():
     md = render(new_code_cell("learner.plot_3D()", outputs=[out]))
     assert '<script src="https://cdn.plot.ly/plotly-4.1.1.min.js"' in md
     assert "x" * 2000 not in md
+
+
+def test_build_records_notebook_source_for_edit_links(tmp_path, monkeypatch):
+    source_dir = tmp_path / "docs" / "notebooks"
+    (source_dir / "tutorial").mkdir(parents=True)
+    source = source_dir / "tutorial" / "page.md"
+    source.write_text("# Page\n")
+    monkeypatch.setattr(bn, "DOCS_DIR", tmp_path / "docs")
+    monkeypatch.setattr(bn, "SOURCE_DIR", source_dir)
+    monkeypatch.setattr(
+        bn,
+        "execute_cached",
+        lambda src: new_notebook(cells=[new_markdown_cell("# Page")]),
+    )
+    target = bn.build(source)
+    assert target == tmp_path / "docs" / "tutorial" / "page.md"
+    assert target.read_text().startswith(
+        "---\nnotebook_source: notebooks/tutorial/page.md\n---\n\n# Page\n"
+    )
+
+
+def test_hidden_cell_keeps_raw_html_outside_details():
+    script = "<p>x</p><script>var ok = 1 < 2 && 3 > 2;</script>"
+    outputs = [
+        new_output("stream", name="stdout", text="hello\n"),
+        new_output("display_data", data={"text/html": script}),
+    ]
+    cell = new_code_cell("x", outputs=outputs, metadata={"tags": ["hide-cell"]})
+    md = render(cell)
+    assert md.index("<details") < md.index("hello") < md.index("</details>")
+    assert md.index("</details>") < md.index("<script>")
+    extensions = ["md_in_html", "attr_list", "pymdownx.superfences"]
+    assert "var ok = 1 < 2 && 3 > 2;" in markdown.markdown(md, extensions=extensions)
+
+
+def test_cache_invalidates_when_library_versions_change(tmp_path, monkeypatch):
+    src = tmp_path / "page.md"
+    src.write_text("# Page\n\n```{code-cell} ipython3\n1 + 1\n```\n")
+    calls = []
+    monkeypatch.setattr(bn, "CACHE_DIR", tmp_path / "cache")
+    monkeypatch.setattr(bn, "_execute", lambda nb, cwd: calls.append(cwd) or nb)
+    monkeypatch.setattr(bn, "_library_versions", lambda: "bokeh==3.9.2")
+    bn.execute_cached(src)
+    monkeypatch.setattr(bn, "_library_versions", lambda: "bokeh==3.10.1")
+    bn.execute_cached(src)
+    assert len(calls) == 2

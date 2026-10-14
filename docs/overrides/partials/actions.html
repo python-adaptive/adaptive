@@ -1,0 +1,34 @@
+{#-
+  Zensical's partials/actions.html, but pages rendered by docs/build_notebooks.py
+  link "Edit" and "View" to their notebook source in docs/notebooks/.
+-#}
+{% set edit_url = page.edit_url %}
+{% if page.meta and page.meta.notebook_source and edit_url %}
+  {% set edit_uri = (config.edit_uri ~ "/") | replace("//", "/") %}
+  {% set edit_url = config.repo_url ~ "/" ~ edit_uri ~ page.meta.notebook_source %}
+{% endif %}
+{% if "content.action.copy" in features and page.markdown_url %}
+  <button type="button" title="{{ lang.t('action.copy') }}" aria-label="{{ lang.t('action.copy') }}" class="md-content__button md-icon" data-md-copy-url="{{ page.markdown_url | url }}">
+    {% set icon = config.theme.icon.copy or "material/content-copy" %}
+    {% include ".icons/" ~ icon ~ ".svg" %}
+  </button>
+{% endif %}
+{% if edit_url %}
+  {% if "content.action.edit" in features %}
+    <a href="{{ edit_url }}" title="{{ lang.t('action.edit') }}" class="md-content__button md-icon" rel="edit">
+      {% set icon = config.theme.icon.edit or "material/file-edit-outline" %}
+      {% include ".icons/" ~ icon ~ ".svg" %}
+    </a>
+  {% endif %}
+  {% if "content.action.view" in features %}
+    {% if "/blob/" in edit_url %}
+      {% set part = "/blob/" %}
+    {% else %}
+      {% set part = "/edit/" %}
+    {% endif %}
+    <a href="{{ edit_url | replace(part, '/raw/') }}" title="{{ lang.t('action.view') }}" class="md-content__button md-icon">
+      {% set icon = config.theme.icon.view or "material/file-eye-outline" %}
+      {% include ".icons/" ~ icon ~ ".svg" %}
+    </a>
+  {% endif %}
+{% endif %}

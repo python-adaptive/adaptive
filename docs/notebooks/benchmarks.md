@@ -13,9 +13,6 @@ kernelspec:
 
 # Benchmarks
 
-!!! tip
-    This page is a Jupyter notebook that can be downloaded and run locally.
-
 Adaptive sampling is a powerful technique for approximating functions with varying degrees of complexity across their domain.
 This approach is particularly useful for functions with sharp features or rapid changes, as it focuses on calculating more points around those areas.
 By concentrating points where they are needed most, adaptive sampling can provide an accurate representation of the function with fewer points compared to uniform sampling.
@@ -27,9 +24,7 @@ We will also present benchmarking results to highlight the advantages (and disad
 Look below where we demonstrate the use of the adaptive package to perform adaptive sampling and visualize the results.
 By the end of this benchmarking showcase, you should better understand of the benefits of adaptive sampling and in which cases you could to apply this technique to your own simulations or functions.
 
-!!! note
-    > Note on error estimates
-
+!!! note "Note on error estimates"
     The error is estimated using the L1 norm of the difference between the true function values and the interpolated values. Here's a step-by-step explanation of how the error is calculated:
 
     1. For each benchmark function, two learners are created: the adaptive learner and a homogeneous learner. The adaptive learner uses adaptive sampling, while the homogeneous learner uses a uniform grid of points.
@@ -41,11 +36,9 @@ By the end of this benchmarking showcase, you should better understand of the be
     Note that the choice of the L1 norm is somewhat arbitrary.
     **Please judge the results for yourself by looking at the plots** and observe the significantly better function approximation obtained by the adaptive learner.
 
-!!! warning
-    > Note on benchmark functions
-
+!!! warning "Note on benchmark functions"
     The benchmark functions used in this tutorial are analytical and cheap to evaluate.
-    In real-world applications ([see the gallery](gallery)), adaptive sampling is often more beneficial for expensive simulations where function evaluations are computationally demanding or time-consuming.
+    In real-world applications ([see the gallery](gallery.md)), adaptive sampling is often more beneficial for expensive simulations where function evaluations are computationally demanding or time-consuming.
 
 ## Benchmarks 1D
 

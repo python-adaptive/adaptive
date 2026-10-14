@@ -6,15 +6,18 @@
 site_name = "Adaptive"
 site_description = "Parallel active learning of mathematical functions"
 site_author = "Adaptive Authors"
-site_url = "https://adaptive.readthedocs.io/"
+site_url = "https://adaptive.readthedocs.io/en/latest/"
 copyright = "Copyright &copy; 2018-2026 Adaptive Authors"
 repo_url = "https://github.com/python-adaptive/adaptive"
 repo_name = "python-adaptive/adaptive"
 edit_uri = "edit/main/docs/"
 docs_dir = "docs"
+site_dir = "_site"
 exclude_docs = """
 notebooks/
+overrides/
 *.py
+__pycache__/
 """
 
 nav = [
@@ -72,15 +75,16 @@ nav = [
 
 extra_css = [
   "_static/extra.css",
-  "https://unpkg.com/katex@0/dist/katex.min.css",
+  "https://unpkg.com/katex@0.19.0/dist/katex.min.css",
 ]
 extra_javascript = [
   "_static/katex.js",
-  "https://unpkg.com/katex@0/dist/katex.min.js",
-  "https://unpkg.com/katex@0/dist/contrib/auto-render.min.js",
+  "https://unpkg.com/katex@0.19.0/dist/katex.min.js",
+  "https://unpkg.com/katex@0.19.0/dist/contrib/auto-render.min.js",
 ]
 
 [project.theme]
+custom_dir = "docs/overrides"
 language = "en"
 logo = "_static/logo_docs.png"
 favicon = "_static/logo.png"

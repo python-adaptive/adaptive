@@ -20,4 +20,4 @@ build:
         - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run --group docs python docs/build_notebooks.py
         - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run --group docs zensical build --strict
         - mkdir -p "${READTHEDOCS_OUTPUT}/html"
-        - cp -r site/. "${READTHEDOCS_OUTPUT}/html/"
+        - cp -r _site/. "${READTHEDOCS_OUTPUT}/html/"

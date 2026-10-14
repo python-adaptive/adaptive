@@ -26,8 +26,11 @@
 
 /* Notebook outputs rendered by docs/build_notebooks.py */
 .md-typeset .nb-output {
-  margin: 0 0 1.5em;
   overflow-x: auto;
+}
+/* Script-only outputs (e.g. the HoloViews extension loader) take no space */
+.md-typeset .nb-output:has(> :not(script, style, link, div:empty)) {
+  margin: 0 0 1.5em;
 }
 .md-typeset .highlight.nb-output-text pre {
   border-left: 0.2rem solid var(--md-accent-fg-color);

@@ -41,6 +41,7 @@ def sphinx_refs_to_autorefs(text: str, public: frozenset[str]) -> str:
         if i + 1 < len(lines) and re.fullmatch(r"-{3,}", lines[i + 1].strip()):
             section = line.strip()
         elif section in FIELD_SECTIONS and line.strip() and not line[0].isspace():
+            line = re.sub(r"``([^`]+)``", r"\1", line)
             lines[i] = SPHINX_REF.sub(lambda m: m.group(2), line)
         else:
             lines[i] = _link_refs(line, public)

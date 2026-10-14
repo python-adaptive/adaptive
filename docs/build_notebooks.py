@@ -3,7 +3,7 @@
 Every ``docs/notebooks/<path>.md`` (a jupytext MyST notebook) becomes
 ``docs/<path>.md`` with its outputs embedded as raw HTML, plus a
 ``docs/<path>.ipynb`` download without outputs. Executed notebooks are cached
-in ``.notebook_cache/`` keyed by their source text.
+in ``.notebook_cache/`` keyed by their source text and library versions.
 
 Usage: python docs/build_notebooks.py [docs/notebooks/<path>.md ...]
 """
@@ -17,6 +17,7 @@ import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
+from importlib.metadata import version
 from pathlib import Path
 
 import jupytext
@@ -43,7 +44,7 @@ WIDGET_VIEW = "application/vnd.jupyter.widget-view+json"
 WIDGET_STATE = "application/vnd.jupyter.widget-state+json"
 WIDGET_LOADER = (
     '<script src="https://cdn.jsdelivr.net/npm/'
-    '@jupyter-widgets/html-manager@1/dist/embed.js" crossorigin="anonymous"></script>'
+    '@jupyter-widgets/html-manager@1.0.15/dist/embed.js" crossorigin="anonymous"></script>'
 )
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 # adaptive calls plotly.offline.init_notebook_mode(), which inlines plotly.js.
@@ -126,14 +127,27 @@ def _render_code_cell(cell: dict, has_widget_state: bool) -> str:
         if "remove-output" in tags
         else [_render_output(o, has_widget_state) for o in cell.get("outputs", [])]
     )
-    outputs_md = "\n\n".join(o for o in outputs if o)
-    if "hide-cell" in tags:
-        return _details(HIDE_LABELS["hide-cell"], f"{source}\n\n{outputs_md}".strip())
-    if "hide-input" in tags and source:
+    # Raw HTML is escaped inside a `markdown="1"` <details>, so hidden cells
+    # only hide their source and text outputs; raw outputs follow the block.
+    raw = "\n\n".join(o for o in outputs if o.startswith('<div class="nb-output"'))
+    text = "\n\n".join(
+        o for o in outputs if o and not o.startswith('<div class="nb-output"')
+    )
+    hide_source = source and tags & {"hide-cell", "hide-input"}
+    hide_text = text and tags & {"hide-cell", "hide-output"}
+    if hide_source and hide_text:
+        return _join(_details(HIDE_LABELS["hide-cell"], f"{source}\n\n{text}"), raw)
+    if hide_source:
         source = _details(HIDE_LABELS["hide-input"], source)
-    if "hide-output" in tags and outputs_md:
-        outputs_md = _details(HIDE_LABELS["hide-output"], outputs_md)
-    return "\n\n".join(part for part in (source, outputs_md) if part)
+    if hide_text:
+        text = _details(HIDE_LABELS["hide-output"], text)
+    if tags & {"hide-cell", "hide-output"}:
+        return _join(source, text, raw)
+    return _join(source, "\n\n".join(o for o in outputs if o))
+
+
+def _join(*parts: str) -> str:
+    return "\n\n".join(part for part in parts if part)
 
 
 def _download_note(ipynb_name: str) -> str:
@@ -182,10 +196,17 @@ def _execute(nb: nbformat.NotebookNode, cwd: Path) -> nbformat.NotebookNode:
     return client.execute()
 
 
+def _library_versions() -> str:
+    # Outputs embed these libraries' versions (e.g. BokehJS CDN URLs).
+    packages = ("adaptive", "bokeh", "holoviews", "ipywidgets", "panel", "plotly")
+    return " ".join(f"{name}=={version(name)}" for name in packages)
+
+
 def execute_cached(source: Path) -> nbformat.NotebookNode:
     """Execute a jupytext notebook, reusing the cached result if unchanged."""
     text = source.read_text()
-    cached = CACHE_DIR / f"{hashlib.sha256(text.encode()).hexdigest()}.ipynb"
+    key = hashlib.sha256(f"{_library_versions()}\n{text}".encode()).hexdigest()
+    cached = CACHE_DIR / f"{key}.ipynb"
     if cached.exists():
         return nbformat.read(cached, as_version=4)
     nb = _execute(jupytext.reads(text, fmt="md:myst"), source.parent)
@@ -201,7 +222,9 @@ def build(source: Path) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     ipynb = target.with_suffix(".ipynb")
     nb = execute_cached(source)
-    target.write_text(render_notebook(nb, ipynb.name))
+    # Read by docs/overrides/partials/actions.html to link "Edit" to the source.
+    front_matter = f"---\nnotebook_source: {source.relative_to(DOCS_DIR)}\n---\n\n"
+    target.write_text(front_matter + render_notebook(nb, ipynb.name))
     if any(cell.cell_type == "code" for cell in nb.cells):
         jupytext.write(jupytext.read(source), ipynb)
     print(f"{source.relative_to(DOCS_DIR)}: {time.monotonic() - start:.1f}s")

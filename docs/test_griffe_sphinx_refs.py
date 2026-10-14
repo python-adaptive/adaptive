@@ -66,3 +66,9 @@ def test_backslash_continuation_in_field_header_is_joined():
     text = "Parameters\n----------\nexecutor : `a.B`,\\\n           `c.D`, optional\n    Description.\n"
     result = sphinx_refs_to_autorefs(text, PUBLIC)
     assert "executor : a.B, c.D, optional\n    Description." in result
+
+
+def test_rst_literal_in_field_header_is_stripped():
+    text = "Attributes\n----------\nioloop : ``asyncio.AbstractEventLoop``\n    The ``loop``.\n"
+    result = sphinx_refs_to_autorefs(text, PUBLIC)
+    assert "ioloop : asyncio.AbstractEventLoop\n    The ``loop``." in result

@@ -499,8 +499,10 @@ The simplest way to accomplish this is simply to use the [`BlockingRunner`][adap
 ```python
 import adaptive
 
+
 def f(x):
     return x
+
 
 learner = adaptive.Learner1D(f, (-1, 1))
 

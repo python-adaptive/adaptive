@@ -78,8 +78,9 @@ nox = [
 ]
 docs = [
     "adaptive[notebook,other]",
-    "zensical",
-    "mkdocstrings-python",
+    "zensical>=0.0.70,<0.1",  # pre-1.0, so stay on a tested minor version
+    "mkdocstrings-python>=2,<3",
+    "panel<1.10",  # holoviews otherwise resolves a panel pre-release
     "jupytext",
     "nbclient",
     "nbformat",
