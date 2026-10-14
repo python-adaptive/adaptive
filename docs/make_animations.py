@@ -26,6 +26,8 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
 
 import adaptive  # noqa: E402
+from adaptive.learner.learner1D import uniform_loss  # noqa: E402
+from adaptive.learner.learner2D import uniform_loss as uniform_loss_2d  # noqa: E402
 
 STATIC = Path(__file__).parent / "_static"
 DARK, ACCENT, NEW = "#2c3e6b", "#21918c", "#e4572e"
@@ -107,13 +109,15 @@ def _ffmpeg(*args) -> None:
 
 def learner1d(target: Path) -> None:
     xs, _ = sampled(adaptive.Learner1D(peak, bounds=(-1, 1)), npoints_goal=100)
+    # Homogeneous sampling that keeps its earlier points, so nothing jumps.
+    uniform = adaptive.Learner1D(peak, bounds=(-1, 1), loss_per_interval=uniform_loss)
+    xs_uniform, _ = sampled(uniform, npoints_goal=100)
 
     def draw(fig, i):
         n = frames[i]
         axes = fig.subplots(1, 2, sharey=True)
-        homogeneous = np.linspace(-1, 1, n)
         for ax, x, title in [
-            (axes[0], homogeneous, "Homogeneous grid"),
+            (axes[0], xs_uniform[:n], "Homogeneous"),
             (axes[1], xs[:n], "Adaptive"),
         ]:
             order = np.sort(x)
@@ -122,8 +126,9 @@ def learner1d(target: Path) -> None:
             ax.set_title(title)
             ax.set_xlim(-1.05, 1.05)
             ax.set_ylim(-1.15, 1.35)
-        if n:  # the point the adaptive learner chose last
-            axes[1].scatter(xs[n - 1], peak(xs[n - 1]), s=50, color=NEW, zorder=4)
+        if n:  # the points chosen last
+            for ax, x in [(axes[0], xs_uniform[n - 1]), (axes[1], xs[n - 1])]:
+                ax.scatter(x, peak(x), s=50, color=NEW, zorder=4)
         fig.suptitle(f"{n} points", fontsize=12, color="#555555", y=0.06)
         fig.subplots_adjust(left=0.06, right=0.98, top=0.88, bottom=0.2, wspace=0.08)
 
@@ -145,24 +150,20 @@ def _triangles(ax, points, values, vmin, vmax, edge_color):
 
 
 def learner2d(target: Path) -> None:
-    points, values = sampled(
-        adaptive.Learner2D(ring, bounds=((-1, 1), (-1, 1))), npoints_goal=1600
-    )
+    bounds = ((-1, 1), (-1, 1))
+    points, values = sampled(adaptive.Learner2D(ring, bounds), npoints_goal=1600)
+    uniform = adaptive.Learner2D(ring, bounds, loss_per_triangle=uniform_loss_2d)
+    points_uniform, values_uniform = sampled(uniform, npoints_goal=1600)
     vmin, vmax = values.min(), values.max()
 
     def draw(fig, i):
         n = frames[i]
-        side = max(2, int(round(n**0.5)))
-        grid = np.linspace(-1, 1, side)
-        homogeneous = np.array([(x, y) for x in grid for y in grid])
         axes = fig.subplots(1, 2)
-        _triangles(axes[0], homogeneous, ring(homogeneous.T), vmin, vmax, "white")
+        _triangles(axes[0], points_uniform[:n], values_uniform[:n], vmin, vmax, "white")
         _triangles(axes[1], points[:n], values[:n], vmin, vmax, "white")
-        axes[0].set_title("Homogeneous grid")
+        axes[0].set_title("Homogeneous")
         axes[1].set_title("Adaptive")
-        fig.suptitle(
-            f"{side * side} vs {n} points", fontsize=12, color="#555555", y=0.05
-        )
+        fig.suptitle(f"{n} points", fontsize=12, color="#555555", y=0.05)
         fig.subplots_adjust(left=0.02, right=0.98, top=0.9, bottom=0.1, wspace=0.05)
 
     frames = counts(4, len(points), 60, power=2.5)
