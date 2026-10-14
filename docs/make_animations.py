@@ -1,7 +1,8 @@
 """Render the README animations and the animated docs logo from real learner runs.
 
 Writes docs/_static/readme/{learner1d,learner2d,learnerND}.gif and
-docs/_static/logo_docs.webm. Needs ffmpeg.
+docs/_static/logo_docs.webm. Needs ffmpeg, and Chrome or Chromium for kaleido
+(set BROWSER_PATH if it is not found).
 
 Usage: python docs/make_animations.py [learner1d learner2d learnerND logo]
 """
@@ -21,8 +22,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import matplotlib.tri as mtri  # noqa: E402
 import numpy as np  # noqa: E402
-from matplotlib.colors import to_rgba  # noqa: E402
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
 
 import adaptive  # noqa: E402
@@ -31,8 +30,6 @@ from adaptive.learner.learner2D import uniform_loss as uniform_loss_2d  # noqa: 
 
 STATIC = Path(__file__).parent / "_static"
 DARK, ACCENT, NEW = "#2c3e6b", "#21918c", "#e4572e"
-BLUE, YELLOW = "#3b528b", "#fde725"
-NPOINTS_3D = 6000
 plt.rcParams.update(
     {
         "font.family": "DejaVu Sans",
@@ -172,65 +169,50 @@ def learner2d(target: Path) -> None:
 
 
 def learnerND(target: Path) -> None:
-    learner = adaptive.LearnerND(shell, bounds=[(-1, 1)] * 3)
-    adaptive.runner.simple(learner, npoints_goal=NPOINTS_3D)
-    triangles = _isosurface(learner)
-    centers = triangles.mean(axis=1)
-    inner = np.linalg.norm(centers, axis=1) < 0.75
-    # Cut an x > 0, y > 0 wedge out of the outer surface to show the inner one.
-    keep = inner | ~((centers[:, 0] > 0) & (centers[:, 1] > 0))
-    triangles, inner = triangles[keep], inner[keep]
-    base = np.array([to_rgba(BLUE), to_rgba(YELLOW)])[inner.astype(int)]
+    """Rotating version of the LearnerND plot on the "Algorithms and examples" page."""
+    import plotly.graph_objects as go
+    import plotly.io as pio
+
+    points, values = sampled(
+        adaptive.LearnerND(shell, bounds=[(-1, 1)] * 3), npoints_goal=5000
+    )
+    # Cut away the x > 0, y > 0 quarter to show the shell in cross-section.
+    keep = ~((points[:, 0] > 0) & (points[:, 1] > 0))
+    marker = {
+        "size": 5,
+        "color": values[keep],
+        "colorscale": "Viridis",
+        "line": {"color": "rgb(50,50,50)", "width": 0.5},
+    }  # same style as LearnerND.plot_3D, with bigger markers
+    x, y, z = points[keep].T
+    fig = go.Figure(go.Scatter3d(x=x, y=y, z=z, mode="markers", marker=marker))
+    hidden = {"visible": False}
+    fig.update_layout(
+        scene={
+            "xaxis": hidden, "yaxis": hidden, "zaxis": hidden, "aspectmode": "cube",
+            "camera": {"projection": {"type": "orthographic"}},
+        },
+        margin={"l": 0, "r": 0, "t": 0, "b": 0},
+        showlegend=False,
+        annotations=[
+            {
+                "text": f"LearnerND, {len(points)} points",
+                "x": 0.5, "y": 0.02, "xref": "paper", "yref": "paper",
+                "showarrow": False, "font": {"size": 15, "color": "#555555"},
+            }
+        ],
+    )  # fmt: skip
     nframes = 90
-
-    def draw(fig, i):
-        azim = 45 + 55 * np.sin(2 * np.pi * i / nframes)  # keeps the cut in view
-        colors = base * _lambert(triangles, azim - 30, 25 + 20)[:, None]
-        colors[:, 3] = 1
-        ax = fig.add_subplot(projection="3d")
-        surface = Poly3DCollection(
-            triangles, facecolors=colors, edgecolors=colors, linewidths=0.3
-        )
-        ax.add_collection3d(surface)
-        ax.view_init(elev=25, azim=azim)
-        for set_lim in (ax.set_xlim, ax.set_ylim, ax.set_zlim):
-            set_lim(-1, 1)
-        ax.set_box_aspect((1, 1, 1), zoom=1.25)
-        ax.set_axis_off()
-        fig.text(
-            0.5, 0.04, f"LearnerND, {learner.npoints} points",
-            ha="center", color="#555555", fontsize=12,
-        )  # fmt: skip
-        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-
-    _render_gif(draw, nframes, (4.5, 4.5), target, hold=0, dpi=90)
-
-
-def _lambert(triangles: np.ndarray, azim: float, elev: float) -> np.ndarray:
-    """Brightness of each triangle lit from the direction (azim, elev) in degrees."""
-    azim, elev = np.radians(azim), np.radians(elev)
-    light = np.array(
-        [np.cos(elev) * np.cos(azim), np.cos(elev) * np.sin(azim), np.sin(elev)]
-    )
-    normals = np.cross(
-        triangles[:, 1] - triangles[:, 0], triangles[:, 2] - triangles[:, 0]
-    )
-    normals /= np.linalg.norm(normals, axis=1, keepdims=True)
-    return 0.45 + 0.55 * np.clip(normals @ light, 0, 1)
-
-
-def _isosurface(learner: adaptive.LearnerND) -> np.ndarray:
-    """Triangles of the learner's f = 0.5 isosurface, with outward normals."""
-    vertices, faces = learner._get_iso(level=0.5)
-    triangles = np.array(vertices)[np.array(faces)]
-    # Wind every triangle with its normal pointing away from the center,
-    # so the shading is consistent.
-    normals = np.cross(
-        triangles[:, 1] - triangles[:, 0], triangles[:, 2] - triangles[:, 0]
-    )
-    inward = np.einsum("ij,ij->i", normals, triangles.mean(axis=1)) < 0
-    triangles[inward] = triangles[inward][:, ::-1]
-    return triangles
+    figures = []
+    for i in range(nframes):
+        angle = np.pi / 4 + 2 * np.pi * i / nframes  # start looking into the cut
+        eye = {"x": 2 * np.cos(angle), "y": 2 * np.sin(angle), "z": 0.25}
+        figures.append(go.Figure(fig).update_layout(scene_camera_eye=eye))
+    with tempfile.TemporaryDirectory() as folder:
+        files = [Path(folder) / f"{i:04d}.png" for i in range(nframes)]
+        pio.write_images(figures, files, width=400, height=400)
+        to_gif(Path(folder), target, hold=0)
+    print(f"{target.relative_to(STATIC.parent)}: {target.stat().st_size / 1e6:.2f} MB")
 
 
 def _render_gif(draw, nframes, figsize, target, hold=2.5, dpi=100, fps=15):

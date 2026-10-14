@@ -209,7 +209,7 @@ uv run --group docs python docs/build_notebooks.py
 uv run --group docs zensical serve  # preview on http://localhost:8000
 ```
 
-The animations in this README are rendered from real learner runs with `uv run --group docs python docs/make_animations.py` (requires `ffmpeg`).
+The animations in this README are rendered from real learner runs with `uv run --group docs python docs/make_animations.py` (requires `ffmpeg` and Chrome or Chromium).
 
 ## Citing
 

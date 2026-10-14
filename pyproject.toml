@@ -82,6 +82,7 @@ docs = [
     "mkdocstrings-python>=2,<3",
     "panel<1.10",  # holoviews otherwise resolves a panel pre-release
     "jupytext",
+    "kaleido",  # docs/make_animations.py renders plotly frames
     "nbclient",
     "nbformat",
     "pillow",
