@@ -1,8 +1,5 @@
 # adaptive.notebook_integration module
 
-```{eval-rst}
-.. automodule:: adaptive.notebook_integration
-    :members:
-    :undoc-members:
-    :show-inheritance:
-```
+::: adaptive.notebook_integration
+    options:
+      show_root_heading: false

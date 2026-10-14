@@ -60,6 +60,7 @@ nav = [
     ] },
     { "Other" = [
       { "Triangulation" = "reference/adaptive.learner.triangulation.md" },
+      { "Triangulation backend" = "reference/adaptive.learner.triangulation_backend.md" },
       { "Notebook integration" = "reference/adaptive.notebook_integration.md" },
       { "Utilities" = "reference/adaptive.utils.md" },
     ] },
@@ -142,8 +143,11 @@ paths = ["."]
 inventories = [
   "https://docs.python.org/3/objects.inv",
   "https://docs.scipy.org/doc/scipy/objects.inv",
+  "https://pandas.pydata.org/docs/objects.inv",
   "https://holoviews.org/objects.inv",
   "https://loky.readthedocs.io/en/stable/objects.inv",
+  "https://distributed.dask.org/en/stable/objects.inv",
+  "https://ipyparallel.readthedocs.io/en/stable/objects.inv",
 ]
 
 [project.plugins.mkdocstrings.handlers.python.options]
@@ -160,6 +164,10 @@ merge_init_into_class = true
 members_order = "source"
 filters = ["!^_"]
 heading_level = 2
+show_if_no_docstring = true
+show_symbol_type_heading = true
+show_symbol_type_toc = true
+extensions = ["docs/griffe_sphinx_refs.py:SphinxRefs"]
 
 # Zensical replaces its default extension set when this table is present,
 # so the defaults are listed explicitly next to `pymdownx.snippets`.

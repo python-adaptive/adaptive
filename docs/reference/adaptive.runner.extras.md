@@ -8,31 +8,30 @@ for "continue running" and `True` for "stop". This gives you a lot of flexibilit
 for defining your own stopping conditions, however we also provide some common
 stopping conditions as a convenience. For example, to continue until the loss is below a threshold `x`,
 you may specify `loss_goal=x`. Similarly, to continue until `n` points have been sampled, you may
-specify `npoints_goal=n`. See the Runner docstring for details.
+specify `npoints_goal=n`. See the [`Runner`][adaptive.runner.AsyncRunner] docstring for details.
 
-```{eval-rst}
-.. autofunction:: adaptive.runner.auto_goal
-```
+::: adaptive.runner.auto_goal
+    options:
+      heading_level: 3
 
-```{eval-rst}
-.. autofunction:: adaptive.runner.stop_after
-```
+::: adaptive.runner.stop_after
+    options:
+      heading_level: 3
 
 ## Simple executor
 
-```{eval-rst}
-.. autofunction:: adaptive.runner.simple
-```
+::: adaptive.runner.simple
+    options:
+      heading_level: 3
 
-## Sequential excecutor
+## Sequential executor
 
-```{eval-rst}
-.. autoclass:: adaptive.runner.SequentialExecutor
-
-```
+::: adaptive.runner.SequentialExecutor
+    options:
+      heading_level: 3
 
 ## Replay log
 
-```{eval-rst}
-.. autofunction:: adaptive.runner.replay_log
-```
+::: adaptive.runner.replay_log
+    options:
+      heading_level: 3

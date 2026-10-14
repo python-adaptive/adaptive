@@ -1,8 +1,5 @@
 # adaptive.utils module
 
-```{eval-rst}
-.. automodule:: adaptive.utils
-    :members:
-    :undoc-members:
-    :show-inheritance:
-```
+::: adaptive.utils
+    options:
+      show_root_heading: false

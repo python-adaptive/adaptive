@@ -2,16 +2,12 @@
 
 ## The `DataSaver` class
 
-```{eval-rst}
-.. autoclass:: adaptive.DataSaver
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-```
+::: adaptive.DataSaver
+    options:
+      heading_level: 3
 
 ## The `make_datasaver` function
 
-```{eval-rst}
-.. autofunction:: adaptive.make_datasaver
-```
+::: adaptive.make_datasaver
+    options:
+      heading_level: 3

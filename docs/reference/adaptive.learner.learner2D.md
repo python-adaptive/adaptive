@@ -1,38 +1,31 @@
 # adaptive.Learner2D
 
-```{eval-rst}
-.. autoclass:: adaptive.Learner2D
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-```
+::: adaptive.Learner2D
 
 ## Custom loss functions
 
-```{eval-rst}
-.. autofunction:: adaptive.learner.learner2D.default_loss
-```
+::: adaptive.learner.learner2D.default_loss
+    options:
+      heading_level: 3
 
-```{eval-rst}
-.. autofunction:: adaptive.learner.learner2D.minimize_triangle_surface_loss
-```
+::: adaptive.learner.learner2D.minimize_triangle_surface_loss
+    options:
+      heading_level: 3
 
-```{eval-rst}
-.. autofunction:: adaptive.learner.learner2D.uniform_loss
-```
+::: adaptive.learner.learner2D.uniform_loss
+    options:
+      heading_level: 3
 
-```{eval-rst}
-.. autofunction:: adaptive.learner.learner2D.resolution_loss_function
-
-```
+::: adaptive.learner.learner2D.resolution_loss_function
+    options:
+      heading_level: 3
 
 ## Helper functions
 
-```{eval-rst}
-.. autofunction:: adaptive.learner.learner2D.areas
-```
+::: adaptive.learner.learner2D.areas
+    options:
+      heading_level: 3
 
-```{eval-rst}
-.. autofunction:: adaptive.learner.learner2D.deviations
-```
+::: adaptive.learner.learner2D.deviations
+    options:
+      heading_level: 3
