@@ -91,7 +91,9 @@ def to_gif(folder: Path, target: Path, fps: int = 15, hold: float = 2.5) -> None
         "[a]palettegen=max_colors=128:stats_mode=diff[p];"
         "[b][p]paletteuse=dither=none:diff_mode=rectangle"
     )
-    _ffmpeg("-framerate", fps, "-i", folder / "%04d.png", "-vf", graph, "-loop", 0, target)
+    _ffmpeg(
+        "-framerate", fps, "-i", folder / "%04d.png", "-vf", graph, "-loop", 0, target
+    )
 
 
 def _ffmpeg(*args) -> None:
@@ -137,7 +139,7 @@ def _triangles(ax, points, values, vmin, vmax, edge_color):
 
 def learner2d(target: Path) -> None:
     points, values = sampled(
-        adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)]), npoints_goal=1600
+        adaptive.Learner2D(ring, bounds=((-1, 1), (-1, 1))), npoints_goal=1600
     )
     vmin, vmax = values.min(), values.max()
 
@@ -151,7 +153,9 @@ def learner2d(target: Path) -> None:
         _triangles(axes[1], points[:n], values[:n], vmin, vmax, "white")
         axes[0].set_title("Homogeneous grid")
         axes[1].set_title("Adaptive")
-        fig.suptitle(f"{side * side} vs {n} points", fontsize=12, color="#555555", y=0.05)
+        fig.suptitle(
+            f"{side * side} vs {n} points", fontsize=12, color="#555555", y=0.05
+        )
         fig.subplots_adjust(left=0.02, right=0.98, top=0.9, bottom=0.1, wspace=0.05)
 
     frames = counts(9, len(points), 60)
@@ -174,13 +178,26 @@ def learnerND(target: Path) -> None:
         ax = fig.add_subplot(projection="3d")
         mask = visible.copy()
         mask[n:] = False
-        ax.scatter(*points[mask].T, c=colors[mask], s=sizes[mask], depthshade=False, linewidths=0)
+        ax.scatter(
+            *points[mask].T,
+            c=colors[mask],
+            s=sizes[mask],
+            depthshade=False,
+            linewidths=0,
+        )
         ax.view_init(elev=20, azim=-60 + 360 * i / nframes)
         for set_lim in (ax.set_xlim, ax.set_ylim, ax.set_zlim):
             set_lim(-1, 1)
         ax.set_box_aspect((1, 1, 1), zoom=1.25)
         ax.set_axis_off()
-        fig.text(0.5, 0.04, f"LearnerND, {n} points", ha="center", color="#555555", fontsize=12)
+        fig.text(
+            0.5,
+            0.04,
+            f"LearnerND, {n} points",
+            ha="center",
+            color="#555555",
+            fontsize=12,
+        )
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
     frames = counts(20, len(points), nframes // 2)
@@ -203,7 +220,7 @@ def _rounded_alpha(size: int, radius: int) -> Image.Image:
 
 def logo(target: Path) -> None:
     points, values = sampled(
-        adaptive.Learner2D(ring, bounds=[(-1, 1), (-1, 1)]), loss_goal=0.005
+        adaptive.Learner2D(ring, bounds=((-1, 1), (-1, 1))), loss_goal=0.005
     )
     vmin, vmax = values.min(), values.max()
 
@@ -213,8 +230,8 @@ def logo(target: Path) -> None:
 
     frames = counts(9, len(points), 24 * 10)
     size, dpi = 500, 100
-    with tempfile.TemporaryDirectory() as folder:
-        folder = Path(folder)
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp)
         write_frames(draw, len(frames), (size / dpi, size / dpi), folder, dpi=dpi)
         alpha = _rounded_alpha(size, radius=int(size * 0.3))
         for frame in sorted(folder.glob("*.png")):

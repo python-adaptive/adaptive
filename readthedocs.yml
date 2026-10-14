@@ -1,16 +1,23 @@
 version: 2
 
 build:
-    os: "ubuntu-22.04"
-    tools:
-        python: "mambaforge-latest"
-    jobs:
-        post_checkout:
-            - git fetch --unshallow || true
-
-sphinx:
-    configuration: docs/source/conf.py
-    builder: dirhtml
-
-conda:
-    environment: docs/environment.yml
+  os: ubuntu-24.04
+  tools:
+    python: "3.13"
+  jobs:
+    post_checkout:
+      - git fetch --unshallow || true
+    pre_create_environment:
+      - asdf plugin add uv
+      - asdf install uv latest
+      - asdf global uv latest
+    create_environment:
+      - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
+    install:
+      - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --group docs
+    build:
+      html:
+        - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run --group docs python docs/build_notebooks.py
+        - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run --group docs zensical build --strict
+        - mkdir -p "${READTHEDOCS_OUTPUT}/html"
+        - cp -r site/. "${READTHEDOCS_OUTPUT}/html/"

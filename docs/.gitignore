@@ -3,3 +3,5 @@
 /benchmarks.md
 /tutorial/
 *.ipynb
+# Written by notebooks during execution
+/notebooks/tutorial/data/

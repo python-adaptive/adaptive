@@ -19,22 +19,34 @@ def link(identifier, text):
 
 def test_tilde_ref_shows_last_component():
     text = "A `~adaptive.BaseLearner` instance."
-    assert sphinx_refs_to_autorefs(text, PUBLIC) == f"A {link('adaptive.BaseLearner', 'BaseLearner')} instance."
+    assert (
+        sphinx_refs_to_autorefs(text, PUBLIC)
+        == f"A {link('adaptive.BaseLearner', 'BaseLearner')} instance."
+    )
 
 
 def test_dotted_ref_keeps_full_path():
     text = "Returns a `pandas.DataFrame`."
-    assert sphinx_refs_to_autorefs(text, PUBLIC) == f"Returns a {link('pandas.DataFrame', 'pandas.DataFrame')}."
+    assert (
+        sphinx_refs_to_autorefs(text, PUBLIC)
+        == f"Returns a {link('pandas.DataFrame', 'pandas.DataFrame')}."
+    )
 
 
 def test_misplaced_tilde_is_handled():
     text = "learner : ~`adaptive.BaseLearner` instance"
-    assert sphinx_refs_to_autorefs(text, PUBLIC) == f"learner : {link('adaptive.BaseLearner', 'BaseLearner')} instance"
+    assert (
+        sphinx_refs_to_autorefs(text, PUBLIC)
+        == f"learner : {link('adaptive.BaseLearner', 'BaseLearner')} instance"
+    )
 
 
 def test_public_name_links_to_adaptive():
     text = "See `BalancingLearner`."
-    assert sphinx_refs_to_autorefs(text, PUBLIC) == f"See {link('adaptive.BalancingLearner', 'BalancingLearner')}."
+    assert (
+        sphinx_refs_to_autorefs(text, PUBLIC)
+        == f"See {link('adaptive.BalancingLearner', 'BalancingLearner')}."
+    )
 
 
 def test_literals_and_plain_names_untouched():
