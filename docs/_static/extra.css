@@ -1,0 +1,89 @@
+/* Viridis-inspired palette, matching the logo */
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color: #3b528b;
+  --md-primary-fg-color--light: #5a6fa8;
+  --md-primary-fg-color--dark: #2c3e6b;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #ffffffb3;
+}
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color: #21918c;
+  --md-accent-fg-color--transparent: #21918c1a;
+  --md-accent-bg-color: #ffffff;
+  --md-accent-bg-color--light: #ffffffb3;
+}
+[data-md-color-scheme="slate"][data-md-color-primary="custom"] {
+  --md-typeset-a-color: #7ea6e0;
+}
+
+/* Animated logo on the home page */
+.adaptive-logo-video {
+  display: block;
+  width: 320px;
+  max-width: 100%;
+  margin: 1.5rem auto;
+}
+
+/* Notebook outputs rendered by docs/build_notebooks.py */
+.md-typeset .nb-output {
+  overflow-x: auto;
+}
+/* Script-only outputs (e.g. the HoloViews extension loader) take no space */
+.md-typeset .nb-output:has(> :not(script, style, link, div:empty)) {
+  margin: 0 0 1.5em;
+}
+.md-typeset .highlight.nb-output-text pre {
+  border-left: 0.2rem solid var(--md-accent-fg-color);
+}
+.md-typeset .highlight.nb-output-text code {
+  background: transparent;
+}
+
+/* Bokeh plots and widgets are designed for a light background */
+/* (empty roots are the HoloViews extension loader, which renders nothing) */
+[data-md-color-scheme="slate"] .md-typeset .nb-output:has([data-root-id]:not(:empty)),
+[data-md-color-scheme="slate"] .md-typeset .nb-output:has(.plotly-graph-div),
+[data-md-color-scheme="slate"] .md-typeset .nb-output:has(.jupyter-widgets) {
+  background: #ffffff;
+  color: #000000;
+  border-radius: 0.4rem;
+  padding: 0.5rem;
+}
+
+/* `live_info` and `live_plot` cancel buttons do nothing on a static page */
+.md-typeset .nb-output .widget-button,
+.md-typeset .nb-output:has(.widget-button):not(:has(.widget-html)) {
+  display: none !important;
+}
+
+/* pandas DataFrames */
+.md-typeset .nb-output table.dataframe {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 0.7rem;
+  table-layout: fixed;
+}
+.md-typeset .nb-output table.dataframe thead {
+  border-bottom: 1px solid var(--md-default-fg-color--lighter);
+  vertical-align: bottom;
+}
+.md-typeset .nb-output table.dataframe :is(tr, th, td) {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.4em 0.6em;
+  line-height: normal;
+  white-space: normal;
+  border: none;
+}
+.md-typeset .nb-output table.dataframe tbody tr:nth-child(odd) {
+  background: var(--md-code-bg-color);
+}
+.md-typeset .nb-output table.dataframe tbody tr:hover {
+  background: var(--md-accent-fg-color--transparent);
+}
+
+/* README animations on the home page */
+.md-typeset img[src*="_static/readme/"] {
+  border-radius: 0.4rem;
+}

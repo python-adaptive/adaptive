@@ -1,0 +1,211 @@
+# Adaptive documentation, built with Zensical (https://zensical.org).
+# Executable pages live in docs/notebooks/ and are rendered into docs/ by
+# docs/build_notebooks.py before running `zensical build`.
+
+[project]
+site_name = "Adaptive"
+site_description = "Parallel active learning of mathematical functions"
+site_author = "Adaptive Authors"
+site_url = "https://adaptive.readthedocs.io/en/latest/"
+copyright = "Copyright &copy; 2018-2026 Adaptive Authors"
+repo_url = "https://github.com/python-adaptive/adaptive"
+repo_name = "python-adaptive/adaptive"
+edit_uri = "edit/main/docs/"
+docs_dir = "docs"
+site_dir = "_site"
+exclude_docs = """
+notebooks/
+overrides/
+*.py
+__pycache__/
+"""
+
+nav = [
+  { "Home" = "index.md" },
+  { "Algorithms and examples" = "algorithms_and_examples.md" },
+  { "Tutorial" = [
+    { "Overview" = "tutorial/tutorial.md" },
+    { "Learner1D" = "tutorial/tutorial.Learner1D.md" },
+    { "Learner2D" = "tutorial/tutorial.Learner2D.md" },
+    { "Custom loss functions" = "tutorial/tutorial.custom_loss.md" },
+    { "AverageLearner" = "tutorial/tutorial.AverageLearner.md" },
+    { "BalancingLearner" = "tutorial/tutorial.BalancingLearner.md" },
+    { "DataSaver" = "tutorial/tutorial.DataSaver.md" },
+    { "IntegratorLearner" = "tutorial/tutorial.IntegratorLearner.md" },
+    { "LearnerND" = "tutorial/tutorial.LearnerND.md" },
+    { "AverageLearner1D" = "tutorial/tutorial.AverageLearner1D.md" },
+    { "SequenceLearner" = "tutorial/tutorial.SequenceLearner.md" },
+    { "Parallelism" = "tutorial/tutorial.parallelism.md" },
+    { "Advanced topics" = "tutorial/tutorial.advanced-topics.md" },
+  ] },
+  { "Benchmarks" = "benchmarks.md" },
+  { "Gallery" = "gallery.md" },
+  { "API reference" = [
+    { "Overview" = "reference/adaptive.md" },
+    { "Learners" = [
+      { "Learner1D" = "reference/adaptive.learner.learner1D.md" },
+      { "Learner2D" = "reference/adaptive.learner.learner2D.md" },
+      { "LearnerND" = "reference/adaptive.learner.learnerND.md" },
+      { "AverageLearner" = "reference/adaptive.learner.average_learner.md" },
+      { "AverageLearner1D" = "reference/adaptive.learner.average_learner1D.md" },
+      { "BalancingLearner" = "reference/adaptive.learner.balancing_learner.md" },
+      { "DataSaver" = "reference/adaptive.learner.data_saver.md" },
+      { "IntegratorLearner" = "reference/adaptive.learner.integrator_learner.md" },
+      { "SequenceLearner" = "reference/adaptive.learner.sequence_learner.md" },
+      { "BaseLearner" = "reference/adaptive.learner.base_learner.md" },
+    ] },
+    { "Runners" = [
+      { "Runner" = "reference/adaptive.runner.Runner.md" },
+      { "AsyncRunner" = "reference/adaptive.runner.AsyncRunner.md" },
+      { "BlockingRunner" = "reference/adaptive.runner.BlockingRunner.md" },
+      { "BaseRunner" = "reference/adaptive.runner.BaseRunner.md" },
+      { "Runner extras" = "reference/adaptive.runner.extras.md" },
+    ] },
+    { "Other" = [
+      { "Triangulation" = "reference/adaptive.learner.triangulation.md" },
+      { "Triangulation backend" = "reference/adaptive.learner.triangulation_backend.md" },
+      { "Notebook integration" = "reference/adaptive.notebook_integration.md" },
+      { "Utilities" = "reference/adaptive.utils.md" },
+    ] },
+  ] },
+  { "Changelog" = "CHANGELOG.md" },
+  { "FAQ" = "faq.md" },
+  { "Contributing" = "docs.md" },
+]
+
+extra_css = [
+  "_static/extra.css",
+  "https://unpkg.com/katex@0.19.0/dist/katex.min.css",
+]
+extra_javascript = [
+  "_static/katex.js",
+  "https://unpkg.com/katex@0.19.0/dist/katex.min.js",
+  "https://unpkg.com/katex@0.19.0/dist/contrib/auto-render.min.js",
+]
+
+[project.theme]
+custom_dir = "docs/overrides"
+language = "en"
+logo = "_static/logo_docs.png"
+favicon = "_static/logo.png"
+features = [
+  "content.action.edit",
+  "content.action.view",
+  "content.code.annotate",
+  "content.code.copy",
+  "content.footnote.tooltips",
+  "content.tabs.link",
+  "content.tooltips",
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.path",
+  "navigation.sections",
+  "navigation.top",
+  "navigation.tracking",
+  "search.highlight",
+  "toc.follow",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/moon-star"
+toggle.name = "Switch to system preference"
+
+[project.theme.font]
+text = "Inter"
+code = "JetBrains Mono"
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/python-adaptive/adaptive"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/python"
+link = "https://pypi.org/project/adaptive/"
+
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["."]
+inventories = [
+  "https://docs.python.org/3/objects.inv",
+  "https://docs.scipy.org/doc/scipy/objects.inv",
+  "https://pandas.pydata.org/docs/objects.inv",
+  "https://holoviews.org/objects.inv",
+  "https://loky.readthedocs.io/en/stable/objects.inv",
+  "https://distributed.dask.org/en/stable/objects.inv",
+  "https://ipyparallel.readthedocs.io/en/stable/objects.inv",
+]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "numpy"
+docstring_section_style = "table"
+show_root_heading = true
+show_root_full_path = false
+show_source = true
+show_bases = true
+show_signature_annotations = true
+separate_signature = true
+signature_crossrefs = true
+merge_init_into_class = true
+members_order = "source"
+filters = ["!^_"]
+heading_level = 2
+show_if_no_docstring = true
+show_symbol_type_heading = true
+show_symbol_type_toc = true
+extensions = ["docs/griffe_sphinx_refs.py:SphinxRefs"]
+
+# Zensical replaces its default extension set when this table is present,
+# so the defaults are listed explicitly next to `pymdownx.snippets`.
+[project.markdown_extensions.abbr]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+[project.markdown_extensions.md_in_html]
+[project.markdown_extensions.toc]
+permalink = true
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+[project.markdown_extensions.pymdownx.betterem]
+[project.markdown_extensions.pymdownx.caret]
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.emoji]
+emoji_index = "zensical.extensions.emoji.twemoji"
+emoji_generator = "zensical.extensions.emoji.to_svg"
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.keys]
+[project.markdown_extensions.pymdownx.magiclink]
+[project.markdown_extensions.pymdownx.mark]
+[project.markdown_extensions.pymdownx.smartsymbols]
+[project.markdown_extensions.pymdownx.snippets]
+check_paths = true
+[project.markdown_extensions.pymdownx.superfences]
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+combine_header_slug = true
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true
+[project.markdown_extensions.pymdownx.tilde]

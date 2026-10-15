@@ -76,6 +76,18 @@ nox = [
     "nox",
     "pytest-github-actions-annotate-failures",
 ]
+docs = [
+    "adaptive[notebook,other]",
+    "zensical>=0.0.70,<0.1",  # pre-1.0, so stay on a tested minor version
+    "mkdocstrings-python>=2,<3",
+    "panel<1.10",  # holoviews otherwise resolves a panel pre-release
+    "jupytext",
+    "kaleido",  # docs/make_animations.py renders plotly frames
+    "nbclient",
+    "nbformat",
+    "pillow",
+    "pytest",
+]
 
 [tool.setuptools.packages.find]
 include = ["adaptive.*", "adaptive"]

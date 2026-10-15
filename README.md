@@ -1,6 +1,6 @@
 
 # ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) *Adaptive*: Parallel Active Learning of Mathematical Functions
-<!-- badges-start -->
+<!-- --8<-- [start:badges] -->
 
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb)
 [![Conda](https://img.shields.io/badge/install%20with-conda-green.svg)](https://anaconda.org/conda-forge/adaptive)
@@ -9,12 +9,12 @@
 [![Documentation](https://readthedocs.org/projects/adaptive/badge/?version=latest)](https://adaptive.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://img.shields.io/conda/dn/conda-forge/adaptive.svg)](https://anaconda.org/conda-forge/adaptive)
 [![GitHub](https://img.shields.io/github/stars/python-adaptive/adaptive.svg?style=social)](https://github.com/python-adaptive/adaptive/stargazers)
-[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/python-adaptive/adaptive)
 [![PyPI](https://img.shields.io/pypi/v/adaptive.svg)](https://pypi.python.org/pypi/adaptive)
+[![Python](https://img.shields.io/pypi/pyversions/adaptive.svg)](https://pypi.python.org/pypi/adaptive)
 
-<!-- badges-end -->
+<!-- --8<-- [end:badges] -->
 
-<!-- summary-start -->
+<!-- --8<-- [start:summary] -->
 
 Adaptive is an open-source Python library that streamlines adaptive parallel function evaluations.
 Rather than calculating all points on a dense grid, it intelligently selects the "best" points in the parameter space based on your provided function and bounds.
@@ -22,11 +22,11 @@ With minimal code, you can perform evaluations on a computing cluster, display l
 
 Adaptive is most efficient for computations where each function evaluation takes at least ≈50ms due to the overhead of selecting potentially interesting points.
 
-To see Adaptive in action, try the [example notebook on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb) or explore the [tutorial on Read the Docs](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial).
+To see Adaptive in action, try the [example notebook on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb) or explore the [tutorial on Read the Docs](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial/).
 
-<!-- summary-end -->
+<!-- --8<-- [end:summary] -->
 
-<details><summary><b><u>[ToC]</u></b> 📚</summary>
+<details><summary><b>Table of contents</b></summary>
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -38,6 +38,7 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 - [Installation](#installation)
   - [Faster triangulation (optional)](#faster-triangulation-optional)
 - [Development](#development)
+  - [Documentation](#documentation)
 - [Citing](#citing)
 - [Draft Paper](#draft-paper)
 - [Credits](#credits)
@@ -46,20 +47,20 @@ To see Adaptive in action, try the [example notebook on Binder](https://mybinder
 
 </details>
 
-<!-- key-features-start -->
+<!-- --8<-- [start:key-features] -->
 
 ## Key features
 
-- 🎯 **Intelligent Adaptive Sampling**: Adaptive focuses on areas of interest within a function, ensuring better results with fewer evaluations, saving time, and computational resources.
-- ⚡ **Parallel Execution**: The library leverages parallel processing for faster function evaluations, making optimal use of available computational resources.
-- 📊 **Live Plotting and Info Widgets**: When working in Jupyter notebooks, Adaptive offers real-time visualization of the learning process, making it easier to monitor progress and identify areas of improvement.
-- 🔧 **Customizable Loss Functions**: Adaptive supports various loss functions and allows customization, enabling users to tailor the learning process according to their specific needs.
-- 📈 **Support for Multidimensional Functions**: The library can handle functions with scalar or vector outputs in one or multiple dimensions, providing flexibility for a wide range of problems.
-- 🧩 **Seamless Integration**: Adaptive offers a simple and intuitive interface, making it easy to integrate with existing Python projects and workflows.
-- 💾 **Flexible Data Export**: The library provides options to export learned data as NumPy arrays or Pandas DataFrames, ensuring compatibility with various data processing tools.
-- 🌐 **Open-Source and Community-Driven**: Adaptive is an open-source project, encouraging contributions from the community to continuously improve and expand the library's features and capabilities.
+- **Intelligent Adaptive Sampling**: Adaptive focuses on areas of interest within a function, ensuring better results with fewer evaluations, saving time, and computational resources.
+- **Parallel Execution**: The library leverages parallel processing for faster function evaluations, making optimal use of available computational resources.
+- **Live Plotting and Info Widgets**: When working in Jupyter notebooks, Adaptive offers real-time visualization of the learning process, making it easier to monitor progress and identify areas of improvement.
+- **Customizable Loss Functions**: Adaptive supports various loss functions and allows customization, enabling users to tailor the learning process according to their specific needs.
+- **Support for Multidimensional Functions**: The library can handle functions with scalar or vector outputs in one or multiple dimensions, providing flexibility for a wide range of problems.
+- **Seamless Integration**: Adaptive offers a simple and intuitive interface, making it easy to integrate with existing Python projects and workflows.
+- **Flexible Data Export**: The library provides options to export learned data as NumPy arrays or Pandas DataFrames, ensuring compatibility with various data processing tools.
+- **Open-Source and Community-Driven**: Adaptive is an open-source project, encouraging contributions from the community to continuously improve and expand the library's features and capabilities.
 
-<!-- key-features-end -->
+<!-- --8<-- [end:key-features] -->
 
 ## Example usage
 
@@ -81,7 +82,13 @@ runner.live_info()
 runner.live_plot()
 ```
 
-<img src="https://user-images.githubusercontent.com/6897215/38739170-6ac7c014-3f34-11e8-9e8f-93b3a3a3d61b.gif" width='20%'> </img> <img src="https://user-images.githubusercontent.com/6897215/35219611-ac8b2122-ff73-11e7-9332-adffab64a8ce.gif" width='40%'> </img> <img src="https://user-images.githubusercontent.com/6897215/47256441-d6d53700-d480-11e8-8224-d1cc49dbdcf5.gif" width='20%'> </img>
+With the same number of points, adaptive sampling resolves features that a homogeneous grid misses:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learner1d.gif" width="43%" alt="Learner1D: homogeneous grid versus adaptive sampling of a sharp peak">
+  <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learner2d.gif" width="36%" alt="Learner2D: homogeneous grid versus adaptive triangulation of a ring">
+  <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learnerND.gif" width="19%" alt="LearnerND: sampled points concentrate on a spherical shell">
+</p>
 
 ### Exporting Data
 
@@ -97,7 +104,7 @@ If you have Pandas installed, you can also export the data as a DataFrame:
 df = learner.to_dataframe()
 ```
 
-<!-- implemented-algorithms-start -->
+<!-- --8<-- [start:implemented-algorithms] -->
 
 ## Implemented Algorithms
 
@@ -110,7 +117,7 @@ While `adaptive` provides sensible default choices, the adaptive sampling proces
 
 The following learners are implemented:
 
-<!-- implemented-algorithms-end -->
+<!-- --8<-- [end:implemented-algorithms] -->
 
 - `Learner1D`: for 1D functions `f: ℝ → ℝ^N`,
 - `Learner2D`: for 2D functions `f: ℝ^2 → ℝ^N`,
@@ -118,7 +125,7 @@ The following learners are implemented:
 - `AverageLearner`: for random variables, allowing averaging of results over multiple evaluations,
 - `AverageLearner1D`: for stochastic 1D functions, estimating the mean value at each point,
 - `IntegratorLearner`: for integrating a 1D function `f: ℝ → ℝ`,
-- `BalancingLearner`: for running multiple learners simultaneously and selecting the "best" one as more points are gathered.
+- `SequenceLearner`: for evaluating a fixed sequence of points while still using the runners, parallelism, and data export of Adaptive.
 
 Meta-learners (to be used with other learners):
 
@@ -132,11 +139,11 @@ In addition to learners, `adaptive` offers primitives for parallel sampling acro
 [ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
 [distributed](https://distributed.readthedocs.io/en/latest/).
 
-<!-- rest-start -->
+<!-- --8<-- [start:rest] -->
 
 ## Installation
 
-`adaptive` works with Python 3.7 and higher on Linux, Windows, or Mac, and provides optional extensions for working with the Jupyter/IPython Notebook.
+`adaptive` works with Python 3.11 and higher on Linux, Windows, or Mac, and provides optional extensions for working with Jupyter.
 
 The recommended way to install adaptive is using `conda`:
 
@@ -150,7 +157,7 @@ conda install -c conda-forge adaptive
 pip install "adaptive[notebook]"
 ```
 
-The `[notebook]` above will also install the optional dependencies for running `adaptive` inside a Jupyter notebook.
+The `[notebook]` above also installs the optional dependencies for live plotting and widgets in JupyterLab and Jupyter Notebook; no extra Jupyter extensions need to be installed.
 
 ### Faster triangulation (optional)
 
@@ -163,16 +170,9 @@ pip install "adaptive[rust]"
 No code changes are needed — the Rust backend is detected and used automatically.
 To control the selection, pass `LearnerND(..., triangulation_backend="python" | "rust" | "auto")` per learner, or set the environment variable `ADAPTIVE_TRIANGULATION_BACKEND=python` to force the pure-Python implementation globally (or to `rust` to make a missing Rust backend an error instead of a silent fallback).
 
-To use Adaptive in Jupyterlab, you need to install the following labextensions.
-
-```bash
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-jupyter labextension install @pyviz/jupyterlab_pyviz
-```
-
 ## Development
 
-Clone the repository and run `pip install -e ".[notebook,test,other]"` to add a link to the cloned repo into your Python path:
+Clone the repository and install it in editable mode with the optional dependencies:
 
 ```bash
 git clone git@github.com:python-adaptive/adaptive.git
@@ -180,7 +180,7 @@ cd adaptive
 pip install -e ".[notebook,test,other]"
 ```
 
-We recommend using a Conda environment or a virtualenv for package management during Adaptive development.
+We recommend a virtual environment, for example with [uv](https://docs.astral.sh/uv/) (`uv sync --extra notebook --extra test --extra other`) or Conda.
 
 To avoid polluting the history with notebook output, set up the git filter by running:
 
@@ -197,6 +197,19 @@ pre-commit install
 ```
 
 in the repository.
+
+### Documentation
+
+The documentation is built with [Zensical](https://zensical.org).
+The executable pages in `docs/notebooks/` are Jupyter notebooks in [jupytext's MyST Markdown format](https://jupytext.readthedocs.io/en/latest/formats-markdown.html).
+`docs/build_notebooks.py` executes them (with caching) and renders them into `docs/`, after which Zensical builds the site:
+
+```bash
+uv run --group docs python docs/build_notebooks.py
+uv run --group docs zensical serve  # preview on http://localhost:8000
+```
+
+The animations in this README are rendered from real learner runs with `uv run --group docs python docs/make_animations.py` (requires `ffmpeg` and Chrome or Chromium).
 
 ## Citing
 
@@ -224,7 +237,10 @@ We would like to give credits to the following people:
 - Pedro Gonnet for his implementation of [CQUAD](https://www.gnu.org/software/gsl/manual/html_node/CQUAD-doubly_002dadaptive-integration.html), “Algorithm 4” as described in “Increasing the Reliability of Adaptive Quadrature Using Explicit Interpolants”, P. Gonnet, ACM Transactions on Mathematical Software, 37 (3), art. no. 26, 2010.
 - Pauli Virtanen for his `AdaptiveTriSampling` script (no longer available online since SciPy Central went down) which served as inspiration for the `adaptive.Learner2D`.
 
-<!-- rest-end -->
+<!-- --8<-- [end:rest] -->
+<!-- --8<-- [start:community] -->
 
 For general discussion, we have a [Gitter chat channel](https://gitter.im/python-adaptive/adaptive).
 If you find any bugs or have any feature suggestions please file a GitHub [issue](https://github.com/python-adaptive/adaptive/issues/new) or submit a [pull request](https://github.com/python-adaptive/adaptive/pulls).
+
+<!-- --8<-- [end:community] -->

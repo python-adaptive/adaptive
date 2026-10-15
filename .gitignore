@@ -61,8 +61,6 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/_build/
 
 # PyBuilder
 target/
@@ -81,6 +79,7 @@ celerybeat-schedule
 
 # virtualenv
 venv/
+.venv/
 ENV/
 
 # Spyder project settings
@@ -99,3 +98,7 @@ benchmarks/results/
 
 # vscode configuration
 .vscode/
+
+# Zensical
+_site/
+.notebook_cache/

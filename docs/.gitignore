@@ -1,2 +1,7 @@
-build/*
-source/_static/holoviews.*
+# Rendered from docs/notebooks/ by docs/build_notebooks.py
+/algorithms_and_examples.md
+/benchmarks.md
+/tutorial/
+*.ipynb
+# Written by notebooks during execution
+/notebooks/tutorial/data/

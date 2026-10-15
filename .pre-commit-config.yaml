@@ -26,4 +26,4 @@ repos:
     rev: "v1.15.0"
     hooks:
       - id: mypy
-        exclude: ipynb_filter.py|docs/source/conf.py
+        exclude: ipynb_filter.py
