@@ -1,11 +1,4 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/logo_docs.png" width="110" alt="Adaptive logo">
-</p>
-
-<h1 align="center">Adaptive</h1>
-
-<p align="center"><em>Parallel active learning of mathematical functions</em></p>
-
+# ![logo](https://adaptive.readthedocs.io/en/latest/_static/logo.png) *Adaptive*: Parallel Active Learning of Mathematical Functions
 <!-- --8<-- [start:badges] -->
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/python-adaptive/adaptive/nox.yml?branch=main&label=tests)](https://github.com/python-adaptive/adaptive/actions/workflows/nox.yml)
@@ -22,148 +15,145 @@
 
 <!-- --8<-- [start:summary] -->
 
-Adaptive samples a function where it matters.
-Instead of evaluating it on a dense grid, Adaptive places each new point where its current approximation of the function is worst, so sharp features are resolved with far fewer evaluations.
-The points are evaluated in parallel, on your own cores or on a cluster, and in Jupyter you can watch the result take shape while it runs.
+`adaptive` is an open-source Python library for adaptive parallel function evaluation.
+You supply a function and its bounds, and `adaptive` evaluates it at the "best" points in parameter space, instead of at *all* points of a dense grid.
+With a few lines of code you can run the evaluations on a computing cluster, live-plot the data as it comes in, and fine-tune the sampling algorithm.
 
-Adaptive pays off when a single evaluation takes at least about 50 ms, as with simulations, experiments, or expensive numerics.
-For cheaper functions, choosing the points costs more than evaluating them.
+`adaptive` works best when each function evaluation takes *at least* ≈50 ms, because picking the next points has some overhead.
 
-Try it in your browser [on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb), or start with the [tutorial](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial/).
+Try the example notebook [on Binder](https://mybinder.org/v2/gh/python-adaptive/adaptive/main?filepath=example-notebook.ipynb) or read the [tutorial](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial/).
 
 <!-- --8<-- [end:summary] -->
+
+With the same number of points, adaptive sampling resolves features that a homogeneous grid misses:
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learner1d.gif" width="43%" alt="Learner1D: homogeneous grid versus adaptive sampling of a sharp peak">
   <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learner2d.gif" width="36%" alt="Learner2D: homogeneous grid versus adaptive triangulation of a ring">
   <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learnerND.gif" width="19%" alt="LearnerND: sampled points concentrate on a spherical shell">
 </p>
-<p align="center"><em>The same number of points on a homogeneous grid and placed by Adaptive.</em></p>
 
-<!-- --8<-- [start:key-features] -->
+## Example
 
-## Features
-
-- **Fewer evaluations**: points go where the function changes, not where a grid puts them.
-- **Parallel**: runners use all local cores by default, and scale to a cluster with any `concurrent.futures`-style executor, such as ipyparallel, Dask's `distributed`, or mpi4py.
-- **Live in Jupyter**: the runner works in the background while `live_plot()` and `live_info()` show its progress, so the notebook stays usable.
-- **Customizable**: stop on a loss, a number of points, or a time limit, and replace the default loss to define what "interesting" means for your problem.
-- **Your data, your way**: save and resume runs with `learner.save()` and `learner.load()`, and export to NumPy or pandas with `to_numpy()` and `to_dataframe()`.
-
-<!-- --8<-- [end:key-features] -->
-
-## Quick start
-
-```bash
-pip install adaptive
-```
-
-Learn a function with a sharp peak, evaluating it in parallel until the loss is below 0.01:
+Learning a 1D function and live-plotting the process in a Jupyter notebook:
 
 ```python
-import adaptive
+from adaptive import notebook_extension, Runner, Learner1D
+
+notebook_extension()
 
 
 def peak(x, a=0.01):
     return x + a**2 / (a**2 + x**2)
 
 
-learner = adaptive.Learner1D(peak, bounds=(-1, 1))
-adaptive.BlockingRunner(learner, loss_goal=0.01)
-
-data = learner.to_numpy()  # (x, y) rows; or learner.to_dataframe() with pandas
+learner = Learner1D(peak, bounds=(-1, 1))
+runner = Runner(learner, loss_goal=0.01)
+runner.live_info()
+runner.live_plot()
 ```
 
-In Jupyter (`pip install "adaptive[notebook]"`), use the non-blocking `Runner` and watch it work:
+The `Runner` works in the background, so the notebook stays usable while it runs.
+In a script, use `BlockingRunner`, which returns once the goal is reached:
 
 ```python
-adaptive.notebook_extension()
+from adaptive import BlockingRunner, Learner1D
 
-learner = adaptive.Learner1D(peak, bounds=(-1, 1))
-runner = adaptive.Runner(learner, loss_goal=0.01)
-runner.live_info()  # progress, and a button to stop the runner
-runner.live_plot()  # updates as new points come in
+learner = Learner1D(peak, bounds=(-1, 1))
+BlockingRunner(learner, loss_goal=0.01)
 ```
+
+Afterwards, `learner.to_numpy()` returns the data as a NumPy array, and `learner.to_dataframe()` as a pandas DataFrame.
 
 <!-- --8<-- [start:implemented-algorithms] -->
 
-## Learners
+## Implemented algorithms
 
-A *learner* decides where to sample next, and a *runner* evaluates those points and feeds the results back until a goal is reached.
-Which point is "best" depends on the problem: every learner has a sensible default, and you can replace its loss function with your own.
+The core concept in `adaptive` is the *learner*.
+A learner samples a function at the points in its parameter space that tell it the most about the function.
+As it evaluates more points, it gets a better idea of where to sample next.
 
-Adaptive comes with these learners:
+What the "best" points are depends on your application.
+`adaptive` makes reasonable default choices, but the details of the sampling are completely customizable.
+
+The following learners are implemented:
 
 <!-- --8<-- [end:implemented-algorithms] -->
 
-| Learner             | For                                                                                    |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| `Learner1D`         | 1D functions `f: ℝ → ℝ^N`                                                              |
-| `Learner2D`         | 2D functions `f: ℝ^2 → ℝ^N`                                                            |
-| `LearnerND`         | ND functions `f: ℝ^N → ℝ^M`                                                            |
-| `AverageLearner`    | random variables, averaged over many evaluations                                       |
-| `AverageLearner1D`  | noisy 1D functions, estimating the mean at each point                                  |
-| `IntegratorLearner` | the integral of a 1D function `f: ℝ → ℝ`                                               |
-| `SequenceLearner`   | a fixed sequence of points, with the runners and data export of Adaptive               |
-| `BalancingLearner`  | several learners at once, each new point going to the learner that needs it most       |
-| `DataSaver`         | wrapping another learner when the function returns more than a scalar or a vector      |
+- `Learner1D`, for 1D functions `f: ℝ → ℝ^N`,
+- `Learner2D`, for 2D functions `f: ℝ^2 → ℝ^N`,
+- `LearnerND`, for ND functions `f: ℝ^N → ℝ^M`,
+- `AverageLearner`, for random variables where you want to average the result over many evaluations,
+- `AverageLearner1D`, for stochastic 1D functions where you want to estimate the mean value of the function at each point,
+- `IntegratorLearner`, for when you want to integrate a 1D function `f: ℝ → ℝ`,
+- `SequenceLearner`, for when you want to evaluate a fixed sequence of points while still using the runners and data export of `adaptive`.
 
-Runners accept any executor, so the same code runs on a laptop or a cluster, with built-in support for
+Meta-learners (to be used with other learners):
+
+- `BalancingLearner`, for when you want to run several learners at once, selecting the "best" one each time you get more points,
+- `DataSaver`, for when your function doesn't just return a scalar or a vector.
+
+In addition to the learners, `adaptive` provides primitives for running the sampling across several cores and even several machines, with built-in support for
 [concurrent.futures](https://docs.python.org/3/library/concurrent.futures.html),
-[loky](https://loky.readthedocs.io/en/stable/) (the default),
-[ipyparallel](https://ipyparallel.readthedocs.io/en/latest/),
-[distributed](https://distributed.readthedocs.io/en/latest/), and
-[mpi4py](https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html):
-
-```python
-from distributed import Client
-
-runner = adaptive.Runner(learner, executor=Client(), loss_goal=0.01)
-```
-
-## Documentation
-
-The [documentation](https://adaptive.readthedocs.io/) has a [tutorial](https://adaptive.readthedocs.io/en/latest/tutorial/tutorial/) for each learner, [interactive examples](https://adaptive.readthedocs.io/en/latest/algorithms_and_examples/) comparing adaptive and homogeneous sampling, [benchmarks](https://adaptive.readthedocs.io/en/latest/benchmarks/), a [gallery](https://adaptive.readthedocs.io/en/latest/gallery/) of projects that use Adaptive, and the [API reference](https://adaptive.readthedocs.io/en/latest/reference/adaptive/).
+[mpi4py](https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html),
+[loky](https://loky.readthedocs.io/en/stable/),
+[ipyparallel](https://ipyparallel.readthedocs.io/en/latest/), and
+[distributed](https://distributed.readthedocs.io/en/latest/).
 
 <!-- --8<-- [start:rest] -->
 
 ## Installation
 
-Adaptive needs Python 3.11 or newer and runs on Linux, macOS, and Windows.
-Install it from PyPI or conda-forge:
+`adaptive` works with Python 3.11 and higher on Linux, Windows, and macOS.
+
+Install it with `conda`:
 
 ```bash
-pip install adaptive
 conda install -c conda-forge adaptive
 ```
 
-Optional extras:
+or from PyPI:
 
-| Extra                | Adds                                                                                    |
-| -------------------- | --------------------------------------------------------------------------------------- |
-| `adaptive[notebook]` | live plots and widgets in JupyterLab and Jupyter Notebook; no Jupyter extensions needed |
-| `adaptive[rust]`     | [adaptive-triangulation](https://github.com/python-adaptive/adaptive-triangulation), a faster Rust triangulation for `LearnerND` |
-| `adaptive[other]`    | ipyparallel and distributed executors, and dill for serialization                       |
+```bash
+pip install "adaptive[notebook]"
+```
 
-The Rust triangulation is used automatically when it is installed.
-To choose explicitly, pass `LearnerND(..., triangulation_backend="python" | "rust" | "auto")`, or set the environment variable `ADAPTIVE_TRIANGULATION_BACKEND`; with `rust`, a missing backend is an error instead of a silent fallback.
+The `[notebook]` extra installs the dependencies for live plotting and widgets in JupyterLab and Jupyter Notebook; no Jupyter extensions are needed.
+
+### Faster triangulation (optional)
+
+Installing the optional [adaptive-triangulation](https://github.com/python-adaptive/adaptive-triangulation) package makes `adaptive.LearnerND` significantly faster by replacing the pure-Python triangulation with a Rust implementation:
+
+```bash
+pip install "adaptive[rust]"
+```
+
+No code changes are needed. The Rust backend is detected and used automatically.
+To control the selection, pass `LearnerND(..., triangulation_backend="python" | "rust" | "auto")` per learner, or set the environment variable `ADAPTIVE_TRIANGULATION_BACKEND=python` to force the pure-Python implementation globally (or to `rust` to make a missing Rust backend an error instead of a silent fallback).
 
 ## Development
 
-Clone the repository and install it in editable mode, for example with [uv](https://docs.astral.sh/uv/):
+Clone the repository and install it in editable mode with the optional dependencies:
 
 ```bash
 git clone https://github.com/python-adaptive/adaptive.git
 cd adaptive
-uv sync --extra notebook --extra test --extra other
+pip install -e ".[notebook,test,other]"
 ```
 
-or with pip in a virtual environment: `pip install -e ".[notebook,test,other]"`.
+We recommend a virtual environment, for example with [uv](https://docs.astral.sh/uv/) (`uv sync --extra notebook --extra test --extra other`) or Conda.
 
-Then set up the git filter that strips notebook outputs, and [pre-commit](https://pre-commit.com) for the code style:
+To avoid polluting the history with notebook output, set up the git filter by running
 
 ```bash
 python ipynb_filter.py
+```
+
+in the repository.
+
+We use [pre-commit](https://pre-commit.com) for a consistent code style; install the hooks with
+
+```bash
 pre-commit install
 ```
 
@@ -178,11 +168,11 @@ uv run --group docs python docs/build_notebooks.py
 uv run --group docs zensical serve  # preview on http://localhost:8000
 ```
 
-The README animations are rendered from real learner runs with `uv run --group docs python docs/make_animations.py`, which needs `ffmpeg` and Chrome or Chromium.
+The README animations are made from real learner runs with `uv run --group docs python docs/make_animations.py`, which needs `ffmpeg` and Chrome or Chromium.
 
 ## Citing
 
-If you use Adaptive in scientific work, please cite it:
+If you used `adaptive` in a scientific work, please cite it as follows.
 
 ```bib
 @misc{Nijholt2019,
@@ -198,15 +188,15 @@ The algorithms are described in more detail in a [draft paper](https://github.co
 
 ## Credits
 
+We would like to give credits to the following people:
+
 - Pedro Gonnet for his implementation of [CQUAD](https://www.gnu.org/software/gsl/manual/html_node/CQUAD-doubly_002dadaptive-integration.html), "Algorithm 4" as described in "Increasing the Reliability of Adaptive Quadrature Using Explicit Interpolants", P. Gonnet, ACM Transactions on Mathematical Software, 37 (3), art. no. 26, 2010.
-- Pauli Virtanen for his `AdaptiveTriSampling` script (no longer available online since SciPy Central went down), which inspired `adaptive.Learner2D`.
+- Pauli Virtanen for his `AdaptiveTriSampling` script (no longer available online since SciPy Central went down), which served as inspiration for `adaptive.Learner2D`.
 
 <!-- --8<-- [end:rest] -->
 <!-- --8<-- [start:community] -->
 
-## Community
-
-For general discussion, there is a [Gitter chat channel](https://gitter.im/python-adaptive/adaptive).
-Found a bug or have an idea? Open an [issue](https://github.com/python-adaptive/adaptive/issues/new) or a [pull request](https://github.com/python-adaptive/adaptive/pulls).
+For general discussion, we have a [Gitter chat channel](https://gitter.im/python-adaptive/adaptive).
+If you find any bugs or have any feature suggestions, please file a GitHub [issue](https://github.com/python-adaptive/adaptive/issues/new) or submit a [pull request](https://github.com/python-adaptive/adaptive/pulls).
 
 <!-- --8<-- [end:community] -->

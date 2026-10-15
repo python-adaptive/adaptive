@@ -134,6 +134,9 @@ code = "JetBrains Mono"
 [project.theme.icon]
 repo = "fontawesome/brands/github"
 
+[project.extra]
+generator = false  # no "Made with Zensical" in the footer
+
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
 link = "https://github.com/python-adaptive/adaptive"
