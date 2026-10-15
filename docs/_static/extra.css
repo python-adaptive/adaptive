@@ -87,3 +87,11 @@
 .md-typeset img[src*="_static/readme/"] {
   border-radius: 0.4rem;
 }
+/* On phones, stack them instead of shrinking them side by side */
+@media screen and (max-width: 44.984375em) {
+  .md-typeset img[src*="_static/readme/"] {
+    display: block;
+    width: 100%;
+    margin: 0 auto 0.8rem;
+  }
+}
