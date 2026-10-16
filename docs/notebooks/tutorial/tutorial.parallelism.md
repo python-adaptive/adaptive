@@ -45,8 +45,6 @@ runner.live_plot()
 
 ## `distributed.Client`
 
-On Windows by default [`adaptive.Runner`][adaptive.Runner] uses a `distributed.Client`.
-
 ```python
 import distributed
 

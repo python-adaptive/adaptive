@@ -44,6 +44,12 @@
 [data-md-color-scheme="slate"] .md-typeset .nb-output:has([data-root-id]:not(:empty)),
 [data-md-color-scheme="slate"] .md-typeset .nb-output:has(.plotly-graph-div),
 [data-md-color-scheme="slate"] .md-typeset .nb-output:has(.jupyter-widgets) {
+  /* light theme colors, so e.g. the `live_info` table is not dark inside */
+  --md-default-bg-color: #ffffff;
+  --md-default-fg-color: #000000de;
+  --md-typeset-color: #000000de;
+  --md-typeset-table-color: #0000001f;
+  --md-typeset-table-color--light: #00000009;
   background: #ffffff;
   color: #000000;
   border-radius: 0.4rem;
