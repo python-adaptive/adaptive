@@ -261,8 +261,13 @@ class BalancingLearner(BaseLearner):
             return [], []
 
         if not tell_pending:
-            with restore(*self.learners):
-                return self._ask_and_tell(n)
+            try:
+                with restore(*self.learners):
+                    return self._ask_and_tell(n)
+            finally:
+                self._ask_cache.clear()
+                self._loss.clear()
+                self._pending_loss.clear()
         else:
             return self._ask_and_tell(n)
 

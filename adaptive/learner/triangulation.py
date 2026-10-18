@@ -232,6 +232,14 @@ def is_iterable_and_sized(obj):
     return isinstance(obj, Iterable) and isinstance(obj, Sized)
 
 
+def _flat_simplices(coords):
+    """Yield the intervals of a 1D triangulation in sorted coordinate order."""
+    sorted_indices = sorted(range(len(coords)), key=coords.__getitem__)
+    for left, right in zip(sorted_indices, sorted_indices[1:]):
+        if coords[left] != coords[right]:
+            yield left, right
+
+
 def simplex_volume_in_embedding(vertices) -> float:
     """Calculate the volume of a simplex in a higher dimensional embedding.
     That is: dim > len(vertices) - 1. For example if you would like to know the
@@ -260,8 +268,13 @@ def simplex_volume_in_embedding(vertices) -> float:
     # Modified from https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
 
     vertices = asarray(vertices, dtype=float)
-    dim = len(vertices[0])
-    if dim == 2:
+    num_vertices = len(vertices)
+    if num_vertices == 2:
+        # A 1-simplex is just a line segment.
+        return float(norm(vertices[1] - vertices[0]))
+
+    embedding_dim = len(vertices[0])
+    if embedding_dim == 2:
         # Heron's formula
         a, b, c = scipy.spatial.distance.pdist(vertices, metric="euclidean")
         s = 0.5 * (a + b + c)
@@ -271,13 +284,12 @@ def simplex_volume_in_embedding(vertices) -> float:
     sq_dists = scipy.spatial.distance.pdist(vertices, metric="sqeuclidean")
 
     # Add border while compressed
-    num_verts = scipy.spatial.distance.num_obs_y(sq_dists)
-    bordered = concatenate((ones(num_verts), sq_dists))
+    bordered = concatenate((ones(num_vertices), sq_dists))
 
     # Make matrix and find volume
     sq_dists_mat = scipy.spatial.distance.squareform(bordered)
 
-    coeff = -((-2) ** (num_verts - 1)) * factorial(num_verts - 1) ** 2
+    coeff = -((-2) ** (num_vertices - 1)) * factorial(num_vertices - 1) ** 2
     vol_square = fast_det(sq_dists_mat) / coeff
 
     if vol_square < 0:
@@ -329,9 +341,6 @@ class Triangulation:
         if any(len(coord) != dim for coord in coords):
             raise ValueError("Coordinates dimension mismatch")
 
-        if dim == 1:
-            raise ValueError("Triangulation class only supports dim >= 2")
-
         if len(coords) < dim + 1:
             raise ValueError("Please provide at least one simplex")
 
@@ -347,10 +356,14 @@ class Triangulation:
         # initialise empty set for each vertex
         self.vertex_to_simplices = [set() for _ in coords]
 
-        # find a Delaunay triangulation to start with, then we will throw it
-        # away and continue with our own algorithm
-        initial_tri = scipy.spatial.Delaunay(coords)
-        for simplex in initial_tri.simplices:
+        if dim == 1:
+            simplices = _flat_simplices(coords)
+        else:
+            # Find a Delaunay triangulation to start with, then we will throw it
+            # away and continue with our own algorithm.
+            simplices = scipy.spatial.Delaunay(coords).simplices
+
+        for simplex in simplices:
             self.add_simplex(simplex)
 
     def delete_simplex(self, simplex):

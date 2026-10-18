@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures as concurrent
+import copy
 import functools
 import gzip
 import inspect
@@ -27,7 +28,7 @@ def named_product(**items: Sequence[Any]):
 
 @contextmanager
 def restore(*learners) -> Iterator[None]:
-    states = [learner.__getstate__() for learner in learners]
+    states = [copy.deepcopy(learner.__getstate__()) for learner in learners]
     try:
         yield
     finally:
