@@ -1,8 +1,10 @@
 """Render the README animations and the animated docs logo from real learner runs.
 
 Writes docs/_static/readme/{learner1d,learner2d,learnerND}.gif and
-docs/_static/logo_docs.webm. Needs ffmpeg, and Chrome or Chromium for kaleido
-(set BROWSER_PATH if it is not found).
+docs/_static/logo_docs.webm, which are not version controlled: the Read the
+Docs build renders them and the README links to the copies on Read the Docs.
+Needs ffmpeg, and Chrome or Chromium for kaleido (set BROWSER_PATH if it is not
+found, or install one with ``plotly_get_chrome``).
 
 Usage: python docs/make_animations.py [learner1d learner2d learnerND logo]
 """
@@ -13,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 from collections.abc import Callable
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import matplotlib
@@ -280,11 +283,16 @@ ANIMATIONS = {
 }
 
 
+def make(name: str) -> None:
+    function, target = ANIMATIONS[name]
+    function(target)
+
+
 def main(names: list[str]) -> None:
     (STATIC / "readme").mkdir(exist_ok=True)
-    for name in names or ANIMATIONS:
-        function, target = ANIMATIONS[name]
-        function(target)
+    # One process per animation, so the others render while LearnerND runs.
+    with ProcessPoolExecutor() as pool:
+        list(pool.map(make, names or ANIMATIONS))
 
 
 if __name__ == "__main__":

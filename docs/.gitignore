@@ -5,3 +5,6 @@
 *.ipynb
 # Written by notebooks during execution
 /notebooks/tutorial/data/
+# Rendered by docs/make_animations.py during the docs build
+/_static/readme/
+/_static/logo_docs.webm

@@ -2,6 +2,8 @@ version: 2
 
 build:
   os: ubuntu-24.04
+  apt_packages:
+    - ffmpeg  # docs/make_animations.py encodes the animations
   tools:
     python: "3.13"
   jobs:
@@ -15,9 +17,11 @@ build:
       - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
     install:
       - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --group docs
+      - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run --group docs plotly_get_chrome -y  # for kaleido
     build:
       html:
-        - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run --group docs python docs/build_notebooks.py
+        # The animations are not version controlled; render them while the notebooks run.
+        - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run --group docs python docs/make_animations.py & UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run --group docs python docs/build_notebooks.py && wait $!
         - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run --group docs zensical build --strict
         - mkdir -p "${READTHEDOCS_OUTPUT}/html"
         - cp -r _site/. "${READTHEDOCS_OUTPUT}/html/"
