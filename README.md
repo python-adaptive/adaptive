@@ -29,9 +29,9 @@ With the same number of points, adaptive sampling resolves features that a homog
 <!-- --8<-- [end:summary] -->
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learner1d.gif" width="43%" alt="Learner1D: homogeneous grid versus adaptive sampling of a sharp peak">
-  <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learner2d.gif" width="36%" alt="Learner2D: homogeneous grid versus adaptive triangulation of a ring">
-  <img src="https://raw.githubusercontent.com/python-adaptive/adaptive/main/docs/_static/readme/learnerND.gif" width="19%" alt="LearnerND: sampled points concentrate on a spherical shell">
+  <img src="https://adaptive.readthedocs.io/en/latest/_static/readme/learner1d.gif" width="43%" alt="Learner1D: homogeneous grid versus adaptive sampling of a sharp peak">
+  <img src="https://adaptive.readthedocs.io/en/latest/_static/readme/learner2d.gif" width="36%" alt="Learner2D: homogeneous grid versus adaptive triangulation of a ring">
+  <img src="https://adaptive.readthedocs.io/en/latest/_static/readme/learnerND.gif" width="19%" alt="LearnerND: sampled points concentrate on a spherical shell">
 </p>
 
 ## Example
@@ -175,7 +175,9 @@ uv run --group docs python docs/build_notebooks.py
 uv run --group docs zensical serve  # preview on http://localhost:8000
 ```
 
-The README animations are made from real learner runs with `uv run --group docs python docs/make_animations.py`, which needs `ffmpeg` and Chrome or Chromium.
+The README animations and the animated logo are made from real learner runs by `uv run --group docs python docs/make_animations.py`, which needs `ffmpeg` and Chrome or Chromium (`uv run --group docs plotly_get_chrome` installs one).
+They are not version controlled: the Read the Docs build renders them, and the README links to those copies.
+Run the script once before `zensical serve` to see them locally.
 
 ## Citing
 
