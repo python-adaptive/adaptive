@@ -26,7 +26,6 @@ from PIL import Image, ImageDraw  # noqa: E402
 
 import adaptive  # noqa: E402
 from adaptive.learner.learner1D import uniform_loss  # noqa: E402
-from adaptive.learner.learner2D import uniform_loss as uniform_loss_2d  # noqa: E402
 
 STATIC = Path(__file__).parent / "_static"
 DARK, ACCENT, NEW = "#2c3e6b", "#21918c", "#e4572e"
@@ -147,25 +146,42 @@ def _triangles(ax, points, values, vmin, vmax, edge_color):
     ax.axis("off")
 
 
+def _square_grid(ax, k, vmin, vmax):
+    """Evaluate ``ring`` on a k × k grid and draw its cells."""
+    x = np.linspace(-1, 1, k)
+    X, Y = np.meshgrid(x, x)
+    ax.pcolormesh(
+        X, Y, ring((X, Y)), shading="gouraud", cmap="viridis", vmin=vmin, vmax=vmax
+    )
+    ax.vlines(x, -1, 1, color="white", lw=0.35, alpha=0.7)
+    ax.hlines(x, -1, 1, color="white", lw=0.35, alpha=0.7)
+    ax.set_xlim(-1, 1)
+    ax.set_ylim(-1, 1)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+
 def learner2d(target: Path) -> None:
-    bounds = ((-1, 1), (-1, 1))
-    points, values = sampled(adaptive.Learner2D(ring, bounds), npoints_goal=1600)
-    uniform = adaptive.Learner2D(ring, bounds, loss_per_triangle=uniform_loss_2d)
-    points_uniform, values_uniform = sampled(uniform, npoints_goal=1600)
+    sides = np.arange(2, 41)  # every frame has k × k points on both sides
+    points, values = sampled(
+        adaptive.Learner2D(ring, ((-1, 1), (-1, 1))), npoints_goal=sides[-1] ** 2
+    )
     vmin, vmax = values.min(), values.max()
 
     def draw(fig, i):
-        n = frames[i]
+        k = sides[i]
+        n = k**2
         axes = fig.subplots(1, 2)
-        _triangles(axes[0], points_uniform[:n], values_uniform[:n], vmin, vmax, "white")
+        _square_grid(axes[0], k, vmin, vmax)
         _triangles(axes[1], points[:n], values[:n], vmin, vmax, "white")
-        axes[0].set_title("Homogeneous")
+        axes[0].set_title("Homogeneous grid")
         axes[1].set_title("Adaptive")
-        fig.suptitle(f"{n} points", fontsize=12, color="#555555", y=0.05)
+        fig.suptitle(
+            f"{n} points ({k} × {k} grid)", fontsize=12, color="#555555", y=0.05
+        )
         fig.subplots_adjust(left=0.02, right=0.98, top=0.9, bottom=0.1, wspace=0.05)
 
-    frames = counts(4, len(points), 60, power=2.5)
-    _render_gif(draw, len(frames), (7, 3.75), target, dpi=90)
+    _render_gif(draw, len(sides), (7, 3.75), target, dpi=90, fps=10)
 
 
 def learnerND(target: Path) -> None:
