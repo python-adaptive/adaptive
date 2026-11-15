@@ -29,9 +29,9 @@ With the same number of points, adaptive sampling resolves features that a homog
 <!-- --8<-- [end:summary] -->
 
 <p align="center">
-  <img src="https://adaptive.readthedocs.io/en/latest/_static/readme/learner1d.gif" width="43%" alt="Learner1D: homogeneous grid versus adaptive sampling of a sharp peak">
-  <img src="https://adaptive.readthedocs.io/en/latest/_static/readme/learner2d.gif" width="36%" alt="Learner2D: homogeneous grid versus adaptive triangulation of a ring">
-  <img src="https://adaptive.readthedocs.io/en/latest/_static/readme/learnerND.gif" width="19%" alt="LearnerND: sampled points concentrate on a spherical shell">
+  <img src="https://adaptive.readthedocs.io/en/latest/_static/readme/learner1d.gif" width="356" alt="Learner1D: homogeneous grid versus adaptive sampling of a sharp peak">
+  <img src="https://adaptive.readthedocs.io/en/latest/_static/readme/learner2d.gif" width="299" alt="Learner2D: homogeneous grid versus adaptive triangulation of a ring">
+  <img src="https://adaptive.readthedocs.io/en/latest/_static/readme/learnerND.gif" width="160" alt="LearnerND: sampled points concentrate on a spherical shell">
 </p>
 
 ## Example
