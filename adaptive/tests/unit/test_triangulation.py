@@ -71,9 +71,20 @@ def test_circumsphere():
     def generate_random_sphere_points(dim, radius=0):
         """https://math.stackexchange.com/a/1585996"""
 
-        vec = [None] * (dim + 1)
         center = uniform(-100, 100, dim)
         radius = uniform(1.0, 100.0) if radius == 0 else radius
+
+        if dim == 1:
+            # For 1D, place the two points exactly at center ± radius
+            # to avoid the Gaussian sampling flakiness where both points
+            # can land on the same side of center.
+            vec = [
+                tuple(center - radius),
+                tuple(center + radius),
+            ]
+            return radius, center, vec
+
+        vec = [None] * (dim + 1)
         for i in range(dim + 1):
             points = normal(0, size=dim)
             x = fast_norm(points)
@@ -82,7 +93,7 @@ def test_circumsphere():
 
         return radius, center, vec
 
-    for dim in range(2, 10):
+    for dim in range(1, 10):
         radius, center, points = generate_random_sphere_points(dim)
         circ_center, circ_radius = circumsphere(points)
         err_msg = ""
@@ -94,3 +105,32 @@ def test_circumsphere():
             )
         if err_msg:
             raise AssertionError(err_msg)
+
+
+@pytest.mark.parametrize(
+    ("vertices", "expected"),
+    [
+        ([(0.0,), (1.0,)], 1.0),
+        ([(0.0,), (3.0,)], 3.0),
+        ([(0.0, 0.0), (3.0, 4.0)], 5.0),
+        ([(0.0, 0.0, 0.0), (1.0, 1.0, 1.0)], np.sqrt(3)),
+    ],
+)
+def test_simplex_volume_in_embedding_1d(vertices, expected):
+    """Test simplex_volume_in_embedding for 1-simplices (line segments)."""
+    from adaptive.learner.triangulation import simplex_volume_in_embedding
+
+    assert np.isclose(simplex_volume_in_embedding(vertices), expected)
+
+
+@pytest.mark.parametrize(
+    ("simplex", "expected_neighbors"),
+    [
+        ((0, 1), {(1, 2)}),
+        ((1, 2), {(0, 1)}),
+    ],
+)
+def test_1d_triangulation_find_neighbors(simplex, expected_neighbors):
+    """Test finding neighbors in 1D."""
+    tri = Triangulation([(0.0,), (1.0,), (2.0,)])
+    assert tri.get_simplices_attached_to_points(simplex) == expected_neighbors
